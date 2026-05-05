@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  # ── 1. Build Python sidecar for each platform ──────────────────────────────
+  # ── 1. Build Python sidecar for each platform ────────────────────────────────────
   build-sidecar:
     name: Sidecar (${{ matrix.name }})
     strategy:
@@ -74,7 +74,7 @@ jobs:
           path: src-tauri/binaries/gaia-backend-${{ matrix.triple }}${{ matrix.ext }}
 
 
-  # ── 2. Build Tauri app for each platform ───────────────────────────────────
+  # ── 2. Build Tauri app for each platform ─────────────────────────────────────
   build-tauri:
     name: Tauri (${{ matrix.name }})
     needs: build-sidecar
@@ -89,22 +89,25 @@ jobs:
             ext: .exe
             rust_target: x86_64-pc-windows-msvc
             bundle_args: --target x86_64-pc-windows-msvc
+            artifact_glob: "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/**/*.exe"
           - name: macOS
             os: macos-latest
             triple: aarch64-apple-darwin
             ext: ""
             rust_target: aarch64-apple-darwin
             bundle_args: --target aarch64-apple-darwin
+            artifact_glob: "src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg"
           - name: Linux
             os: ubuntu-latest
             triple: x86_64-unknown-linux-gnu
             ext: ""
             rust_target: x86_64-unknown-linux-gnu
             bundle_args: --target x86_64-unknown-linux-gnu --bundles deb,rpm
+            artifact_glob: "src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.{deb,rpm}"
 
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -208,13 +211,19 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Build Tauri
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # On CI (push/PR to main): just build, no release creation
+      - name: Build Tauri bundles
+        timeout-minutes: 45
+        run: pnpm tauri build ${{ matrix.bundle_args }}
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
         with:
-          tagName: gaia-v__VERSION__
-          releaseName: "GAIA v__VERSION__"
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.bundle_args }}
+          name: bundle-${{ matrix.triple }}
+          path: |
+            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.AppImage
+          if-no-files-found: warn
