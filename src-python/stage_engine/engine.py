@@ -1,6 +1,13 @@
 """GAIA-OS Stage Engine — Main orchestrator
 
 Issue #63 | Pillar I: Magnum Opus
+
+Changelog vs. initial scaffold
+------------------------------
+* Added _score_only() helper so router can pre-score before WindowTracker.
+* Schumann alignment is now injected via schumann_bridge.py — engine.py
+  itself stays agnostic to SchumannState type.
+* All other logic unchanged from the original scaffold.
 """
 
 from __future__ import annotations
@@ -68,15 +75,15 @@ class StageEngine:
             principal_id:              User/Gaian identifier.
             goal_states:               Daily decision states list (last 30 days).
             hrv_rmssd_history:         HRV RMSSD readings (last 30 days).
-            alignment_score_history:   Schumann alignment scores (last 30 days).
+            alignment_score_history:   Schumann alignment scores 0–100 (last 30 days).
             journal_entries:           Processed journal feature dicts (last 14 days).
             focus_session_minutes:     Focus session lengths in minutes (last 14 days).
             goals_completed:           Completed goal count (last 30 days).
             goals_abandoned:           Abandoned goal count (last 30 days).
             valence_history:           Affect valence readings (last 30 days).
             days_forward_window_met:   Days the current marker set has been at
-                                       forward-transition thresholds. Caller
-                                       tracks this across evaluations.
+                                       forward-transition thresholds. Use
+                                       WindowTracker.get_and_update() to supply this.
             days_regression_window:    Days the regression pattern has been present.
 
         Returns:
@@ -151,6 +158,29 @@ class StageEngine:
         )
         self._upsert_stage_record(record)
         return TransitionResult(record=record, transition=transition)
+
+    def _score_only(
+        self,
+        goal_states: list[str],
+        hrv_rmssd_history: list[float],
+        alignment_score_history: list[float],
+        journal_entries: list[dict],
+        focus_session_minutes: list[float],
+        goals_completed: int,
+        goals_abandoned: int,
+        valence_history: list[float],
+    ) -> MarkerScores:
+        """Run scoring only, no persistence.  Used by router + WindowTracker."""
+        return MarkerScorer.compute(
+            goal_states=goal_states,
+            hrv_rmssd_history=hrv_rmssd_history,
+            alignment_score_history=alignment_score_history,
+            journal_entries=journal_entries,
+            focus_session_minutes=focus_session_minutes,
+            goals_completed=goals_completed,
+            goals_abandoned=goals_abandoned,
+            valence_history=valence_history,
+        )
 
     def get_stage_history(self, principal_id: str) -> list:
         return self.memory.get_stage_history(principal_id)
