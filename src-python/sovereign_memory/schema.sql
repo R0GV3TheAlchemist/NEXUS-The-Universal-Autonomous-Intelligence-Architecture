@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS legacy_artifacts (
     stage_at_creation INTEGER NOT NULL CHECK (stage_at_creation IN (4, 5)),
     title_cipher      BLOB NOT NULL,
     title_nonce       BLOB NOT NULL,
+    title_aad         BLOB,                   -- AAD used when encrypting the title
     content_cipher    BLOB NOT NULL,
     content_nonce     BLOB NOT NULL,
     content_aad       BLOB,
