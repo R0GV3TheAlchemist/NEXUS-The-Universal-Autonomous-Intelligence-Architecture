@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# ── Path setup ───────────────────────────────────────────────────────────────
+# ── Path setup ──────────────────────────────────────────────────────────────────────
 if getattr(sys, 'frozen', False):
     ROOT = sys._MEIPASS
 else:
@@ -28,6 +28,7 @@ sys.path.insert(0, ROOT)
 from api.routers import zodiac
 from api.routers import llm as llm_router
 from api.routers import gaian as gaian_router
+from api.routers import memory as memory_router
 from api.notifications import router as notifications_router
 from api.atlas import router as atlas_router
 from api.crypto import router as crypto_router
@@ -36,7 +37,7 @@ log = logging.getLogger("gaia")
 
 _START_TIME = time.time()
 
-# ── Graceful shutdown ────────────────────────────────────────────────────────────
+# ── Graceful shutdown ────────────────────────────────────────────────────────────────────────
 
 _shutdown_event = asyncio.Event()
 
@@ -73,7 +74,7 @@ async def _flush_state() -> None:
     log.info("[GAIA] Shutdown complete.")
 
 
-# ── Ollama health probe ──────────────────────────────────────────────────────────
+# ── Ollama health probe ────────────────────────────────────────────────────────────────────────
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("GAIA_MODEL", "llama3")
@@ -113,11 +114,13 @@ async def _check_ollama() -> dict:
         return {"ready": False, "model": None, "error": str(e)}
 
 
-# ── FastAPI lifespan ───────────────────────────────────────────────────────────
+# ── FastAPI lifespan ───────────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     log.info("[GAIA] Backend starting up — port 8008")
+
+    # ── Encryption layer ──────────────────────────────────────────────────────────────
     from api.crypto import get_symmetric_key
     try:
         get_symmetric_key()
@@ -125,14 +128,26 @@ async def lifespan(application: FastAPI):
     except Exception as e:
         log.warning(f"[GAIA] Encryption init warning: {e}")
 
+    # ── Memory subsystem ──────────────────────────────────────────────────────────────
+    from core.runtime import GAIARuntime
+    _runtime = GAIARuntime()
+    try:
+        _runtime.init()
+        log.info("[GAIA] Memory subsystem ready")
+    except Exception as e:
+        log.warning(f"[GAIA] Memory subsystem init warning: {e}")
+
     routing_mode = os.environ.get("GAIA_ROUTING_MODE", "local-first")
     log.info(f"[GAIA] LLM routing mode: {routing_mode}")
 
     yield
+
+    # ── Teardown ───────────────────────────────────────────────────────────────────────────
+    _runtime.shutdown()
     await _flush_state()
 
 
-# ── App ────────────────────────────────────────────────────────────────────
+# ── App ───────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="GAIA Backend",
@@ -153,17 +168,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ──────────────────────────────────────────────────────────────────
+# ── Routers ──────────────────────────────────────────────────────────────────────────
 
-app.include_router(zodiac.router,          prefix="/api/zodiac",  tags=["zodiac"])
-app.include_router(llm_router.router,      prefix="/api")         # /api/llm/*
-app.include_router(gaian_router.router,    prefix="/api")         # /api/gaian/*
-app.include_router(notifications_router)                          # /notifications
-app.include_router(atlas_router)                                  # /atlas
-app.include_router(crypto_router)                                 # /crypto
+app.include_router(zodiac.router,              prefix="/api/zodiac",  tags=["Zodiac"])
+app.include_router(llm_router.router,          prefix="/api")         # /api/llm/*
+app.include_router(gaian_router.router,        prefix="/api")         # /api/gaian/*
+app.include_router(memory_router.router,       prefix="/api/memory", tags=["Memory"])  # /api/memory/*
+app.include_router(notifications_router)                              # /notifications
+app.include_router(atlas_router)                                      # /atlas
+app.include_router(crypto_router)                                     # /crypto
 
 
-# ── Core endpoints ────────────────────────────────────────────────────────────
+# ── Core endpoints ──────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
@@ -199,7 +215,7 @@ async def get_state():
     }
 
 
-# ── Launch ───────────────────────────────────────────────────────────────────
+# ── Launch ─────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     port = int(os.environ.get("GAIA_PORT", 8008))
