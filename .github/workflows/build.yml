@@ -3,35 +3,27 @@ name: 🔨 Build
 on:
   push:
     branches: [main]
+    paths:
+      - 'src-tauri/**'
+      - 'src/**'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'src-tauri/**'
+      - 'src/**'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - '.github/workflows/build.yml'
 
 jobs:
 
-  # ── 1. Build Python sidecar for each platform ────────────────────────────────────
+  # ── 1. Build Python sidecar (Linux only for CI) ───────────────────────────
   build-sidecar:
-    name: Sidecar (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Windows
-            os: windows-latest
-            triple: x86_64-pc-windows-msvc
-            ext: .exe
-            copy_cmd: pwsh
-          - name: macOS
-            os: macos-latest
-            triple: aarch64-apple-darwin
-            ext: ""
-            copy_cmd: bash
-          - name: Linux
-            os: ubuntu-latest
-            triple: x86_64-unknown-linux-gnu
-            ext: ""
-            copy_cmd: bash
-
-    runs-on: ${{ matrix.os }}
+    name: Sidecar (Linux)
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -45,24 +37,14 @@ jobs:
         run: pip install -r requirements.txt pyinstaller
 
       - name: Install Linux system deps
-        if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev
 
       - name: Build gaia-backend sidecar
         run: pyinstaller gaia-backend.spec
 
-      - name: Stage sidecar with triple name (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
+      - name: Stage sidecar with triple name
         run: |
-          $dest = "src-tauri\binaries\gaia-backend-${{ matrix.triple }}.exe"
-          Copy-Item dist\gaia-backend.exe $dest -Force
-          Write-Host "Staged: $((Get-Item $dest).Length) bytes"
-
-      - name: Stage sidecar with triple name (Unix)
-        if: matrix.os != 'windows-latest'
-        run: |
-          dest="src-tauri/binaries/gaia-backend-${{ matrix.triple }}"
+          dest="src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu"
           cp dist/gaia-backend "$dest"
           chmod +x "$dest"
           echo "Staged: $(wc -c < $dest) bytes"
@@ -70,42 +52,17 @@ jobs:
       - name: Upload sidecar artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sidecar-${{ matrix.triple }}
-          path: src-tauri/binaries/gaia-backend-${{ matrix.triple }}${{ matrix.ext }}
+          name: sidecar-x86_64-unknown-linux-gnu
+          path: src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu
 
 
-  # ── 2. Build Tauri app for each platform ─────────────────────────────────────
+  # ── 2. Build Tauri app (Linux only for CI) ─────────────────────────────
+  # macOS + Windows are built only on tagged releases (release.yml)
   build-tauri:
-    name: Tauri (${{ matrix.name }})
+    name: Tauri (Linux)
     needs: build-sidecar
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Windows
-            os: windows-latest
-            triple: x86_64-pc-windows-msvc
-            ext: .exe
-            rust_target: x86_64-pc-windows-msvc
-            bundle_args: --target x86_64-pc-windows-msvc
-            artifact_glob: "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/**/*.exe"
-          - name: macOS
-            os: macos-latest
-            triple: aarch64-apple-darwin
-            ext: ""
-            rust_target: aarch64-apple-darwin
-            bundle_args: --target aarch64-apple-darwin
-            artifact_glob: "src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg"
-          - name: Linux
-            os: ubuntu-latest
-            triple: x86_64-unknown-linux-gnu
-            ext: ""
-            rust_target: x86_64-unknown-linux-gnu
-            bundle_args: --target x86_64-unknown-linux-gnu --bundles deb,rpm
-            artifact_glob: "src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.{deb,rpm}"
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -130,7 +87,6 @@ jobs:
           cache: pnpm
 
       - name: Install Linux system deps
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -148,12 +104,11 @@ jobs:
       - name: Download sidecar
         uses: actions/download-artifact@v4
         with:
-          name: sidecar-${{ matrix.triple }}
+          name: sidecar-x86_64-unknown-linux-gnu
           path: src-tauri/binaries/
 
-      - name: Mark sidecar executable (Unix)
-        if: matrix.os != 'windows-latest'
-        run: chmod +x src-tauri/binaries/gaia-backend-${{ matrix.triple }}
+      - name: Mark sidecar executable
+        run: chmod +x src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu
 
       - name: Install Pillow & regenerate icons
         run: pip install Pillow
@@ -204,26 +159,22 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.rust_target }}
+          targets: x86_64-unknown-linux-gnu
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 
-      # On CI (push/PR to main): just build, no release creation
       - name: Build Tauri bundles
-        timeout-minutes: 45
-        run: pnpm tauri build ${{ matrix.bundle_args }}
+        timeout-minutes: 25
+        run: pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb,rpm
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bundle-${{ matrix.triple }}
+          name: bundle-linux
           path: |
-            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.deb
-            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.rpm
-            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.exe
-            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.dmg
-            src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.AppImage
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.deb
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.rpm
           if-no-files-found: warn
