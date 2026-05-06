@@ -202,6 +202,8 @@ class FallbackEmbedder(EmbeddingProvider):
         # Tile the digest to cover `dim` floats
         raw = digest * (self._dim // 32 + 1)
         # Unpack as int8 and normalise to [-1, 1]
-        ints   = list(struct.unpack(f"{len(raw)}b", raw[: self._dim]))
+        # Fix: format count must match the sliced buffer length (self._dim),
+        # not the full tiled buffer length (len(raw)).
+        ints   = list(struct.unpack(f"{self._dim}b", raw[: self._dim]))
         norm   = [v / 128.0 for v in ints[: self._dim]]
         return norm
