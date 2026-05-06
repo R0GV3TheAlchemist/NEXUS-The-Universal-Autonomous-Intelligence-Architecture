@@ -159,6 +159,9 @@ class MemoryPruner:
         """
         Return *limit* row ids with the lowest keep-priority, excluding
         PERMANENT items and items younger than min_age_sec.
+
+        Uses ``<=`` for the age cutoff so that rows inserted within the
+        current second are included when min_age_sec=0 (e.g. in tests).
         """
         now       = int(time.time())
         cutoff_ts = now - self._min_age_sec
@@ -175,7 +178,7 @@ class MemoryPruner:
             FROM memory_items
             WHERE deleted = 0
               AND tier != 'permanent'
-              AND created_at < ?
+              AND created_at <= ?
               {user_filter}
             ORDER BY
                 (
