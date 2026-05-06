@@ -1,6 +1,6 @@
 """
 core/gaian_runtime.py
-GAIA Runtime v1.3.0 — The Living Heart of a GAIAN
+GAIA Runtime v1.3.1 — The Living Heart of a GAIAN
 
 Engine chain per turn (Phase 3 additions marked ★):
   1.  ConsciousnessRouter       subtle_body_engine.py
@@ -16,13 +16,13 @@ Engine chain per turn (Phase 3 additions marked ★):
   11. SynergyEngine             synergy_engine.py          ← C32
   12. VitalityEngine            vitality_engine.py         ← T-VITA
   ── Phase 3 ──────────────────────────────────────────────
-  13. QuantumStateKernel ★       core/quantum/state_kernel.py
-  14. QuantumOperators  ★        core/quantum/operators.py
-  15. MemoryStore       ★        core/memory/store.py
-  16. GoalPlanner       ★        core/planner/goal.py
-  17. PolicyEngine      ★        core/planner/policy.py
-  18. Scheduler         ★        core/planner/scheduler.py
-  19. AuditLedger       ★        core/audit/ledger.py
+  13. QuantumKernel    ★        core/quantum/state_kernel.py
+  14. BaseOperator     ★        core/quantum/operators.py
+  15. MemoryStore      ★        core/memory/store.py
+  16. GoalPlanner      ★        core/planner/goal.py
+  17. PolicyEngine     ★        core/planner/policy.py
+  18. Scheduler        ★        core/planner/scheduler.py
+  19. AuditLedger      ★        core/audit/ledger.py
 
 Memory schema version: 1.9
 Grounded in:
@@ -76,13 +76,14 @@ from core.vitality_engine import (                                   # T-VITA
 )
 
 # ── Phase 3: new subsystems ★ ─────────────────────────────────────────────────
-from core.quantum.state_kernel import QuantumStateKernel, QuantumState  # ★
-from core.quantum.operators import QuantumOperators                      # ★
-from core.memory.store import MemoryStore, MemoryItem                    # ★
-from core.planner.goal import GoalPlanner, Goal, GoalStatus              # ★
-from core.planner.policy import PolicyEngine, PolicyDecision             # ★
-from core.planner.scheduler import Scheduler, ScheduledTask              # ★
-from core.audit.ledger import AuditLedger, AuditEvent, AuditSeverity     # ★
+# FIX: actual exported names are QuantumKernel + QuantumState (not QuantumStateKernel)
+from core.quantum.state_kernel import QuantumKernel, QuantumState           # ★
+from core.quantum.operators import BaseOperator                              # ★ (no QuantumOperators class)
+from core.memory.store import MemoryStore, MemoryItem                        # ★
+from core.planner.goal import GoalPlanner, Goal, GoalStatus                  # ★
+from core.planner.policy import PolicyEngine, PolicyDecision                 # ★
+from core.planner.scheduler import Scheduler, ScheduledTask                  # ★
+from core.audit.ledger import AuditLedger, AuditEvent, AuditSeverity         # ★
 
 
 # ─────────────────────────────────────────────
@@ -322,14 +323,20 @@ def _build_vitality_block(directives: list[str]) -> str:             # T-VITA
 
 
 def _build_quantum_block(qs: QuantumState) -> str:                   # ★ Phase 3
-    """Inject a compact quantum state summary into the system prompt."""
+    """Inject a compact quantum state summary into the system prompt.
+
+    Uses the real QuantumState API:
+      - qs.purity         → float in [1/dim, 1.0]; 1.0 = fully collapsed
+      - qs.dominant()     → (index, label, probability)
+      - qs.probabilities  → NDArray of Born-rule probabilities
+    """
+    _, dominant_label, dominant_prob = qs.dominant()
     lines = [
         "[QUANTUM STATE KERNEL — PHASE 3]",
-        f"Coherence amplitude : {qs.coherence_amplitude:.4f}",
-        f"Superposition index : {qs.superposition_index:.4f}",
-        f"Entanglement depth  : {qs.entanglement_depth:.4f}",
-        f"Collapse threshold  : {qs.collapse_threshold:.4f}",
-        f"Current phase       : {qs.phase_label}",
+        f"Dominant basis state : {dominant_label}",
+        f"Dominant probability : {dominant_prob:.4f}",
+        f"State purity         : {qs.purity:.4f}",
+        f"Dimensions           : {qs.dim}",
         "[END QUANTUM STATE KERNEL]",
     ]
     return "\n".join(lines)
@@ -373,12 +380,12 @@ def _build_policy_block(decision: PolicyDecision) -> str:            # ★ Phase
 
 
 # ─────────────────────────────────────────────
-#  THE GAIAN RUNTIME v1.3.0
+#  THE GAIAN RUNTIME v1.3.1
 # ─────────────────────────────────────────────
 
 class GAIANRuntime:
     """
-    The living heart of a GAIAN. v1.3.0
+    The living heart of a GAIAN. v1.3.1
     Twelve soul engines + quantum kernel + semantic memory +
     goal planner + policy engine + task scheduler + audit ledger.
     """
@@ -415,9 +422,13 @@ class GAIANRuntime:
         self._vitality        = get_vitality_engine()                # T-VITA
 
         # ── Phase 3: new subsystems ★ ───────────────────────────
+        # FIX: QuantumKernel takes user_id + session_id, not zero args.
+        # It owns the QuantumState internally; we call kernel.step([ops]) and kernel.observe().
+        self._quantum_kernel: QuantumKernel = QuantumKernel(
+            user_id=gaian_name,
+            session_id="runtime",
+        )
         _mem_db = str(self.memory_dir / gaian_name / "memory_vec.db")
-        self._quantum_kernel  = QuantumStateKernel()                 # ★
-        self._quantum_ops     = QuantumOperators(self._quantum_kernel)  # ★
         self._memory_store    = memory_store or MemoryStore(db_path=_mem_db)  # ★
         self._goal_planner    = goal_planner or GoalPlanner()        # ★
         self._policy          = policy_engine or PolicyEngine()      # ★
@@ -466,11 +477,11 @@ class GAIANRuntime:
             severity=AuditSeverity.INFO,
         ))
 
-        # ── 13. Quantum state update ★ ───────────────────────────
-        qs = self._quantum_ops.evolve(
-            user_message=user_message,
-            coherence_phi=0.0,  # updated below after affect inference
-        )
+        # ── 13. Quantum state: apply a decoherence step to open the turn ★ ──
+        # We apply an empty operator list (decoherence-only step) to nudge
+        # the state. Operator pipelines driven by affect are applied below
+        # after feeling is known.
+        self._quantum_kernel.step(operators=[], decoherence_rate=0.02)
 
         # ── 14. Semantic memory retrieval ★ ─────────────────────
         recalled_memories: list[MemoryItem] = self._memory_store.retrieve(
@@ -507,11 +518,13 @@ class GAIANRuntime:
             conflict_density=conflict_density,
         )
 
-        # ★ Re-evolve quantum state now that coherence_phi is known
-        qs = self._quantum_ops.evolve(
-            user_message=user_message,
-            coherence_phi=feeling.coherence_phi,
-        )
+        # ★ Re-apply quantum step now that coherence_phi is known.
+        # A high coherence_phi → lower decoherence (state stays sharp).
+        decoherence_rate = max(0.01, 0.1 - feeling.coherence_phi * 0.09)
+        self._quantum_kernel.step(operators=[], decoherence_rate=decoherence_rate)
+
+        # Capture the current QuantumState for downstream use
+        qs: QuantumState = self._quantum_kernel._state.clone()
 
         # ── 5. Love Arc ──────────────────────────────────────────
         self.love_arc_state, love_hint = self._love_arc.update(
@@ -591,13 +604,15 @@ class GAIANRuntime:
                 active_goals = inferred + active_goals
 
         # ── 16. Policy gate ★ ────────────────────────────────────
+        _, dominant_label, dominant_prob = qs.dominant()
         policy_ctx = {
             "user_message":    user_message,
             "action":          action,
             "coherence_phi":   feeling.coherence_phi,
             "bond_depth":      self.attachment.bond_depth,
             "dependency":      self.attachment.dependency_signal.value,
-            "quantum_phase":   qs.phase_label,
+            "quantum_dominant": dominant_label,
+            "quantum_purity":  qs.purity,
         }
         policy_decision = self._policy.evaluate(
             context=policy_ctx,
@@ -630,11 +645,12 @@ class GAIANRuntime:
             actor=uid,
             action="quantum+memory+planner+policy",
             details={
-                "quantum_phase":    qs.phase_label,
-                "recalled_count":   len(recalled_memories),
-                "active_goals":     len(active_goals),
-                "policy_allowed":   policy_decision.allowed,
-                "due_tasks":        len(due_tasks),
+                "quantum_dominant":  dominant_label,
+                "quantum_purity":    round(qs.purity, 4),
+                "recalled_count":    len(recalled_memories),
+                "active_goals":      len(active_goals),
+                "policy_allowed":    policy_decision.allowed,
+                "due_tasks":         len(due_tasks),
             },
             severity=AuditSeverity.INFO,
         ))
@@ -672,7 +688,7 @@ class GAIANRuntime:
             "codex_tier":       self._codex.dominant_tier_from_feeling(feeling).value,
             "noosphere_health": self.codex_stage_state.noosphere_health,
             # ★ Phase 3
-            "quantum":          qs.to_dict() if hasattr(qs, 'to_dict') else {},
+            "quantum":          qs.to_dict(),
             "memory_recalled":  len(recalled_memories),
             "active_goals":     len(active_goals),
             "policy_allowed":   policy_decision.allowed,
@@ -697,7 +713,7 @@ class GAIANRuntime:
             bci_hint=bci_hint,
             vitality_summary=vitality_summary,
             # ★ Phase 3
-            quantum_state=qs.to_dict() if hasattr(qs, 'to_dict') else {},
+            quantum_state=qs.to_dict(),
             memory_context=[m.to_dict() for m in recalled_memories if hasattr(m, 'to_dict')],
             active_goals=[g.to_dict() for g in active_goals if hasattr(g, 'to_dict')],
             policy_decision=policy_decision.to_dict() if hasattr(policy_decision, 'to_dict') else {},
@@ -762,6 +778,7 @@ class GAIANRuntime:
         return self._audit.query(actor=uid, limit=limit)
 
     def get_status(self) -> dict:
+        _, dominant_label, dominant_prob = self._quantum_kernel._state.dominant()
         return {
             "gaian":            self.gaian_name,
             "identity":         self.identity.__dict__,
@@ -778,10 +795,11 @@ class GAIANRuntime:
             "memories":         len(self._memory.get("visible_memories", [])),
             "sessions":         len(self._memory.get("session_notes", [])),
             # ★ Phase 3
-            "quantum_phase":    self._quantum_kernel.current_state().phase_label,
+            "quantum_dominant":  dominant_label,
+            "quantum_purity":    round(self._quantum_kernel._state.purity, 4),
             "semantic_memories": self._memory_store.count(user_id=self.gaian_name),
-            "active_goals":     len(self._goal_planner.get_active_goals(user_id=self.gaian_name)),
-            "scheduled_tasks":  len(self._scheduler.get_pending(user_id=self.gaian_name)),
+            "active_goals":      len(self._goal_planner.get_active_goals(user_id=self.gaian_name)),
+            "scheduled_tasks":   len(self._scheduler.get_pending(user_id=self.gaian_name)),
         }
 
     def get_vitality_status(self) -> dict:                           # T-VITA
