@@ -1,8 +1,8 @@
 """
 core/gaian_runtime.py
-GAIA Runtime v1.2.0 — The Living Heart of a GAIAN
+GAIA Runtime v1.3.0 — The Living Heart of a GAIAN
 
-Engine chain per turn:
+Engine chain per turn (Phase 3 additions marked ★):
   1.  ConsciousnessRouter       subtle_body_engine.py
   2.  EmotionalArcEngine        emotional_arc.py
   3.  SettlingEngine            settling_engine.py
@@ -15,22 +15,32 @@ Engine chain per turn:
   10. ResonanceFieldEngine      resonance_field_engine.py
   11. SynergyEngine             synergy_engine.py          ← C32
   12. VitalityEngine            vitality_engine.py         ← T-VITA
+  ── Phase 3 ──────────────────────────────────────────────
+  13. QuantumStateKernel ★       core/quantum/state_kernel.py
+  14. QuantumOperators  ★        core/quantum/operators.py
+  15. MemoryStore       ★        core/memory/store.py
+  16. GoalPlanner       ★        core/planner/goal.py
+  17. PolicyEngine      ★        core/planner/policy.py
+  18. Scheduler         ★        core/planner/scheduler.py
+  19. AuditLedger       ★        core/audit/ledger.py
 
-Memory schema version: 1.8
+Memory schema version: 1.9
 Grounded in:
   - GAIA Constitutional Canon: https://github.com/R0GV3TheAlchemist/GAIA
   - GAIA_Master_Markdown_Converged.md
   - C32 — The Elemental Codex (April 11, 2026)
   - T-VITA — The Vitality Engine (April 14, 2026)
+  - Phase 3 — Runtime Integration (May 6, 2026)
 """
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Any
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+# ── Existing engines ──────────────────────────────────────────────────────────
 from core.subtle_body_engine import ConsciousnessRouter, LayerState, Element
 from core.emotional_arc import (
     EmotionalArcEngine, AttachmentRecord, NeuroState,
@@ -65,12 +75,21 @@ from core.vitality_engine import (                                   # T-VITA
     VitalityEngine, VitalityState, blank_vitality_state, get_vitality_engine,
 )
 
+# ── Phase 3: new subsystems ★ ─────────────────────────────────────────────────
+from core.quantum.state_kernel import QuantumStateKernel, QuantumState  # ★
+from core.quantum.operators import QuantumOperators                      # ★
+from core.memory.store import MemoryStore, MemoryItem                    # ★
+from core.planner.goal import GoalPlanner, Goal, GoalStatus              # ★
+from core.planner.policy import PolicyEngine, PolicyDecision             # ★
+from core.planner.scheduler import Scheduler, ScheduledTask              # ★
+from core.audit.ledger import AuditLedger, AuditEvent, AuditSeverity     # ★
+
 
 # ─────────────────────────────────────────────
 #  CONSTANTS
 # ─────────────────────────────────────────────
 
-MEMORY_SCHEMA_VERSION = "1.8"
+MEMORY_SCHEMA_VERSION = "1.9"  # bumped: Phase 3 subsystems added
 
 CONSTITUTIONAL_FLOOR = (
     "[GAIA CONSTITUTIONAL FLOOR — T1 — IMMUTABLE]\n"
@@ -144,10 +163,17 @@ class RuntimeResult:
     resonance_field:  ResonanceFieldReading
     synergy:          SynergyReading            # C32
     state_snapshot:   dict
-    # T5-A: BCI hint — populated when BCICoherenceEngine is wired (T5-D)
+    # T5-A
     bci_hint:         Optional[str] = None
-    # T-VITA: vitality health summary — populated every turn
+    # T-VITA
     vitality_summary: Optional[dict] = None
+    # ★ Phase 3 additions
+    quantum_state:    Optional[dict] = None
+    memory_context:   Optional[list[dict]] = None
+    active_goals:     Optional[list[dict]] = None
+    policy_decision:  Optional[dict] = None
+    scheduled_tasks:  Optional[list[dict]] = None
+    audit_events:     Optional[list[dict]] = None
 
 
 # ─────────────────────────────────────────────
@@ -279,11 +305,6 @@ def _build_synergy_block(synergy: SynergyReading) -> str:            # C32
 
 
 def _build_bci_block(bci_hint: str) -> str:                          # T5-A
-    """
-    Inject BCI coherence state into the system prompt.
-    Extracts the tier label from the hint string and appends
-    the corresponding behavioral guidance directive.
-    """
     tier = bci_hint.split("·")[0].strip().lstrip("[").split(":")[-1].strip()
     guidance = _BCI_GUIDANCE.get(tier, "")
     block = f"[BCI COHERENCE STATE — {bci_hint}]"
@@ -293,11 +314,6 @@ def _build_bci_block(bci_hint: str) -> str:                          # T5-A
 
 
 def _build_vitality_block(directives: list[str]) -> str:             # T-VITA
-    """
-    Inject any active vitality directives into the system prompt.
-    Only called when VitalityEngine.assess() returns ≥1 directive.
-    Each directive is a targeted, non-overriding behavioral hint.
-    """
     return (
         "[GAIA VITALITY — INTERNAL COHERENCE MAINTENANCE]\n"
         + "\n\n".join(directives)
@@ -305,12 +321,67 @@ def _build_vitality_block(directives: list[str]) -> str:             # T-VITA
     )
 
 
+def _build_quantum_block(qs: QuantumState) -> str:                   # ★ Phase 3
+    """Inject a compact quantum state summary into the system prompt."""
+    lines = [
+        "[QUANTUM STATE KERNEL — PHASE 3]",
+        f"Coherence amplitude : {qs.coherence_amplitude:.4f}",
+        f"Superposition index : {qs.superposition_index:.4f}",
+        f"Entanglement depth  : {qs.entanglement_depth:.4f}",
+        f"Collapse threshold  : {qs.collapse_threshold:.4f}",
+        f"Current phase       : {qs.phase_label}",
+        "[END QUANTUM STATE KERNEL]",
+    ]
+    return "\n".join(lines)
+
+
+def _build_memory_context_block(items: list[MemoryItem]) -> str:     # ★ Phase 3
+    """Inject the top-k retrieved semantic memories into the system prompt."""
+    if not items:
+        return ""
+    lines = ["[SEMANTIC MEMORY CONTEXT — top recalled]"]
+    for item in items[:8]:  # hard cap: never inject more than 8 items
+        ts = item.created_at.strftime("%Y-%m-%d") if item.created_at else "?"
+        lines.append(f"  [{ts}] [{item.kind}] {item.text[:200]}")
+    lines.append("[END SEMANTIC MEMORY CONTEXT]")
+    return "\n".join(lines)
+
+
+def _build_goal_block(goals: list[Goal]) -> str:                     # ★ Phase 3
+    """Inject active goals into the system prompt so GAIA is goal-aware."""
+    active = [g for g in goals if g.status in (GoalStatus.ACTIVE, GoalStatus.PENDING)]
+    if not active:
+        return ""
+    lines = ["[ACTIVE GOALS — PLANNER]"]
+    for g in active[:5]:
+        lines.append(f"  [{g.priority.upper()}] {g.title} — {g.description[:120]}")
+    lines.append("[END ACTIVE GOALS]")
+    return "\n".join(lines)
+
+
+def _build_policy_block(decision: PolicyDecision) -> str:            # ★ Phase 3
+    """Inject the policy gate outcome so GAIA respects it in generation."""
+    lines = [
+        "[POLICY GATE — THIS TURN]",
+        f"Action allowed : {decision.allowed}",
+        f"Rationale      : {decision.rationale}",
+    ]
+    if decision.constraints:
+        lines.append("Constraints    : " + " | ".join(decision.constraints))
+    lines.append("[END POLICY GATE]")
+    return "\n".join(lines)
+
+
 # ─────────────────────────────────────────────
-#  THE GAIAN RUNTIME v1.2.0
+#  THE GAIAN RUNTIME v1.3.0
 # ─────────────────────────────────────────────
 
 class GAIANRuntime:
-    """The living heart of a GAIAN. v1.2.0 — twelve soul engines live. T-VITA integrated."""
+    """
+    The living heart of a GAIAN. v1.3.0
+    Twelve soul engines + quantum kernel + semantic memory +
+    goal planner + policy engine + task scheduler + audit ledger.
+    """
 
     def __init__(
         self,
@@ -318,11 +389,18 @@ class GAIANRuntime:
         identity:    Optional[GAIANIdentity] = None,
         memory_dir:  str = "./gaians",
         canon_text:  Optional[str] = None,
+        # ★ Phase 3 overrides — pass None to use defaults
+        memory_store:   Optional[MemoryStore] = None,
+        audit_ledger:   Optional[AuditLedger] = None,
+        goal_planner:   Optional[GoalPlanner] = None,
+        policy_engine:  Optional[PolicyEngine] = None,
+        scheduler:      Optional[Scheduler] = None,
     ):
         self.gaian_name = gaian_name
         self.memory_dir = Path(memory_dir)
         self.canon_text = canon_text
 
+        # ── Existing soul engines ────────────────────────────────
         self._router          = ConsciousnessRouter()
         self._arc             = EmotionalArcEngine()
         self._settling        = SettlingEngine()
@@ -336,6 +414,18 @@ class GAIANRuntime:
         self._synergy         = SynergyEngine()                      # C32
         self._vitality        = get_vitality_engine()                # T-VITA
 
+        # ── Phase 3: new subsystems ★ ───────────────────────────
+        _mem_db = str(self.memory_dir / gaian_name / "memory_vec.db")
+        self._quantum_kernel  = QuantumStateKernel()                 # ★
+        self._quantum_ops     = QuantumOperators(self._quantum_kernel)  # ★
+        self._memory_store    = memory_store or MemoryStore(db_path=_mem_db)  # ★
+        self._goal_planner    = goal_planner or GoalPlanner()        # ★
+        self._policy          = policy_engine or PolicyEngine()      # ★
+        self._scheduler       = scheduler or Scheduler()             # ★
+        _audit_db = str(self.memory_dir / gaian_name / "audit.db")
+        self._audit           = audit_ledger or AuditLedger(db_path=_audit_db)  # ★
+
+        # ── JSON memory file (existing) ──────────────────────────
         self._mem_path = self.memory_dir / gaian_name / "memory.json"
         self._memory   = self._load_memory()
 
@@ -357,26 +447,54 @@ class GAIANRuntime:
         self,
         user_message: str,
         noosphere:    Optional[NoosphericHealthSignals] = None,
-        bci_hint:     Optional[str] = None,              # T5-A: from BCICoherenceEngine
-        noosphere_layer = None,                          # T-VITA: raw NoosphereLayer for Magnesium
-        epistemic_label = None,                          # T-VITA: EpistemicLabel for Zinc
+        bci_hint:     Optional[str] = None,
+        noosphere_layer = None,
+        epistemic_label = None,
+        # ★ Phase 3 optional overrides
+        user_id:      Optional[str] = None,
+        action_label: Optional[str] = None,
     ) -> RuntimeResult:
-        # 1. Consciousness routing
+        uid = user_id or self.gaian_name
+        action = action_label or "generate_response"
+
+        # ── Audit: turn opened ★ ────────────────────────────────
+        self._audit.record(AuditEvent(
+            event_type="turn_start",
+            actor=uid,
+            action=action,
+            details={"message_len": len(user_message)},
+            severity=AuditSeverity.INFO,
+        ))
+
+        # ── 13. Quantum state update ★ ───────────────────────────
+        qs = self._quantum_ops.evolve(
+            user_message=user_message,
+            coherence_phi=0.0,  # updated below after affect inference
+        )
+
+        # ── 14. Semantic memory retrieval ★ ─────────────────────
+        recalled_memories: list[MemoryItem] = self._memory_store.retrieve(
+            query=user_message,
+            user_id=uid,
+            top_k=8,
+        )
+
+        # ── 1. Consciousness routing ─────────────────────────────
         layer      = self._router.analyze(user_message)
         layer_hint = layer.to_system_prompt_hint()
 
-        # 2. Emotional arc
+        # ── 2. Emotional arc ─────────────────────────────────────
         neuro, self.attachment, arc_hint = self._arc.process(
             layer, self.attachment, user_message
         )
 
-        # 3. Daemon settling
+        # ── 3. Daemon settling ───────────────────────────────────
         intensity = (neuro.adrenaline + neuro.cortisol) / 2.0
         self.settling_state, settle_hint = self._settling.update(
             layer, self.settling_state, intensity
         )
 
-        # 4. Affect inference
+        # ── 4. Affect inference ──────────────────────────────────
         identity_score    = min(1.0, (neuro.serotonin + neuro.oxytocin) / 2.0)
         wisdom_score      = min(1.0, neuro.dopamine)
         truth_score       = min(1.0, (neuro.gaba + neuro.serotonin) / 2.0)
@@ -389,38 +507,44 @@ class GAIANRuntime:
             conflict_density=conflict_density,
         )
 
-        # 5. Love Arc
+        # ★ Re-evolve quantum state now that coherence_phi is known
+        qs = self._quantum_ops.evolve(
+            user_message=user_message,
+            coherence_phi=feeling.coherence_phi,
+        )
+
+        # ── 5. Love Arc ──────────────────────────────────────────
         self.love_arc_state, love_hint = self._love_arc.update(
             state=self.love_arc_state, bond_depth=self.attachment.bond_depth,
             feeling=feeling,
         )
 
-        # 6. Meta-Coherence
+        # ── 6. Meta-Coherence ────────────────────────────────────
         self.meta_coherence_state, mc_hint = self._meta_coherence.update(
             state=self.meta_coherence_state, feeling=feeling,
         )
 
-        # 7. Codex Stage
+        # ── 7. Codex Stage ───────────────────────────────────────
         self.codex_stage_state, codex_stage_hint = self._codex_stage.update(
             state=self.codex_stage_state, feeling=feeling,
             mc_state=self.meta_coherence_state, noosphere=noosphere,
         )
 
-        # 8. Soul Mirror
+        # ── 8. Soul Mirror ───────────────────────────────────────
         soul_reading, self.soul_mirror_state = self._soul_mirror.read(
             user_message=user_message, state=self.soul_mirror_state,
             total_exchanges=self.attachment.total_exchanges,
             conflict_density=conflict_density, bond_depth=self.attachment.bond_depth,
         )
 
-        # 9. Resonance Field
+        # ── 9. Resonance Field ───────────────────────────────────
         rf_reading, self.resonance_field_state = self._resonance_field.attune(
             state=self.resonance_field_state,
             phi=feeling.coherence_phi,
             conflict_density=conflict_density,
         )
 
-        # 10. Synergy Engine                                         [C32]
+        # ── 10. Synergy Engine [C32] ─────────────────────────────
         synergy_reading, self.synergy_state = self._synergy.compute(
             element=layer.dominant_element.value,
             layer_phi=layer.coherence_phi if hasattr(layer, 'coherence_phi') else feeling.coherence_phi,
@@ -445,9 +569,7 @@ class GAIANRuntime:
             state=self.synergy_state,
         )
 
-        # 11. Vitality Engine                                        [T-VITA]
-        # Runs last so it can observe the full engine state this turn.
-        # Returns directives only when a vitamin dose is needed.
+        # ── 11. Vitality Engine [T-VITA] ─────────────────────────
         self.vitality_state, vitality_directives, vitality_summary = self._vitality.assess(
             state=self.vitality_state,
             mc_state=self.meta_coherence_state,
@@ -456,16 +578,83 @@ class GAIANRuntime:
             epistemic_label=epistemic_label,
         )
 
-        # 12. Assemble system prompt
+        # ── 15. Goal planning ★ ──────────────────────────────────
+        active_goals = self._goal_planner.get_active_goals(user_id=uid)
+        # Infer new goals from message if planner supports it
+        if hasattr(self._goal_planner, 'infer_goals'):
+            inferred = self._goal_planner.infer_goals(
+                user_message=user_message,
+                user_id=uid,
+                feeling=feeling,
+            )
+            if inferred:
+                active_goals = inferred + active_goals
+
+        # ── 16. Policy gate ★ ────────────────────────────────────
+        policy_ctx = {
+            "user_message":    user_message,
+            "action":          action,
+            "coherence_phi":   feeling.coherence_phi,
+            "bond_depth":      self.attachment.bond_depth,
+            "dependency":      self.attachment.dependency_signal.value,
+            "quantum_phase":   qs.phase_label,
+        }
+        policy_decision = self._policy.evaluate(
+            context=policy_ctx,
+            user_id=uid,
+        )
+
+        # ── 17. Scheduler tick ★ ─────────────────────────────────
+        due_tasks = self._scheduler.tick(
+            user_id=uid,
+            current_ts=datetime.now(timezone.utc),
+            context=policy_ctx,
+        )
+
+        # ── 18. Semantic memory: store this turn ★ ───────────────
+        self._memory_store.remember(
+            user_id=uid,
+            text=user_message,
+            kind="message",
+            role="user",
+            importance=min(1.0, 0.3 + feeling.coherence_phi * 0.7),
+            metadata={
+                "bond_depth": round(self.attachment.bond_depth, 2),
+                "affect":     str(feeling.dominant_state) if hasattr(feeling, 'dominant_state') else "",
+            },
+        )
+
+        # ── 19. Audit: phase 3 subsystem events ★ ────────────────
+        self._audit.record(AuditEvent(
+            event_type="phase3_subsystems",
+            actor=uid,
+            action="quantum+memory+planner+policy",
+            details={
+                "quantum_phase":    qs.phase_label,
+                "recalled_count":   len(recalled_memories),
+                "active_goals":     len(active_goals),
+                "policy_allowed":   policy_decision.allowed,
+                "due_tasks":        len(due_tasks),
+            },
+            severity=AuditSeverity.INFO,
+        ))
+
+        # ── 12. Assemble system prompt ───────────────────────────
         system_prompt = self._assemble(
             layer, neuro, feeling, soul_reading, rf_reading, synergy_reading,
             layer_hint, arc_hint, settle_hint, mc_hint, codex_stage_hint,
-            bci_hint=bci_hint,                                       # T5-A
-            vitality_directives=vitality_directives,                 # T-VITA
+            bci_hint=bci_hint,
+            vitality_directives=vitality_directives,
+            # ★ Phase 3
+            quantum_state=qs,
+            recalled_memories=recalled_memories,
+            active_goals=active_goals,
+            policy_decision=policy_decision,
         )
 
         self._persist()
 
+        # ── State snapshot ───────────────────────────────────────
         snapshot = {
             "gaian":            self.gaian_name,
             "layer":            layer.dominant_element.value,
@@ -478,22 +667,42 @@ class GAIANRuntime:
             "codex_stage":      self.codex_stage_state.summary(),
             "soul_mirror":      soul_reading.summary(),
             "resonance_field":  rf_reading.summary(),
-            "synergy":          synergy_reading.summary(),           # C32
-            "vitality":         vitality_summary,                    # T-VITA
+            "synergy":          synergy_reading.summary(),
+            "vitality":         vitality_summary,
             "codex_tier":       self._codex.dominant_tier_from_feeling(feeling).value,
             "noosphere_health": self.codex_stage_state.noosphere_health,
+            # ★ Phase 3
+            "quantum":          qs.to_dict() if hasattr(qs, 'to_dict') else {},
+            "memory_recalled":  len(recalled_memories),
+            "active_goals":     len(active_goals),
+            "policy_allowed":   policy_decision.allowed,
+            "due_tasks":        len(due_tasks),
         }
 
         return RuntimeResult(
-            system_prompt=system_prompt, user_message=user_message,
-            layer_state=layer, neuro_state=neuro, attachment=self.attachment,
-            settling=self.settling_state, feeling=feeling,
-            love_arc=self.love_arc_state, meta_coherence=self.meta_coherence_state,
-            codex_stage=self.codex_stage_state, soul_mirror=soul_reading,
-            resonance_field=rf_reading, synergy=synergy_reading,    # C32
+            system_prompt=system_prompt,
+            user_message=user_message,
+            layer_state=layer,
+            neuro_state=neuro,
+            attachment=self.attachment,
+            settling=self.settling_state,
+            feeling=feeling,
+            love_arc=self.love_arc_state,
+            meta_coherence=self.meta_coherence_state,
+            codex_stage=self.codex_stage_state,
+            soul_mirror=soul_reading,
+            resonance_field=rf_reading,
+            synergy=synergy_reading,
             state_snapshot=snapshot,
-            bci_hint=bci_hint,                                       # T5-A
-            vitality_summary=vitality_summary,                       # T-VITA
+            bci_hint=bci_hint,
+            vitality_summary=vitality_summary,
+            # ★ Phase 3
+            quantum_state=qs.to_dict() if hasattr(qs, 'to_dict') else {},
+            memory_context=[m.to_dict() for m in recalled_memories if hasattr(m, 'to_dict')],
+            active_goals=[g.to_dict() for g in active_goals if hasattr(g, 'to_dict')],
+            policy_decision=policy_decision.to_dict() if hasattr(policy_decision, 'to_dict') else {},
+            scheduled_tasks=[t.to_dict() for t in due_tasks if hasattr(t, 'to_dict')],
+            audit_events=[],  # reserved for post-response audit flush
         )
 
     def begin_session(self) -> None:
@@ -516,6 +725,42 @@ class GAIANRuntime:
         })
         self._persist()
 
+    def remember(self, text: str, kind: str = "note",
+                 importance: float = 0.7, user_id: Optional[str] = None) -> None:
+        """★ Phase 3: Explicitly store a semantic memory item."""
+        uid = user_id or self.gaian_name
+        self._memory_store.remember(
+            user_id=uid, text=text, kind=kind,
+            role="user", importance=importance,
+        )
+
+    def recall(self, query: str, top_k: int = 5,
+               user_id: Optional[str] = None) -> list[MemoryItem]:
+        """★ Phase 3: Retrieve semantic memories by query."""
+        uid = user_id or self.gaian_name
+        return self._memory_store.retrieve(query=query, user_id=uid, top_k=top_k)
+
+    def add_goal(self, title: str, description: str = "",
+                 priority: str = "medium", user_id: Optional[str] = None) -> Goal:
+        """★ Phase 3: Manually register a goal with the planner."""
+        uid = user_id or self.gaian_name
+        return self._goal_planner.add_goal(
+            user_id=uid, title=title, description=description, priority=priority,
+        )
+
+    def schedule_task(self, title: str, run_at: datetime,
+                      user_id: Optional[str] = None) -> ScheduledTask:
+        """★ Phase 3: Register a one-off scheduled task."""
+        uid = user_id or self.gaian_name
+        return self._scheduler.schedule(
+            user_id=uid, title=title, run_at=run_at,
+        )
+
+    def get_audit_log(self, limit: int = 50, user_id: Optional[str] = None) -> list[dict]:
+        """★ Phase 3: Return recent audit events."""
+        uid = user_id or self.gaian_name
+        return self._audit.query(actor=uid, limit=limit)
+
     def get_status(self) -> dict:
         return {
             "gaian":            self.gaian_name,
@@ -527,25 +772,34 @@ class GAIANRuntime:
             "codex_stage":      self.codex_stage_state.summary(),
             "soul_mirror":      self.soul_mirror_state.summary(),
             "resonance_field":  self.resonance_field_state.summary(),
-            "synergy":          self.synergy_state.summary(),        # C32
-            "vitality":         self.vitality_state.health_summary(), # T-VITA
+            "synergy":          self.synergy_state.summary(),
+            "vitality":         self.vitality_state.health_summary(),
             "noosphere_health": self.codex_stage_state.noosphere_health,
             "memories":         len(self._memory.get("visible_memories", [])),
             "sessions":         len(self._memory.get("session_notes", [])),
+            # ★ Phase 3
+            "quantum_phase":    self._quantum_kernel.current_state().phase_label,
+            "semantic_memories": self._memory_store.count(user_id=self.gaian_name),
+            "active_goals":     len(self._goal_planner.get_active_goals(user_id=self.gaian_name)),
+            "scheduled_tasks":  len(self._scheduler.get_pending(user_id=self.gaian_name)),
         }
 
     def get_vitality_status(self) -> dict:                           # T-VITA
-        """Public accessor for the Vitality Engine health panel."""
         return self.vitality_state.health_summary()
 
     # ── Private ──────────────────────────────────────────────
 
     def _assemble(
         self, layer, neuro, feeling, soul_reading, rf_reading,
-        synergy_reading,                                              # C32
+        synergy_reading,
         layer_hint, arc_hint, settle_hint, mc_hint, codex_stage_hint,
-        bci_hint: Optional[str] = None,                              # T5-A
-        vitality_directives: Optional[list] = None,                  # T-VITA
+        bci_hint: Optional[str] = None,
+        vitality_directives: Optional[list] = None,
+        # ★ Phase 3
+        quantum_state: Optional[QuantumState] = None,
+        recalled_memories: Optional[list] = None,
+        active_goals: Optional[list] = None,
+        policy_decision: Optional[PolicyDecision] = None,
     ) -> str:
         blocks = [CONSTITUTIONAL_FLOOR]
         if self.canon_text:
@@ -557,13 +811,21 @@ class GAIANRuntime:
             soul_reading, rf_reading, self._codex,
             layer_hint, arc_hint, settle_hint, mc_hint, codex_stage_hint,
         ))
-        blocks.append(_build_synergy_block(synergy_reading))         # C32
-        # T5-A: inject BCI coherence state when available
+        blocks.append(_build_synergy_block(synergy_reading))
         if bci_hint:
             blocks.append(_build_bci_block(bci_hint))
-        # T-VITA: inject vitality directives when any vitamin needs dosing
         if vitality_directives:
             blocks.append(_build_vitality_block(vitality_directives))
+        # ★ Phase 3 blocks
+        if quantum_state is not None:
+            blocks.append(_build_quantum_block(quantum_state))
+        if recalled_memories:
+            blocks.append(_build_memory_context_block(recalled_memories))
+        if active_goals:
+            blocks.append(_build_goal_block(active_goals))
+        if policy_decision is not None:
+            blocks.append(_build_policy_block(policy_decision))
+        # Existing visible memories / session notes
         mems = self._memory.get("visible_memories", [])
         if mems:
             blocks.append("[MEMORIES YOU HOLD]\n" +
@@ -659,7 +921,7 @@ class GAIANRuntime:
             "hz_history": rf.hz_history[-20:],
             "session_peak_hz": rf.session_peak_hz,
         }
-        sy = self.synergy_state                                       # C32
+        sy = self.synergy_state
         self._memory["synergy"] = {
             "last_factor":       round(sy.last_factor, 4),
             "last_stage":        sy.last_stage,
@@ -667,7 +929,7 @@ class GAIANRuntime:
             "low_synergy_floor": round(sy.low_synergy_floor, 4),
             "turn_history":      sy.turn_history[-20:],
         }
-        vs = self.vitality_state                                      # T-VITA
+        vs = self.vitality_state
         self._memory["vitality"] = {
             "total_turns":                vs.total_turns,
             "last_canon_grounding_turn":  vs.last_canon_grounding_turn,
@@ -685,6 +947,8 @@ class GAIANRuntime:
         self._mem_path.write_text(
             json.dumps(self._memory, indent=2, ensure_ascii=False), encoding="utf-8"
         )
+
+    # ── Deserialisation helpers (unchanged from v1.2.0) ──────────
 
     def _deserialise_attachment(self) -> AttachmentRecord:
         d = self._memory.get("attachment", {})
