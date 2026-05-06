@@ -52,13 +52,6 @@ from core.inference_router import (
 
 
 # ================================================================== #
-#  pytest-asyncio configuration                                        #
-# ================================================================== #
-
-pytestmark = pytest.mark.asyncio
-
-
-# ================================================================== #
 #  Helpers                                                             #
 # ================================================================== #
 
@@ -434,6 +427,7 @@ class TestRouterStream:
         fake_synth.stream_synthesis = _fake_stream
         sys.modules["core.synthesizer"] = fake_synth
 
+    @pytest.mark.asyncio
     async def test_complete_returns_concatenated_chunks(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -446,6 +440,7 @@ class TestRouterStream:
         result = await router.complete(req, meta)
         assert result == "hello world"
 
+    @pytest.mark.asyncio
     async def test_meta_backend_used_is_populated(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -459,6 +454,7 @@ class TestRouterStream:
         await router.complete(req, meta)
         assert meta.backend_used == InferenceBackend.FALLBACK
 
+    @pytest.mark.asyncio
     async def test_meta_duration_ms_is_set(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -471,6 +467,7 @@ class TestRouterStream:
         await router.complete(req, meta)
         assert meta.duration_ms > 0
 
+    @pytest.mark.asyncio
     async def test_meta_epistemic_label_speculative_when_no_sources(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -483,6 +480,7 @@ class TestRouterStream:
         await router.complete(req, meta)
         assert meta.epistemic_label == EpistemicLabel.SPECULATIVE
 
+    @pytest.mark.asyncio
     async def test_call_count_increments(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -495,6 +493,7 @@ class TestRouterStream:
         await router.complete(req)
         assert router._call_count == 2
 
+    @pytest.mark.asyncio
     async def test_noosphere_label_injected_into_prompt(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -520,6 +519,7 @@ class TestRouterStream:
         assert meta.noosphere_resonance == "grief"
         assert "NOOSPHERE RESONANCE" in captured_prompt[0]
 
+    @pytest.mark.asyncio
     async def test_criticality_too_ordered_prompt_injection(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -549,6 +549,7 @@ class TestRouterStream:
         assert "CRITICALITY NOTICE" in captured_prompt[0]
         assert "creative leaps" in captured_prompt[0]
 
+    @pytest.mark.asyncio
     async def test_criticality_too_chaotic_prompt_injection(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -575,6 +576,7 @@ class TestRouterStream:
 
         assert "Ground the response" in captured_prompt[0]
 
+    @pytest.mark.asyncio
     async def test_memory_block_injected_into_prompt(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -599,6 +601,7 @@ class TestRouterStream:
         assert "I love the sea" in captured_prompt[0]
         assert "user is in grief mode" in captured_prompt[0]
 
+    @pytest.mark.asyncio
     async def test_backend_failure_triggers_fallback(self):
         _reset_backend_health()
         router = GAIAInferenceRouter()
@@ -626,6 +629,7 @@ class TestRouterStream:
         assert "fallback response" in result
         _reset_backend_health()
 
+    @pytest.mark.asyncio
     async def test_gaian_system_prompt_used_when_provided(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -648,6 +652,7 @@ class TestRouterStream:
         await router.complete(req)
         assert captured[0].startswith("Custom GAIAN voice prompt.")
 
+    @pytest.mark.asyncio
     async def test_default_system_prompt_used_when_no_gaian(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(
@@ -670,6 +675,7 @@ class TestRouterStream:
         await router.complete(req)
         assert "GAIA" in captured[0]
 
+    @pytest.mark.asyncio
     async def test_epistemic_footer_always_appended(self):
         router = GAIAInferenceRouter()
         req = InferenceRequest(

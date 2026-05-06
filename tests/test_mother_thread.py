@@ -127,11 +127,16 @@ class TestLifecycle:
 
     def test_double_start_idempotent(self, mother):
         call_count = 0
+
         def fake_create_task(coro):
             nonlocal call_count
             call_count += 1
-            coro.close()  # prevent unawaited coroutine warning
+            # Explicitly close the coroutine to prevent
+            # "coroutine '_pulse_loop' was never awaited" warning.
+            if hasattr(coro, "close"):
+                coro.close()
             return MagicMock()
+
         with patch.object(asyncio, "get_event_loop") as mock_loop:
             mock_loop.return_value.create_task = fake_create_task
             mother.start()
