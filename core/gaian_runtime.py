@@ -339,7 +339,13 @@ def _build_memory_context_block(items: list[MemoryItem]) -> str:
         return ""
     lines = ["[SEMANTIC MEMORY CONTEXT — top recalled]"]
     for item in items[:8]:
-        ts = item.created_at.strftime("%Y-%m-%d") if item.created_at else "?"
+        if item.created_at:
+            if isinstance(item.created_at, int):
+                ts = datetime.fromtimestamp(item.created_at, tz=timezone.utc).strftime("%Y-%m-%d")
+            else:
+                ts = item.created_at.strftime("%Y-%m-%d")
+        else:
+            ts = "?"
         lines.append(f"  [{ts}] [{item.kind}] {item.text[:200]}")
     lines.append("[END SEMANTIC MEMORY CONTEXT]")
     return "\n".join(lines)

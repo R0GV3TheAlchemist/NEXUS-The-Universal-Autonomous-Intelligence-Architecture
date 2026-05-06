@@ -161,13 +161,13 @@ class TestRuntimePersistence:
         assert "total_turns" in memory["vitality"]
         assert "dose_history" in memory["vitality"]
 
-    def test_schema_version_is_1_8(self, tmp_path):                  # T-VITA: bumped 1.7 → 1.8
-        """Schema version must match MEMORY_SCHEMA_VERSION = '1.8'."""
+    def test_schema_version_is_1_9(self, tmp_path):                  # T-VITA: bumped 1.8 → 1.9
+        """Schema version must match MEMORY_SCHEMA_VERSION = '1.9'."""
         rt = GAIANRuntime(gaian_name="SchemaTest", memory_dir=str(tmp_path))
         rt.process("Hello.")
         mem_file = tmp_path / "SchemaTest" / "memory.json"
         memory = json.loads(mem_file.read_text())
-        assert memory["schema_version"] == "1.8"
+        assert memory["schema_version"] == "1.9"
 
 
 class TestGetStatus:
