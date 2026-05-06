@@ -51,7 +51,7 @@ from .operators import (
 # ---- Physical sensor engines (existing, preserved) --------------------------
 from core.dark_matter_resonance import DarkMatterResonanceEngine, get_dm_engine
 from core.crystal_consciousness import CrystalConsciousnessEngine
-from core.bci_coherence import BCICoherence
+from core.bci_coherence import BCICoherenceEngine          # fix: was BCICoherence
 from core.biometric_sync_engine import BiometricSyncEngine
 
 __all__ = [
@@ -80,6 +80,6 @@ __all__ = [
     "DarkMatterResonanceEngine",
     "get_dm_engine",
     "CrystalConsciousnessEngine",
-    "BCICoherence",
+    "BCICoherenceEngine",           # fix: was BCICoherence
     "BiometricSyncEngine",
 ]
