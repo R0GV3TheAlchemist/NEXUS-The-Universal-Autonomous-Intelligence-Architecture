@@ -97,7 +97,8 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            rpm
 
       - name: Set up sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -176,7 +177,7 @@ jobs:
 
       - name: Build Tauri bundles
         timeout-minutes: 55
-        run: pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb,rpm
+        run: pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
@@ -184,5 +185,4 @@ jobs:
           name: bundle-linux
           path: |
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.deb
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.rpm
           if-no-files-found: warn
