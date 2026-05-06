@@ -66,6 +66,10 @@ jobs:
     permissions:
       contents: read
 
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: sccache
+
     steps:
       - uses: actions/checkout@v4
 
@@ -94,6 +98,9 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install Node deps
         run: pnpm install --no-frozen-lockfile
@@ -161,10 +168,11 @@ jobs:
         with:
           targets: x86_64-unknown-linux-gnu
 
-      - name: Rust cache
+      - name: Rust cache (registry + cross-compile target)
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: src-tauri -> target
+          cache-targets: "false"
 
       - name: Build Tauri bundles
         timeout-minutes: 55
