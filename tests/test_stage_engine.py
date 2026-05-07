@@ -1,350 +1,337 @@
 """
-Test suite for Stage Engine — Issue #63.
+Test suite for core/stage_engine.py
+Spec: docs/knowledge/STAGE_ENGINE_SPEC.md  (Issue #63)
 
-Covers:
-  1.  Marker scorer: decision_entropy
-  2.  Marker scorer: hrv_coherence blending
-  3.  Marker scorer: journaling_depth weights
-  4.  Marker scorer: focus_session piecewise scale
-  5.  Marker scorer: goal_completion Bayesian smoothing
-  6.  Marker scorer: arc_stability formula
-  7.  Transition gate: forward blocked until window met
-  8.  Transition gate: forward fires when window met and markers >= 4
-  9.  Transition gate: regression blocked until 14-day window
-  10. Transition gate: regression fires when 5+ markers dropped
-  11. Schumann bridge: neutral when state is None
-  12. Schumann bridge: trusted state maps correctly
-  13. Schumann bridge: untrusted state returns neutral
-  14. Schumann bridge: disturbance levels map to correct env_modifier
-  15. DisturbanceLevel ordering (via bridge)
-  16. Full engine evaluate: no transition on day 0
-  17. Full engine evaluate: TransitionResult has correct types
-  18. to_stage_dict() / label properties
+11 tests covering:
+  - Marker scoring profiles
+  - 4-of-6 advance gate
+  - Minimum window enforcement
+  - Regression detection (5-of-6, 14-day)
+  - Regression labeling
+  - StageTransition history writing
+  - SQLite round-trip persistence
+  - Shadow Engine gate
 """
 
-from __future__ import annotations
-
-import math
-import sqlite3
-import time
-from unittest.mock import MagicMock, patch
+import tempfile
+from pathlib import Path
+from dataclasses import asdict
 
 import pytest
 
-from stage_engine.markers import MarkerScorer
-from stage_engine.transitions import (
-    check_forward_transition,
-    check_regression,
-    markers_met_for_transition,
-    FORWARD_THRESHOLDS,
-)
-from stage_engine.types import (
-    MarkerScores,
-    STAGE_NAMES,
+from core.stage_engine import (
+    MarkerScorer,
+    StageEvaluator,
+    StageEngine,
     StageRecord,
+    MarkerScores,
     StageTransition,
-    TRANSITION_WINDOWS,
+    ADVANCE_MARKERS,
+    get_shadow_mode,
 )
-from stage_engine.schumann_bridge import schumann_to_alignment
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Fixtures
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
-def make_scores(**overrides) -> MarkerScores:
-    """High-scoring baseline MarkerScores, with optional overrides."""
-    defaults = dict(
-        decision_entropy=80.0,
-        hrv_coherence=75.0,
-        journaling_depth=70.0,
-        focus_session_length_min=70.0,
-        goal_completion_rate=75.0,
-        emotional_arc_stability=70.0,
+@pytest.fixture
+def scorer() -> MarkerScorer:
+    return MarkerScorer()
+
+
+@pytest.fixture
+def evaluator() -> StageEvaluator:
+    return StageEvaluator()
+
+
+@pytest.fixture
+def tmp_engine(tmp_path: Path) -> StageEngine:
+    return StageEngine(db_path=tmp_path / "test_stage.db")
+
+
+def _make_record(
+    stage: int = 1,
+    days: int = 0,
+    scores: MarkerScores | None = None,
+) -> StageRecord:
+    if scores is None:
+        scores = MarkerScores(
+            decision_entropy=50.0,
+            hrv_coherence=50.0,
+            journaling_depth=50.0,
+            focus_session_length=30.0,
+            goal_completion_rate=50.0,
+            emotional_arc_stability=50.0,
+        )
+    return StageRecord(
+        user_id="test_user",
+        current_stage=stage,
+        stage_entered_at="2026-01-01T00:00:00+00:00",
+        days_in_stage=days,
+        marker_scores=scores,
     )
-    defaults.update(overrides)
-    return MarkerScores(**defaults)
 
 
-def low_scores() -> MarkerScores:
-    """All markers below every forward threshold."""
-    return MarkerScores(
-        decision_entropy=10.0,
-        hrv_coherence=10.0,
-        journaling_depth=10.0,
-        focus_session_length_min=10.0,
-        goal_completion_rate=10.0,
-        emotional_arc_stability=10.0,
+# ---------------------------------------------------------------------------
+# 1. Marker Scoring — Stage 1 Profile
+# ---------------------------------------------------------------------------
+
+def test_marker_scoring_stage1_profile(scorer: MarkerScorer) -> None:
+    """High entropy + low HRV → scores that reflect Stage 1 characteristics."""
+    scores = scorer.score(
+        decision_entropy_raw=90.0,
+        hrv_rmssd_ms=25.0,
+        journal_word_count=50.0,
+        focus_minutes_avg=8.0,
+        goal_completion_pct=10.0,
+        emotional_volatility_raw=85.0,
+    )
+    assert scores.decision_entropy == pytest.approx(90.0)
+    assert scores.hrv_coherence < 10.0          # low coherence
+    assert scores.journaling_depth < 15.0       # shallow
+    assert scores.focus_session_length == pytest.approx(8.0)
+    assert scores.goal_completion_rate == pytest.approx(10.0)
+    assert scores.emotional_arc_stability < 20.0  # volatile
+
+
+# ---------------------------------------------------------------------------
+# 2. Marker Scoring — Stage 4 Profile
+# ---------------------------------------------------------------------------
+
+def test_marker_scoring_stage4_profile(scorer: MarkerScorer) -> None:
+    """High goal completion + stable HRV → Stage 4 score profile."""
+    scores = scorer.score(
+        decision_entropy_raw=30.0,
+        hrv_rmssd_ms=90.0,
+        journal_word_count=600.0,
+        focus_minutes_avg=75.0,
+        goal_completion_pct=80.0,
+        emotional_volatility_raw=15.0,
+    )
+    assert scores.decision_entropy == pytest.approx(30.0)
+    assert scores.hrv_coherence > 80.0
+    assert scores.journaling_depth == pytest.approx(100.0)  # clamped at 100
+    assert scores.focus_session_length == pytest.approx(75.0)
+    assert scores.goal_completion_rate == pytest.approx(80.0)
+    assert scores.emotional_arc_stability > 80.0
+
+
+# ---------------------------------------------------------------------------
+# 3. Advance requires 4 of 6 markers
+# ---------------------------------------------------------------------------
+
+def test_advance_requires_4_of_6(evaluator: StageEvaluator) -> None:
+    """3 markers met → no candidate; 4 markers met → candidate (window OK)."""
+    # Build scores that meet exactly 3 Stage-1 advance markers
+    # Stage 1 advance: entropy < 70, hrv >= 30, journaling >= 20,
+    #                  focus >= 15, goal >= 20, stability >= 30
+    scores_3_met = MarkerScores(
+        decision_entropy=65.0,   # < 70 ✓
+        hrv_coherence=35.0,      # >= 30 ✓
+        journaling_depth=25.0,   # >= 20 ✓
+        focus_session_length=10.0,   # < 15 ✗
+        goal_completion_rate=15.0,   # < 20 ✗
+        emotional_arc_stability=25.0, # < 30 ✗
+    )
+    record = _make_record(stage=1, days=21)
+    candidate, _, _ = evaluator.evaluate(record, scores_3_met)
+    assert candidate is False
+
+    # Build scores that meet exactly 4 markers
+    scores_4_met = MarkerScores(
+        decision_entropy=65.0,   # ✓
+        hrv_coherence=35.0,      # ✓
+        journaling_depth=25.0,   # ✓
+        focus_session_length=20.0,   # >= 15 ✓
+        goal_completion_rate=15.0,   # ✗
+        emotional_arc_stability=25.0, # ✗
+    )
+    record2 = _make_record(stage=1, days=21)
+    candidate2, _, _ = evaluator.evaluate(record2, scores_4_met)
+    assert candidate2 is True
+
+
+# ---------------------------------------------------------------------------
+# 4. Minimum window blocks early transition
+# ---------------------------------------------------------------------------
+
+def test_minimum_window_blocks_early_transition(evaluator: StageEvaluator) -> None:
+    """4 markers met but only 5 days in stage → no transition."""
+    scores = MarkerScores(
+        decision_entropy=65.0,
+        hrv_coherence=35.0,
+        journaling_depth=25.0,
+        focus_session_length=20.0,
+        goal_completion_rate=15.0,
+        emotional_arc_stability=25.0,
+    )
+    record = _make_record(stage=1, days=5)  # 5 < 21 minimum
+    candidate, _, _ = evaluator.evaluate(record, scores)
+    assert candidate is False
+
+
+# ---------------------------------------------------------------------------
+# 5. Minimum window allows transition after 21 days
+# ---------------------------------------------------------------------------
+
+def test_minimum_window_allows_transition_after_21_days(evaluator: StageEvaluator) -> None:
+    """4 markers met + 21 days in Stage 1 → transition candidate fires."""
+    scores = MarkerScores(
+        decision_entropy=65.0,
+        hrv_coherence=35.0,
+        journaling_depth=25.0,
+        focus_session_length=20.0,
+        goal_completion_rate=15.0,
+        emotional_arc_stability=25.0,
+    )
+    record = _make_record(stage=1, days=21)
+    candidate, _, _ = evaluator.evaluate(record, scores)
+    assert candidate is True
+
+
+# ---------------------------------------------------------------------------
+# 6. Regression requires 5 of 6 prior-stage markers for 14 days
+# ---------------------------------------------------------------------------
+
+def test_regression_requires_5_of_6_for_14_days(evaluator: StageEvaluator) -> None:
+    """4 prior-stage markers → no regression; 5 + 14 days → regression."""
+    # Stage 2 user regressing toward Stage 1 behavior
+    # Stage 1 advance markers: entropy < 70, hrv >= 30, journaling >= 20,
+    #                           focus >= 15, goal >= 20, stability >= 30
+    # Regression = FAILING those markers
+    # Failing: entropy >= 70 (fail lt<70), hrv < 30 (fail gte>=30), etc.
+
+    # 4 failing markers (below regression threshold)
+    scores_4_failing = MarkerScores(
+        decision_entropy=75.0,   # fails < 70 ✓ (failing)
+        hrv_coherence=25.0,      # fails >= 30 ✓
+        journaling_depth=15.0,   # fails >= 20 ✓
+        focus_session_length=20.0,   # passes >= 15 ✗ (not failing)
+        goal_completion_rate=25.0,   # passes >= 20 ✗
+        emotional_arc_stability=25.0, # fails >= 30 ✓
+    )
+    record = _make_record(stage=2, days=30)
+    _, regress, _ = evaluator.evaluate(record, scores_4_failing, regression_days_sustained=14)
+    assert regress is False
+
+    # 5 failing markers + 14 days → regression
+    scores_5_failing = MarkerScores(
+        decision_entropy=75.0,   # failing ✓
+        hrv_coherence=25.0,      # failing ✓
+        journaling_depth=15.0,   # failing ✓
+        focus_session_length=10.0,   # fails >= 15 ✓
+        goal_completion_rate=25.0,   # passes ✗
+        emotional_arc_stability=25.0, # failing ✓
+    )
+    record2 = _make_record(stage=2, days=30)
+    _, regress2, _ = evaluator.evaluate(record2, scores_5_failing, regression_days_sustained=14)
+    assert regress2 is True
+
+
+# ---------------------------------------------------------------------------
+# 7. Regression is labeled 'StageXR', not 'failure'
+# ---------------------------------------------------------------------------
+
+def test_regression_labeled_not_failure(tmp_engine: StageEngine) -> None:
+    """Regression transition writes label '2R' (not 'failure') to history."""
+    uid = "regress_user"
+    # Seed with a Stage 2 record with enough days
+    record = _make_record(stage=2, days=30)
+    record.user_id = uid
+    tmp_engine.save(record)
+
+    # Force regression: 5 failing markers, 14 days sustained
+    result = tmp_engine.update(
+        uid,
+        decision_entropy_raw=75.0,
+        hrv_rmssd_ms=22.0,       # hrv_coherence ≈ 2.5 → fails >= 30
+        journal_word_count=50.0, # journaling_depth = 10 → fails >= 20
+        focus_minutes_avg=8.0,   # fails >= 15
+        goal_completion_pct=25.0,# passes >= 20 (only 4 failing)
+        emotional_volatility_raw=80.0,  # stability = 20 → fails >= 30
+        regression_days_sustained=14,
     )
 
-
-# ─────────────────────────────────────────────
-# 1–6: Marker scorers
-# ─────────────────────────────────────────────
-
-class TestDecisionEntropy:
-    def test_all_same_state_is_low_entropy_high_score(self):
-        # All committed → entropy = 0 → score = 100
-        score = MarkerScorer.score_decision_entropy(["committed"] * 20)
-        assert score == 100.0
-
-    def test_uniform_distribution_is_max_entropy_low_score(self):
-        # One of each of 5 states → max entropy
-        states = ["committed", "reversed", "abandoned", "not_set", "completed"]
-        score = MarkerScorer.score_decision_entropy(states)
-        assert score < 5.0  # near 0
-
-    def test_empty_returns_zero(self):
-        assert MarkerScorer.score_decision_entropy([]) == 0.0
-
-    def test_bounded(self):
-        score = MarkerScorer.score_decision_entropy(["committed"] * 100)
-        assert 0.0 <= score <= 100.0
+    assert len(result.stage_history) == 1
+    t = result.stage_history[0]
+    assert t.label == "2R"
+    assert "failure" not in t.label
+    assert t.from_stage == 2
+    assert t.to_stage == 1
 
 
-class TestHRVCoherence:
-    def test_no_history_returns_zero(self):
-        assert MarkerScorer.score_hrv_coherence([], []) == 0.0
+# ---------------------------------------------------------------------------
+# 8. Transition writes StageTransition to history
+# ---------------------------------------------------------------------------
 
-    def test_high_hrv_with_good_alignment_gives_high_score(self):
-        history = [55.0] * 29 + [80.0]  # last value is much higher → positive z
-        alignment = [80.0] * 30
-        score = MarkerScorer.score_hrv_coherence(history, alignment)
-        assert score > 70.0
+def test_transition_writes_stage_history(tmp_engine: StageEngine) -> None:
+    """Advance transition writes a StageTransition record with correct fields."""
+    uid = "advance_user"
+    record = _make_record(stage=1, days=21)
+    record.user_id = uid
+    tmp_engine.save(record)
 
-    def test_bounded(self):
-        history = [60.0] * 30
-        score = MarkerScorer.score_hrv_coherence(history, [50.0] * 30)
-        assert 0.0 <= score <= 100.0
+    result = tmp_engine.update(
+        uid,
+        decision_entropy_raw=60.0,   # < 70 ✓
+        hrv_rmssd_ms=50.0,           # coherence ≈ 37.5 >= 30 ✓
+        journal_word_count=120.0,    # depth = 24 >= 20 ✓
+        focus_minutes_avg=20.0,      # >= 15 ✓
+        goal_completion_pct=10.0,    # < 20 ✗
+        emotional_volatility_raw=60.0,  # stability = 40 >= 30 ✓
+    )
 
-    def test_schumann_weight_is_30_percent(self):
-        # With z=0 (sigmoid=0.5), alignment=100 → c = 0.7*0.5 + 0.3*1.0 = 0.65
-        history = [60.0] * 30  # mean=60, last=60 → z=0
-        score = MarkerScorer.score_hrv_coherence(history, [100.0] * 30)
-        assert abs(score - 65.0) < 1.0
-
-
-class TestJournalingDepth:
-    def test_empty_entries_returns_zero(self):
-        assert MarkerScorer.score_journaling_depth([]) == 0.0
-
-    def test_perfect_entry_returns_100(self):
-        perfect = {
-            "token_count": 1200,
-            "lexical_entropy": 1.0,
-            "self_ref_ratio": 1.0,
-            "emotion_density": 1.0,
-        }
-        score = MarkerScorer.score_journaling_depth([perfect])
-        assert score == 100.0
-
-    def test_weights_sum_matters(self):
-        # Only token_count maxed (weight 0.25) → should be ~25
-        entry = {"token_count": 1200, "lexical_entropy": 0.0,
-                 "self_ref_ratio": 0.0, "emotion_density": 0.0}
-        score = MarkerScorer.score_journaling_depth([entry])
-        assert abs(score - 25.0) < 1.0
+    assert result.current_stage == 2
+    assert len(result.stage_history) == 1
+    t = result.stage_history[0]
+    assert t.from_stage == 1
+    assert t.to_stage == 2
+    assert len(t.markers_met) >= 4
+    assert t.label == ""
+    assert t.transitioned_at != ""
 
 
-class TestFocusSession:
-    def test_below_5_min_returns_zero(self):
-        assert MarkerScorer.score_focus_session([3.0, 4.0]) == 0.0
+# ---------------------------------------------------------------------------
+# 9. SQLite round-trip persistence
+# ---------------------------------------------------------------------------
 
-    def test_90_plus_min_returns_100(self):
-        assert MarkerScorer.score_focus_session([100.0] * 5) == 100.0
+def test_stage_record_persists_and_reloads(tmp_engine: StageEngine) -> None:
+    """StageRecord survives a SQLite write/read round-trip."""
+    uid = "persist_user"
+    record = _make_record(stage=3, days=45)
+    record.user_id = uid
+    record.stage_history.append(StageTransition(
+        from_stage=2, to_stage=3,
+        transitioned_at="2026-04-01T00:00:00+00:00",
+        markers_met=["hrv_coherence", "journaling_depth"],
+        ceremony_shown=True,
+        label="",
+    ))
+    tmp_engine.save(record)
 
-    def test_25_min_gives_60(self):
-        score = MarkerScorer.score_focus_session([25.0] * 5)
-        assert abs(score - 60.0) < 1.0
-
-    def test_bounded(self):
-        for m in [5, 15, 30, 60, 95]:
-            s = MarkerScorer.score_focus_session([float(m)] * 5)
-            assert 0.0 <= s <= 100.0
-
-
-class TestGoalCompletion:
-    def test_all_completed_approaches_100(self):
-        score = MarkerScorer.score_goal_completion(100, 0)
-        assert score > 98.0
-
-    def test_zero_zero_returns_50(self):
-        # (0+1)/(0+0+2) = 0.5 → 50.0
-        assert MarkerScorer.score_goal_completion(0, 0) == 50.0
-
-    def test_bayesian_smoothing_prevents_extreme_zeros(self):
-        # Even 0 completed, 10 abandoned → not 0
-        score = MarkerScorer.score_goal_completion(0, 10)
-        assert score > 5.0
+    loaded = tmp_engine.load(uid)
+    assert loaded.current_stage == 3
+    assert loaded.days_in_stage == 45
+    assert len(loaded.stage_history) == 1
+    assert loaded.stage_history[0].from_stage == 2
+    assert loaded.stage_history[0].ceremony_shown is True
+    assert loaded.marker_scores.hrv_coherence == pytest.approx(50.0)
 
 
-class TestArcStability:
-    def test_constant_valence_is_stable(self):
-        score = MarkerScorer.score_arc_stability([0.5] * 30)
-        assert score > 85.0
+# ---------------------------------------------------------------------------
+# 10. Shadow Engine gate — Stage 1
+# ---------------------------------------------------------------------------
 
-    def test_high_oscillation_is_low_score(self):
-        vals = [1.0 if i % 2 == 0 else -1.0 for i in range(30)]
-        score = MarkerScorer.score_arc_stability(vals)
-        assert score < 10.0
-
-    def test_single_value_returns_50(self):
-        assert MarkerScorer.score_arc_stability([0.5]) == 50.0
+def test_shadow_engine_gate_stage1() -> None:
+    """Stage 1 Shadow Engine mode must be 'off'."""
+    assert get_shadow_mode(1) == "off"
 
 
-# ─────────────────────────────────────────────
-# 7–10: Transition gates
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# 11. Shadow Engine gate — Stage 3
+# ---------------------------------------------------------------------------
 
-class TestForwardTransitionGate:
-    def test_blocked_if_window_not_met(self):
-        scores = make_scores()
-        fire, _ = check_forward_transition(scores, from_stage=1, days_window_met=10)
-        assert fire is False  # needs 21 days
-
-    def test_fires_when_window_met_and_markers_pass(self):
-        scores = make_scores()  # all above (1,2) thresholds
-        fire, met = check_forward_transition(scores, from_stage=1, days_window_met=21)
-        assert fire is True
-        assert len(met) >= 4
-
-    def test_blocked_if_fewer_than_4_markers_met(self):
-        # Scores that meet only 2 of the 6 (1→2) thresholds
-        scores = make_scores(
-            journaling_depth=36.0,   # meets 35
-            hrv_coherence=41.0,      # meets 40
-            goal_completion_rate=0.0,
-            emotional_arc_stability=0.0,
-            decision_entropy=0.0,
-            focus_session_length_min=0.0,
-        )
-        fire, _ = check_forward_transition(scores, from_stage=1, days_window_met=21)
-        assert fire is False
-
-    def test_no_stage_6(self):
-        fire, _ = check_forward_transition(make_scores(), from_stage=5, days_window_met=999)
-        assert fire is False
-
-
-class TestRegressionGate:
-    def test_blocked_before_14_days(self):
-        fire, _ = check_regression(low_scores(), current_stage=3, days_regression_window=10)
-        assert fire is False
-
-    def test_fires_when_5_markers_dropped(self):
-        # At stage 3, forward threshold to enter stage 3 is from (2,3)
-        # low_scores are below all of them → all 6 regressed → ≥5 → fires
-        fire, markers = check_regression(low_scores(), current_stage=3, days_regression_window=14)
-        assert fire is True
-        assert len(markers) >= 5
-
-    def test_no_regression_from_stage_1(self):
-        fire, _ = check_regression(low_scores(), current_stage=1, days_regression_window=14)
-        assert fire is False
-
-
-# ─────────────────────────────────────────────
-# 11–15: Schumann bridge
-# ─────────────────────────────────────────────
-
-class TestSchumannBridge:
-    def test_none_returns_neutral(self):
-        score, mod = schumann_to_alignment(None)
-        assert score == 50.0
-        assert mod == 1.0
-
-    def test_trusted_dict_maps_alignment(self):
-        state = {
-            "alignment_score": 0.8,
-            "confidence": 0.9,
-            "disturbance_level": "stable",
-            "is_trusted": True,
-        }
-        score, mod = schumann_to_alignment(state)
-        assert abs(score - 80.0) < 0.01
-        assert mod == 1.0
-
-    def test_untrusted_returns_neutral(self):
-        state = {
-            "alignment_score": 0.9,
-            "confidence": 0.2,
-            "disturbance_level": "stable",
-            "is_trusted": False,
-        }
-        score, mod = schumann_to_alignment(state)
-        assert score == 50.0
-        assert mod == 1.0
-
-    def test_disturbed_modifier_is_085(self):
-        state = {
-            "alignment_score": 0.7,
-            "confidence": 0.8,
-            "disturbance_level": "disturbed",
-            "is_trusted": True,
-        }
-        _, mod = schumann_to_alignment(state)
-        assert mod == 0.85
-
-    def test_elevated_modifier_is_095(self):
-        state = {
-            "alignment_score": 0.6,
-            "confidence": 0.7,
-            "disturbance_level": "elevated",
-            "is_trusted": True,
-        }
-        _, mod = schumann_to_alignment(state)
-        assert mod == 0.95
-
-    def test_score_bounded(self):
-        state = {
-            "alignment_score": 1.5,  # out of range
-            "confidence": 0.9,
-            "disturbance_level": "stable",
-            "is_trusted": True,
-        }
-        score, _ = schumann_to_alignment(state)
-        assert score <= 100.0
-
-
-# ─────────────────────────────────────────────
-# 16–17: Stage label / dict helpers
-# ─────────────────────────────────────────────
-
-class TestTypeHelpers:
-    def test_stage_names_all_five(self):
-        assert len(STAGE_NAMES) == 5
-        assert STAGE_NAMES[1] == "Divergence"
-        assert STAGE_NAMES[5] == "Ascendence"
-
-    def test_transition_result_label_forward(self):
-        t = StageTransition(
-            principal_id="x",
-            from_stage=2,
-            to_stage=3,
-            transitioned_at=int(time.time() * 1000),
-            is_regression=False,
-            markers_met=["hrv_coherence"],
-        )
-        assert "3" in t.label
-        assert "Crucible" in t.label
-
-    def test_transition_result_label_regression(self):
-        t = StageTransition(
-            principal_id="x",
-            from_stage=3,
-            to_stage=2,
-            transitioned_at=int(time.time() * 1000),
-            is_regression=True,
-            markers_met=["journaling_depth"],
-        )
-        assert "R" in t.label
-
-    def test_marker_scores_to_dict_has_all_keys(self):
-        s = make_scores()
-        d = s.to_dict()
-        expected = {
-            "decision_entropy", "hrv_coherence", "journaling_depth",
-            "focus_session_length_min", "goal_completion_rate",
-            "emotional_arc_stability",
-        }
-        assert expected.issubset(d.keys())
+def test_shadow_engine_gate_stage3() -> None:
+    """Stage 3 Shadow Engine mode must be 'full'."""
+    assert get_shadow_mode(3) == "full"
