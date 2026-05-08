@@ -5,6 +5,10 @@
  *
  * Full auth flow: Sign In + Create Account tabs
  * Shell: top bar + mode rail + chat pane
+ *
+ * Sovereignty layer:
+ *   <SovereignGuard /> — Axiom I always-visible control bar
+ *   <ActionGateDialog /> — YELLOW/RED tier action confirmation modal
  */
 
 import React, { useEffect, useState } from 'react';
@@ -16,6 +20,8 @@ import {
   CRYSTAL_LABELS,
   MODE_ICONS,
 } from '../store/crystalStore';
+import { SovereignGuard }    from '../shared/SovereignGuard';
+import { ActionGateDialog }  from '../shared/ActionGateDialog';
 import './GaiaShell.css';
 
 const API_BASE = 'http://localhost:8008';
@@ -361,6 +367,15 @@ export const GaiaShell: React.FC = () => {
         </main>
 
       </div>
+
+      {/* SOVEREIGNTY LAYER — always mounted, outside layout flow.
+           SovereignGuard: Axiom I always-visible control bar.
+           ActionGateDialog: YELLOW/RED action confirmation modal (renders null when idle).
+           Both sit at the root of the authenticated shell so they are present
+           regardless of which mode, tab, or view is active. */}
+      <SovereignGuard />
+      <ActionGateDialog />
+
     </div>
   );
 };
