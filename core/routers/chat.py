@@ -26,7 +26,7 @@ from core.codex_stage_engine import NoosphericHealthSignals
 from core.gaian import GaianMemory, add_exchange, get_conversation_context, load_gaian
 from core.inference_router import InferenceRequest, InferenceResponse
 from core.logger import GAIAEvent, get_logger, log_event
-from core.memory_chroma import recall_for_prompt, store_turn
+from core.infra.memory_bridge import recall_for_prompt, store_turn  # unified memory layer
 from core.rate_limiter import rate_limit
 from core.server_models import ChatRequest, QueryRequest, SetGaianRequest
 from core.server_state import _get_runtime, _inference_router, canon
@@ -126,7 +126,13 @@ async def gaian_chat(
                 except Exception as e:
                     logger.warning(f"Web search error in chat: {e}")
 
-            # --- Semantic memory recall: inject top-5 relevant memories ---
+            # --- Unified memory recall via MemoryBridge (C17) ---
+            # Routes through GAIANRuntime's MemoryStore (SQLite + sqlite-vec).
+            # Falls back to ChromaDB if runtime not yet registered.
+            # NOTE: rt.process() above already recalled memories internally and
+            # baked them into result.system_prompt. This recall populates
+            # visible_memories for the InferenceRouter's prompt block so the
+            # router also sees recent episodic context in its own layer.
             recalled_memories = recall_for_prompt(
                 query=req.message,
                 gaian_slug=slug,
@@ -171,7 +177,7 @@ async def gaian_chat(
             session.add_turn(req.message, full_answer, len(web_sources))
             if full_answer:
                 add_exchange(gaian, req.message, full_answer)
-                # Auto-store this turn to ChromaDB for future recall
+                # Persist this turn through the unified MemoryBridge (C17)
                 store_turn(
                     user_message=req.message,
                     gaian_response=full_answer,
@@ -297,7 +303,7 @@ async def query_stream(
                 await asyncio.sleep(0.01)
                 conversation_history = get_conversation_context(gaian)
                 long_term_memories = gaian.long_term_memories or []
-                # Merge recalled semantic memories with runtime visible memories
+                # Unified memory recall via MemoryBridge (C17)
                 recalled = recall_for_prompt(req.query, gaian_slug=gaian_slug, top_k=5)
                 visible_memories = recalled + [
                     m["text"] for m in rt._memory.get("visible_memories", [])
