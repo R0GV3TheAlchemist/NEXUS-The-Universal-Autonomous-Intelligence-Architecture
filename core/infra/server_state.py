@@ -49,7 +49,14 @@ def set_magnum_opus_report(report: Optional[MagnumOpusReport]) -> None:
 
 
 def _get_runtime(slug: str, gaian: Optional[GaianMemory] = None) -> GAIANRuntime:
-    """Return the live GAIANRuntime for *slug*, creating it if needed."""
+    """Return the live GAIANRuntime for *slug*, creating it if needed.
+
+    When a runtime is freshly created it is also registered with the
+    MotherThread and its TaskScheduler loop is booted via
+    server_lifecycle._boot_scheduler_for_runtime().  The lifecycle
+    import is deferred (inside the branch) to avoid a circular import
+    at module load time.
+    """
     if slug not in _RUNTIME_REGISTRY:
         jungian_role = "anima"
         pronouns = "she/her"
@@ -100,4 +107,21 @@ def _get_runtime(slug: str, gaian: Optional[GaianMemory] = None) -> GAIANRuntime
             gaian=slug,
             jungian_role=jungian_role,
         )
+
+        # Boot the TaskScheduler run_forever() loop for this new runtime.
+        # Deferred import avoids circular dependency:
+        #   server_state → server_lifecycle → server_state
+        # _boot_scheduler_for_runtime() is a no-op if the loop is already
+        # running (guards on scheduler._running_flag), so it is safe to
+        # call unconditionally here.
+        try:
+            from core.server_lifecycle import _boot_scheduler_for_runtime
+            _boot_scheduler_for_runtime(slug, rt)
+        except Exception as exc:
+            # Non-fatal — scheduler will still work via run_once() calls;
+            # run_forever() simply won’t be active for this runtime.
+            logger.warning(
+                f"[server_state] Could not boot scheduler for slug='{slug}': {exc}"
+            )
+
     return _RUNTIME_REGISTRY[slug]
