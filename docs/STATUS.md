@@ -1,6 +1,6 @@
 # GAIA-OS System Status
 
-> Last updated: 2026-05-08 by R0GV3TheAlchemist (C-TODAY sprint — end of day)
+> Last updated: 2026-05-08 by R0GV3TheAlchemist (C-TODAY sprint — end of day, all 4 tasks complete)
 
 ---
 
@@ -61,11 +61,16 @@
 | Gate wired in chat request lifecycle | ✅ LIVE | **New 2026-05-08** — fires after engine, before LLM |
 | `action_gate` field in `done_data` SSE | ✅ LIVE | **New 2026-05-08** — tier + approved + reason |
 | `action_blocked` SSE event on denial | ✅ LIVE | **New 2026-05-08** — stream exits early |
-| `action_gate_ipc.py` IPC callback | ✅ LIVE | **New 2026-05-08** — asyncio.Event gate, UUID4 nonces |
+| `action_gate_ipc.py` IPC callback | ✅ LIVE | **New 2026-05-08** — dual-path emit (Tauri + log fallback) |
+| `set_tauri_app_handle()` | ✅ BUILT | **New 2026-05-08** — awaiting Rust sidecar registration |
 | `POST /action-gate/respond` endpoint | ✅ LIVE | **New 2026-05-08** — frontend resolution route |
 | `GET /action-gate/audit` endpoint | ✅ LIVE | **New 2026-05-08** — full process-lifetime audit log |
-| Tauri frontend dialog (Task 4) | ❌ TODO | Component + IPC listener + `_emit_ipc()` swap |
-| `confirm_callback` registered at startup | ❌ TODO | Needs `_startup()` line + Task 4 complete |
+| `confirm_callback` registered at startup | ✅ LIVE | **New 2026-05-08** — Step 4 of `_startup()` |
+| `useActionGate` hook | ✅ LIVE | **New 2026-05-08** — queue, dedup, resolve POST |
+| `ActionGateDialog` component | ✅ LIVE | **New 2026-05-08** — modal, tier badge, countdown, approve/deny |
+| `ActionGateDialog.css` | ✅ LIVE | **New 2026-05-08** — dark theme, BEM, tier accents, pulse animation |
+| Dialog mounted in `App.tsx` | ⚠️ PENDING | Add `<ActionGateDialog />` alongside `<SovereignGuard />` |
+| Native Tauri emit (production) | ⚠️ PENDING | Wire `set_tauri_app_handle()` in Rust sidecar boot |
 | YELLOW tier for tool-use / file-writes | ❌ TODO | Requires `result.planned_actions` population |
 
 ---
@@ -79,6 +84,7 @@
 | Viriditas Magnum Opus (C47) | ✅ LIVE | Runs at boot via run_in_executor |
 | `TaskScheduler` boot | ✅ LIVE | **Fixed 2026-05-08** — run_forever() per runtime |
 | `ActionGate` singleton | ✅ LIVE | **New 2026-05-08** — hard infrastructure firewall |
+| `ActionGate` IPC callback at startup | ✅ LIVE | **New 2026-05-08** — Step 4 of `_startup()` |
 | Rate limiting | ✅ LIVE | |
 | Error boundary | ✅ LIVE | |
 | Auth (JWT) | ✅ LIVE | |
@@ -108,20 +114,24 @@
 | Engine state SSE display | ✅ LIVE | |
 | Soul Mirror display | ✅ LIVE | |
 | Resonance Field display | ✅ LIVE | |
-| `action_gate` SSE event display | ❌ TODO | Field present in done_data, no UI component yet |
-| ActionGate confirmation dialog | ❌ TODO | **Task 4** — RED/YELLOW tier Tauri IPC popup |
+| `useActionGate` hook | ✅ LIVE | **New 2026-05-08** |
+| `ActionGateDialog` component + CSS | ✅ LIVE | **New 2026-05-08** |
+| Dialog mounted in `App.tsx` | ⚠️ PENDING | `<ActionGateDialog />` next to `<SovereignGuard />` |
+| `action_gate` SSE event display | ❌ TODO | Field present in done_data, no HUD row yet |
 
 ---
 
 ## Open Tasks (Priority Order)
 
-1. **Task 4** — Tauri frontend ActionGate confirmation dialog + `_startup()` callback registration (~30 min)
-2. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration script
-3. **Scheduler task population** — wire goal steps and memory consolidation into the now-live scheduler
-4. **YELLOW tier classification** — detect tool-use / file-write in `result.planned_actions`
+1. **Micro-task** — Mount `<ActionGateDialog />` in `App.tsx` (~2 min)
+2. **Micro-task** — Wire `set_tauri_app_handle()` in Rust sidecar boot for production emit
+3. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration script
+4. **Scheduler task population** — wire goal steps + memory consolidation into live scheduler
+5. **YELLOW tier classification** — detect tool-use / file-write in `result.planned_actions`
+6. **action_gate HUD row** — show gate tier + result in the chat interface engine state display
 
 ---
 
 ## Canon Refs Active This Session
 
-C12, C17, C20, C21, C27, C35, C42, C43, C44, C47, C49
+C12, C17, C20, C21, C27, C35, C42, C43, C44, C47, C49, C90
