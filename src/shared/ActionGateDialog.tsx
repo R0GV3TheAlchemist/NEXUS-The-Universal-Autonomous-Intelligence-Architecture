@@ -23,7 +23,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import './ActionGateDialog.css';
-import { useActionGate, type ActionGateEvent } from '../hooks/useActionGate';
+import { useActionGate } from '../hooks/useActionGate';
 
 // ---- Sub-components -------------------------------------------------------
 
