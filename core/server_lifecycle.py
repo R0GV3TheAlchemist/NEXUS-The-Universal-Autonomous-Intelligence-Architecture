@@ -16,11 +16,15 @@ from fastapi import FastAPI
 from core.logger import GAIAEvent, get_logger, log_event
 from core.server_state import (
     _mother_thread,
+    _RUNTIME_REGISTRY,
     set_magnum_opus_report,
 )
 from core.viriditas_magnum_opus import VIRIDITAS_THRESHOLD, viriditas_magnum_opus
 
 logger = get_logger(__name__)
+
+# Tracks background scheduler asyncio.Task objects so we can cancel on shutdown
+_SCHEDULER_TASKS: list[asyncio.Task] = []
 
 
 def register_lifecycle(app: FastAPI) -> None:
@@ -77,11 +81,79 @@ def register_lifecycle(app: FastAPI) -> None:
                 exc_info=True,
             )
 
+        # 3. TaskScheduler — boot run_forever() loop for each live GAIANRuntime
+        # Each runtime holds its own TaskScheduler instance. We launch a
+        # background asyncio.Task per runtime so the scheduler processes
+        # its priority queue continuously. New runtimes created after startup
+        # (via _get_runtime) will have their schedulers booted lazily the
+        # first time a task is submitted — the run_once() path still works
+        # without the loop, but run_forever() is required for continuous work.
+        _boot_scheduler_for_existing_runtimes()
+        log_event(
+            GAIAEvent.GAIAN_RUNTIME_INIT,
+            message=f"TaskScheduler loops started for {len(_SCHEDULER_TASKS)} runtime(s).",
+            gaian="scheduler",
+        )
+
     @app.on_event("shutdown")
     async def _shutdown() -> None:
+        # Stop all TaskScheduler loops gracefully
+        for slug, rt in _RUNTIME_REGISTRY.items():
+            try:
+                rt._scheduler.stop()
+            except Exception as exc:
+                logger.warning(f"TaskScheduler stop error for slug='{slug}': {exc}")
+
+        # Cancel the background asyncio.Tasks
+        for atask in _SCHEDULER_TASKS:
+            if not atask.done():
+                atask.cancel()
+        if _SCHEDULER_TASKS:
+            await asyncio.gather(*_SCHEDULER_TASKS, return_exceptions=True)
+        _SCHEDULER_TASKS.clear()
+
+        log_event(
+            GAIAEvent.TURN_COMPLETE,
+            message=f"TaskScheduler loops stopped ({len(_SCHEDULER_TASKS)} tasks cancelled).",
+            gaian="scheduler",
+        )
+
         _mother_thread.stop()
         log_event(
             GAIAEvent.TURN_COMPLETE,
             message="MotherThread stopped. GAIA rests.",
             gaian="mother_thread",
         )
+
+
+def _boot_scheduler_for_existing_runtimes() -> None:
+    """
+    Launch run_forever() as a background asyncio.Task for every runtime
+    that is already in the registry at startup time.
+
+    Called from _startup(). For runtimes created later (lazy init via
+    _get_runtime), callers should invoke boot_scheduler_for_runtime()
+    directly after registration.
+    """
+    for slug, rt in _RUNTIME_REGISTRY.items():
+        _boot_scheduler_for_runtime(slug, rt)
+
+
+def _boot_scheduler_for_runtime(slug: str, rt) -> None:
+    """
+    Launch a single scheduler's run_forever() loop as a background task.
+    Safe to call multiple times — checks _running_flag to avoid duplicates.
+    """
+    scheduler = rt._scheduler
+    if scheduler._running_flag:
+        # Already running — do not double-launch
+        return
+    atask = asyncio.create_task(
+        scheduler.run_forever(),
+        name=f"scheduler:{slug}",
+    )
+    _SCHEDULER_TASKS.append(atask)
+    logger.info(
+        f"[Lifecycle] TaskScheduler loop started for gaian='{slug}' "
+        f"(poll={scheduler._poll}s, max_concurrent={scheduler._max})"
+    )
