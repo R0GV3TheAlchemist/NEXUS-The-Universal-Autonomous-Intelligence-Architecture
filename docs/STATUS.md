@@ -1,6 +1,6 @@
 # GAIA-OS System Status
 
-> Last updated: 2026-05-08 by R0GV3TheAlchemist (C-TODAY sprint — CLOSED, all tasks complete)
+> Last updated: 2026-05-08 by R0GV3TheAlchemist (IPC bridge sprint — native Tauri emit LIVE)
 
 ---
 
@@ -61,8 +61,7 @@
 | Gate wired in chat request lifecycle | ✅ LIVE | New 2026-05-08 — fires after engine, before LLM |
 | `action_gate` field in `done_data` SSE | ✅ LIVE | New 2026-05-08 — tier + approved + reason |
 | `action_blocked` SSE event on denial | ✅ LIVE | New 2026-05-08 — stream exits early |
-| `action_gate_ipc.py` IPC callback | ✅ LIVE | New 2026-05-08 — dual-path emit (Tauri + log fallback) |
-| `set_tauri_app_handle()` | ✅ BUILT | New 2026-05-08 — awaiting Rust sidecar registration |
+| `action_gate_ipc.py` IPC callback | ✅ LIVE | Updated 2026-05-08 — Axum bridge primary, log fallback secondary |
 | `POST /action-gate/respond` endpoint | ✅ LIVE | New 2026-05-08 — frontend resolution route |
 | `GET /action-gate/audit` endpoint | ✅ LIVE | New 2026-05-08 — full process-lifetime audit log |
 | `confirm_callback` registered at startup | ✅ LIVE | New 2026-05-08 — Step 4 of `_startup()` |
@@ -71,7 +70,9 @@
 | `ActionGateDialog.css` | ✅ LIVE | New 2026-05-08 — dark theme, BEM, tier accents, pulse animation |
 | Dialog mounted in `GaiaShell.tsx` | ✅ LIVE | Fixed 2026-05-08 — always present in React root |
 | `SovereignGuard` mounted in `GaiaShell.tsx` | ✅ LIVE | Fixed 2026-05-08 — was built but never rendered |
-| Native Tauri emit (production) | ⚠️ PENDING | Wire `set_tauri_app_handle()` in Rust sidecar boot |
+| Axum IPC bridge (`127.0.0.1:8009`) | ✅ LIVE | New 2026-05-08 — Rust HTTP server, accepts POST /emit from Python |
+| `POST /internal/ipc-ready` endpoint | ✅ LIVE | New 2026-05-08 — Rust → Python handshake, activates native emit path |
+| Native Tauri emit (production) | ✅ LIVE | Fixed 2026-05-08 — Python → Axum → AppHandle.emit() → WebView |
 | YELLOW tier for tool-use / file-writes | ❌ TODO | Requires `result.planned_actions` population |
 
 ---
@@ -86,6 +87,8 @@
 | `TaskScheduler` boot | ✅ LIVE | Fixed 2026-05-08 — run_forever() per runtime |
 | `ActionGate` singleton | ✅ LIVE | New 2026-05-08 — hard infrastructure firewall |
 | `ActionGate` IPC callback at startup | ✅ LIVE | New 2026-05-08 — Step 4 of `_startup()` |
+| Axum IPC bridge | ✅ LIVE | New 2026-05-08 — starts before Python sidecar in `.setup()` |
+| `POST /internal/ipc-ready` handshake | ✅ LIVE | New 2026-05-08 — Rust signals Python when bridge is up |
 | Rate limiting | ✅ LIVE | |
 | Error boundary | ✅ LIVE | |
 | Auth (JWT) | ✅ LIVE | |
@@ -125,11 +128,10 @@
 
 ## Open Tasks (Future Sprints)
 
-1. **Tauri app handle** — Wire `set_tauri_app_handle()` in Rust sidecar for production IPC emit
-2. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration script
-3. **Scheduler task population** — Wire goal steps + memory consolidation into live scheduler
-4. **YELLOW tier classification** — Detect tool-use / file-write in `result.planned_actions`
-5. **action_gate HUD row** — Show gate tier + result in chat engine state display
+1. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration script
+2. **Scheduler task population** — Wire goal steps + memory consolidation into live scheduler
+3. **YELLOW tier classification** — Detect tool-use / file-write in `result.planned_actions`
+4. **action_gate HUD row** — Show gate tier + result in chat engine state display
 
 ---
 
