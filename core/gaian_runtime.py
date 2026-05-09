@@ -76,7 +76,7 @@ from core.vitality_engine import (                                   # T-VITA
     VitalityEngine, VitalityState, blank_vitality_state, get_vitality_engine,
 )
 from core.spiritu_engine import (                                    # ✦ Spiritus
-    SpirituEngine, SpirituReading, SpirituState,
+    SpirituEngine, SpirituReading, SpirituState, SpirituStage,
     blank_spiritu_state, get_spiritu_engine,
 )
 
