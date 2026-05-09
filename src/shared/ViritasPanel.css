@@ -1,0 +1,286 @@
+/*
+ * src/shared/ViritasPanel.css
+ * GAIA-OS — Viriditas Expanded Detail Panel
+ * Issue #68 Phase 5
+ *
+ * Uses crystal.css utility classes (.crystal-card, .crystal-panel)
+ * and --crystal-* tokens from Phase 1/2.
+ * Signal bar fill animation via CSS custom-property keyframe.
+ */
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Overlay                                                               */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * The overlay is a transparent full-screen layer that catches
+ * outside-click events to close the panel. It does NOT darken
+ * the UI (this is an ambient panel, not a modal).
+ */
+.viriditas-panel-overlay {
+  position:       fixed;
+  inset:          0;
+  z-index:        200;
+  pointer-events: none;   /* pass-through when panel is closed */
+}
+
+.viriditas-panel-overlay--open {
+  pointer-events: auto;   /* intercept outside clicks when open */
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Panel                                                                 */
+/* ────────────────────────────────────────────────────────────────── */
+
+.viriditas-panel {
+  position:       fixed;
+  bottom:         120px;    /* sits above the rail-alignment orb    */
+  left:           100px;    /* clears the 88px rail + 12px gap      */
+  width:          280px;
+  display:        flex;     /* toggled to 'none' when hidden by GSAP */
+  flex-direction: column;
+  gap:            14px;
+  padding:        18px;
+  z-index:        201;
+
+  /* crystal-card base is already applied via class */
+  /* Override blur to heavy for the expanded panel  */
+  backdrop-filter:         blur(var(--glass-blur-heavy, 24px));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy, 24px));
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Header                                                                */
+/* ────────────────────────────────────────────────────────────────── */
+
+.viriditas-panel__header {
+  display:     flex;
+  align-items: flex-start;
+  gap:         10px;
+}
+
+.viriditas-panel__score-block {
+  display:     flex;
+  align-items: baseline;
+  gap:         3px;
+  flex-shrink: 0;
+}
+
+.viriditas-panel__score-num {
+  font-size:   2rem;
+  font-weight: 800;
+  color:       var(--crystal-primary, #a78bfa);
+  line-height: 1;
+  transition:  color calc(var(--animation-speed, 400ms) * 0.8) ease;
+}
+
+.viriditas-panel__score-label {
+  font-size:  0.75rem;
+  color:      rgba(255,255,255,0.35);
+  margin-top: 6px;
+}
+
+.viriditas-panel__meta {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  flex:           1;
+}
+
+.viriditas-panel__close {
+  background:    transparent;
+  border:        none;
+  color:         rgba(255,255,255,0.30);
+  font-size:     1.2rem;
+  line-height:   1;
+  cursor:        pointer;
+  padding:       0 2px;
+  border-radius: var(--radius-xs);
+  transition:    color 0.15s;
+  flex-shrink:   0;
+}
+.viriditas-panel__close:hover { color: rgba(255,255,255,0.80); }
+
+/* Tier badge */
+.viriditas-panel__tier-badge {
+  display:        inline-block;
+  font-size:      0.65rem;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding:        2px 7px;
+  border-radius:  var(--radius-pill);
+  background:     var(--crystal-surface, rgba(167,139,250,0.10));
+  color:          var(--crystal-primary, #a78bfa);
+  transition:
+    background calc(var(--animation-speed, 400ms) * 0.8) ease,
+    color      calc(var(--animation-speed, 400ms) * 0.8) ease;
+}
+
+/* Tier badge colours — mirror Phase 4 frequency palette */
+.viriditas-panel__tier-badge--minimal  { color: #7a7aaa; background: rgba(74,74,106,0.18); }
+.viriditas-panel__tier-badge--core     { color: #f9a825; background: rgba(249,168,37,0.12); }
+.viriditas-panel__tier-badge--standard { color: #a78bfa; background: rgba(167,139,250,0.12); }
+.viriditas-panel__tier-badge--full     { color: #52c7b8; background: rgba(82,199,184,0.12); }
+.viriditas-panel__tier-badge--vibrant  { color: #f9d342; background: rgba(249,211,66,0.12); }
+
+.viriditas-panel__updated {
+  font-size: 0.65rem;
+  color:     rgba(255,255,255,0.28);
+}
+
+.viriditas-panel__fallback {
+  font-size:  0.62rem;
+  color:      rgba(249,168,37,0.75);
+  font-style: italic;
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Sparkline section                                                     */
+/* ────────────────────────────────────────────────────────────────── */
+
+.viriditas-panel__sparkline-wrap {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+}
+
+.viriditas-panel__spark-legend {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  font-size:       0.65rem;
+  color:           rgba(255,255,255,0.35);
+  padding:         0 2px;
+}
+
+.viriditas-panel__spark-stat { color: rgba(255,255,255,0.45); }
+
+.viriditas-panel__spark-avg {
+  color:       var(--crystal-primary, #a78bfa);
+  font-weight: 600;
+  font-size:   0.68rem;
+}
+
+.viriditas-panel__trend { font-size: 0.65rem; }
+.viriditas-panel__trend--rising  { color: #52c7b8; }
+.viriditas-panel__trend--falling { color: #f9a825; }
+.viriditas-panel__trend--stable  { color: rgba(255,255,255,0.35); }
+
+/* empty sparkline placeholder */
+.score-sparkline--empty {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  height:          52px;
+}
+.score-sparkline__empty-label {
+  font-size:  0.7rem;
+  color:      rgba(255,255,255,0.28);
+  font-style: italic;
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Signal bars                                                           */
+/* ────────────────────────────────────────────────────────────────── */
+
+.viriditas-panel__signals {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+}
+
+.viriditas-panel__signal-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+}
+
+.viriditas-panel__signal-label {
+  font-size:   0.68rem;
+  color:       rgba(255,255,255,0.45);
+  width:       70px;
+  flex-shrink: 0;
+}
+
+.viriditas-panel__bar-track {
+  flex:          1;
+  height:        5px;
+  background:    rgba(255,255,255,0.06);
+  border-radius: var(--radius-pill);
+  overflow:      hidden;
+}
+
+.viriditas-panel__bar-fill {
+  height:        100%;
+  border-radius: var(--radius-pill);
+  width:         var(--bar-pct, 0%);
+  animation:     bar-fill-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transition:    width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Signal-specific bar colours */
+.viriditas-panel__bar-fill--hrv      { background: var(--crystal-primary, #a78bfa); }
+.viriditas-panel__bar-fill--schumann { background: #52c7b8; }
+.viriditas-panel__bar-fill--kp       {
+  /* Kp bar: green when low (good), amber when elevated, red when stormy */
+  background: linear-gradient(
+    to right,
+    #52c7b8 0%,
+    #f9a825 60%,
+    #e05c5c 100%
+  );
+  /* Clip the gradient to the filled portion via the track overflow:hidden */
+}
+
+.viriditas-panel__signal-val {
+  font-size:   0.72rem;
+  font-weight: 600;
+  color:       rgba(255,255,255,0.55);
+  width:       28px;
+  text-align:  right;
+  flex-shrink: 0;
+}
+
+@keyframes bar-fill-in {
+  from { width: 0%; }
+  to   { width: var(--bar-pct, 0%); }
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Narrative                                                             */
+/* ────────────────────────────────────────────────────────────────── */
+
+.viriditas-panel__narrative {
+  /* .crystal-panel class provides the base styling */
+  padding: 10px 12px;
+}
+
+.viriditas-panel__narrative-line1 {
+  font-size:   0.78rem;
+  font-weight: 600;
+  color:       var(--crystal-primary, #a78bfa);
+  margin:      0 0 4px;
+  transition:  color calc(var(--animation-speed, 400ms) * 0.8) ease;
+}
+
+.viriditas-panel__narrative-line2 {
+  font-size:  0.72rem;
+  color:      rgba(255,255,255,0.48);
+  margin:     0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Reduced motion                                                        */
+/* ────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .viriditas-panel__bar-fill {
+    animation: none;
+  }
+  .viriditas-panel__bar-fill {
+    transition: none;
+  }
+}
