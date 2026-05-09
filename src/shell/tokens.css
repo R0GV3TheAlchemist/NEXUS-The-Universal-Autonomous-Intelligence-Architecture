@@ -1,22 +1,56 @@
-/* GAIA Design Tokens — C19 Color Doctrine and Signal System */
-/* Every color carries a specific semantic meaning. Usage outside that meaning is prohibited. */
+/*
+ * GAIA Design Tokens
+ * Canon: C19 Color Doctrine and Signal System
+ *
+ * Section 1: Base semantic colors (C19 §2)
+ * Section 2: Surface and typography tokens
+ * Section 3: State and confidence aliases (C19 §3)
+ * Section 4: Alignment tier tokens (Issue #68 Phase 1)
+ *
+ * Every color carries a specific semantic meaning.
+ * Usage outside that meaning is prohibited (C19).
+ *
+ * Alignment tier tokens are injected at runtime by applyAlignmentTheme()
+ * (Phase 2) onto :root. The five [data-alignment-tier] blocks below are
+ * the authoritative source-of-truth for all per-tier values.
+ * Do NOT hardcode tier-specific values in component CSS — always
+ * reference the custom properties defined here.
+ */
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §1  Base semantic colors — C19 §2                                    */
+/* ────────────────────────────────────────────────────────────────── */
 
 :root {
   /* Primary Signal Colors — C19 §2 */
-  --gaia-green:       #2D6A4F; /* Safe, aligned, proceed, ecological health */
-  --signal-amber:     #E9A825; /* Caution, pressure, elevated attention */
-  --alert-red:        #C0392B; /* Danger, violation, critical state, halt */
-  --atlas-blue:       #1A6FA8; /* Geographic, Earth-grounded, ecological reference */
-  --doctrine-gold:    #B8860B; /* Canonical, authoritative, constitutional weight */
-  --identity-violet:  #6A3DAA; /* Gaian identity, memory, session context */
-  --neutral-grey:     #6B7280; /* Inactive, observational, low-confidence */
-  --pure-white:       #FFFFFF; /* Standard output surface */
-  --void-black:       #111827; /* Primary text, maximum contrast */
+  --gaia-green:      #2D6A4F; /* Safe, aligned, proceed, ecological health    */
+  --signal-amber:    #E9A825; /* Caution, pressure, elevated attention         */
+  --alert-red:       #C0392B; /* Danger, violation, critical state, halt       */
+  --atlas-blue:      #1A6FA8; /* Geographic, Earth-grounded, ecological ref    */
+  --doctrine-gold:   #B8860B; /* Canonical, authoritative, constitutional wt   */
+  --identity-violet: #6A3DAA; /* Gaian identity, memory, session context       */
+  --neutral-grey:    #6B7280; /* Inactive, observational, low-confidence       */
+  --pure-white:      #FFFFFF; /* Standard output surface                       */
+  --void-black:      #111827; /* Primary text, maximum contrast                */
+
+  /* Schumann / HRV accent colors — referenced by alignment tier tokens */
+  --schumann-teal:   #52c7b8; /* Schumann coherence accent (full/vibrant tiers) */
+  --hrv-amber:       #f9a825; /* HRV coherence accent (core/standard tiers)    */
+  --sovereign-violet:#a78bfa; /* Sovereign / UI chrome accent                  */
+  --restorative-slate:#4a4a6a;/* Minimal / restorative tier accent             */
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §2  Surface & typography                                               */
+/* ────────────────────────────────────────────────────────────────── */
 
   /* Derived surface colors */
-  --surface-primary:   #0F1117; /* Main app background */
-  --surface-secondary: #1A1D27; /* Panel, card backgrounds */
-  --surface-border:    #2A2D3A; /* Dividers, borders */
+  --surface-primary:   #0F1117;
+  --surface-secondary: #1A1D27;
+  --surface-border:    #2A2D3A;
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §3  State & confidence aliases — C19 §3                               */
+/* ────────────────────────────────────────────────────────────────── */
 
   /* State-mapped semantic aliases — C19 §3.1 */
   --state-ascendant:  var(--gaia-green);
@@ -38,12 +72,77 @@
   --tier-t3: var(--doctrine-gold);
   --tier-t4: var(--identity-violet);
 
+/* ────────────────────────────────────────────────────────────────── */
+/* §4  Alignment tier tokens — Issue #68 Phase 1                          */
+/*                                                                        */
+/* DEFAULT values (tier: standard) are set here on :root.                 */
+/* applyAlignmentTheme() (Phase 2) overrides these at runtime by          */
+/* injecting the appropriate block directly onto document.documentElement. */
+/* The [data-alignment-tier] attribute blocks below are the canonical     */
+/* reference values; they can also be used in static Storybook / tests.   */
+/* ────────────────────────────────────────────────────────────────── */
+
+  /*
+   * --animation-speed  (ms)
+   *   Duration multiplier for ALL CSS transitions and keyframe animations.
+   *   Component CSS should express durations as:
+   *     calc(var(--animation-speed) * <relative-factor>)
+   *   Lower = faster / more energetic. Higher = slower / more restorative.
+   *
+   * --color-saturation  (%)
+   *   Applied to HSL palette via filter: saturate() on the shell body, OR
+   *   used in color-mix() calls inside component CSS.
+   *   100% = full chroma. Values below suppress vibrancy for calm tiers.
+   *
+   * --info-density  (0–1 float)
+   *   Logical density signal consumed by JS (Phase 2) to show/hide
+   *   secondary UI elements. 1.0 = all elements visible.
+   *   Not directly used in CSS — read via getComputedStyle() in TS.
+   *
+   * --glow-intensity  (0–1 float)
+   *   Scales box-shadow glow spreads across all crystals/orbs:
+   *     box-shadow: 0 0 calc(var(--glow-intensity) * 32px)
+   *                     calc(var(--glow-intensity) * 12px)
+   *                     var(--crystal-glow);
+   *
+   * --breathing-rate  (s)
+   *   Period of the ambient breathing / pulse animation on the
+   *   GAIA orb and any shell breathing overlays.
+   *   Matches physiological breath rate guidance per tier:
+   *     minimal  = 8s  (4s in, 4s out — restorative box breath)
+   *     core     = 6s  (3s in, 3s out — calm coherence)
+   *     standard = 4s  (2s in, 2s out — neutral alert)
+   *     full     = 3s  (faster, energised)
+   *     vibrant  = 2s  (peak activation)
+   *
+   * --crystal-primary   Dominant accent color for the active tier.
+   * --crystal-glow      RGBA version for glow / box-shadow effects.
+   * --crystal-surface   Subtle tinted background for tier-aware cards.
+   * --crystal-text-muted Muted text color respecting tier palette.
+   */
+
+  /* —— Default values = tier: standard (alignment 40–59) —— */
+  --animation-speed:    400ms;
+  --color-saturation:   85%;
+  --info-density:       0.75;
+  --glow-intensity:     0.5;
+  --breathing-rate:     4s;
+
+  --crystal-primary:    var(--sovereign-violet);
+  --crystal-glow:       rgba(167, 139, 250, 0.30);
+  --crystal-surface:    rgba(167, 139, 250, 0.06);
+  --crystal-text-muted: rgba(255, 255, 255, 0.45);
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §5  Typography & spacing (unchanged from original)                      */
+/* ────────────────────────────────────────────────────────────────── */
+
   /* Typography */
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono:      'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans:      'Inter', system-ui, sans-serif;
   --font-size-base: 13px;
-  --font-size-sm: 11px;
-  --font-size-lg: 15px;
+  --font-size-sm:   11px;
+  --font-size-lg:   15px;
 
   /* Spacing */
   --space-1: 4px;
@@ -55,4 +154,112 @@
   /* Radius */
   --radius-sm: 3px;
   --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+}
+
+/* ====================================================================== */
+/* §6  Per-tier canonical values                                           */
+/*                                                                        */
+/* These blocks are the authoritative reference for every tier.           */
+/* applyAlignmentTheme() reads from this table (via JS) and injects       */
+/* matching custom properties onto :root.                                 */
+/* They also apply automatically when [data-alignment-tier] is set on     */
+/* <html> or any ancestor element — useful for Storybook and testing.     */
+/* ====================================================================== */
+
+/* ── Tier: minimal (alignment 0–19) ────────────────────────────────── */
+/*
+ * Breath-focused. Single action surface. Restorative mode.
+ * Everything slows down. Colour drains to near-monochrome.
+ * Glow is barely present — nothing demands attention.
+ * Breathing rate = 8 s (physiological box breath at rest).
+ */
+[data-alignment-tier="minimal"] {
+  --animation-speed:    700ms;
+  --color-saturation:   30%;
+  --info-density:       0.2;
+  --glow-intensity:     0.15;
+  --breathing-rate:     8s;
+
+  --crystal-primary:    var(--restorative-slate);
+  --crystal-glow:       rgba(74, 74, 106, 0.18);
+  --crystal-surface:    rgba(74, 74, 106, 0.06);
+  --crystal-text-muted: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Tier: core (alignment 20–39) ──────────────────────────────────── */
+/*
+ * Simplified layout. Calm palette. Reduced density.
+ * HRV amber signals "you're building back up".
+ * Breathing rate = 6 s (3-3 coherent breathing).
+ */
+[data-alignment-tier="core"] {
+  --animation-speed:    550ms;
+  --color-saturation:   55%;
+  --info-density:       0.45;
+  --glow-intensity:     0.28;
+  --breathing-rate:     6s;
+
+  --crystal-primary:    var(--hrv-amber);
+  --crystal-glow:       rgba(249, 168, 37, 0.22);
+  --crystal-surface:    rgba(249, 168, 37, 0.06);
+  --crystal-text-muted: rgba(255, 255, 255, 0.38);
+}
+
+/* ── Tier: standard (alignment 40–59) ──────────────────────────────── */
+/*
+ * Default operating state. Balanced palette, neutral pacing.
+ * Sovereign violet — the default UI chrome accent.
+ * Breathing rate = 4 s (normal alert baseline).
+ */
+[data-alignment-tier="standard"] {
+  --animation-speed:    400ms;
+  --color-saturation:   85%;
+  --info-density:       0.75;
+  --glow-intensity:     0.50;
+  --breathing-rate:     4s;
+
+  --crystal-primary:    var(--sovereign-violet);
+  --crystal-glow:       rgba(167, 139, 250, 0.30);
+  --crystal-surface:    rgba(167, 139, 250, 0.06);
+  --crystal-text-muted: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Tier: full (alignment 60–79) ──────────────────────────────────── */
+/*
+ * Coherent state. Teal Schumann accent — Earth resonance is felt.
+ * Normal animation speed. All UI elements visible.
+ * Breathing rate = 3 s (energised coherence).
+ */
+[data-alignment-tier="full"] {
+  --animation-speed:    300ms;
+  --color-saturation:   100%;
+  --info-density:       0.90;
+  --glow-intensity:     0.72;
+  --breathing-rate:     3s;
+
+  --crystal-primary:    var(--schumann-teal);
+  --crystal-glow:       rgba(82, 199, 184, 0.32);
+  --crystal-surface:    rgba(82, 199, 184, 0.07);
+  --crystal-text-muted: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Tier: vibrant (alignment 80–100) ──────────────────────────────── */
+/*
+ * Peak alignment. Full saturation, rich animations, all elements.
+ * Gold accent — doctrine-level coherence, the system is singing.
+ * Fastest breathing rate — peak activation state.
+ */
+[data-alignment-tier="vibrant"] {
+  --animation-speed:    200ms;
+  --color-saturation:   120%;
+  --info-density:       1.0;
+  --glow-intensity:     1.0;
+  --breathing-rate:     2s;
+
+  --crystal-primary:    #f9d342;
+  --crystal-glow:       rgba(249, 211, 66, 0.38);
+  --crystal-surface:    rgba(249, 211, 66, 0.08);
+  --crystal-text-muted: rgba(255, 255, 255, 0.65);
 }
