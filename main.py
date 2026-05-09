@@ -1,7 +1,6 @@
 """
 GAIA Backend — FastAPI Entry Point
 Runs on http://localhost:8008
-Launched as a Tauri sidecar (gaia-backend.exe on Windows)
 """
 
 import sys
@@ -130,8 +129,8 @@ async def lifespan(application: FastAPI):
         log.warning(f"[GAIA] Encryption init warning: {e}")
 
     # ── Memory subsystem ───────────────────────────────────────────────────────
-    from core.runtime import GAIARuntime
-    _runtime = GAIARuntime()
+    from core.runtime import GAIANRuntime   # fixed: was GAIARuntime
+    _runtime = GAIANRuntime()
     try:
         _runtime.init()
         log.info("[GAIA] Memory subsystem ready")
@@ -160,7 +159,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:1420",
+        "http://localhost:3000",   # Vite web-app dev server
+        "http://localhost:5173",   # Vite fallback port
+        "http://localhost:1420",   # legacy Tauri dev port (kept for compat)
         "tauri://localhost",
         "https://tauri.localhost",
     ],
