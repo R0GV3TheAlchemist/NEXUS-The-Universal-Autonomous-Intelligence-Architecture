@@ -1,44 +1,42 @@
 /**
- * NotificationBridge.ts — P4 Proactive Notifications
+ * src/shell/NotificationBridge.ts — web-app branch
+ * GAIA-OS Proactive Notifications
+ *
+ * Web-safe replacement for the Tauri notification bridge.
+ * Uses the standard Web Notifications API instead of
+ * @tauri-apps/plugin-notification.
  *
  * Polls the backend every 5 minutes for pending notifications.
- * Fires OS desktop notifications via tauri_plugin_notification.
- * Clicking a notification navigates GAIA to the relevant section.
+ * Click navigation uses window.dispatchEvent (custom event) instead
+ * of invoke('navigate_main') — GaiaShell listens for this event
+ * to switch the active mode/section.
  *
- * Quiet hours are enforced server-side; this module handles
- * the client-side permission request and click routing only.
+ * Browser permission is requested on init. If denied, polling
+ * continues but no visible notifications are shown — the backend
+ * can still mark them as delivered via the dismiss endpoint.
  */
 
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from '@tauri-apps/plugin-notification';
-import { invoke } from '@tauri-apps/api/core';
-
-const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const BACKEND_URL = 'http://localhost:8008';
+const POLL_INTERVAL_MS = 5 * 60 * 1000;  // 5 minutes
+const API_BASE         = '/api';
 
 interface PendingNotification {
-  id: string;
-  title: string;
-  body: string;
+  id:      string;
+  title:   string;
+  body:    string;
   trigger: string;
   section: string;
 }
 
 export class NotificationBridge {
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer:         ReturnType<typeof setInterval> | null = null;
   private permissionGranted = false;
 
   async init(): Promise<void> {
     this.permissionGranted = await this.ensurePermission();
     if (!this.permissionGranted) {
       console.warn('[NotificationBridge] Permission denied — notifications disabled.');
-      return;
+      // Still poll — backend marks delivered even without visible notifications
     }
-
-    // Poll immediately on init, then on interval
     await this.poll();
     this.pollTimer = setInterval(() => this.poll(), POLL_INTERVAL_MS);
   }
@@ -50,69 +48,74 @@ export class NotificationBridge {
     }
   }
 
-  // ── Permission ──────────────────────────────────────────────────────────────
+  // ── Permission (Web Notifications API) ───────────────────────────────
 
   private async ensurePermission(): Promise<boolean> {
+    if (!('Notification' in window)) {
+      console.warn('[NotificationBridge] Web Notifications API not available.');
+      return false;
+    }
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied')  return false;
     try {
-      let granted = await isPermissionGranted();
-      if (!granted) {
-        const permission = await requestPermission();
-        granted = permission === 'granted';
-      }
-      return granted;
+      const result = await Notification.requestPermission();
+      return result === 'granted';
     } catch (err) {
-      console.error('[NotificationBridge] Permission check failed:', err);
+      console.error('[NotificationBridge] Permission request failed:', err);
       return false;
     }
   }
 
-  // ── Poll ────────────────────────────────────────────────────────────────────
+  // ── Poll ─────────────────────────────────────────────────────────────────
 
   private async poll(): Promise<void> {
     try {
-      const res = await fetch(`${BACKEND_URL}/notifications/pending`);
+      const res = await fetch(`${API_BASE}/notifications/pending`);
       if (!res.ok) return;
-
       const notification: PendingNotification | null = await res.json();
       if (!notification) return;
-
       await this.fire(notification);
     } catch (err) {
-      // Backend may not be up yet — silent fail
       console.debug('[NotificationBridge] Poll failed (backend may be starting):', err);
     }
   }
 
-  // ── Fire ────────────────────────────────────────────────────────────────────
+  // ── Fire ─────────────────────────────────────────────────────────────────
 
   private async fire(notification: PendingNotification): Promise<void> {
     try {
-      // Send the OS notification
-      sendNotification({
-        title: notification.title,
-        body: notification.body,
-      });
+      // Web Notifications API
+      if (this.permissionGranted && 'Notification' in window) {
+        const n = new Notification(notification.title, {
+          body: notification.body,
+          icon: '/gaia-icon.svg',
+          tag:  notification.id,   // deduplication key
+        });
 
-      // Mark as delivered on the backend so it won't repeat today
-      await fetch(`${BACKEND_URL}/notifications/dismiss`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notification_id: notification.id }),
-      });
-
-      // tauri_plugin_notification doesn't support click callbacks natively
-      // on all platforms yet, so we navigate proactively after a short delay
-      // only for memory-triggered notifications (time ones are ambient).
-      if (notification.trigger === 'memory') {
-        setTimeout(() => {
-          invoke('navigate_main', { section: notification.section }).catch(console.error);
-        }, 500);
+        // Click — dispatch a custom event instead of invoke('navigate_main')
+        if (notification.trigger === 'memory') {
+          n.addEventListener('click', () => {
+            window.focus();
+            window.dispatchEvent(
+              new CustomEvent('gaia:navigate', {
+                detail: { section: notification.section },
+              })
+            );
+          });
+        }
       }
+
+      // Mark as delivered on the backend
+      await fetch(`${API_BASE}/notifications/dismiss`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ notification_id: notification.id }),
+      });
+
     } catch (err) {
       console.error('[NotificationBridge] Failed to fire notification:', err);
     }
   }
 }
 
-// Singleton export for use in main app bootstrap
 export const notificationBridge = new NotificationBridge();

@@ -1,17 +1,23 @@
 /**
- * GAIA Sidecar Health-Check
- * Non-blocking: shell renders immediately.
- * Backend polling runs in background.
- * Status dispatched via 'gaia:backend-status' custom event.
- * Canon: C90
+ * src/sidecar.ts — web-app branch
+ * GAIA-OS Backend Health Monitor
+ *
+ * Web-safe replacement for the Tauri sidecar.
+ * Uses only fetch() — no invoke() calls.
+ *
+ * Polls GET /api/health every 30 s after initial connect.
+ * Dispatches 'gaia:backend-status' custom events so the shell
+ * can reflect backend state without any Tauri dependency.
+ *
+ * On the web, GAIA cannot restart the backend process — if the
+ * backend goes offline, the UI shows an offline indicator and
+ * retries silently until it comes back.
  */
 
-import { invoke } from '@tauri-apps/api/core';
-import { logInfo, logWarn, logError } from './diagnostics';
-
-const HEALTH_URL      = 'http://localhost:8008/health';
-const MAX_POLL_ATTEMPTS = 40;
-const MAX_AUTO_RETRIES  = 3;
+const HEALTH_URL       = '/api/health';
+const POLL_ATTEMPTS    = 20;
+const RETRY_INTERVAL   = 30_000;  // 30 s steady-state poll
+const INITIAL_DELAY_MS = 300;
 
 function dispatch(status: 'connecting' | 'online' | 'offline') {
   window.dispatchEvent(
@@ -19,59 +25,70 @@ function dispatch(status: 'connecting' | 'online' | 'offline') {
   );
 }
 
-async function pollHealth(attempts = MAX_POLL_ATTEMPTS): Promise<boolean> {
-  let delay = 300;
+function log(level: 'info' | 'warn' | 'error', msg: string) {
+  const prefix = '[GAIA sidecar]';
+  if (level === 'info')  console.info(prefix, msg);
+  if (level === 'warn')  console.warn(prefix, msg);
+  if (level === 'error') console.error(prefix, msg);
+}
+
+async function pollHealth(attempts = POLL_ATTEMPTS): Promise<boolean> {
+  let delay = INITIAL_DELAY_MS;
   for (let i = 0; i < attempts; i++) {
     await new Promise(r => setTimeout(r, delay));
     try {
       const res = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
-        logInfo('sidecar', `Backend healthy after ${i + 1} attempt(s)`);
+        log('info', `Backend healthy after ${i + 1} attempt(s)`);
         return true;
       }
-    } catch (_) {}
+    } catch (_) { /* backend not up yet — keep polling */ }
     delay = Math.min(delay * 1.5, 3000);
   }
   return false;
 }
 
-// Non-blocking — resolves immediately, polls in background
+/**
+ * Non-blocking init — resolves immediately so the shell renders
+ * without waiting for the backend. Health polling runs in background.
+ */
 export async function initSidecar(): Promise<void> {
   dispatch('connecting');
-  logInfo('sidecar', 'Background health-check started');
+  log('info', 'Background health-check started');
 
-  // Fire and forget — do NOT await
   (async () => {
-    let retries = 0;
-    while (retries <= MAX_AUTO_RETRIES) {
-      const ready = await pollHealth();
-      if (ready) {
-        dispatch('online');
-        logInfo('sidecar', 'Backend online');
-        return;
-      }
-      retries++;
-      if (retries > MAX_AUTO_RETRIES) break;
-      logWarn('sidecar', `Backend unresponsive — restart attempt ${retries}`);
-      try {
-        await invoke<string>('restart_backend');
-      } catch (e) {
-        logError('sidecar', 'restart_backend failed', e);
-      }
-      await new Promise(r => setTimeout(r, 1500));
+    const ready = await pollHealth();
+    if (ready) {
+      dispatch('online');
+      log('info', 'Backend online');
+      // Steady-state poll every 30 s
+      setInterval(async () => {
+        try {
+          const res = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(2000) });
+          dispatch(res.ok ? 'online' : 'offline');
+        } catch {
+          dispatch('offline');
+        }
+      }, RETRY_INTERVAL);
+      return;
     }
+    // Backend never came up
     dispatch('offline');
-    logError('sidecar', 'Backend offline after all retries');
+    log('error', 'Backend offline — start the Python server with: uvicorn main:app --port 8008');
   })();
 
-  // Return immediately — shell renders now
   return Promise.resolve();
 }
 
+/**
+ * getBackendStatus — web version.
+ * Returns 'online' or 'offline' based on a live health probe.
+ */
 export async function getBackendStatus(): Promise<string> {
   try {
-    return await invoke<string>('get_backend_status');
+    const res = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(2000) });
+    return res.ok ? 'online' : 'offline';
   } catch {
-    return 'unknown';
+    return 'offline';
   }
 }
