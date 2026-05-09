@@ -1,0 +1,381 @@
+/*
+ * src/shell/crystal.css
+ * GAIA-OS — Crystal Design Language
+ * Issue #68 Phase 4
+ * Canon: CRYSTAL_SYSTEM_UI_DESIGN_LANGUAGE_REPORT
+ *
+ * Implements the three pillars of the Crystal system:
+ *   1. Glassmorphism card system   — .crystal-card, variants
+ *   2. Organic curve language      — --radius-* tokens applied globally
+ *   3. Frequency-mapped palette    — accent rules per alignment tier
+ *
+ * All colours reference the Phase 1 --crystal-* tokens.
+ * All radii reference the --radius-* tokens from tokens.css.
+ * Import order: tokens.css → crystal.css → component CSS.
+ *
+ * Dark theme is default. Light theme via [data-theme="light"] on <html>.
+ * All five alignment tiers are respected in both themes.
+ *
+ * WCAG AA compliance note:
+ *   Text colours are set at minimum 4.5:1 contrast against their
+ *   respective surface backgrounds. See Phase 7 for full audit.
+ */
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §1  Global shape language                                             */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * All primary UI surfaces use organic radii — no sharp corners.
+ * Component-level border-radius should reference these tokens,
+ * never hardcode pixel values.
+ */
+
+:root {
+  /* Organic curve scale */
+  --radius-xs:   4px;   /* tight chips, badges                          */
+  --radius-sm:   6px;   /* small controls, compact inputs               */
+  --radius-md:   10px;  /* standard buttons, tags                       */
+  --radius-lg:   16px;  /* cards, panels, modals                        */
+  --radius-xl:   24px;  /* auth box, large overlays                     */
+  --radius-pill: 999px; /* fully rounded pills and badges               */
+
+  /* Glassmorphism base values */
+  --glass-blur:          12px;
+  --glass-blur-heavy:    24px;
+  --glass-surface:       rgba(255, 255, 255, 0.03);
+  --glass-surface-hover: rgba(255, 255, 255, 0.055);
+  --glass-border:        rgba(255, 255, 255, 0.08);
+  --glass-border-accent: rgba(255, 255, 255, 0.14);
+  --glass-edge-top:      rgba(255, 255, 255, 0.12); /* top-edge highlight on raised surfaces */
+  --glass-shadow:        0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.60);
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §2  Glassmorphism card system                                          */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * .crystal-card
+ *   Base glassmorphism surface. Backdrop blur + translucent fill +
+ *   subtle top-edge highlight to suggest depth.
+ *   Tier-aware: uses --crystal-surface and --crystal-glow from Phase 1.
+ */
+.crystal-card {
+  position:          relative;
+  background:        var(--glass-surface);
+  border:            1px solid var(--glass-border);
+  border-radius:     var(--radius-lg);
+  backdrop-filter:   blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow:        var(--glass-shadow);
+  overflow:          hidden;
+  transition:
+    background    calc(var(--animation-speed, 400ms) * 0.8) ease,
+    border-color  calc(var(--animation-speed, 400ms) * 0.8) ease,
+    box-shadow    calc(var(--animation-speed, 400ms) * 0.8) ease;
+}
+
+/* Top-edge specular highlight — suggests a faceted crystal face */
+.crystal-card::before {
+  content:          '';
+  position:         absolute;
+  inset:            0;
+  border-radius:    inherit;
+  border-top:       1px solid var(--glass-edge-top);
+  pointer-events:   none;
+  z-index:          1;
+}
+
+/* Tier-tinted glow on the card surface */
+.crystal-card::after {
+  content:          '';
+  position:         absolute;
+  inset:            0;
+  border-radius:    inherit;
+  background:       var(--crystal-surface, transparent);
+  pointer-events:   none;
+  z-index:          0;
+  transition:       background calc(var(--animation-speed, 400ms) * 0.8) ease;
+}
+
+/* ── Elevated variant — floats above siblings */
+.crystal-card--elevated {
+  background:   var(--glass-surface-hover);
+  border-color: var(--glass-border-accent);
+  box-shadow:
+    var(--glass-shadow-lg),
+    0 0 calc(var(--glow-intensity, 0.5) * 40px)
+        calc(var(--glow-intensity, 0.5) * 8px)
+        var(--crystal-glow, rgba(167, 139, 250, 0.20));
+}
+
+/* ── Sunken variant — inset panel, lower than siblings */
+.crystal-card--sunken {
+  background:  rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow:   inset 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Interactive variant — hover/focus states */
+.crystal-card--interactive {
+  cursor: pointer;
+}
+
+.crystal-card--interactive:hover {
+  background:   var(--glass-surface-hover);
+  border-color: color-mix(in srgb, var(--crystal-primary, #a78bfa) 35%, var(--glass-border));
+  box-shadow:
+    var(--glass-shadow),
+    0 0 calc(var(--glow-intensity, 0.5) * 24px)
+        calc(var(--glow-intensity, 0.5) * 4px)
+        var(--crystal-glow, rgba(167, 139, 250, 0.15));
+  transform: translateY(-1px);
+  transition:
+    background    0.15s ease,
+    border-color  0.15s ease,
+    box-shadow    0.15s ease,
+    transform     0.15s ease;
+}
+
+.crystal-card--interactive:focus-visible {
+  outline:        2px solid var(--crystal-primary, #a78bfa);
+  outline-offset: 2px;
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §3  Crystal utility classes                                            */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * .crystal-panel
+ *   Lighter-weight panel — no blur (saves GPU), just translucent fill.
+ *   Used for inner content regions inside a .crystal-card.
+ */
+.crystal-panel {
+  background:    rgba(255, 255, 255, 0.02);
+  border:        1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  padding:       12px 16px;
+}
+
+/*
+ * .crystal-input
+ *   Crystal-styled text input. Organic radius, translucent fill,
+ *   focus glow using --crystal-primary.
+ */
+.crystal-input {
+  width:            100%;
+  background:       rgba(255, 255, 255, 0.05);
+  border:           1px solid rgba(255, 255, 255, 0.10);
+  border-radius:    var(--radius-md);
+  padding:          10px 14px;
+  color:            rgba(255, 255, 255, 0.90);
+  font-size:        0.9rem;
+  font-family:      var(--font-sans);
+  outline:          none;
+  transition:
+    border-color  0.2s ease,
+    box-shadow    0.2s ease,
+    background    0.2s ease;
+}
+
+.crystal-input:focus {
+  border-color: color-mix(in srgb, var(--crystal-primary, #a78bfa) 60%, transparent);
+  box-shadow:   0 0 0 3px var(--crystal-glow, rgba(167, 139, 250, 0.20));
+  background:   rgba(255, 255, 255, 0.07);
+}
+
+.crystal-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/*
+ * .crystal-btn
+ *   Primary Crystal action button. Gradient from --crystal-primary,
+ *   organic radius, tier-aware glow on hover.
+ */
+.crystal-btn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  padding:         11px 20px;
+  background:      linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--crystal-primary, #a78bfa) 80%, #000),
+    var(--crystal-primary, #a78bfa)
+  );
+  border:          none;
+  border-radius:   var(--radius-md);
+  color:           #fff;
+  font-size:       0.9rem;
+  font-weight:     600;
+  font-family:     var(--font-sans);
+  cursor:          pointer;
+  transition:
+    opacity       calc(var(--animation-speed, 400ms) * 0.4) ease,
+    transform     0.15s ease,
+    box-shadow    0.2s ease;
+}
+
+.crystal-btn:hover:not(:disabled) {
+  opacity:    0.90;
+  transform:  translateY(-1px);
+  box-shadow: 0 4px 20px var(--crystal-glow, rgba(167, 139, 250, 0.35));
+}
+
+.crystal-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.crystal-btn:disabled {
+  opacity: 0.40;
+  cursor:  not-allowed;
+}
+
+/* Ghost variant */
+.crystal-btn--ghost {
+  background:   transparent;
+  border:       1px solid color-mix(in srgb, var(--crystal-primary, #a78bfa) 40%, transparent);
+  color:        var(--crystal-primary, #a78bfa);
+}
+
+.crystal-btn--ghost:hover:not(:disabled) {
+  background:  var(--crystal-surface, rgba(167, 139, 250, 0.08));
+  border-color: var(--crystal-primary, #a78bfa);
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §4  Shell saturation filter (Phase 2 token binding)                    */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * Applies --color-saturation (Phase 1 token, injected by Phase 2)
+ * to the entire shell body. During a tier transition the
+ * [data-alignment-transitioning] attribute triggers an interpolated
+ * filter sweep so the desaturation/resaturation is smooth.
+ */
+.gaia-shell {
+  filter: saturate(var(--color-saturation, 85%));
+  transition: filter calc(var(--animation-speed, 400ms) * 3) ease;
+}
+
+/*
+ * During the Phase 2 transition bridge, the filter transition is
+ * temporarily elongated to the full 3-second window so it rides
+ * alongside the token interpolation.
+ */
+[data-alignment-transitioning="true"] .gaia-shell,
+[data-alignment-transitioning="true"].gaia-shell {
+  transition: filter 3s ease;
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §5  Frequency-mapped accent rules                                      */
+/*                                                                        */
+/* These rules respond to the live data-alignment-tier attribute set by   */
+/* applyAlignmentTheme() (Phase 2). They complement the inline token      */
+/* injection by providing CSS-selector-level overrides for components     */
+/* that cannot easily consume custom properties (e.g. SVG stroke).        */
+/* ────────────────────────────────────────────────────────────────── */
+
+/* Active rail button accent matches tier */
+[data-alignment-tier="minimal"]  .gaia-shell__rail-btn--active { background: rgba(74, 74, 106, 0.18);   color: #7a7aaa; }
+[data-alignment-tier="core"]     .gaia-shell__rail-btn--active { background: rgba(249, 168, 37, 0.12);  color: #f9a825; }
+[data-alignment-tier="standard"] .gaia-shell__rail-btn--active { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+[data-alignment-tier="full"]     .gaia-shell__rail-btn--active { background: rgba(82, 199, 184, 0.12);  color: #52c7b8; }
+[data-alignment-tier="vibrant"]  .gaia-shell__rail-btn--active { background: rgba(249, 211, 66, 0.12);  color: #f9d342; }
+
+/* Wordmark gradient shifts with tier */
+[data-alignment-tier="minimal"]  .gaia-shell__wordmark-gaia { background-image: linear-gradient(135deg, #7a7aaa, #9090cc); }
+[data-alignment-tier="core"]     .gaia-shell__wordmark-gaia { background-image: linear-gradient(135deg, #f9a825, #ffd97d); }
+[data-alignment-tier="standard"] .gaia-shell__wordmark-gaia { background-image: linear-gradient(135deg, #a78bfa, #60a5fa); }
+[data-alignment-tier="full"]     .gaia-shell__wordmark-gaia { background-image: linear-gradient(135deg, #52c7b8, #80e8dd); }
+[data-alignment-tier="vibrant"]  .gaia-shell__wordmark-gaia { background-image: linear-gradient(135deg, #f9d342, #ffec80); }
+
+/* Backend dot glow matches tier when online */
+[data-alignment-tier="full"]    .gaia-shell__backend-dot--online,
+[data-alignment-tier="vibrant"] .gaia-shell__backend-dot--online {
+  box-shadow: 0 0 6px 2px rgba(82, 199, 184, 0.50);
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §6  Light theme                                                        */
+/* ────────────────────────────────────────────────────────────────── */
+
+/*
+ * Light theme overrides. All five alignment tiers are fully preserved.
+ * Glass values invert: translucency is against a light ground.
+ * Shadows are lighter and use warm grey rather than black.
+ */
+[data-theme="light"] {
+  --glass-surface:       rgba(255, 255, 255, 0.65);
+  --glass-surface-hover: rgba(255, 255, 255, 0.80);
+  --glass-border:        rgba(0, 0, 0, 0.08);
+  --glass-border-accent: rgba(0, 0, 0, 0.14);
+  --glass-edge-top:      rgba(255, 255, 255, 0.90);
+  --glass-shadow:        0 4px 24px rgba(0, 0, 0, 0.12);
+  --glass-shadow-lg:     0 10px 40px rgba(0, 0, 0, 0.18);
+
+  --surface-primary:   #f0f0f8;
+  --surface-secondary: #e4e4f0;
+  --surface-border:    #d0d0e0;
+}
+
+[data-theme="light"] .gaia-shell {
+  background:  #f0f0f8;
+  color:       rgba(10, 10, 30, 0.87);
+}
+
+[data-theme="light"] .gaia-shell__topbar {
+  background:    rgba(255, 255, 255, 0.70);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .gaia-shell__rail {
+  background:   rgba(255, 255, 255, 0.55);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .gaia-shell__rail-btn {
+  color: rgba(10, 10, 30, 0.50);
+}
+
+[data-theme="light"] .gaia-shell__rail-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color:      rgba(10, 10, 30, 0.80);
+}
+
+[data-theme="light"] .crystal-input {
+  background:  rgba(255, 255, 255, 0.80);
+  border-color: rgba(0, 0, 0, 0.12);
+  color:        rgba(10, 10, 30, 0.90);
+}
+
+[data-theme="light"] .crystal-input::placeholder {
+  color: rgba(10, 10, 30, 0.35);
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* §7  Reduced motion                                                      */
+/* ────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .crystal-card,
+  .crystal-card--interactive,
+  .crystal-btn,
+  .crystal-input,
+  .gaia-shell {
+    transition: none !important;
+  }
+
+  .crystal-card--interactive:hover {
+    transform: none;
+  }
+
+  .crystal-btn:hover:not(:disabled) {
+    transform: none;
+  }
+}

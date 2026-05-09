@@ -1,336 +1,427 @@
 /**
  * src/shell/GaiaShell.css — Sprint G-9
- * Appended: .gaia-shell__rail-alignment (Viriditas rail slot)
+ * Issue #68 Phase 4: Crystal Design Language applied to shell chrome
+ *
+ * Changes from previous version:
+ *   - Imports crystal.css for the full Crystal Design Language
+ *   - Shell background upgraded to deep-space radial gradient with
+ *     Schumann-teal nebula glow driven by --crystal-glow token
+ *   - Auth box uses crystal-card organic radius + glassmorphism
+ *   - Topbar uses crystal glassmorphism values
+ *   - Rail uses crystal glassmorphism values
+ *   - All hardcoded border-radius values migrated to --radius-* tokens
+ *   - Auth inputs and submit button reference crystal utility classes
+ *     via structural CSS (no class additions needed in TSX)
  */
 
-/* ── Import base shell tokens ───────────────────────────────────────── */
+/* ── Import base shell tokens + Crystal Design Language ──────────── */
 @import './tokens.css';
+@import './crystal.css';
 
-/* ── Auth ───────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────── */
+/* Auth                                                                  */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-auth {
-  display: flex;
-  align-items: center;
+  display:         flex;
+  align-items:     center;
   justify-content: center;
-  min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 40%, #0d0d2b 0%, #080810 60%, #050508 100%);
+  min-height:      100vh;
+  background:      radial-gradient(
+    ellipse at 50% 40%,
+    #0a0a1e 0%,
+    #06060f 55%,
+    #040408 100%
+  );
   padding: 24px;
 }
 
 .gaia-auth__box {
-  width: 100%;
-  max-width: 400px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-  padding: 36px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  width:           100%;
+  max-width:       400px;
+  /* Crystal glassmorphism */
+  background:      var(--glass-surface);
+  border:          1px solid var(--glass-border);
+  border-radius:   var(--radius-xl);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow:      var(--glass-shadow-lg);
+  padding:         36px 32px;
+  display:         flex;
+  flex-direction:  column;
+  gap:             16px;
+  position:        relative;
+  overflow:        hidden;
+}
+
+/* Top-edge specular highlight on auth box */
+.gaia-auth__box::before {
+  content:       '';
+  position:      absolute;
+  inset:         0;
+  border-radius: inherit;
+  border-top:    1px solid var(--glass-edge-top);
+  pointer-events: none;
 }
 
 .gaia-auth__logo {
-  text-align: center;
+  text-align:   center;
   margin-bottom: 4px;
 }
 
 .gaia-auth__logo-gaia {
-  font-size: 2.2rem;
+  font-size:   2.2rem;
   font-weight: 900;
   letter-spacing: 0.15em;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  background:  linear-gradient(135deg, #a78bfa, #60a5fa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gaia-auth__tagline {
-  text-align: center;
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.35);
+  text-align:  center;
+  font-size:   0.7rem;
+  color:       rgba(255,255,255,0.35);
   letter-spacing: 0.04em;
-  margin: 0;
+  margin:      0;
 }
 
 .gaia-auth__tabs {
-  display: flex;
-  background: rgba(255,255,255,0.04);
-  border-radius: 10px;
-  padding: 3px;
-  gap: 3px;
+  display:       flex;
+  background:    rgba(255,255,255,0.04);
+  border-radius: var(--radius-md);
+  padding:       3px;
+  gap:           3px;
 }
 
 .gaia-auth__tab {
-  flex: 1;
-  padding: 8px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  color: rgba(255,255,255,0.45);
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  flex:          1;
+  padding:       8px;
+  background:    transparent;
+  border:        none;
+  border-radius: var(--radius-sm);
+  color:         rgba(255,255,255,0.45);
+  font-size:     0.82rem;
+  font-weight:   500;
+  cursor:        pointer;
+  transition:    background 0.2s, color 0.2s;
 }
 
 .gaia-auth__tab--active {
   background: rgba(255,255,255,0.09);
-  color: rgba(255,255,255,0.90);
+  color:      rgba(255,255,255,0.90);
 }
 
-.gaia-auth__form { display: flex; flex-direction: column; gap: 12px; }
-
-.gaia-auth__field { display: flex; flex-direction: column; gap: 5px; }
+.gaia-auth__form  { display: flex; flex-direction: column; gap: 12px; }
+.gaia-auth__field { display: flex; flex-direction: column; gap: 5px;  }
 
 .gaia-auth__label {
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.55);
+  font-size:   0.75rem;
+  color:       rgba(255,255,255,0.55);
   font-weight: 500;
 }
 
+/* Inputs inherit crystal-input styling */
 .gaia-auth__input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 10px;
-  padding: 10px 14px;
-  color: rgba(255,255,255,0.90);
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s;
+  background:    rgba(255,255,255,0.05);
+  border:        1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-md);
+  padding:       10px 14px;
+  color:         rgba(255,255,255,0.90);
+  font-size:     0.9rem;
+  outline:       none;
+  transition:    border-color 0.2s, box-shadow 0.2s;
+  width:         100%;
+  font-family:   var(--font-sans);
 }
-.gaia-auth__input:focus { border-color: rgba(167,139,250,0.6); }
+
+.gaia-auth__input:focus {
+  border-color: color-mix(in srgb, var(--crystal-primary, #a78bfa) 60%, transparent);
+  box-shadow:   0 0 0 3px var(--crystal-glow, rgba(167,139,250,0.20));
+}
 
 .gaia-auth__hint {
   font-size: 0.68rem;
-  color: rgba(255,255,255,0.25);
+  color:     rgba(255,255,255,0.25);
 }
 
 .gaia-auth__error {
-  background: rgba(239,68,68,0.12);
-  border: 1px solid rgba(239,68,68,0.30);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 0.78rem;
-  color: #fca5a5;
+  background:    rgba(239,68,68,0.12);
+  border:        1px solid rgba(239,68,68,0.30);
+  border-radius: var(--radius-sm);
+  padding:       9px 12px;
+  font-size:     0.78rem;
+  color:         #fca5a5;
 }
 
+/* Submit button inherits crystal-btn styling */
 .gaia-auth__submit {
-  margin-top: 4px;
-  padding: 12px;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s;
+  margin-top:    4px;
+  padding:       12px;
+  background:    linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--crystal-primary, #a78bfa) 75%, #000),
+    var(--crystal-primary, #a78bfa)
+  );
+  border:        none;
+  border-radius: var(--radius-md);
+  color:         #fff;
+  font-size:     0.9rem;
+  font-weight:   600;
+  cursor:        pointer;
+  font-family:   var(--font-sans);
+  transition:    opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.gaia-auth__submit:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+
+.gaia-auth__submit:hover:not(:disabled) {
+  opacity:    0.88;
+  transform:  translateY(-1px);
+  box-shadow: 0 4px 20px var(--crystal-glow, rgba(167,139,250,0.30));
+}
+
 .gaia-auth__submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .gaia-auth__switch {
   text-align: center;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.35);
-  margin: 0;
+  font-size:  0.75rem;
+  color:      rgba(255,255,255,0.35);
+  margin:     0;
 }
 
 .gaia-auth__switch-link {
-  background: none;
-  border: none;
-  color: #a78bfa;
-  font-size: inherit;
-  cursor: pointer;
-  padding: 0;
+  background:      none;
+  border:          none;
+  color:           var(--crystal-primary, #a78bfa);
+  font-size:       inherit;
+  cursor:          pointer;
+  padding:         0;
   text-decoration: underline;
 }
 
-/* ── Shell layout ───────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────── */
+/* Shell layout                                                          */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-shell {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background: #0a0a14;
-  color: rgba(255,255,255,0.87);
+  height:         100vh;
+  overflow:       hidden;
+  /*
+   * Deep-space background with a subtle Schumann-teal nebula glow.
+   * The ::after pseudo-element provides a tier-reactive ambient bloom
+   * driven by --crystal-glow, so the background itself shifts colour
+   * as alignment changes.
+   */
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(10, 10, 40, 1)   0%,
+    rgba(6,  6,  20, 1)   45%,
+    rgba(3,  3,  10, 1)  100%
+  );
+  color:       rgba(255,255,255,0.87);
   font-family: var(--font-sans, system-ui, sans-serif);
+  position:    relative;
 }
 
-/* ── Top bar ─────────────────────────────────────────────────────────── */
+/* Ambient nebula bloom — tier-reactive via --crystal-glow */
+.gaia-shell::before {
+  content:       '';
+  position:      fixed;
+  top:           -20%;
+  left:          -10%;
+  width:         60%;
+  height:        60%;
+  background:    radial-gradient(
+    ellipse,
+    var(--crystal-glow, rgba(167,139,250,0.06)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index:        0;
+  transition:     background 3s ease;
+}
+
+/* ───────────────────────────────────────────────────────────────── */
+/* Top bar                                                               */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-shell__topbar {
-  display: flex;
-  align-items: center;
+  display:         flex;
+  align-items:     center;
   justify-content: space-between;
-  padding: 0 20px;
-  height: 52px;
-  background: rgba(255,255,255,0.025);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  flex-shrink: 0;
-  gap: 12px;
+  padding:         0 20px;
+  height:          52px;
+  /* Crystal glassmorphism topbar */
+  background:      rgba(255,255,255,0.025);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom:   1px solid var(--glass-border);
+  flex-shrink:     0;
+  gap:             12px;
+  position:        relative;
+  z-index:         10;
 }
 
 .gaia-shell__wordmark { display: flex; align-items: baseline; gap: 3px; }
 
 .gaia-shell__wordmark-gaia {
-  font-size: 1.1rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  font-size:       1.1rem;
+  font-weight:     900;
+  letter-spacing:  0.12em;
+  background:      linear-gradient(135deg, #a78bfa, #60a5fa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition:      background-image calc(var(--animation-speed, 400ms) * 2) ease;
 }
 
 .gaia-shell__wordmark-os {
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.30);
-  letter-spacing: 0.06em;
+  font-size:       0.65rem;
+  font-weight:     500;
+  color:           rgba(255,255,255,0.30);
+  letter-spacing:  0.06em;
 }
 
 .gaia-shell__mode-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.55);
-  flex: 1;
+  display:         flex;
+  align-items:     center;
+  gap:             6px;
+  font-size:       0.78rem;
+  color:           rgba(255,255,255,0.55);
+  flex:            1;
   justify-content: center;
 }
 
 .gaia-shell__mode-desc {
-  font-size: 0.68rem;
-  color: rgba(255,255,255,0.30);
+  font-size:  0.68rem;
+  color:      rgba(255,255,255,0.30);
   font-style: italic;
 }
 
 .gaia-shell__topbar-right {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: 10px;
+  gap:         10px;
 }
 
 .gaia-shell__username {
   font-size: 0.75rem;
-  color: rgba(255,255,255,0.45);
+  color:     rgba(255,255,255,0.45);
 }
 
 .gaia-shell__backend-dot {
-  width: 7px;
-  height: 7px;
+  width:         7px;
+  height:        7px;
   border-radius: 50%;
+  transition:    box-shadow 0.6s ease;
 }
-.gaia-shell__backend-dot--checking  { background: #f59e0b; animation: pulse 1.4s infinite; }
-.gaia-shell__backend-dot--online    { background: #22c55e; }
-.gaia-shell__backend-dot--offline   { background: #ef4444; }
+.gaia-shell__backend-dot--checking { background: #f59e0b; animation: gaia-pulse 1.4s infinite; }
+.gaia-shell__backend-dot--online   { background: #22c55e; }
+.gaia-shell__backend-dot--offline  { background: #ef4444; }
 
 .gaia-shell__logout {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 8px;
-  color: rgba(255,255,255,0.40);
-  font-size: 0.72rem;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  background:    transparent;
+  border:        1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-sm);
+  color:         rgba(255,255,255,0.40);
+  font-size:     0.72rem;
+  padding:       4px 10px;
+  cursor:        pointer;
+  transition:    color 0.2s, border-color 0.2s;
 }
 .gaia-shell__logout:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.25); }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
+@keyframes gaia-pulse {
+  0%, 100% { opacity: 1;   }
   50%       { opacity: 0.3; }
 }
 
-/* ── Body ────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────── */
+/* Body                                                                  */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-shell__body {
-  display: flex;
-  flex: 1;
+  display:  flex;
+  flex:     1;
   overflow: hidden;
+  position: relative;
+  z-index:  1;
 }
 
-/* ── Left rail ───────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────── */
+/* Left rail                                                             */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-shell__rail {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  width: 88px;
-  padding: 12px 6px;
-  background: rgba(255,255,255,0.02);
-  border-right: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-  gap: 4px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  width:          88px;
+  padding:        12px 6px;
+  background:     rgba(255,255,255,0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-right:   1px solid var(--glass-border);
+  flex-shrink:    0;
+  gap:            4px;
+  overflow-y:     auto;
+  overflow-x:     hidden;
 }
 
 .gaia-shell__rail-btn {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 4px;
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  color: rgba(255,255,255,0.40);
-  transition: background 0.18s, color 0.18s;
-  width: 100%;
+  align-items:    center;
+  gap:            4px;
+  padding:        10px 4px;
+  background:     transparent;
+  border:         none;
+  border-radius:  var(--radius-md);
+  cursor:         pointer;
+  color:          rgba(255,255,255,0.40);
+  transition:     background calc(var(--animation-speed, 400ms) * 0.45) ease,
+                  color      calc(var(--animation-speed, 400ms) * 0.45) ease;
+  width:          100%;
 }
+
 .gaia-shell__rail-btn:hover {
   background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.75);
+  color:      rgba(255,255,255,0.75);
 }
+
 .gaia-shell__rail-btn--active {
   background: rgba(167,139,250,0.12);
-  color: #a78bfa;
+  color:      #a78bfa;
 }
 
 .gaia-shell__rail-icon { font-size: 1.3rem; line-height: 1; }
 .gaia-shell__rail-name { font-size: 0.6rem; font-weight: 500; text-align: center; letter-spacing: 0.03em; }
 
-/* ── Viriditas alignment slot (bottom of rail) ───────────────────────── */
+/* ── Viriditas alignment slot (bottom of rail) ──────────────────── */
 
 .gaia-shell__rail-alignment {
-  margin-top: auto;                              /* pins to bottom of flex column */
-  padding: 14px 0 8px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
+  margin-top:   auto;
+  padding:      14px 0 8px;
+  border-top:   1px solid var(--glass-border);
+  display:      flex;
   justify-content: center;
 }
 
-/* Compact overrides for the rail slot — smaller ring + tighter spacing */
-.gaia-shell__rail-alignment .viriditas-widget {
-  gap: 4px;
-}
+/* Compact overrides for the rail slot */
+.gaia-shell__rail-alignment .viriditas-widget        { gap: 4px; }
+.gaia-shell__rail-alignment .viriditas-widget__orb-wrap { width: 64px; height: 64px; }
+.gaia-shell__rail-alignment .viriditas-widget__orb      { width: 36px; height: 36px; }
+.gaia-shell__rail-alignment .viriditas-widget__score    { font-size: 1.1rem; }
+.gaia-shell__rail-alignment .viriditas-widget__tier-label { font-size: 0.6rem; }
 
-.gaia-shell__rail-alignment .viriditas-widget__orb-wrap {
-  width: 64px;
-  height: 64px;
-}
-
-.gaia-shell__rail-alignment .viriditas-widget__orb {
-  width: 36px;
-  height: 36px;
-}
-
-.gaia-shell__rail-alignment .viriditas-widget__score {
-  font-size: 1.1rem;
-}
-
-.gaia-shell__rail-alignment .viriditas-widget__tier-label {
-  font-size: 0.6rem;
-}
-
-/* ── Main content ────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────── */
+/* Main content                                                          */
+/* ───────────────────────────────────────────────────────────────── */
 
 .gaia-shell__content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
+  flex:      1;
+  overflow:  hidden;
+  display:   flex;
   flex-direction: column;
 }
