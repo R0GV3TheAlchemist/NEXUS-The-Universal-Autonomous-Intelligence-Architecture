@@ -128,14 +128,13 @@ async def lifespan(application: FastAPI):
     except Exception as e:
         log.warning(f"[GAIA] Encryption init warning: {e}")
 
-    # ── Memory subsystem ───────────────────────────────────────────────────────
-    from core.runtime import GAIANRuntime   # fixed: was GAIARuntime
-    _runtime = GAIANRuntime()
+    # ── Runtime orchestrator ─────────────────────────────────────────────────
+    from core.runtime import GAIAOrchestrator, init_orchestrator
     try:
-        _runtime.init()
-        log.info("[GAIA] Memory subsystem ready")
+        init_orchestrator()
+        log.info("[GAIA] Runtime orchestrator ready")
     except Exception as e:
-        log.warning(f"[GAIA] Memory subsystem init warning: {e}")
+        log.warning(f"[GAIA] Runtime orchestrator init warning: {e}")
 
     routing_mode = os.environ.get("GAIA_ROUTING_MODE", "local-first")
     log.info(f"[GAIA] LLM routing mode: {routing_mode}")
@@ -143,7 +142,6 @@ async def lifespan(application: FastAPI):
     yield
 
     # ── Teardown ────────────────────────────────────────────────────────────────────────
-    _runtime.shutdown()
     await _flush_state()
 
 
@@ -161,7 +159,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",   # Vite web-app dev server
         "http://localhost:5173",   # Vite fallback port
-        "http://localhost:1420",   # legacy Tauri dev port (kept for compat)
+        "http://localhost:1420",   # legacy Tauri dev port
         "tauri://localhost",
         "https://tauri.localhost",
     ],
