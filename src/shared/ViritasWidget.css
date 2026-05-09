@@ -1,0 +1,270 @@
+/*
+ * src/shared/ViritasWidget.css
+ *
+ * Viriditas Biometric Alignment Widget styles.
+ * Pillar II: Viriditas — Issue #64
+ *
+ * All colours reference existing --crystal-* design tokens.
+ * Tier-specific overrides use the [data-tier] attribute so they
+ * stay in sync with whatever the Python emitter returns.
+ *
+ * Reduced-motion: all animations are suppressed via the
+ * prefers-reduced-motion media query at the bottom of this file.
+ */
+
+/* ── Container ───────────────────────────────────────────────── */
+
+.viriditas-widget {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            8px;
+  position:       relative;
+  user-select:    none;
+
+  /* default tier tokens — overridden per [data-tier] below */
+  --vw-orb-color:   var(--crystal-primary, #8b6fff);
+  --vw-glow-color:  rgba(139, 111, 255, 0.35);
+  --vw-ring-color:  var(--crystal-primary, #8b6fff);
+  --vw-pulse-speed: 3s;
+}
+
+/* ── Tier tokens ────────────────────────────────────────────── */
+
+[data-tier="minimal"] {
+  --vw-orb-color:   #4a4a6a;
+  --vw-glow-color:  rgba(74, 74, 106, 0.20);
+  --vw-ring-color:  #5a5a8a;
+  --vw-pulse-speed: 6s;
+}
+
+[data-tier="core"] {
+  --vw-orb-color:   #5b7fa6;
+  --vw-glow-color:  rgba(91, 127, 166, 0.25);
+  --vw-ring-color:  #6d9ec4;
+  --vw-pulse-speed: 4.5s;
+}
+
+[data-tier="standard"] {
+  --vw-orb-color:   var(--crystal-primary, #8b6fff);
+  --vw-glow-color:  rgba(139, 111, 255, 0.30);
+  --vw-ring-color:  var(--crystal-primary, #8b6fff);
+  --vw-pulse-speed: 3s;
+}
+
+[data-tier="full"] {
+  --vw-orb-color:   #52c7b8;
+  --vw-glow-color:  rgba(82, 199, 184, 0.35);
+  --vw-ring-color:  #52c7b8;
+  --vw-pulse-speed: 2.2s;
+}
+
+[data-tier="vibrant"] {
+  --vw-orb-color:   #f9d342;
+  --vw-glow-color:  rgba(249, 211, 66, 0.40);
+  --vw-ring-color:  #f9d342;
+  --vw-pulse-speed: 1.5s;
+}
+
+/* ── Orb wrap + ring SVG ───────────────────────────────────── */
+
+.viriditas-widget__orb-wrap {
+  position: relative;
+  width:    96px;
+  height:   96px;
+}
+
+.viriditas-widget__ring {
+  position: absolute;
+  top:      0;
+  left:     0;
+  width:    100%;
+  height:   100%;
+}
+
+.viriditas-widget__ring-track {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.viriditas-widget__ring-fill {
+  stroke:     var(--vw-ring-color);
+  transition: stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.8s ease;
+}
+
+/* ── Orb core ───────────────────────────────────────────────── */
+
+.viriditas-widget__orb {
+  position:        absolute;
+  top:             50%;
+  left:            50%;
+  width:           52px;
+  height:          52px;
+  transform:       translate(-50%, -50%);
+  border-radius:   50%;
+  background:      radial-gradient(
+    circle at 35% 35%,
+    rgba(255, 255, 255, 0.18),
+    var(--vw-orb-color) 60%,
+    transparent 100%
+  );
+  box-shadow:      0 0 20px 6px var(--vw-glow-color);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  animation:       viriditas-pulse var(--vw-pulse-speed) ease-in-out infinite;
+  transition:      background 0.8s ease, box-shadow 0.8s ease;
+}
+
+.viriditas-widget__orb--loading {
+  animation: viriditas-spin 1.4s linear infinite;
+  opacity:   0.6;
+}
+
+.viriditas-widget__icon {
+  font-size:   1.4rem;
+  line-height: 1;
+  filter:      drop-shadow(0 0 4px var(--vw-glow-color));
+}
+
+/* ── Labels ──────────────────────────────────────────────────── */
+
+.viriditas-widget__labels {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            2px;
+}
+
+.viriditas-widget__score {
+  font-size:   1.6rem;
+  font-weight: 700;
+  color:       var(--vw-orb-color);
+  transition:  color 0.8s ease;
+  line-height: 1;
+}
+
+.viriditas-widget__tier-label {
+  font-size:      0.7rem;
+  font-weight:    500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          rgba(255, 255, 255, 0.55);
+  transition:     color 0.8s ease;
+}
+
+/* ── Detail panel ────────────────────────────────────────────── */
+
+.viriditas-widget__detail {
+  width:         100%;
+  display:       flex;
+  flex-direction: column;
+  gap:           4px;
+  padding:       8px 12px;
+  background:    rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border:        1px solid rgba(255, 255, 255, 0.07);
+}
+
+.viriditas-widget__detail-row {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+}
+
+.viriditas-widget__detail-label {
+  font-size: 0.72rem;
+  color:     rgba(255, 255, 255, 0.50);
+}
+
+.viriditas-widget__detail-value {
+  font-size:   0.8rem;
+  font-weight: 600;
+  color:       var(--vw-ring-color);
+}
+
+/* Kp badge */
+.viriditas-widget__kp-badge {
+  font-size:     0.78rem;
+  font-weight:   600;
+  color:         var(--vw-ring-color);
+  padding:       1px 6px;
+  border-radius: 4px;
+  background:    rgba(255, 255, 255, 0.06);
+}
+
+.viriditas-widget__kp-badge--elevated {
+  color:      #f5a623;
+  background: rgba(245, 166, 35, 0.12);
+}
+
+.viriditas-widget__kp-badge--storm {
+  color:      #e05c5c;
+  background: rgba(224, 92, 92, 0.14);
+}
+
+.viriditas-widget__fallback-note {
+  margin:     4px 0 0;
+  font-size:  0.68rem;
+  color:      rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Refresh button ──────────────────────────────────────────── */
+
+.viriditas-widget__refresh {
+  position:   absolute;
+  bottom:     2px;
+  right:      2px;
+  background: transparent;
+  border:     none;
+  color:      rgba(255, 255, 255, 0.25);
+  font-size:  0.85rem;
+  cursor:     pointer;
+  padding:    2px 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  line-height: 1;
+}
+
+.viriditas-widget__refresh:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.70);
+}
+
+.viriditas-widget__refresh:disabled {
+  opacity: 0.3;
+  cursor:  not-allowed;
+}
+
+/* ── Fallback / degraded mode ──────────────────────────────── */
+
+.viriditas-widget[data-fallback="true"] .viriditas-widget__score,
+.viriditas-widget[data-fallback="true"] .viriditas-widget__tier-label {
+  opacity: 0.65;
+}
+
+/* ── Keyframe animations ────────────────────────────────────── */
+
+@keyframes viriditas-pulse {
+  0%, 100% { box-shadow: 0 0 20px 6px var(--vw-glow-color); }
+  50%       { box-shadow: 0 0 32px 12px var(--vw-glow-color); }
+}
+
+@keyframes viriditas-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .viriditas-widget__orb,
+  .viriditas-widget__orb--loading {
+    animation: none;
+  }
+
+  .viriditas-widget__ring-fill {
+    transition: none;
+  }
+}
