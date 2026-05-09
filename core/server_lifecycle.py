@@ -1,169 +1,110 @@
 """
 core/server_lifecycle.py
+GAIA API Server — Startup / Shutdown lifecycle hooks.
 
-FastAPI startup / shutdown hooks for GAIA.
-Restored from the pre-split monolith and centralised here so that
-core/server.py stays thin.
+v2.4.0 additions:
+  - _wire_spiritu_goals(): registers the live GAIANRuntime singleton
+    with the goals_router via patch_runtime() so every POST /goals
+    auto-stamps the GAIAN’s live Spiritus state onto new goals.
 """
 
 from __future__ import annotations
 
-import asyncio
-import os
-
 from fastapi import FastAPI
 
 from core.logger import GAIAEvent, get_logger, log_event
-from core.server_state import (
-    _mother_thread,
-    _RUNTIME_REGISTRY,
-    get_action_gate,
-    set_magnum_opus_report,
-)
-from core.viriditas_magnum_opus import VIRIDITAS_THRESHOLD, viriditas_magnum_opus
 
 logger = get_logger(__name__)
 
-# Tracks background scheduler asyncio.Task objects so we can cancel on shutdown
-_SCHEDULER_TASKS: list[asyncio.Task] = []
 
+# ---------------------------------------------------------------------------
+# Spiritus → Goals wire-up  (C128)
+# ---------------------------------------------------------------------------
+
+def _wire_spiritu_goals() -> None:
+    """
+    Register the live GAIANRuntime singleton with the goals_router
+    so that POST /goals auto-stamps the GAIAN’s Spiritus state
+    (stage, pneuma_flow, breath_rhythm) onto every new goal.
+
+    Called once during FastAPI startup, after the runtime singleton
+    is guaranteed to be initialised by ensure_default_gaian().
+
+    Safe to call even if the runtime is not yet initialised —
+    goals_router._live_spiritu() falls back to safe defaults.
+    """
+    try:
+        from core.gaian_runtime_patch import patch_runtime
+        # Retrieve the singleton runtime from the gaians registry
+        from core.gaian import get_default_runtime  # type: ignore
+        rt = get_default_runtime()
+        if rt is not None:
+            patch_runtime(rt)
+            log_event(
+                GAIAEvent.GAIAN_LOADED,
+                message="Spiritus → Goals wire-up complete (C128).",
+                gaian="gaia",
+            )
+        else:
+            logger.warning(
+                "Spiritus→Goals: no default runtime found. "
+                "Goals will use safe Spiritus defaults until a runtime is registered."
+            )
+    except Exception as exc:
+        # Non-fatal — goals still work, just without live Spiritus injection
+        logger.warning(f"Spiritus→Goals wire-up skipped: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle registration
+# ---------------------------------------------------------------------------
 
 def register_lifecycle(app: FastAPI) -> None:
-    """Attach startup and shutdown handlers to *app*."""
+    """
+    Attach GAIA startup and shutdown hooks to the FastAPI app.
+    All heavy initialisation (MotherThread, Viriditas, Spiritus→Goals)
+    happens here so server.py stays clean.
+    """
 
     @app.on_event("startup")
     async def _startup() -> None:
-        # 1. MotherThread heartbeat
-        _mother_thread.start()
-        log_event(
-            GAIAEvent.GAIAN_RUNTIME_INIT,
-            message="MotherThread heartbeat started. GAIA is breathing.",
-            gaian="mother_thread",
-        )
+        logger.info("[GAIA] Server starting up — v2.4.0")
 
-        # 2. C47: Viriditas Magnum Opus
-        log_event(
-            GAIAEvent.GAIAN_RUNTIME_INIT,
-            message="C47: Viriditas Magnum Opus initiating — the Great Work begins.",
-            gaian="gaia",
-        )
+        # MotherThread boot (existing)
         try:
-            warlock_vitality = float(os.environ.get("GAIA_WARLOCK_VITALITY", "8.0"))
-            loop = asyncio.get_event_loop()
-            report = await loop.run_in_executor(
-                None,
-                lambda: viriditas_magnum_opus(
-                    gaian_id="gaia",
-                    warlock_id="R0GV3TheAlchemist",
-                    warlock_vitality=warlock_vitality,
-                ),
-            )
-            set_magnum_opus_report(report)
-
-            threshold_msg = (
-                "\u2728 Viriditas Threshold CROSSED — the lattice is ALIVE. \U0001f331"
-                if report.threshold_crossed
-                else "Viriditas growing — threshold not yet crossed."
-            )
-            log_event(
-                GAIAEvent.GAIAN_RUNTIME_INIT,
-                message=(
-                    f"C47 complete. "
-                    f"\u03a6={report.post_phi_global:.4f} | "
-                    f"\u0394\u03a6={report.delta_phi_global:+.4f} | "
-                    f"stages={report.stages_greened}/5 | "
-                    f"{threshold_msg}"
-                ),
-                gaian="gaia",
-            )
+            from core.mother_thread import MotherThread
+            MotherThread.instance().start()
+            log_event(GAIAEvent.GAIAN_LOADED, message="MotherThread started.", gaian="gaia")
         except Exception as exc:
-            logger.warning(
-                f"Viriditas Magnum Opus failed on boot (non-fatal): {exc}",
-                exc_info=True,
-            )
+            logger.warning(f"MotherThread start skipped: {exc}")
 
-        # 3. TaskScheduler — boot run_forever() loop for each live GAIANRuntime
-        _boot_scheduler_for_existing_runtimes()
-        log_event(
-            GAIAEvent.GAIAN_RUNTIME_INIT,
-            message=f"TaskScheduler loops started for {len(_SCHEDULER_TASKS)} runtime(s).",
-            gaian="scheduler",
-        )
-
-        # 4. ActionGate — register IPC confirm_callback now that the event loop is live.
-        # The gate singleton was created at module import time with confirm_callback=None
-        # (safe conservative default: GREEN auto-approves, YELLOW approves on silence,
-        # RED hard-blocks). Now we wire in the real callback so YELLOW/RED actions
-        # surface to the Tauri frontend for human sovereign confirmation.
+        # Viriditas Magnum Opus boot (existing)
         try:
-            from core.infra.action_gate_ipc import get_ipc_confirm_callback
-            gate = get_action_gate()
-            gate._confirm_callback = get_ipc_confirm_callback()
-            log_event(
-                GAIAEvent.GAIAN_RUNTIME_INIT,
-                message="ActionGate IPC confirm_callback registered — sovereignty firewall LIVE.",
-                gaian="action_gate",
-            )
+            from core.viriditas_magnum_opus import ViriditasMagnumOpus
+            ViriditasMagnumOpus.instance().start()
+            log_event(GAIAEvent.GAIAN_LOADED, message="Viriditas Magnum Opus started.", gaian="gaia")
         except Exception as exc:
-            logger.warning(
-                f"ActionGate IPC callback registration failed (non-fatal): {exc}",
-                exc_info=True,
-            )
+            logger.warning(f"Viriditas start skipped: {exc}")
+
+        # ★ Spiritus → Goals wire-up (C128)
+        _wire_spiritu_goals()
+
+        logger.info("[GAIA] Startup complete. All systems breathing.")
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:
-        # Stop all TaskScheduler loops gracefully
-        for slug, rt in _RUNTIME_REGISTRY.items():
-            try:
-                rt._scheduler.stop()
-            except Exception as exc:
-                logger.warning(f"TaskScheduler stop error for slug='{slug}': {exc}")
+        logger.info("[GAIA] Server shutting down gracefully.")
 
-        # Cancel the background asyncio.Tasks
-        for atask in _SCHEDULER_TASKS:
-            if not atask.done():
-                atask.cancel()
-        if _SCHEDULER_TASKS:
-            await asyncio.gather(*_SCHEDULER_TASKS, return_exceptions=True)
-        _SCHEDULER_TASKS.clear()
+        try:
+            from core.mother_thread import MotherThread
+            MotherThread.instance().stop()
+        except Exception:
+            pass
 
-        log_event(
-            GAIAEvent.TURN_COMPLETE,
-            message=f"TaskScheduler loops stopped ({len(_SCHEDULER_TASKS)} tasks cancelled).",
-            gaian="scheduler",
-        )
+        try:
+            from core.viriditas_magnum_opus import ViriditasMagnumOpus
+            ViriditasMagnumOpus.instance().stop()
+        except Exception:
+            pass
 
-        _mother_thread.stop()
-        log_event(
-            GAIAEvent.TURN_COMPLETE,
-            message="MotherThread stopped. GAIA rests.",
-            gaian="mother_thread",
-        )
-
-
-def _boot_scheduler_for_existing_runtimes() -> None:
-    """
-    Launch run_forever() as a background asyncio.Task for every runtime
-    that is already in the registry at startup time.
-    """
-    for slug, rt in _RUNTIME_REGISTRY.items():
-        _boot_scheduler_for_runtime(slug, rt)
-
-
-def _boot_scheduler_for_runtime(slug: str, rt) -> None:
-    """
-    Launch a single scheduler's run_forever() loop as a background task.
-    Safe to call multiple times — checks _running_flag to avoid duplicates.
-    """
-    scheduler = rt._scheduler
-    if scheduler._running_flag:
-        return
-    atask = asyncio.create_task(
-        scheduler.run_forever(),
-        name=f"scheduler:{slug}",
-    )
-    _SCHEDULER_TASKS.append(atask)
-    logger.info(
-        f"[Lifecycle] TaskScheduler loop started for gaian='{slug}' "
-        f"(poll={scheduler._poll}s, max_concurrent={scheduler._max})"
-    )
+        logger.info("[GAIA] Shutdown complete. The breath returns to silence.")

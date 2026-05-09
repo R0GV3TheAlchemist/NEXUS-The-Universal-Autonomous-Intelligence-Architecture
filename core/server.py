@@ -1,11 +1,16 @@
 """
-GAIA API Server — FastAPI bootstrap v2.3.1
+GAIA API Server — FastAPI bootstrap v2.4.0
 
 Split from the monolith in Sprint C47+. All endpoints live in
 core/routers/. Shared process state lives in core/server_state.py.
 Lifecycle hooks (MotherThread + Viriditas boot) live in core/server_lifecycle.py.
 
-Canon Refs: C01, C04, C12, C15, C17, C20, C21, C27, C30, C42, C43, C44, C47, C48
+v2.4.0 additions:
+  - Goals router mounted at /goals  (CRUD + Spiritus birth-stamping)
+  - patch_runtime() called at startup to wire live Spiritus into goal creation
+
+Canon Refs: C01, C04, C12, C15, C17, C20, C21, C27, C30, C42, C43, C44, C47, C48,
+            C128 (Spiritus Pneuma Canon)
 """
 
 import os
@@ -29,6 +34,7 @@ from core.routers import (
     auth_users_router,
     chat_router,
     gaians_router,
+    goals_router,           # ★ Goals + Spiritus
     health_router,
     internal_router,
     memory_router,
@@ -84,6 +90,7 @@ app.include_router(query_router)
 app.include_router(admin_router)
 app.include_router(mood_ws_router)
 app.include_router(room_router)
+app.include_router(goals_router, prefix="/goals", tags=["Goals"])  # ★ C128
 
 # — Startup / shutdown lifecycle —
 register_lifecycle(app)
@@ -94,6 +101,10 @@ try:
     log_event(GAIAEvent.GAIAN_LOADED, message="Default GAIAN (GAIA) ready.", gaian="gaia")
 except Exception as e:
     logger.warning(f"Could not initialise default GAIAN: {e}")
+
+# ★ Spiritus → Goals wire-up
+# Deferred to lifecycle startup so the runtime singleton is guaranteed to exist.
+# See: core/server_lifecycle.py — _wire_spiritu_goals()
 
 log_event(
     GAIAEvent.CANON_LOADED,
