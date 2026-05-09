@@ -11,7 +11,9 @@
  *   <ActionGateDialog /> — YELLOW/RED tier action confirmation modal
  *
  * Viriditas layer:
- *   <ViritasWidget /> — compact orb pinned to the bottom of the left rail
+ *   <ViritasWidget />      — compact orb pinned to the bottom of the left rail
+ *   useAlignmentTheme()    — Phase 2: injects alignment CSS tokens onto :root
+ *                            and sets data-alignment-tier on the shell root
  */
 
 import React, { useEffect, useState } from 'react';
@@ -23,9 +25,10 @@ import {
   CRYSTAL_LABELS,
   MODE_ICONS,
 } from '../store/crystalStore';
-import { SovereignGuard }   from '../shared/SovereignGuard';
-import { ActionGateDialog } from '../shared/ActionGateDialog';
-import { ViritasWidget }    from '../shared/ViritasWidget';
+import { SovereignGuard }     from '../shared/SovereignGuard';
+import { ActionGateDialog }   from '../shared/ActionGateDialog';
+import { ViritasWidget }      from '../shared/ViritasWidget';
+import { useAlignmentTheme }  from '../hooks/useAlignmentTheme';
 import './GaiaShell.css';
 
 const API_BASE = 'http://localhost:8008';
@@ -299,6 +302,12 @@ export const GaiaShell: React.FC = () => {
   const [activeMode,    setActiveMode]    = useState<CrystalMode>(CrystalMode.SOVEREIGN_CORE);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
 
+  // ── Phase 2: Alignment theme ———————————————————————————————————————
+  // Injects CSS tokens onto :root and sets data-alignment-tier.
+  // Only called when authenticated (this component only renders post-login).
+  const { tier: alignmentTier } = useAlignmentTheme();
+  // ─────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) })
       .then(r => setBackendOnline(r.ok))
@@ -318,7 +327,11 @@ export const GaiaShell: React.FC = () => {
   }
 
   return (
-    <div className="gaia-shell" data-mode={activeMode}>
+    <div
+      className="gaia-shell"
+      data-mode={activeMode}
+      data-alignment-tier={alignmentTier}
+    >
 
       {/* TOP BAR */}
       <header className="gaia-shell__topbar">
