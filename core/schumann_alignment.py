@@ -4,7 +4,7 @@ core/schumann_alignment.py
 GAIA-OS Schumann Biometric Alignment — Python Sidecar
 Pillar II: Viriditas
 Issue: #64 (Phase 2)
-Version: v1.0.0
+Version: v1.0.1
 
 Pipeline:
   [Wearable cache] ──► HRVNormalizer ──► coherence score
@@ -174,6 +174,11 @@ class HRVNormalizer:
         stdev = statistics.stdev(self._history)
 
         if stdev == 0.0:
+            # Cannot z-score, but extreme values must still respect the clamp contract.
+            if rmssd_ms > mean:
+                return 100.0
+            if rmssd_ms < mean:
+                return 0.0
             return 50.0
 
         z = (rmssd_ms - mean) / stdev          # z-score relative to baseline
@@ -230,6 +235,11 @@ class SchumannParser:
         stdev = statistics.stdev(self._history)
 
         if stdev == 0.0:
+            # Cannot z-score, but extreme values must still respect the clamp contract.
+            if amplitude > mean:
+                return 100.0
+            if amplitude < mean:
+                return 0.0
             return 50.0
 
         z = (amplitude - mean) / stdev

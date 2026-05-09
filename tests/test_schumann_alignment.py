@@ -15,6 +15,7 @@ Covers:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 import pytest
@@ -236,8 +237,7 @@ class TestAlignmentStateEmitter:
 
     def test_happy_path_returns_alignment_state(self):
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=60.0, raw_schumann_amplitude=2.0, solar_kp=1.0)
         )
         assert isinstance(state, AlignmentState)
@@ -249,8 +249,7 @@ class TestAlignmentStateEmitter:
     def test_failure_mode_hrv_unavailable(self):
         """No wearable → hrv_score=50, fallback recorded."""
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=None, raw_schumann_amplitude=2.0, solar_kp=0.0)
         )
         assert state.hrv_score == pytest.approx(50.0)
@@ -261,8 +260,7 @@ class TestAlignmentStateEmitter:
     def test_failure_mode_schumann_unavailable(self):
         """Feed down → schumann_score=50, fallback recorded."""
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=60.0, raw_schumann_amplitude=None, solar_kp=0.0)
         )
         assert state.schumann_score == pytest.approx(50.0)
@@ -273,8 +271,7 @@ class TestAlignmentStateEmitter:
     def test_failure_mode_both_unavailable_forces_standard(self):
         """Both feeds down → score=50 → standard tier."""
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=None, raw_schumann_amplitude=None, solar_kp=0.0)
         )
         assert state.score == pytest.approx(50.0)
@@ -286,8 +283,7 @@ class TestAlignmentStateEmitter:
     def test_failure_mode_kp_storm_forces_score_zero(self):
         """Kp > 8 → score forced to 0 regardless of HRV/Schumann."""
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=60.0, raw_schumann_amplitude=2.0, solar_kp=9.0)
         )
         assert state.score == pytest.approx(0.0)
@@ -297,8 +293,7 @@ class TestAlignmentStateEmitter:
     def test_kp_exactly_8_does_not_trigger_storm(self):
         """Kp == 8.0 is not *above* the threshold — no storm override."""
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=None, raw_schumann_amplitude=None, solar_kp=8.0)
         )
         assert "kp_storm" not in state.fallback_mode
@@ -308,8 +303,7 @@ class TestAlignmentStateEmitter:
     def test_last_state_is_set_after_compute(self):
         emitter = self._make_emitter()
         assert emitter.last_state is None
-        import asyncio
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             emitter.compute(raw_rmssd=55.0, raw_schumann_amplitude=1.5, solar_kp=0.0)
         )
         assert emitter.last_state is not None
@@ -318,8 +312,7 @@ class TestAlignmentStateEmitter:
 
     def test_to_json_round_trip(self):
         emitter = self._make_emitter()
-        import asyncio
-        state = asyncio.get_event_loop().run_until_complete(
+        state = asyncio.run(
             emitter.compute(raw_rmssd=60.0, raw_schumann_amplitude=2.0, solar_kp=1.0)
         )
         payload = json.loads(state.to_json())
