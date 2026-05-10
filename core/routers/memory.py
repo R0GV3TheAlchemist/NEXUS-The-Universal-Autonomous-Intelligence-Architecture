@@ -6,6 +6,7 @@ C17-governed persistent memory endpoints:
   POST   /memory/add           — add a new memory
   POST   /memory/store         — store a raw text fragment to ChromaDB
   GET    /memory/recall        — semantic similarity search (?q=&top_k=5)
+  POST   /memory/context       — build ranked context block for LLM injection  ★ NEW
   PUT    /memory/{id}          — edit a memory (new_content query param)
   DELETE /memory/{id}          — soft-delete a memory (+ ChromaDB forget)
   GET    /memory/audit         — full audit log
@@ -20,8 +21,11 @@ Canon Ref: C17 (Persistent Memory and Identity Architecture)
 
 from __future__ import annotations
 
+import math
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from core.memory_chroma import get_chroma, store_turn
 from core.memory_store import get_memory_store
@@ -46,6 +50,105 @@ class StoreMemoryRequest(BaseModel):
     emotion: str = "neutral"
     gaian_slug: str = "gaia"
     session_id: str = ""
+
+
+class MemoryContextRequest(BaseModel):
+    """
+    Body for POST /memory/context.
+
+    The chat pipeline sends this before every LLM stream call.
+    The returned `context_block` is injected verbatim into the system prompt
+    so the model has grounded, ranked memory of the user.
+    """
+    query: str = Field(..., description="The current user message or intent summary.")
+    gaian_slug: str = Field("gaia", description="Which Gaian's ChromaDB collection to search.")
+    top_k: int = Field(8, ge=1, le=30, description="Max candidate fragments from ChromaDB.")
+    affect_state: str = Field(
+        "neutral",
+        description="Current affect/emotion label (e.g. 'grief', 'joy'). "
+                    "Used to boost emotionally-resonant memories.",
+    )
+    session_id: str = Field("", description="Current session ID — used to de-prioritise same-session repeats.")
+    max_tokens: int = Field(
+        600,
+        ge=50,
+        le=2000,
+        description="Soft token budget for the context block (1 token ≈ 4 chars).",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+_AFFECT_KEYWORDS: dict[str, list[str]] = {
+    "grief":    ["loss", "death", "grief", "father", "mother", "gone", "miss"],
+    "joy":      ["happy", "celebrat", "excit", "achiev", "proud", "wonderful"],
+    "anxiety":  ["anxious", "worry", "fear", "stress", "overwhelm", "panic"],
+    "anger":    ["anger", "frustrat", "rage", "unfair", "betray"],
+    "longing":  ["miss", "wish", "hope", "long", "want", "dream"],
+    "curiosity":["question", "wonder", "curious", "discover", "learn", "why"],
+}
+
+
+def _affect_boost(text: str, affect: str) -> float:
+    """Return a small additive boost (0.0–0.15) if the fragment resonates with the current affect."""
+    keywords = _AFFECT_KEYWORDS.get(affect.lower(), [])
+    if not keywords:
+        return 0.0
+    t = text.lower()
+    matches = sum(1 for kw in keywords if kw in t)
+    return min(0.15, matches * 0.05)
+
+
+def _recency_score(idx: int, total: int, metadata: dict[str, Any]) -> float:
+    """
+    Derive a 0–1 recency score.
+
+    ChromaDB returns fragments ordered by cosine distance (closest first).
+    When a stored `timestamp` is available we use it; otherwise we fall back
+    to position-based decay so the top recalled hit scores highest.
+    """
+    ts = metadata.get("timestamp") or metadata.get("created_at")
+    if ts:
+        try:
+            import datetime
+            dt = datetime.datetime.fromisoformat(str(ts))
+            age_hours = (datetime.datetime.utcnow() - dt).total_seconds() / 3600
+            # Half-life: 7 days → score 0.5 at 168 hours; recent → 1.0
+            return math.exp(-age_hours / 168)
+        except Exception:
+            pass
+    # Fallback: linear decay by position
+    if total <= 1:
+        return 1.0
+    return 1.0 - (idx / (total - 1)) * 0.5
+
+
+def _build_context_block(fragments: list[dict[str, Any]], max_chars: int) -> tuple[str, bool]:
+    """
+    Format ranked fragments into the XML-style context block.
+    Returns (block_text, truncated_flag).
+    """
+    if not fragments:
+        return "", False
+
+    lines = ["<memory>"]
+    used = len("<memory>\n</memory>")
+    truncated = False
+
+    for i, frag in enumerate(fragments, start=1):
+        text = frag.get("text", "").strip()
+        score = frag.get("final_score", 0.0)
+        line = f"  [{i}] (relevance={score:.2f}) {text}"
+        if used + len(line) + 1 > max_chars:
+            truncated = True
+            break
+        lines.append(line)
+        used += len(line) + 1
+
+    lines.append("</memory>")
+    return "\n".join(lines), truncated
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +186,7 @@ def memory_add(req: AddMemoryRequest):
 
 
 @router.post("/store")
-def memory_store(req: StoreMemoryRequest):
+def memory_store_endpoint(req: StoreMemoryRequest):
     """
     Store a raw text fragment directly to ChromaDB.
     Used by auto-store after conversation turns.
@@ -95,7 +198,9 @@ def memory_store(req: StoreMemoryRequest):
     if not chroma.available:
         return {"status": "skipped", "reason": "ChromaDB not available"}
     import hashlib, datetime
-    uid = hashlib.sha256(f"{req.gaian_slug}:{req.session_id}:{req.text[:64]}:{datetime.datetime.utcnow().isoformat()}".encode()).hexdigest()[:16]
+    uid = hashlib.sha256(
+        f"{req.gaian_slug}:{req.session_id}:{req.text[:64]}:{datetime.datetime.utcnow().isoformat()}".encode()
+    ).hexdigest()[:16]
     ok = chroma.store(
         text=req.text,
         memory_id=uid,
@@ -105,6 +210,108 @@ def memory_store(req: StoreMemoryRequest):
         session_id=req.session_id,
     )
     return {"status": "stored" if ok else "failed", "id": uid, "chroma_count": chroma.count()}
+
+
+@router.post("/context")
+def memory_context(req: MemoryContextRequest):
+    """
+    Build a ranked, formatted memory context block for LLM injection.
+
+    The chat pipeline calls this before every stream request.  The response's
+    `context_block` is inserted into the system prompt between GAIA's identity
+    preamble and the current user message so the model has grounded recall.
+
+    Ranking algorithm
+    -----------------
+    For each ChromaDB hit:
+      relevance_score = 1.0 - cosine_distance   (ChromaDB returns distance 0–2)
+      recency_score   = exponential decay by age (fallback: position decay)
+      affect_boost    = 0.0–0.15 if fragment text resonates with affect_state
+      final_score     = 0.70 * relevance + 0.30 * recency + affect_boost
+
+    Fragments from the current session are de-prioritised by 0.1 to avoid
+    echo-chamber repetition within a single conversation.
+
+    Canon Ref: C17
+    """
+    if not req.query.strip():
+        raise HTTPException(status_code=422, detail="query must not be empty")
+
+    chroma = get_chroma()
+    if not chroma.available:
+        return {
+            "context_block": "",
+            "fragments": [],
+            "count": 0,
+            "chroma_available": False,
+            "truncated": False,
+        }
+
+    raw_hits: list[dict[str, Any]] = chroma.recall(
+        query=req.query,
+        top_k=req.top_k,
+        gaian_slug=req.gaian_slug,
+    )
+
+    if not raw_hits:
+        return {
+            "context_block": "",
+            "fragments": [],
+            "count": 0,
+            "chroma_available": True,
+            "truncated": False,
+        }
+
+    total = len(raw_hits)
+    scored: list[dict[str, Any]] = []
+
+    for idx, hit in enumerate(raw_hits):
+        # ChromaDB distance: 0 = identical, 2 = maximally different (cosine space).
+        # Normalise to a 0–1 relevance score.
+        distance = float(hit.get("distance", 1.0))
+        relevance = max(0.0, min(1.0, 1.0 - (distance / 2.0)))
+
+        metadata = hit.get("metadata") or {}
+        recency = _recency_score(idx, total, metadata)
+
+        boost = _affect_boost(hit.get("text", ""), req.affect_state)
+
+        # De-prioritise same-session fragments to avoid repetition
+        same_session_penalty = (
+            0.10
+            if req.session_id and metadata.get("session_id") == req.session_id
+            else 0.0
+        )
+
+        final = 0.70 * relevance + 0.30 * recency + boost - same_session_penalty
+        final = max(0.0, min(1.0, final))
+
+        scored.append({
+            "text":        hit.get("text", ""),
+            "memory_id":   hit.get("id") or hit.get("memory_id", ""),
+            "source":      metadata.get("source", "conversation"),
+            "distance":    distance,
+            "relevance":   round(relevance, 4),
+            "recency":     round(recency, 4),
+            "affect_boost": round(boost, 4),
+            "final_score": round(final, 4),
+            "metadata":    metadata,
+        })
+
+    # Sort descending by final_score; discard very low-signal fragments
+    scored.sort(key=lambda x: x["final_score"], reverse=True)
+    scored = [f for f in scored if f["final_score"] >= 0.10]
+
+    max_chars = req.max_tokens * 4  # 1 token ≈ 4 chars (conservative estimate)
+    context_block, truncated = _build_context_block(scored, max_chars)
+
+    return {
+        "context_block":   context_block,
+        "fragments":       scored,
+        "count":           len(scored),
+        "chroma_available": True,
+        "truncated":       truncated,
+    }
 
 
 @router.get("/recall")
