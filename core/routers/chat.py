@@ -18,6 +18,7 @@ import time
 import uuid
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -28,7 +29,7 @@ from core.inference_router import InferenceRequest, InferenceResponse
 from core.infra.action_gate import RiskTier
 from core.infra.memory_consolidation import schedule_consolidation
 from core.logger import GAIAEvent, get_logger, log_event
-from core.infra.memory_bridge import recall_for_prompt, store_turn
+from core.infra.memory_bridge import store_turn
 from core.planner.step_dispatcher import submit_pending_steps
 from core.rate_limiter import rate_limit
 from core.server_models import ChatRequest, QueryRequest, SetGaianRequest
@@ -39,6 +40,85 @@ from core.web_search import search_web_async
 logger = get_logger(__name__)
 router = APIRouter()
 
+# ---------------------------------------------------------------------------
+# Internal loopback base URL — same process, same port.
+# Used to call /memory/context without duplicating ranking logic.
+# ---------------------------------------------------------------------------
+_LOOPBACK = "http://127.0.0.1:8008"
+
+
+async def _fetch_memory_context(
+    query: str,
+    gaian_slug: str,
+    session_id: str,
+    affect_state: str = "neutral",
+    top_k: int = 8,
+    max_tokens: int = 600,
+) -> tuple[str, list, bool]:
+    """
+    Call POST /memory/context on the loopback server.
+
+    Returns (context_block, fragments, truncated).
+    Fails silently — callers receive ("", [], False) on any error so the
+    chat stream is never interrupted by a memory subsystem failure.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.post(
+                f"{_LOOPBACK}/memory/context",
+                json={
+                    "query":       query,
+                    "gaian_slug":  gaian_slug,
+                    "session_id":  session_id,
+                    "affect_state": affect_state,
+                    "top_k":       top_k,
+                    "max_tokens":  max_tokens,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return (
+                    data.get("context_block", ""),
+                    data.get("fragments", []),
+                    data.get("truncated", False),
+                )
+    except Exception as e:
+        logger.debug(f"[memory_context] loopback call failed (non-fatal): {e}")
+    return "", [], False
+
+
+def _inject_memory_block(system_prompt: str, context_block: str) -> str:
+    """
+    Insert the memory block into the system prompt.
+
+    Placement: after the identity preamble, before any soul-mirror nudge,
+    separated by a blank line on each side so the LLM parser sees it cleanly.
+    """
+    if not context_block:
+        return system_prompt
+    return f"{system_prompt}\n\n{context_block}"
+
+
+def _extract_affect(state_snapshot: dict) -> str:
+    """
+    Pull the dominant affect label out of the engine state snapshot.
+    Falls back to 'neutral' when unavailable.
+    """
+    try:
+        affect = (
+            state_snapshot.get("dominant_affect")
+            or state_snapshot.get("affect_state")
+            or state_snapshot.get("emotion")
+            or "neutral"
+        )
+        return str(affect).lower()
+    except Exception:
+        return "neutral"
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @router.get("/memory/list")
 async def memory_list(session_id: Optional[str] = None):
@@ -99,13 +179,10 @@ async def gaian_chat(
             result = rt.process(req.message, noosphere=noosphere)
 
             # ── Scheduler: populate queue from active goal steps ──────────────────
-            # submit_pending_steps is sync (just heappush); safe to call here.
-            # schedule_consolidation is idempotent — submits once per
-            # (runtime, user_id) pair for the process lifetime.
             submitted = submit_pending_steps(rt, user.user_id)
             schedule_consolidation(rt, user.user_id)
             if submitted:
-                log.debug(
+                logger.debug(
                     "[chat] submitted %d goal-step task(s) to scheduler for user=%s",
                     submitted, user.user_id,
                 )
@@ -133,7 +210,7 @@ async def gaian_chat(
             yield f"event: resonance_field\ndata: {json.dumps(result.resonance_field.summary())}\n\n"
             await asyncio.sleep(0.01)
 
-            # --- ActionGate: risk-tier veto check (Doc 35 / Doc 21) ---
+            # --- ActionGate: risk-tier veto check ---
             policy_flagged = getattr(
                 getattr(result, "policy_result", None), "flagged", False
             )
@@ -168,6 +245,7 @@ async def gaian_chat(
             yield f"event: action_gate\ndata: {json.dumps({'tier': gate_result['tier'].value if hasattr(gate_result['tier'], 'value') else str(gate_result['tier']), 'approved': True})}\n\n"
             await asyncio.sleep(0.01)
 
+            # ── Web search ────────────────────────────────────────────────────────
             web_sources = []
             if req.enable_web_search:
                 try:
@@ -179,31 +257,44 @@ async def gaian_chat(
                 except Exception as e:
                     logger.warning(f"Web search error in chat: {e}")
 
-            recalled_memories = recall_for_prompt(
+            # ── Memory context (C17) ──────────────────────────────────────────────
+            # Derive affect from the engine state snapshot so emotionally-resonant
+            # memories receive their boost score during ranking.
+            affect_state = _extract_affect(result.state_snapshot)
+
+            context_block, memory_fragments, mem_truncated = await _fetch_memory_context(
                 query=req.message,
                 gaian_slug=slug,
-                top_k=5,
+                session_id=session_id,
+                affect_state=affect_state,
+                top_k=8,
+                max_tokens=600,
             )
 
-            effective_prompt = result.system_prompt
+            # Emit SSE event so the frontend can show a subtle memory-loaded indicator
+            yield f"event: memory_context\ndata: {json.dumps({'count': len(memory_fragments), 'truncated': mem_truncated})}\n\n"
+            await asyncio.sleep(0.01)
+
+            # ── Assemble effective system prompt ──────────────────────────────────
+            effective_prompt = _inject_memory_block(result.system_prompt, context_block)
             if result.soul_mirror.individuation_nudge:
                 effective_prompt += (
                     "\n\n[SOUL MIRROR NUDGE AVAILABLE — use naturally if it fits]\n"
                     + result.soul_mirror.individuation_nudge
                 )
 
+            # Existing visible_memories from runtime (non-ChromaDB, e.g. pinned)
             existing_visible = [
                 m["text"] for m in rt._memory.get("visible_memories", [])
                 if isinstance(m, dict)
             ]
-            all_visible = recalled_memories + existing_visible
 
             inference_req = InferenceRequest(
                 query=req.message,
                 gaian_slug=slug,
                 gaian_system_prompt=effective_prompt,
                 long_term_memories=gaian.long_term_memories or [],
-                visible_memories=all_visible,
+                visible_memories=existing_visible,
                 conversation_history=get_conversation_context(gaian),
                 conversation_context=session.get_context_summary() if session.turns else None,
                 sources=web_sources,
@@ -257,7 +348,8 @@ async def gaian_chat(
                 'noosphere_resonance': inference_meta.noosphere_resonance,
                 'criticality_state':   inference_meta.criticality_state,
                 'inference_ms':        inference_meta.duration_ms,
-                'recalled_memories':   len(recalled_memories),
+                'recalled_memories':   len(memory_fragments),
+                'memory_truncated':    mem_truncated,
                 'action_gate': {
                     'tier':    gate_result["tier"].value if hasattr(gate_result["tier"], "value") else str(gate_result["tier"]),
                     'approved': gate_result["approved"],
@@ -336,6 +428,10 @@ async def query_stream(
             conversation_history: Optional[list] = None
             long_term_memories: list = []
             visible_memories: list = []
+            context_block = ""
+            memory_fragments: list = []
+            mem_truncated = False
+            affect_state = "neutral"
 
             if gaian:
                 rt = _get_runtime(gaian_slug, gaian)
@@ -349,12 +445,13 @@ async def query_stream(
                 ) if canon_results else None
                 result = rt.process(req.query)
                 runtime_system_prompt = result.system_prompt
+                affect_state = _extract_affect(result.state_snapshot)
 
-                # ── Scheduler: populate queue from active goal steps ────────
+                # ── Scheduler ────────────────────────────────────────────────────
                 submitted = submit_pending_steps(rt, user.user_id)
                 schedule_consolidation(rt, user.user_id)
                 if submitted:
-                    log.debug(
+                    logger.debug(
                         "[query] submitted %d goal-step task(s) to scheduler for user=%s",
                         submitted, user.user_id,
                     )
@@ -363,8 +460,23 @@ async def query_stream(
                 await asyncio.sleep(0.01)
                 conversation_history = get_conversation_context(gaian)
                 long_term_memories = gaian.long_term_memories or []
-                recalled = recall_for_prompt(req.query, gaian_slug=gaian_slug, top_k=5)
-                visible_memories = recalled + [
+
+                # ── Memory context (C17) ──────────────────────────────────────────
+                context_block, memory_fragments, mem_truncated = await _fetch_memory_context(
+                    query=req.query,
+                    gaian_slug=gaian_slug,
+                    session_id=session_id,
+                    affect_state=affect_state,
+                    top_k=8,
+                    max_tokens=600,
+                )
+
+                yield f"event: memory_context\ndata: {json.dumps({'count': len(memory_fragments), 'truncated': mem_truncated})}\n\n"
+                await asyncio.sleep(0.01)
+
+                runtime_system_prompt = _inject_memory_block(runtime_system_prompt, context_block)
+
+                visible_memories = [
                     m["text"] for m in rt._memory.get("visible_memories", [])
                     if isinstance(m, dict)
                 ]
@@ -422,6 +534,8 @@ async def query_stream(
                 'noosphere_resonance': inference_meta.noosphere_resonance,
                 'criticality_state':   inference_meta.criticality_state,
                 'inference_ms':        inference_meta.duration_ms,
+                'recalled_memories':   len(memory_fragments),
+                'memory_truncated':    mem_truncated,
                 'timestamp':           time.time(),
             }
             yield f"event: done\ndata: {json.dumps(done_data)}\n\n"
