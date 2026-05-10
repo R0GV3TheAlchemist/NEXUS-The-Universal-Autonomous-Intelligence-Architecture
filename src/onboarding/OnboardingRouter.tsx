@@ -71,7 +71,8 @@ export function OnboardingRouter({ onFinish }: OnboardingRouterProps) {
               Resume
             </button>
             <button
-              className="btn btn--ghost"\n              onClick={() => {
+              className="btn btn--ghost"
+              onClick={() => {
                 resetOnboarding();
                 setResumePrompt(false);
               }}
