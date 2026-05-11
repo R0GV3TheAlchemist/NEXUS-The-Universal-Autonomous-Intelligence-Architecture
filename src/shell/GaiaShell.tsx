@@ -339,22 +339,17 @@ export const GaiaShell: React.FC = () => {
   // Onboarding state
   const completed          = useOnboardingStore(s => s.completed);
   const completeOnboarding = useOnboardingStore(s => s.completeOnboarding);
-  const resetToStore       = useOnboardingStore(s => s.resetOnboarding);
 
   // While we hydrate persisted onboarding state we show nothing to avoid flicker.
   const [onboardingReady, setOnboardingReady] = useState(false);
 
   useEffect(() => {
     if (!token) {
-      // Not authenticated yet — no need to load onboarding state.
       setOnboardingReady(false);
       return;
     }
-    // Authenticated: hydrate persisted onboarding state from disk.
     loadPersistedState().then(persisted => {
       if (persisted) {
-        // Re-hydrate the store with what was on disk.
-        // We only need the `completed` flag here; the router handles the rest.
         useOnboardingStore.setState(persisted);
       }
       setOnboardingReady(true);
@@ -374,9 +369,7 @@ export const GaiaShell: React.FC = () => {
     );
   }
 
-  // ── Hydration in progress ─────────────────────────────────────────
-  // Show a minimal dark screen while we read from disk — prevents
-  // the shell flashing before the onboarding check completes.
+  // ── Hydration in progress ──────────────────────────────────────────
   if (!onboardingReady) {
     return (
       <div
