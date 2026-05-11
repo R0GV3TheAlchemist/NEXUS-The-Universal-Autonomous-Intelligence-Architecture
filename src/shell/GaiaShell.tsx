@@ -8,14 +8,8 @@
  *   2. token + !onboardingCompleted    → OnboardingRouter  ← C-OB01
  *   3. token + onboardingCompleted     → Shell
  *
- * Sovereignty layer:
- *   <SovereignGuard />    — Axiom I always-visible control bar
- *   <ActionGateDialog />  — YELLOW/RED tier action confirmation modal
- *
- * Viriditas layer:
- *   <ViritasWidget />     — compact orb pinned to the bottom of the left rail
- *   useAlignmentTheme()   — Phase 2: injects alignment CSS tokens onto :root
- *   <FieldVisualiser />   — Phase 6: Three.js ambient particle field
+ * DEV NOTE: Set DEV_BYPASS_AUTH = true to skip auth and test onboarding
+ * without the FastAPI sidecar running. MUST be false in production.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -41,6 +35,10 @@ import './GaiaShell.css';
 
 const API_BASE = '/api';
 
+// ⚠️  DEV ONLY — set true to bypass auth and jump straight to onboarding.
+//     MUST be false before any production build.
+const DEV_BYPASS_AUTH = true;
+
 // ------------------------------------------------------------------ //
 // Auth types
 // ------------------------------------------------------------------ //
@@ -56,8 +54,12 @@ interface AuthResult {
 // useAuth hook
 // ------------------------------------------------------------------ //
 function useAuth() {
-  const [token,    setToken]    = useState<string | null>(() => localStorage.getItem('gaia_token'));
-  const [username, setUsername] = useState<string | null>(() => localStorage.getItem('gaia_username'));
+  const [token,    setToken]    = useState<string | null>(
+    () => DEV_BYPASS_AUTH ? 'dev-token' : localStorage.getItem('gaia_token')
+  );
+  const [username, setUsername] = useState<string | null>(
+    () => DEV_BYPASS_AUTH ? 'dev' : localStorage.getItem('gaia_username')
+  );
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
 
@@ -69,6 +71,7 @@ function useAuth() {
   }
 
   async function register(email: string, uname: string, password: string) {
+    if (DEV_BYPASS_AUTH) return;
     setLoading(true); setError('');
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
@@ -84,6 +87,7 @@ function useAuth() {
   }
 
   async function login(identifier: string, password: string) {
+    if (DEV_BYPASS_AUTH) return;
     setLoading(true); setError('');
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -99,6 +103,7 @@ function useAuth() {
   }
 
   function logout() {
+    if (DEV_BYPASS_AUTH) return;
     localStorage.removeItem('gaia_token');
     localStorage.removeItem('gaia_username');
     setToken(null);
@@ -336,11 +341,9 @@ const ShellMain: React.FC<{ token: string; username: string | null; onLogout: ()
 export const GaiaShell: React.FC = () => {
   const { token, username, loading, error, register, login, logout, clearError } = useAuth();
 
-  // Onboarding state
   const completed          = useOnboardingStore(s => s.completed);
   const completeOnboarding = useOnboardingStore(s => s.completeOnboarding);
 
-  // While we hydrate persisted onboarding state we show nothing to avoid flicker.
   const [onboardingReady, setOnboardingReady] = useState(false);
 
   useEffect(() => {
@@ -372,31 +375,21 @@ export const GaiaShell: React.FC = () => {
   // ── Hydration in progress ──────────────────────────────────────────
   if (!onboardingReady) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100dvh',
-          background: '#0b0c0e',
-          color: '#4f98a3',
-          fontFamily: 'sans-serif',
-          fontSize: '0.875rem',
-          letterSpacing: '0.08em',
-        }}
-      >
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '100dvh', background: '#0b0c0e', color: '#4f98a3',
+        fontFamily: 'sans-serif', fontSize: '0.875rem', letterSpacing: '0.08em',
+      }}>
         GAIA is waking…
       </div>
     );
   }
 
-  // ── State 2: Authenticated but onboarding not completed ───────────
+  // ── State 2: Onboarding not yet complete ──────────────────────────
   if (!completed) {
     return (
       <OnboardingRouter
-        onFinish={() => {
-          completeOnboarding();
-        }}
+        onFinish={() => completeOnboarding()}
       />
     );
   }
