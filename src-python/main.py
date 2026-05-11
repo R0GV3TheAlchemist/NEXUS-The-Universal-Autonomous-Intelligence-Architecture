@@ -7,9 +7,11 @@ to the Tauri frontend via localhost HTTP.
 
 Engines mounted
 ---------------
-  /memory  — SovereignMemory (soul_mirror.db, episodic + semantic + biometric)
-  /affect  — AffectEngine    (affect signal analysis, arc trends)
-  /stage   — StageEngine     (Magnum Opus stage evaluation, WindowTracker)
+  /memory   — SovereignMemory  (soul_mirror.db, episodic + semantic + biometric)
+  /affect   — AffectEngine     (affect signal analysis, arc trends)
+  /stage    — StageEngine      (Magnum Opus stage evaluation, WindowTracker)
+  /shadow   — ShadowEngine     (archetypal shadow detection, integration tracking)
+  /schumann — SchumannEngine   (Earth resonance alignment layer)
 
 Usage (development)
 -------------------
@@ -52,6 +54,12 @@ from affect_engine.router import affect_router, init_affect_engine
 from stage_engine.engine import StageEngine
 from stage_engine.window_tracker import WindowTracker
 from stage_engine.router import stage_router, init_stage_engine
+
+from shadow_engine.engine import ShadowEngine
+from shadow_engine.router import router as shadow_router
+
+from schumann.engine import SchumannEngine
+from schumann.router import router as schumann_router, init_schumann_engine
 
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
@@ -112,7 +120,19 @@ async def lifespan(app: FastAPI):
     init_stage_engine(memory=memory, engine=stage_engine, tracker=window_tracker)
     logger.info("StageEngine + WindowTracker initialised ✓")
 
-    # ── 4. Sovereign Memory router (last — has its own init signature) ────────
+    # ── 4. Shadow Engine ──────────────────────────────────────────────────────
+    # ShadowEngine is self-contained (fetches from /affect and /stage internally).
+    # It is instantiated as a module-level singleton inside shadow_engine/router.py,
+    # so no explicit init injection is required here.  We log its presence for
+    # operational visibility.
+    logger.info("ShadowEngine online ✓")
+
+    # ── 5. Schumann Engine ───────────────────────────────────────────────────
+    schumann_engine = SchumannEngine()
+    init_schumann_engine(schumann_engine)
+    logger.info("SchumannEngine initialised ✓")
+
+    # ── 6. Sovereign Memory router (last — has its own init signature) ────────
     init_memory(memory)
     logger.info("SovereignMemory router initialised ✓")
 
@@ -129,10 +149,11 @@ async def lifespan(app: FastAPI):
 # ── FastAPI application ───────────────────────────────────────────────────────
 app = FastAPI(
     title="GAIA-OS Sidecar",
-    version="0.1.0",
+    version="0.2.0",
     description=(
         "Local-first inference sidecar for GAIA-OS. "
-        "Serves Soul Mirror memory, affect analysis, and stage evaluation "
+        "Serves Soul Mirror memory, affect analysis, stage evaluation, "
+        "shadow archetype detection, and Schumann resonance alignment "
         "to the Tauri frontend over localhost."
     ),
     docs_url="/docs",
@@ -156,9 +177,11 @@ app.add_middleware(
 )
 
 # ── Mount routers ─────────────────────────────────────────────────────────────
-app.include_router(memory_router, prefix="/memory")
-app.include_router(affect_router, prefix="/affect")
-app.include_router(stage_router,  prefix="/stage")
+app.include_router(memory_router,  prefix="/memory")
+app.include_router(affect_router,  prefix="/affect")
+app.include_router(stage_router,   prefix="/stage")
+app.include_router(shadow_router)   # shadow_engine/router.py already sets prefix="/shadow"
+app.include_router(schumann_router) # schumann/router.py already sets its own prefix
 
 
 # ── Root health endpoint ──────────────────────────────────────────────────────
@@ -167,9 +190,9 @@ async def root() -> JSONResponse:
     """Sidecar liveness probe — returns version and online engines."""
     return JSONResponse(content={
         "service": "gaia-sidecar",
-        "version": "0.1.0",
-        "status": "online",
-        "engines": ["memory", "affect", "stage"],
+        "version": "0.2.0",
+        "status":  "online",
+        "engines": ["memory", "affect", "stage", "shadow", "schumann"],
     })
 
 
