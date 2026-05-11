@@ -1,0 +1,200 @@
+/*
+ * viriditas.css — Viriditas UI Layer token overrides (Issue #68)
+ *
+ * Scoped to [data-viriditas] on <html>.  Each tier tweaks a small set
+ * of CSS custom properties; all other values fall through to the base
+ * GAIA design tokens in gaian.css.
+ *
+ * Storm mode: [data-disturbance="disturbed"] applies the restorative
+ * palette on top of any tier, making the UI quieter and warmer to
+ * reduce cognitive load during high-Kp periods.
+ *
+ * prefers-reduced-motion: tier-specific motion properties collapse to
+ * near-zero so the system preference is always respected.
+ */
+
+/* ── MINIMAL (0.00–0.25 or any disturbance) ─────────────────────────────── */
+[data-viriditas="minimal"] {
+  --viriditas-orb-glow-opacity:    0.18;
+  --viriditas-orb-pulse-scale:     1.01;
+  --viriditas-orb-pulse-duration:  6s;
+  --viriditas-surface-luminance:   0.88;
+  --viriditas-accent-saturation:   0.55;
+  --viriditas-particle-density:    0.2;
+  --viriditas-motion-scale:        0.3;
+  --viriditas-transition-speed:    600ms;
+  /* Mute every animated property */
+  --viriditas-bg-filter:           saturate(0.55) brightness(0.96);
+}
+
+/* ── CORE (0.26–0.45) ───────────────────────────────────────────────────── */
+[data-viriditas="core"] {
+  --viriditas-orb-glow-opacity:    0.32;
+  --viriditas-orb-pulse-scale:     1.02;
+  --viriditas-orb-pulse-duration:  5s;
+  --viriditas-surface-luminance:   0.92;
+  --viriditas-accent-saturation:   0.72;
+  --viriditas-particle-density:    0.4;
+  --viriditas-motion-scale:        0.6;
+  --viriditas-transition-speed:    420ms;
+  --viriditas-bg-filter:           saturate(0.72) brightness(0.98);
+}
+
+/* ── STANDARD (0.46–0.65) ───────────────────────────────────────────────── */
+[data-viriditas="standard"] {
+  --viriditas-orb-glow-opacity:    0.50;
+  --viriditas-orb-pulse-scale:     1.03;
+  --viriditas-orb-pulse-duration:  4s;
+  --viriditas-surface-luminance:   1.00;
+  --viriditas-accent-saturation:   1.00;
+  --viriditas-particle-density:    0.65;
+  --viriditas-motion-scale:        1.0;
+  --viriditas-transition-speed:    280ms;
+  --viriditas-bg-filter:           none;
+}
+
+/* ── FULL (0.66–0.84, stable) ───────────────────────────────────────────── */
+[data-viriditas="full"] {
+  --viriditas-orb-glow-opacity:    0.68;
+  --viriditas-orb-pulse-scale:     1.045;
+  --viriditas-orb-pulse-duration:  3.4s;
+  --viriditas-surface-luminance:   1.03;
+  --viriditas-accent-saturation:   1.12;
+  --viriditas-particle-density:    0.82;
+  --viriditas-motion-scale:        1.0;
+  --viriditas-transition-speed:    220ms;
+  --viriditas-bg-filter:           saturate(1.08) brightness(1.01);
+}
+
+/* ── VIBRANT (0.85–1.00, stable) ────────────────────────────────────────── */
+[data-viriditas="vibrant"] {
+  --viriditas-orb-glow-opacity:    0.88;
+  --viriditas-orb-pulse-scale:     1.06;
+  --viriditas-orb-pulse-duration:  2.8s;
+  --viriditas-surface-luminance:   1.06;
+  --viriditas-accent-saturation:   1.20;
+  --viriditas-particle-density:    1.0;
+  --viriditas-motion-scale:        1.0;
+  --viriditas-transition-speed:    180ms;
+  --viriditas-bg-filter:           saturate(1.18) brightness(1.02);
+}
+
+/* ── Storm / disturbance override ───────────────────────────────────────── */
+/*
+ * Applied on top of any tier when data-disturbance="disturbed".
+ * Forces a restorative warm palette to reduce cognitive load.
+ * Earth science rationale: Kp > 8 events correlate with HRV suppression;
+ * the UI responds by becoming quieter and warmer.
+ */
+[data-disturbance="disturbed"] {
+  --viriditas-orb-glow-opacity:    0.14;
+  --viriditas-orb-pulse-scale:     1.005;
+  --viriditas-orb-pulse-duration:  8s;
+  --viriditas-particle-density:    0.1;
+  --viriditas-motion-scale:        0.2;
+  --viriditas-bg-filter:           saturate(0.40) sepia(0.18) brightness(0.94);
+  --viriditas-accent-saturation:   0.45;
+  --viriditas-transition-speed:    800ms;
+}
+
+/* ── Alignment indicator ─────────────────────────────────────────────────── */
+
+.viriditas-indicator {
+  position: fixed;
+  bottom: calc(var(--dock-height, 80px) + 12px);
+  right: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 8px;
+  background: oklch(from var(--color-surface, #1c1b19) l c h / 0.82);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid oklch(from var(--color-text, #cdccca) l c h / 0.10);
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--font-body, sans-serif);
+  color: var(--color-text-muted, #797876);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.18);
+}
+
+.viriditas-indicator[hidden] {
+  display: none;
+}
+
+.viriditas-indicator:hover {
+  background: oklch(from var(--color-surface, #1c1b19) l c h / 0.95);
+}
+
+.viriditas-indicator__arc {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.viriditas-indicator__score {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--color-text, #cdccca);
+  font-weight: 500;
+}
+
+.viriditas-indicator__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-text-faint, #5a5957);
+  transition: background 400ms ease;
+}
+
+/* Disturbance dot colours */
+.viriditas-indicator[data-disturbance="stable"]      .viriditas-indicator__dot { background: #4f98a3; }
+.viriditas-indicator[data-disturbance="elevated"]    .viriditas-indicator__dot { background: #e8af34; }
+.viriditas-indicator[data-disturbance="disturbed"]   .viriditas-indicator__dot { background: #dd6974; }
+.viriditas-indicator[data-disturbance="unavailable"] .viriditas-indicator__dot { background: #5a5957; }
+
+/* Tooltip */
+.viriditas-indicator summary {
+  list-style: none;
+}
+.viriditas-indicator summary::-webkit-details-marker { display: none; }
+
+.viriditas-indicator__tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  padding: 10px 12px;
+  background: var(--color-surface-2, #201f1d);
+  border: 1px solid oklch(from var(--color-text, #cdccca) l c h / 0.12);
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-muted, #797876);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.28);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.viriditas-indicator__tooltip strong {
+  display: block;
+  color: var(--color-text, #cdccca);
+  margin-bottom: 4px;
+  font-size: 11.5px;
+}
+
+/* ── prefers-reduced-motion: collapse all Viriditas motion ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-viriditas] {
+    --viriditas-orb-pulse-scale:    1.0;
+    --viriditas-orb-pulse-duration: 9999s;
+    --viriditas-motion-scale:       0;
+    --viriditas-transition-speed:   0ms;
+    --viriditas-bg-filter:          none;
+  }
+}
