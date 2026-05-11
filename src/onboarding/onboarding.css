@@ -1,9 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
    C-OB01 — Onboarding Stylesheet
    GAIA-OS onboarding flow. Cyber-noir aesthetic.
-   FIX PATCH: Added missing classes (.intro-para, .btn--large, intent-grid,
-   intent-card, .question-group, .question-label, .question-sub,
-   .intent-other) and aligned .consent-cards/.consent-card names with TSX.
+   PATCH: Added .gaia-sigil--animate and .gaia-sigil__core (were missing).
 ═══════════════════════════════════════════════════════════════════ */
 
 /* ─── Fonts ───────────────────────────────────────────────────────
@@ -195,7 +193,6 @@
   border-color: var(--cyber-border);
 }
 
-/* FIX: .btn--large was referenced in Phase1 and Phase8 but never defined */
 .btn--large {
   padding: 0.85rem 2.2rem;
   font-size: 0.88rem;
@@ -239,7 +236,6 @@
   max-width: 58ch;
 }
 
-/* FIX: .intro-para was missing entirely — paragraphs rendered unstyled */
 .intro-para {
   font-size: clamp(1rem, 2.2vw, 1.25rem);
   font-weight: 300;
@@ -317,8 +313,6 @@
 }
 
 /* ─── Phase 4 — Three Questions ─────────────────────────────────── */
-
-/* FIX: .question-group, .question-label, .question-sub were missing */
 .question-group {
   border: none;
   padding: 0;
@@ -351,7 +345,6 @@
   text-transform: uppercase;
 }
 
-/* FIX: .intent-grid, .intent-card, .intent-card--selected were missing */
 .intent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -403,7 +396,6 @@
   line-height: 1.4;
 }
 
-/* FIX: .intent-other was missing */
 .intent-other {
   width: 100%;
   background: var(--cyber-surface);
@@ -471,7 +463,7 @@
   letter-spacing: 0.03em;
 }
 
-/* Sensitive / choice topics — Phase 4 step 2 */
+/* Sensitive / choice topics */
 .choice-list {
   display: flex;
   flex-direction: row;
@@ -507,8 +499,6 @@
 }
 
 /* ─── Phase 5 — Consent ──────────────────────────────────────────── */
-/* FIX: TSX was using .consent-list/.consent-item — renamed to match CSS:
-   .consent-cards / .consent-card / .consent-card__info / .consent-card__what / .consent-card__why */
 .consent-cards {
   display: flex;
   flex-direction: column;
@@ -746,6 +736,41 @@
 /* ─── Sigil ──────────────────────────────────────────────────────── */
 .gaia-sigil {
   flex-shrink: 0;
+  color: var(--neon-cyan);
+}
+
+/*
+ * FIX: .gaia-sigil--animate was used in GaiaSigil.tsx but never defined.
+ * Applies a slow counter-rotate to the outer dashed ring via the SVG
+ * element itself, and sets up keyframes for .gaia-sigil__core.
+ */
+.gaia-sigil--animate {
+  animation: sigilRotate 18s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes sigilRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/*
+ * FIX: .gaia-sigil__core was used in GaiaSigil.tsx but never defined.
+ * Pulses scale + opacity to suggest GAIA breathing.
+ */
+.gaia-sigil__core {
+  animation: sigilCorePulse 3.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes sigilCorePulse {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%       { transform: scale(1.35); opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-sigil--animate { animation: none; }
+  .gaia-sigil__core    { animation: none; }
 }
 
 /* ─── FAQ ────────────────────────────────────────────────────────── */
