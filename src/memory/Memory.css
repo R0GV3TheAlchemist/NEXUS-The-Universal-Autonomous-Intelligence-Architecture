@@ -51,6 +51,9 @@
   cursor: pointer;
 }
 .mem-hdr-btn:hover { color: var(--pure-white); border-color: var(--pure-white); }
+
+/* .danger — standalone utility used on .mem-hdr-btn.danger */
+.danger,
 .mem-hdr-btn.danger { color: var(--alert-red); border-color: var(--alert-red); }
 .mem-hdr-btn.danger:hover { background: color-mix(in srgb, var(--alert-red) 12%, transparent); }
 
@@ -123,6 +126,9 @@
   padding: 1px 8px;
   border-radius: 10px;
 }
+
+/* .canonical — standalone utility + compound .stat-chip.canonical */
+.canonical,
 .stat-chip.canonical { color: var(--doctrine-gold); border-color: var(--doctrine-gold); }
 
 /* Body layout */
@@ -158,6 +164,9 @@
   display: flex;
   flex-direction: column;
 }
+
+/* .hidden — general visibility toggle; used by classList.toggle('hidden') */
+.hidden,
 .mem-audit-col.hidden { display: none; }
 
 .mem-audit-header {
