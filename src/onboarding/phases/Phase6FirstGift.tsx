@@ -29,7 +29,7 @@ function selectGift(intent: string[]): Gift {
   if (intent.includes('self_discovery')) {
     return {
       title: 'A question to begin with',
-      body: 'What's one thing you want more of in your life right now?',
+      body: "What's one thing you want more of in your life right now?",
       action: 'Tell GAIA',
     };
   }
