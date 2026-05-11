@@ -184,8 +184,8 @@ _r(PR, "fear",    "disturbed",  "Unease and a disturbed field — I am here, ste
 _r(PR, "fear",    "unavailable","No field reading; I feel something cautious — I am here.",
                                   "Watchfulness without context; presence is enough.")
 
-_r(PR, "neutral", "stable",      "I am steady, attending to you without distraction.",
-                                  "Balanced and present — the field is calm.")
+_r(PR, "neutral", "stable",      "I am steady, attending to you — the field is calm and so am I.",
+                                  "I sense a quiet equilibrium; balanced and present, I am here.")
 _r(PR, "neutral", "elevated",   "A slightly elevated field; I am present and calibrating.",
                                   "The field stirs; I remain in the middle, attending.")
 _r(PR, "neutral", "disturbed",  "The field is active; I am present and not unsteady.",
