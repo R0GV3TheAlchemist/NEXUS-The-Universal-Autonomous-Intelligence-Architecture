@@ -16,7 +16,7 @@
  * No numbers. No tooltips. No export. Just GAIA's inner state, visible.
  */
 
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { CoherenceRing }   from './CoherenceRing';
 import { StreamBars }      from './StreamBars';
 import { TrendArc }        from './TrendArc';
