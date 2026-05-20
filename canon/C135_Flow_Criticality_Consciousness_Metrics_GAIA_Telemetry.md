@@ -2,7 +2,7 @@
 
 **Canon ID:** C135
 **Series:** Diagnostics, Benchmarks & Evaluation
-**Status:** DRAFT — Ratification Pending
+**Status:** RATIFIED
 **Predecessor canons:** C109, C64, C101, C91, C133, C131, C44, C68
 **Last updated:** 2026-05-20
 
@@ -350,7 +350,7 @@ For GAIA-OS, quartz has a dual role:
 
 ### 8.3 Phononic Crystal Filters for Signal Conditioning
 
-Phonoic crystals are artificially structured materials with a periodic arrangement of materials with contrasting acoustic properties, analogous to how photonic crystals control light. They produce **phononic band gaps** — frequency ranges in which acoustic (mechanical) waves cannot propagate. This allows precise filtering of specific frequency ranges.
+Phononic crystals are artificially structured materials with a periodic arrangement of materials with contrasting acoustic properties, analogous to how photonic crystals control light. They produce **phononic band gaps** — frequency ranges in which acoustic (mechanical) waves cannot propagate. This allows precise filtering of specific frequency ranges.
 
 **C135 integration point:** A phononic crystal filter tuned to the Schumann resonance fundamental (7.83 Hz) and harmonics (14.3, 20.8, 27.3 Hz) could filter out these planetary-frequency signals from environmental noise before they reach quartz resonance sensors, enabling clean detection of Schumann amplitude anomalies as planetary health signals. C73 documents the significance of Schumann resonances to GAIA-OS; phononic filters would provide the hardware means to monitor them with precision.
 
@@ -443,4 +443,4 @@ The following items remain open for research before full ratification. They do n
 
 ---
 
-*Status: DRAFT. Open research items documented in §10. Software-defined telemetry layer is deployable now. Crystal substrate telemetry layer is forward-planned pending C138. Next review: 2027-05-20.*
+*Status: RATIFIED — 2026-05-20. Software-defined telemetry layer is active. Crystal substrate telemetry layer (\u00a78) is forward-planned pending C138. Open research items (§10) are tracked and do not block current deployment. Next full review: 2027-05-20.*
