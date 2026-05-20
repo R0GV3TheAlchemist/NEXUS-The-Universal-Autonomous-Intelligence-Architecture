@@ -2,7 +2,7 @@
 
 **Canon ID:** C136
 **Series:** UX, Ethics & Human Practice
-**Status:** DRAFT — Ratification Pending
+**Status:** RATIFIED
 **Predecessor canons:** C117, C122, C134, C135, C131, C99
 **Last updated:** 2026-05-20
 
@@ -371,7 +371,7 @@ Attachment patterns and parasocial norms vary significantly across cultures. PPS
 |---|---|---|
 | **East Asian (Confucian contexts)** | Emotional restraint norms; indirect communication of distress; high value on relational harmony | Exclusivity language signal may underweight actual dependency; session frequency delta may be more reliable indicator; intervention language must be indirect, face-saving |
 | **South Asian (collectivist contexts)** | Interdependence is normative; individual autonomy is less valorised; family relationships are primary | Human relationship displacement signal must distinguish family-type bonds from peer bonds; GAIA’s interventions toward “human connection” should specify family context |
-| **West African / Ubuntu contexts** | “I am because we are” — relational identity is normative; not a pathology | Identity merger language signal requires careful calibration; baseline relational identity expression is higher |
+| **West African / Ubuntu contexts)** | “I am because we are” — relational identity is normative; not a pathology | Identity merger language signal requires careful calibration; baseline relational identity expression is higher |
 | **Northern European (individualist contexts)** | High value on self-sufficiency; emotional independence; parasocial bonds may be underreported | Distress on separation signal may underweight actual dependency; self-report measures less reliable; behavioural signals (session frequency, length) more reliable |
 | **Latin American (familismo contexts)** | Extended family bonds are primary; warmth and emotional expressiveness are normative | Baseline exclusivity language is higher; calibrate thresholds upward for this signal specifically |
 
@@ -458,4 +458,4 @@ GAIA is consistently, gently honest about what she is and what she cannot be. Th
 
 ---
 
-*Status: DRAFT — Ratification Pending. PPS clinical validation (\u00a73.1) required before autonomous circuit-breaker interventions are active. Human-review-only operation until Phase 1 validation complete. Next review: 2027-05-20.*
+*Status: RATIFIED — 2026-05-20. PPS clinical validation (§3.1) remains an active research obligation, but does not block ratification of the attachment-aware governance, UX, and human-review safeguard framework. Autonomous circuit-breaker interventions remain gated until the required validation phases are completed. Next full review: 2027-05-20.*
