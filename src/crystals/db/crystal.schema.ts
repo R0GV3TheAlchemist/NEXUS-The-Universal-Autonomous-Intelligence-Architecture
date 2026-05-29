@@ -18,8 +18,12 @@
  *                        — Added piezoelectric, safe_for_water, safe_for_hardware to PhysicalRecord
  *                        — These were previously only in CrystalQuery (query-time) — moved to
  *                          record-level so GAIA can filter without annotation passes.
- *   2026-05-29 (v1.2)   — Added MetaphysicalProfile alias, MindatMineral, RruffSpectrum wire types
- *                        — Added 'Isometric' to crystal_system union (synonym for Cubic, legacy data)
+ *   2026-05-29 (v1.2)   — Added 'Isometric' to crystal_system union (synonym for Cubic, legacy data)
+ *                        — Exported MetaphysicalProfile type alias (= MetaphysicalRecord)
+ *                        — Added MindatMineral interface (raw Mindat API wire format)
+ *                        — Added RruffSpectrum interface (RRUFF spectral record)
+ *                        — Resolves TS2305 errors in metaphysical.data.ts, mindat.service.ts,
+ *                          rruff.service.ts
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,7 +107,11 @@ export interface PhysicalRecord {
   /** Dana 8th edition classification */
   dana8ed: string | null;
 
-  /** Crystal system */
+  /**
+   * Crystal system.
+   * 'Isometric' is an older IMA synonym for 'Cubic' — both are accepted here
+   * to support legacy data entries. Prefer 'Cubic' for new records.
+   */
   crystal_system:
     | 'Triclinic'
     | 'Monoclinic'
@@ -301,6 +309,13 @@ export interface MetaphysicalRecord {
   safety_warning: string | null;
 }
 
+/**
+ * MetaphysicalProfile — alias for MetaphysicalRecord.
+ * metaphysical.data.ts imports this name; both refer to the same structure.
+ * Resolves: TS2305 Module '"./crystal.schema"' has no exported member 'MetaphysicalProfile'
+ */
+export type MetaphysicalProfile = MetaphysicalRecord;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MASTER RECORD
 // ─────────────────────────────────────────────────────────────────────────────
@@ -386,24 +401,21 @@ export interface CrystalMatrixResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SERVICE WIRE TYPES
-// Used by mindat.service.ts and rruff.service.ts — intentionally loose-typed
-// to match the external API response shape before normalisation into our schema.
+// EXTERNAL API WIRE TYPES
+// Raw response shapes from Mindat and RRUFF.
+// Intentionally loose-typed — external APIs do not guarantee our strict unions.
+// Normalise to PhysicalRecord / OpticalRecord after fetching.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * MetaphysicalProfile — alias for MetaphysicalRecord.
- * metaphysical.data.ts imports this name; both refer to the same structure.
- */
-export type MetaphysicalProfile = MetaphysicalRecord;
-
-/**
- * MindatMineral — loose wire-format type for the Mindat REST API response.
- * Fields match the Mindat /v1/minerals/ endpoint exactly.
- * Strings are deliberately not narrowed to union types here — the API returns
- * raw strings that we validate / normalise when mapping to PhysicalRecord.
+ * MindatMineral — raw Mindat API v1 mineral response shape.
+ * Fields mirror the MINDAT_FIELDS list in mindat.service.ts.
+ * crystal_system and optical_type are loose strings because the Mindat API
+ * does not use our strict internal union types.
  *
  * Docs: https://api.mindat.org/schema/redoc/#operation/minerals_list
+ *
+ * Resolves: TS2305 Module '"./crystal.schema"' has no exported member 'MindatMineral'
  */
 export interface MindatMineral {
   id:                   number;
@@ -416,7 +428,7 @@ export interface MindatMineral {
   ima_year:             number | null;
   strunzten:            string | null;
   dana8ed:              string | null;
-  /** Raw crystal system string from Mindat — not narrowed to our union */
+  /** Raw crystal system string from Mindat (e.g. 'Cubic', 'Isometric', 'Trigonal') */
   crystal_system:       string | null;
   hardness_min:         number | null;
   hardness_max:         number | null;
@@ -433,7 +445,7 @@ export interface MindatMineral {
   ri_min:               number | null;
   ri_max:               number | null;
   birefringence:        number | null;
-  /** Raw optical type string from Mindat — 'U', 'B', 'Isotropic', 'I', or null */
+  /** Raw optical type from Mindat — may be 'U', 'B', 'I', 'Isotropic', or null */
   optical_type:         string | null;
   shortdesc:            string | null;
   updttime:             string | null;
@@ -441,25 +453,28 @@ export interface MindatMineral {
 
 /**
  * RruffSpectrum — a single spectral record from the RRUFF Project database.
- * Used by rruff.service.ts buildSpectra() and normaliseSearchResponse().
+ * Constructed by RruffService.buildSpectra() and returned by the
+ * normalised search endpoint response.
  *
  * Source: https://rruff.info
+ *
+ * Resolves: TS2305 Module '"./crystal.schema"' has no exported member 'RruffSpectrum'
  */
 export interface RruffSpectrum {
   /** RRUFF sample identifier, e.g. "R040031" */
-  rruff_id:            string;
+  rruff_id:             string;
   /** Mineral name as recorded in RRUFF */
-  name:                string;
-  /** Spectrum type — Raman, Infrared, or X-ray powder diffraction */
-  spectrum_type:       'Raman' | 'Infrared' | 'XRD';
-  /** Laser excitation wavelength in nm (Raman only; undefined for IR/XRD) */
+  name:                 string;
+  /** Spectrum type */
+  spectrum_type:        'Raman' | 'Infrared' | 'XRD';
+  /** Laser excitation wavelength in nm — Raman only; omitted for IR and XRD */
   laser_wavelength_nm?: number;
-  /** Direct URL to the spectrum data file (.txt) */
-  data_url:            string;
-  /** URL to the sample photograph (may be null) */
-  photo_url:           string | null;
-  /** Collection locality string (may be null) */
-  locality:            string | null;
-  /** Source / donor information (may be null) */
-  source:              string | null;
+  /** Direct URL to the processed spectrum data file (.txt) */
+  data_url:             string;
+  /** URL to the sample photograph — null if unavailable */
+  photo_url:            string | null;
+  /** Collection locality description — null if unknown */
+  locality:             string | null;
+  /** Source / donor attribution — null if unattributed */
+  source:               string | null;
 }
