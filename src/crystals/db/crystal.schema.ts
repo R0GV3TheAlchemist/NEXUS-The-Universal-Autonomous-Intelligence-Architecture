@@ -1,231 +1,25 @@
 /**
  * crystal.schema.ts
- * TypeScript types for GAIA-OS Crystal Database.
+ * GAIA-OS Crystal Database — Master Type Definitions
  *
- * Scientific layers (Mindat, RRUFF) mirror real API response shapes.
- * Metaphysical layer is clearly marked as interpretive/traditional — not scientific.
+ * Three explicit, separated layers per record:
+ *   1. PhysicalRecord   — IMA / Mindat mineral science (objective)
+ *   2. OpticalRecord    — Light behaviour, wavelengths, spectra (objective)
+ *   3. ColorRecord      — Color theory, OKLCH, psychology (interpretive)
+ *   4. MetaphysicalRecord — Traditional / esoteric layer (interpretive, clearly marked)
  *
- * Sources:
- *   Mindat API v1:  https://api.mindat.org/v1/
- *   RRUFF Project:  https://rruff.info/
- *   OpenMindat fields reference: github.com/ChuBL/How-to-Use-Mindat-API
+ * ⚠️  The metaphysical layer is explicitly interpretive / traditional.
+ *     It is separated from physics so GAIA can reason across both
+ *     without conflating them.
+ *
+ * Updated: 2026-05-29
  */
 
-// ─────────────────────────────────────────────
-// MINDAT — Physical & Crystallographic Data
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED PRIMITIVES
+// ─────────────────────────────────────────────────────────────────────────────
 
-/** Crystal systems as defined by IMA / Mindat */
-export type CrystalSystem =
-  | 'Triclinic'
-  | 'Monoclinic'
-  | 'Orthorhombic'
-  | 'Tetragonal'
-  | 'Trigonal'
-  | 'Hexagonal'
-  | 'Isometric'
-  | 'Amorphous'
-  | 'Unknown';
-
-/** Luster types as catalogued in Mindat */
-export type Luster =
-  | 'Adamantine'
-  | 'Dull'
-  | 'Greasy'
-  | 'Metallic'
-  | 'Pearly'
-  | 'Resinous'
-  | 'Silky'
-  | 'Sub-Adamantine'
-  | 'Sub-Metallic'
-  | 'Sub-Resinous'
-  | 'Sub-Vitreous'
-  | 'Vitreous'
-  | 'Waxy'
-  | string;
-
-/** Diaphaneity (transparency) values */
-export type Diaphaneity = 'Opaque' | 'Translucent' | 'Transparent' | string;
-
-/**
- * MindatMineral
- * Mirrors the Mindat API v1 /minerals/ endpoint response.
- * Fields sourced from: api.mindat.org/schema/redoc and OpenMindat field list.
- * Non-exhaustive — includes fields relevant to GAIA-OS crystal database.
- */
-export interface MindatMineral {
-  /** Mindat internal integer ID */
-  id: number;
-  /** Mindat long-form unique ID string */
-  longid: string;
-  /** GUID */
-  guid: string;
-  /** IMA-approved mineral name */
-  name: string;
-  /** IMA chemical formula (may include Unicode) */
-  ima_formula: string | null;
-  /** Mindat display formula */
-  mindat_formula: string | null;
-  /** IMA approval status: 'A' = approved, 'N' = not approved, 'Q' = questionable */
-  ima_status: 'A' | 'N' | 'Q' | null;
-  /** IMA approval year */
-  ima_year: number | null;
-  /** Strunz 10th edition classification code */
-  strunzten: string | null;
-  /** Dana 8th edition classification code */
-  dana8ed: string | null;
-  /** Crystal system string */
-  crystal_system: CrystalSystem | null;
-  /** Mohs hardness min */
-  hardness_min: number | null;
-  /** Mohs hardness max */
-  hardness_max: number | null;
-  /** Specific gravity min */
-  specific_gravity_min: number | null;
-  /** Specific gravity max */
-  specific_gravity_max: number | null;
-  /** Cleavage description */
-  cleavage: string | null;
-  /** Fracture type */
-  fracture: string | null;
-  /** Tenacity */
-  tenacity: string | null;
-  /** Luster types array */
-  luster: Luster[] | null;
-  /** Diaphaneity */
-  diaphaneity: Diaphaneity[] | null;
-  /** Colour description (free text) */
-  colour: string | null;
-  /** Streak colour */
-  streak: string | null;
-  /** Fluorescence under UV */
-  fluorescence: string | null;
-  /** Refractive index min */
-  ri_min: number | null;
-  /** Refractive index max */
-  ri_max: number | null;
-  /** Birefringence value */
-  birefringence: number | null;
-  /** Optical type: U = uniaxial, B = biaxial, I = isotropic */
-  optical_type: 'U' | 'B' | 'I' | null;
-  /** Short description text from Mindat */
-  shortdesc: string | null;
-  /** Last update timestamp */
-  updttime: string | null;
-  /** Mindat page URL slug */
-  mindat_url: string | null;
-}
-
-// ─────────────────────────────────────────────
-// RRUFF — Light & Spectral Data
-// ─────────────────────────────────────────────
-
-/**
- * RruffSpectrum
- * A single Raman or XRD spectrum entry from the RRUFF database.
- * Source: rruff.info
- */
-export interface RruffSpectrum {
-  /** RRUFF sample ID (e.g. "R040031") */
-  rruff_id: string;
-  /** Mineral name as catalogued in RRUFF */
-  name: string;
-  /** Spectrum type */
-  spectrum_type: 'Raman' | 'Infrared' | 'XRD';
-  /** Laser wavelength used (nm) — Raman only */
-  laser_wavelength_nm?: number | null;
-  /** URL to raw spectrum data file on rruff.info */
-  data_url: string;
-  /** URL to sample photo on rruff.info */
-  photo_url: string | null;
-  /** Locality of the sample */
-  locality: string | null;
-  /** Source/owner of the sample */
-  source: string | null;
-}
-
-/**
- * RruffOpticalData
- * Optical and light-interaction properties sourced from RRUFF / literature.
- */
-export interface RruffOpticalData {
-  mineral_name: string;
-  /** Refractive index values */
-  refractive_index: {
-    n_alpha?: number | null;
-    n_beta?:  number | null;
-    n_gamma?: number | null;
-    n_omega?: number | null;
-    n_epsilon?: number | null;
-  };
-  /** Birefringence (delta) */
-  birefringence: number | null;
-  /** Optical sign: '+' positive, '-' negative */
-  optical_sign: '+' | '-' | null;
-  /** Dispersion description */
-  dispersion: string | null;
-  /** Pleochroism description */
-  pleochroism: string | null;
-  /** Fluorescence under longwave UV */
-  fluorescence_lw: string | null;
-  /** Fluorescence under shortwave UV */
-  fluorescence_sw: string | null;
-  /** Phosphorescence */
-  phosphorescence: string | null;
-  /** Dominant visible wavelength range in nm (approximate) */
-  visible_wavelength_nm: { min: number; max: number } | null;
-  /** Available RRUFF spectra for this mineral */
-  spectra: RruffSpectrum[];
-}
-
-// ─────────────────────────────────────────────
-// COLOR THEORY — Derived Layer
-// ─────────────────────────────────────────────
-
-/**
- * CrystalColorProfile
- * Maps the mineral's physical colour to color science.
- * OKLCH values are computed from the dominant visible wavelength.
- * Psychological effects sourced from established color psychology literature.
- */
-export interface CrystalColorProfile {
-  /** Primary color name (e.g. "violet", "rose", "golden") */
-  primary_color: string;
-  /** All documented color variants for this mineral */
-  color_variants: string[];
-  /** Dominant wavelength in nanometers (visible spectrum 380–700nm) */
-  dominant_wavelength_nm: number | null;
-  /** OKLCH representation of the dominant color
-   *  L = lightness 0–1, C = chroma 0–0.4, H = hue angle 0–360 */
-  oklch: { l: number; c: number; h: number } | null;
-  /** Hex representation for display (derived from OKLCH) */
-  hex: string | null;
-  /** Munsell notation if applicable */
-  munsell: string | null;
-  /** Color temperature in Kelvin (warm / neutral / cool) */
-  color_temperature_k: number | null;
-  /** Psychological associations — sourced from Luscher, Birren, Itten */
-  psychological_effects: string[];
-  /** Color harmony relationships (complementary, triadic, etc.) */
-  harmonics: {
-    complementary_hue: number | null;
-    triadic_hues: [number, number] | null;
-    analogous_range: [number, number] | null;
-  };
-}
-
-// ─────────────────────────────────────────────
-// METAPHYSICAL — Interpretive / Traditional Layer
-// ─────────────────────────────────────────────
-
-/**
- * ⚠️  INTERPRETIVE LAYER
- * This data is sourced from documented cultural, spiritual, and metaphysical
- * traditions (Vedic chakra system, Western esotericism, crystal healing
- * literature). It is NOT scientifically validated. It is preserved here
- * as a cross-cultural knowledge layer within GAIA-OS.
- */
-
+/** Chakra system names used across all traditions */
 export type Chakra =
   | 'Root'
   | 'Sacral'
@@ -235,90 +29,285 @@ export type Chakra =
   | 'Third Eye'
   | 'Crown'
   | 'Higher Crown'
-  | 'Earth Star';
+  | 'Earth Star'
+  | 'Soul Star';
 
-export type Element = 'Earth' | 'Water' | 'Fire' | 'Air' | 'Aether' | 'Storm';
+/** Classical + expanded elements */
+export type Element =
+  | 'Earth'
+  | 'Water'
+  | 'Fire'
+  | 'Air'
+  | 'Aether'
+  | 'Storm'
+  | 'Ice'
+  | 'Wood'
+  | 'Metal';
 
-export type Planet =
-  | 'Sun' | 'Moon' | 'Mercury' | 'Venus' | 'Mars'
-  | 'Jupiter' | 'Saturn' | 'Uranus' | 'Neptune' | 'Pluto' | 'Earth';
+/** Optical character — uniaxial or biaxial */
+export type OpticalType = 'U' | 'B' | 'Isotropic' | null;
 
-export type Archetype =
-  | 'Warrior'
-  | 'Healer'
-  | 'Sage'
-  | 'Mystic'
-  | 'Sovereign'
-  | 'Lover'
-  | 'Creator'
-  | 'Trickster'
-  | 'Guardian'
-  | 'Alchemist'
-  | 'Oracle'
-  | 'Empath'   // added: covers empathic/oceanic stones (e.g. Abalone Shell)
-  | 'Guide';   // added: covers way-finding / navigational stones (e.g. Afghanite, Adularia)
+/** IMA status codes */
+export type IMAStatus = 'A' | 'Rd' | 'Rn' | 'Q' | 'G' | null;
 
-export type ZodiacSign =
-  | 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo'
-  | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+/** GAIA module resonance targets */
+export type GAIAModule =
+  | 'ClarusLens'
+  | 'AnchorPrism'
+  | 'SomnusVeil'
+  | 'SovereignCore'
+  | 'ViriditasHeart'
+  | 'Noosphere'
+  | 'QuantumNexus';
 
-/** ⚠️ INTERPRETIVE — See above notice */
-export interface MetaphysicalProfile {
-  mineral_name: string;
-  /** Primary chakra association */
-  chakra_primary: Chakra;
-  /** Secondary chakra associations */
-  chakra_secondary: Chakra[];
-  /** Elemental correspondence */
-  element: Element[];
-  /** Planetary rulership */
-  planet: Planet[];
-  /** Jungian / archetypal correspondence */
-  archetype: Archetype[];
-  /** Zodiac signs traditionally associated */
-  zodiac: ZodiacSign[];
-  /** Numerological vibration (1–9, 11, 22, 33) */
-  numerology: number | null;
-  /** Core energetic intention / keyword */
-  intention: string;
-  /** Healing traditions that reference this stone */
-  traditions: string[];
-  /** Key metaphysical properties as documented in crystal literature */
-  properties: string[];
-  /** Suggested use within GAIA-OS (e.g. grounding, clarity, dreaming) */
-  gaia_resonance: string;
-  /**
-   * ⚠️ SAFETY — Physical handling/elixir warnings.
-   * null = no known hazard.
-   * Present = do NOT create water elixirs; follow instructions for hardware nodes.
-   */
-  safety_warning?: string | null;
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 1: PHYSICAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PhysicalRecord {
+  /** Internal numeric ID (Mindat-compatible; 0 = not yet synced) */
+  id: number;
+  /** Mindat longid string */
+  longid: string;
+  /** Mindat GUID */
+  guid: string;
+
+  /** IMA-approved mineral name */
+  name: string;
+  /** IMA chemical formula (Unicode subscripts/superscripts OK) */
+  ima_formula: string;
+  /** Mindat-normalised ASCII formula */
+  mindat_formula: string;
+  /** IMA approval status */
+  ima_status: IMAStatus;
+  /** Year of IMA approval */
+  ima_year: number | null;
+
+  /** Strunz 10th edition classification */
+  strunzten: string | null;
+  /** Dana 8th edition classification */
+  dana8ed: string | null;
+
+  /** Crystal system */
+  crystal_system:
+    | 'Triclinic'
+    | 'Monoclinic'
+    | 'Orthorhombic'
+    | 'Tetragonal'
+    | 'Trigonal'
+    | 'Hexagonal'
+    | 'Cubic'
+    | 'Amorphous'
+    | 'Pseudohexagonal';
+
+  /** Mohs hardness range */
+  hardness_min: number | null;
+  hardness_max: number | null;
+
+  /** Specific gravity range */
+  specific_gravity_min: number | null;
+  specific_gravity_max: number | null;
+
+  cleavage:    string | null;
+  fracture:    string | null;
+  tenacity:    string | null;
+  luster:      string[];
+  diaphaneity: string[];
+  colour:      string;
+  streak:      string | null;
+  fluorescence: string | null;
+
+  /** Refractive index range */
+  ri_min: number | null;
+  ri_max: number | null;
+  birefringence: number | null;
+  optical_type: OpticalType;
+
+  /** Short mineralogical description */
+  shortdesc: string;
+  /** ISO 8601 last Mindat sync timestamp */
+  updttime: string | null;
+  /** Canonical Mindat URL */
+  mindat_url: string | null;
 }
 
-// ─────────────────────────────────────────────
-// UNIFIED CRYSTAL RECORD
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 2: OPTICAL
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * CrystalRecord
- * The unified record merging all four database layers.
- * Each layer is optional — records can be partial when data isn't available.
- */
+export interface RefractiveIndexValues {
+  /** Uniaxial ordinary */
+  n_omega?:   number;
+  /** Uniaxial extraordinary */
+  n_epsilon?: number;
+  /** Biaxial alpha */
+  n_alpha?:   number;
+  /** Biaxial beta */
+  n_beta?:    number;
+  /** Biaxial gamma */
+  n_gamma?:   number;
+  /** Single isotropic value */
+  n?:         number;
+}
+
+export interface WavelengthRange {
+  min: number;
+  max: number;
+}
+
+export interface OpticalRecord {
+  mineral_name:     string;
+  refractive_index: RefractiveIndexValues;
+  birefringence:    number | null;
+  /** '+' or '-' optical sign */
+  optical_sign:     '+' | '-' | null;
+  dispersion:       string | null;
+  pleochroism:      string | null;
+  fluorescence_lw:  string | null;
+  fluorescence_sw:  string | null;
+  phosphorescence:  string | null;
+  /** Dominant visible wavelength range in nm */
+  visible_wavelength_nm: WavelengthRange | null;
+  /** RRUFF or other spectral reference IDs */
+  spectra: string[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 3: COLOR
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface OKLCHValue {
+  /** Perceptual lightness 0–1 */
+  l: number;
+  /** Chroma 0–0.4 */
+  c: number;
+  /** Hue angle 0–360 */
+  h: number;
+}
+
+export interface ColorHarmonics {
+  /** Complementary hue angle */
+  complementary_hue: number | null;
+  /** Triadic hue angles */
+  triadic_hues:      [number, number] | null;
+  /** Analogous hue range [min, max] */
+  analogous_range:   [number, number] | null;
+}
+
+export interface ColorRecord {
+  primary_color:          string;
+  color_variants:         string[];
+  /** Dominant wavelength in nm (null for non-spectral / iridescent) */
+  dominant_wavelength_nm: number | null;
+  /** OKLCH perceptual color value */
+  oklch:                  OKLCHValue;
+  /** Representative hex value (null for iridescent / multicolor) */
+  hex:                    string | null;
+  /** Munsell notation */
+  munsell:                string | null;
+  /** Correlated color temperature in Kelvin */
+  color_temperature_k:    number | null;
+  /** Established psychological / perceptual effects of this hue */
+  psychological_effects:  string[];
+  /** Color wheel harmonics for crystal pairing logic */
+  harmonics:              ColorHarmonics;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 4: METAPHYSICAL
+// ⚠️  INTERPRETIVE / TRADITIONAL — NOT SCIENTIFIC DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface MetaphysicalRecord {
+  mineral_name:     string;
+
+  /** Primary chakra resonance */
+  chakra_primary:   Chakra;
+  /** Secondary chakra resonances */
+  chakra_secondary: Chakra[];
+
+  /** Classical element correspondences */
+  element: Element[];
+  /** Planetary correspondences */
+  planet:  string[];
+  /** Jungian / traditional archetypes */
+  archetype: string[];
+  /** Zodiac signs */
+  zodiac:    string[];
+  /** Pythagorean numerology value */
+  numerology: number | null;
+
+  /** One-line intention statement */
+  intention: string;
+
+  /** Named traditions this data is sourced from */
+  traditions: string[];
+
+  /** Expanded property descriptions */
+  properties: string[];
+
+  /**
+   * Which GAIA modules this crystal primarily supports.
+   * Freeform string to allow compound assignments (e.g. "SomnusVeil + ClarusLens").
+   */
+  gaia_resonance: string;
+
+  /**
+   * Safety warning — toxicity, asbestos, radiation, water safety, etc.
+   * null = no known hazard.
+   * ALWAYS populate when a hazard exists.
+   */
+  safety_warning: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MASTER RECORD
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface CrystalRecord {
-  /** Canonical mineral name (from IMA / Mindat) */
+  /** Display name (may differ from IMA mineral name for trade names / varieties) */
   name: string;
-  /** Mindat ID for API lookups */
+
+  /** Mindat numeric ID — null until synced */
   mindat_id: number | null;
-  /** RRUFF sample IDs for this mineral */
+
+  /** RRUFF reference IDs */
   rruff_ids: string[];
-  /** Physical and crystallographic data — from Mindat */
-  physical: MindatMineral | null;
-  /** Light and spectral data — from RRUFF */
-  optical: RruffOpticalData | null;
-  /** Color science layer — derived */
-  color: CrystalColorProfile | null;
-  /** ⚠️ Interpretive/traditional metaphysical layer */
-  metaphysical: MetaphysicalProfile | null;
-  /** ISO timestamp of last data sync */
+
+  /** ISO 8601 timestamp of last external data sync */
   last_synced: string | null;
+
+  physical:     PhysicalRecord;
+  optical:      OpticalRecord;
+  color:        ColorRecord;
+  metaphysical: MetaphysicalRecord;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUERY / MATRIX TYPES
+// Used by GAIA reasoning engine to filter and cross-reference crystals
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Query filter for multi-dimensional crystal matrix lookups */
+export interface CrystalQuery {
+  chakra?:          Chakra[];
+  element?:         Element[];
+  gaia_module?:     GAIAModule[];
+  min_hardness?:    number;
+  max_hardness?:    number;
+  piezoelectric?:   boolean;
+  safe_for_water?:  boolean;
+  safe_for_hardware?: boolean;
+  wavelength_min?:  number;
+  wavelength_max?:  number;
+  oklch_hue_min?:   number;
+  oklch_hue_max?:   number;
+}
+
+/** Result of a matrix simulation run */
+export interface CrystalMatrixResult {
+  query:     CrystalQuery;
+  matches:   CrystalRecord[];
+  timestamp: string;
+  note?:     string;
 }
