@@ -107,8 +107,11 @@ const COLOUR_WAVELENGTH_MAP: Record<string, { min: number; max: number; oklch: {
 /**
  * Derive a CrystalColorProfile from a Mindat colour string.
  * This is a best-effort colour science derivation — not a direct measurement.
+ *
+ * @param _mineralName - Reserved for future per-mineral overrides. Prefixed
+ *   with _ to indicate intentionally unused in the current implementation.
  */
-function deriveColorProfile(mineralName: string, colour: string | null): CrystalColorProfile | null {
+function deriveColorProfile(_mineralName: string, colour: string | null): CrystalColorProfile | null {
   if (!colour) return null;
 
   const lower = colour.toLowerCase();
@@ -142,17 +145,17 @@ function deriveColorProfile(mineralName: string, colour: string | null): Crystal
   const psychological = psychMap[matchKey ?? 'white'] ?? [];
 
   // Compute color harmonics
-  const baseHue = match.oklch.h;
+  const baseHue = match!.oklch.h;
   const complementary = (baseHue + 180) % 360;
   const triadic: [number, number] = [(baseHue + 120) % 360, (baseHue + 240) % 360];
   const analogous: [number, number] = [(baseHue - 30 + 360) % 360, (baseHue + 30) % 360];
 
   return {
-    primary_color:          match.primary,
+    primary_color:          match!.primary,
     color_variants:         colour.split(',').map((s) => s.trim()),
-    dominant_wavelength_nm: Math.round((match.min + match.max) / 2),
-    oklch:                  match.oklch,
-    hex:                    match.hex,
+    dominant_wavelength_nm: Math.round((match!.min + match!.max) / 2),
+    oklch:                  match!.oklch,
+    hex:                    match!.hex,
     munsell:                null,
     color_temperature_k:    baseHue < 150 ? 7500 : baseHue < 270 ? 5500 : 3000,
     psychological_effects:  psychological,

@@ -16,7 +16,7 @@
  * ?format=json&mineral=<name> or by RRUFF ID.
  */
 
-import type { RruffSpectrum, RruffOpticalData } from './crystal.schema';
+import type { RruffSpectrum } from './crystal.schema';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
