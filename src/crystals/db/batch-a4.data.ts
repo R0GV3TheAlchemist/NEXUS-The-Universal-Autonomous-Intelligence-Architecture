@@ -6,7 +6,7 @@
  * ⚠️  INTERPRETIVE / TRADITIONAL LAYER — NOT SCIENTIFIC DATA
  * Physics and mineral data sourced from IMA / Mindat conventions.
  * Metaphysical data sourced from established cross-cultural traditions.
- * All records conform to CrystalRecord nested schema.
+ * All records conform to CrystalRecord nested schema v1.1.
  */
 
 import type { CrystalRecord } from './crystal.schema';
@@ -17,10 +17,13 @@ export const BATCH_A4: CrystalRecord[] = [
   // AMBLYGONITE
   // ─────────────────────────────────────────────────────────────────────────
   {
-    name:        'Amblygonite',
-    mindat_id:   null,
-    rruff_ids:   [],
-    last_synced: null,
+    name:          'Amblygonite',
+    mindat_id:     null,
+    rruff_ids:     [],
+    last_synced:   null,
+    trade_name:    false,
+    color_layer:   'natural',
+    yin_yang_pair: 'Black Tourmaline',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -51,6 +54,9 @@ export const BATCH_A4: CrystalRecord[] = [
       shortdesc:       'Lithium aluminum fluorophosphate. Found in lithium-rich granitic pegmatites. Name from Greek amblys (blunt) + gonia (angle) for obtuse cleavage angles.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-198.html',
+      piezoelectric:   false,
+      safe_for_water:  true,
+      safe_for_hardware: true,
     },
 
     optical: {
@@ -115,10 +121,13 @@ export const BATCH_A4: CrystalRecord[] = [
   // AMETHYST — GAIA core crystal
   // ─────────────────────────────────────────────────────────────────────────
   {
-    name:        'Amethyst',
-    mindat_id:   null,
-    rruff_ids:   [],
-    last_synced: null,
+    name:          'Amethyst',
+    mindat_id:     null,
+    rruff_ids:     [],
+    last_synced:   null,
+    trade_name:    false,
+    color_layer:   'natural',
+    yin_yang_pair: 'Smoky Quartz',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -149,6 +158,9 @@ export const BATCH_A4: CrystalRecord[] = [
       shortdesc:       'Violet variety of quartz. Color from Fe³⁺ color centers created by natural gamma irradiation. Piezoelectric and pyroelectric.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-198.html',
+      piezoelectric:   true,
+      safe_for_water:  true,
+      safe_for_hardware: false,
     },
 
     optical: {
@@ -224,10 +236,13 @@ export const BATCH_A4: CrystalRecord[] = [
   // AMETRINE
   // ─────────────────────────────────────────────────────────────────────────
   {
-    name:        'Ametrine',
-    mindat_id:   null,
-    rruff_ids:   [],
-    last_synced: null,
+    name:          'Ametrine',
+    mindat_id:     null,
+    rruff_ids:     [],
+    last_synced:   null,
+    trade_name:    true,
+    color_layer:   'natural',
+    yin_yang_pair: 'Obsidian',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -258,6 +273,9 @@ export const BATCH_A4: CrystalRecord[] = [
       shortdesc:       'Natural bicolored quartz: amethyst (violet) and citrine (yellow) zones in a single crystal. Almost exclusively from the Anahi Mine, Bolivia. Temperature gradient during crystal growth caused differential Fe oxidation states in adjacent zones.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-29267.html',
+      piezoelectric:   true,
+      safe_for_water:  true,
+      safe_for_hardware: false,
     },
 
     optical: {
@@ -329,10 +347,13 @@ export const BATCH_A4: CrystalRecord[] = [
   // AMMOLITE
   // ─────────────────────────────────────────────────────────────────────────
   {
-    name:        'Ammolite',
-    mindat_id:   null,
-    rruff_ids:   [],
-    last_synced: null,
+    name:          'Ammolite',
+    mindat_id:     null,
+    rruff_ids:     [],
+    last_synced:   null,
+    trade_name:    true,
+    color_layer:   'natural',
+    yin_yang_pair: 'Black Tourmaline',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -363,6 +384,9 @@ export const BATCH_A4: CrystalRecord[] = [
       shortdesc:       'Opalescent gem from fossilized ammonite shells ~71 million years old. Found almost exclusively in the Bearpaw Formation, Alberta, Canada. One of only three biogenic gemstones (with Amber and Pearl).',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-27824.html',
+      piezoelectric:   false,
+      safe_for_water:  false,
+      safe_for_hardware: true,
     },
 
     optical: {
@@ -434,10 +458,13 @@ export const BATCH_A4: CrystalRecord[] = [
   // AMPHIBOLE QUARTZ (Angel Phantom Quartz)
   // ─────────────────────────────────────────────────────────────────────────
   {
-    name:        'Amphibole Quartz',
-    mindat_id:   null,
-    rruff_ids:   [],
-    last_synced: null,
+    name:          'Amphibole Quartz',
+    mindat_id:     null,
+    rruff_ids:     [],
+    last_synced:   null,
+    trade_name:    true,
+    color_layer:   'natural',
+    yin_yang_pair: 'Magnetite',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -468,6 +495,9 @@ export const BATCH_A4: CrystalRecord[] = [
       shortdesc:       'Clear quartz containing phantom inclusions of amphibole minerals. Found primarily in Bahia, Brazil. Also called Angel Phantom Quartz or Angel Wing Quartz. Some specimens contain crocidolite (blue asbestos).',
       updttime:        null,
       mindat_url:      null,
+      piezoelectric:   true,
+      safe_for_water:  true,
+      safe_for_hardware: false,
     },
 
     optical: {
