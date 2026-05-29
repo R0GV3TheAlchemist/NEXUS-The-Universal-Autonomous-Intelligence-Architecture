@@ -244,8 +244,19 @@ export type Planet =
   | 'Jupiter' | 'Saturn' | 'Uranus' | 'Neptune' | 'Pluto' | 'Earth';
 
 export type Archetype =
-  | 'Warrior' | 'Healer' | 'Sage' | 'Mystic' | 'Sovereign' | 'Lover'
-  | 'Creator' | 'Trickster' | 'Guardian' | 'Alchemist' | 'Oracle';
+  | 'Warrior'
+  | 'Healer'
+  | 'Sage'
+  | 'Mystic'
+  | 'Sovereign'
+  | 'Lover'
+  | 'Creator'
+  | 'Trickster'
+  | 'Guardian'
+  | 'Alchemist'
+  | 'Oracle'
+  | 'Empath'   // added: covers empathic/oceanic stones (e.g. Abalone Shell)
+  | 'Guide';   // added: covers way-finding / navigational stones (e.g. Afghanite, Adularia)
 
 export type ZodiacSign =
   | 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo'
@@ -276,6 +287,12 @@ export interface MetaphysicalProfile {
   properties: string[];
   /** Suggested use within GAIA-OS (e.g. grounding, clarity, dreaming) */
   gaia_resonance: string;
+  /**
+   * ⚠️ SAFETY — Physical handling/elixir warnings.
+   * null = no known hazard.
+   * Present = do NOT create water elixirs; follow instructions for hardware nodes.
+   */
+  safety_warning?: string | null;
 }
 
 // ─────────────────────────────────────────────
