@@ -20,6 +20,9 @@ export const BATCH_A3: CrystalRecord[] = [
     mindat_id:   null,
     rruff_ids:   [],
     last_synced: null,
+    trade_name:   true,
+    color_layer:  'natural',
+    yin_yang_pair: 'Obsidian',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -50,6 +53,9 @@ export const BATCH_A3: CrystalRecord[] = [
       shortdesc:       'Fine-grained gypsum variety prized since antiquity for translucency and workability.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-1155.html',
+      piezoelectric:    false,
+      safe_for_water:   false,
+      safe_for_hardware: true,
     },
 
     optical: {
@@ -123,6 +129,9 @@ export const BATCH_A3: CrystalRecord[] = [
     mindat_id:   null,
     rruff_ids:   [],
     last_synced: null,
+    trade_name:   false,
+    color_layer:  'natural',
+    yin_yang_pair: 'Black Tourmaline',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -153,6 +162,9 @@ export const BATCH_A3: CrystalRecord[] = [
       shortdesc:       'Chromium-bearing chrysoberyl; world-renowned for dramatic color change between daylight and incandescent light.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-100.html',
+      piezoelectric:    false,
+      safe_for_water:   true,
+      safe_for_hardware: true,
     },
 
     optical: {
@@ -200,7 +212,7 @@ export const BATCH_A3: CrystalRecord[] = [
       numerology:       5,
       intention:        'Integration of opposites — duality held in grace, transformation, adaptability',
       traditions:       [
-        'Named for Tsar Alexander II (discovered ~1830 on his birthday, Ural Mts)',
+        'Named for Tsar Alexander II (discovered ~1830, Ural Mts)',
         'Russian imperial stone — green and red = imperial military colours',
         'June birthstone (traditional)',
         'Modern Crystal Healing',
@@ -221,12 +233,16 @@ export const BATCH_A3: CrystalRecord[] = [
 
   // ───────────────────────────────────────────────────────────────────────────
   // ALMANDINE GARNET
+  // NOTE: crystal_system fixed Isometric → Cubic; optical_type fixed I → Isotropic
   // ───────────────────────────────────────────────────────────────────────────
   {
     name:        'Almandine',
     mindat_id:   null,
     rruff_ids:   [],
     last_synced: null,
+    trade_name:   false,
+    color_layer:  'natural',
+    yin_yang_pair: 'Selenite',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -237,7 +253,7 @@ export const BATCH_A3: CrystalRecord[] = [
       ima_year:        null,
       strunzten:       '9.AD.25',
       dana8ed:         null,
-      crystal_system:  'Isometric',
+      crystal_system:  'Cubic',
       hardness_min:    7.0,
       hardness_max:    7.5,
       specific_gravity_min: 4.10,
@@ -253,19 +269,22 @@ export const BATCH_A3: CrystalRecord[] = [
       ri_min:          1.770,
       ri_max:          1.820,
       birefringence:   null,
-      optical_type:    'I',
+      optical_type:    'Isotropic',
       shortdesc:       'Most abundant garnet species. Deep red iron-aluminum silicate. One of the oldest gem materials known.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-162.html',
+      piezoelectric:    false,
+      safe_for_water:   true,
+      safe_for_hardware: true,
     },
 
     optical: {
       mineral_name:    'Almandine',
-      refractive_index: { n_omega: 1.790 },
+      refractive_index: { n: 1.790 },
       birefringence:   null,
       optical_sign:    null,
       dispersion:      'Moderate',
-      pleochroism:     'None (isometric)',
+      pleochroism:     'None (isotropic)',
       fluorescence_lw: null,
       fluorescence_sw: null,
       phosphorescence: null,
@@ -333,6 +352,9 @@ export const BATCH_A3: CrystalRecord[] = [
     mindat_id:   null,
     rruff_ids:   [],
     last_synced: null,
+    trade_name:   false,
+    color_layer:  'natural',
+    yin_yang_pair: 'Carnelian',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -363,6 +385,9 @@ export const BATCH_A3: CrystalRecord[] = [
       shortdesc:       'Turquoise-green variety of microcline feldspar. Color from trace lead and water in crystal lattice.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-192.html',
+      piezoelectric:    false,
+      safe_for_water:   false,
+      safe_for_hardware: true,
     },
 
     optical: {
@@ -438,6 +463,9 @@ export const BATCH_A3: CrystalRecord[] = [
     mindat_id:   null,
     rruff_ids:   [],
     last_synced: null,
+    trade_name:   false,
+    color_layer:  'natural',
+    yin_yang_pair: 'Amethyst',
 
     physical: {
       id: 0, longid: '', guid: '',
@@ -468,11 +496,14 @@ export const BATCH_A3: CrystalRecord[] = [
       shortdesc:       'Fossilised tree resin 30–100+ million years old. Gave electricity its name (Greek: elektron). Triboelectric.',
       updttime:        null,
       mindat_url:      'https://www.mindat.org/min-205.html',
+      piezoelectric:    false,
+      safe_for_water:   true,
+      safe_for_hardware: true,
     },
 
     optical: {
       mineral_name:    'Amber',
-      refractive_index: { n_omega: 1.540 },
+      refractive_index: { n: 1.540 },
       birefringence:   null,
       optical_sign:    null,
       dispersion:      null,
