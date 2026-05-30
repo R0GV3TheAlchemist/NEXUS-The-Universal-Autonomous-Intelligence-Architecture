@@ -2,6 +2,7 @@
 """
 scripts/validate_crystal_db.py
 GAIA-OS Crystal Database — Programmatic Consistency Checker
+Version: 1.0.1 (bump: re-run trigger post batch-a1 R13 fix 2026-05-30)
 
 Scans all 25 batch files (A1–C7) in src/crystals/db/ and validates every
 CrystalRecord against the rule-set derived from crystal.schema.ts v1.3 and
@@ -76,7 +77,7 @@ class Violation:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _extract_string(src: str, key: str) -> str | None:
-    """Extract a simple string value: key: 'value' or key: "value"."""
+    """Extract a simple string value: key: 'value' or key: \"value\"."""
     m = re.search(rf"\b{key}:\s*['\"]([^'\"]*)['\"\.]", src)
     return m.group(1) if m else None
 
@@ -96,7 +97,7 @@ def _extract_number(src: str, key: str) -> float | None:
 
 
 def _extract_array_strings(src: str, key: str) -> list[str]:
-    """Extract a string-array: key: ['a', 'b'] or key: ["a", "b"]."""
+    """Extract a string-array: key: ['a', 'b'] or key: [\"a\", \"b\"]."""
     m = re.search(rf"\b{key}:\s*\[([^\]]*)", src)
     if not m:
         return []
@@ -119,18 +120,13 @@ def split_records(source: str) -> list[tuple[str, str]]:
     Heuristic: records start at a top-level '{' following a block comment
     that begins with // ─── or //  N.
     """
-    # Find all top-level record start positions by locating the pattern:
-    # optional comment block followed by '{' that starts a new object literal
     record_blobs: list[tuple[str, str]] = []
 
-    # Locate every `  {` that opens a record at depth-0 within the array
-    # Strategy: find the array body between `[` and the final `]`
     array_m = re.search(r"const BATCH_[A-Z0-9_]+:\s*CrystalRecord\[\]\s*=\s*\[", source)
     if not array_m:
         return []
 
     array_start = array_m.end()
-    # Walk the source character by character to find top-level record boundaries
     depth = 0
     record_start: int | None = None
     records_raw: list[str] = []
@@ -150,7 +146,6 @@ def split_records(source: str) -> list[tuple[str, str]]:
             break
 
     for blob in records_raw:
-        # Extract the top-level `name:` field
         name = _extract_string(blob, "name") or "<unknown>"
         record_blobs.append((name, blob))
 
@@ -161,24 +156,23 @@ def split_records(source: str) -> list[tuple[str, str]]:
 # Toxic / water-unsafe element detection helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Formula fragments or name patterns that MUST have safe_for_water: false
 TOXIC_FORMULAS = [
     r"CuS", r"Cu2S", r"CuFeS", r"FeAsS", r"As2S", r"As4S", r"Pb",
     r"HgS", r"Sb2S", r"CdS", r"AsO", r"Cu2O", r"CuO", r"PbSO",
-    r"BaSO4",  # barium — safe_for_water nuanced; flagged as WARN
-    r"Na3AlF6", r"CaF2",  # fluorides
+    r"BaSO4",
+    r"Na3AlF6", r"CaF2",
 ]
 
 TOXIC_NAME_PATTERNS = [
     r"chalcopyrite", r"bornite", r"covellite", r"galena", r"cinnabar",
     r"arsenopyrite", r"realgar", r"orpiment", r"stibnite", r"cuprite",
-    r"malachite",   # debated but standard practice is warn
+    r"malachite",
     r"azurite",
     r"chrysocolla",
-    r"cryolite", r"fluorite",  # fluorides
-    r"adamite", r"olivenite", r"legrandite",  # arsenates
-    r"scorodite", r"erythrite", r"annabergite",  # arsenates
-    r"tyrolite", r"conichalcite",  # Cu arsenates
+    r"cryolite", r"fluorite",
+    r"adamite", r"olivenite", r"legrandite",
+    r"scorodite", r"erythrite", r"annabergite",
+    r"tyrolite", r"conichalcite",
     r"sulfur", r"sulphur",
 ]
 
@@ -205,10 +199,6 @@ def _is_organic(name: str) -> bool:
 
 
 def _is_trade_name_expected(name: str, ima_status_blob: str) -> bool:
-    """
-    Heuristic: trade_name: true is expected when the IMA status text indicates
-    'Not IMA' or when the name contains known trade terms.
-    """
     not_ima_patterns = [
         r"not ima", r"biogenic", r"variety", r"trade name", r"tradename",
     ]
@@ -240,7 +230,7 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
 
     # ── R02 safe_for_water — toxic minerals ──────────────────────────────────
     safe_water = _extract_bool(blob, "safe_for_water")
-    formula_blob = blob  # full blob contains formula strings
+    formula_blob = blob
     if _is_likely_toxic(name, formula_blob) and safe_water is True:
         v("R02", ERROR,
           f"safe_for_water: true on likely-toxic mineral",
@@ -257,17 +247,14 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
           "Set safe_for_water: false for all organic gemstones")
 
     # ── R04 mindat_id null ↔ IMA status null/Not IMA ─────────────────────────
-    # mindat_id: extract as number or check for explicit `null`
     mindat_id_null = bool(re.search(r"mindat_id:\s*null", blob))
     mindat_id_val  = _extract_number(blob, "mindat_id") if not mindat_id_null else None
     ima_null       = bool(re.search(r"ima_status:\s*null", blob))
     ima_not_ima    = bool(re.search(r"ima_status:\s*['\"]Not IMA", blob, re.IGNORECASE))
-    # If mindat_id is a real number but IMA status is null → flag
     if mindat_id_val and ima_null and not ima_not_ima:
         v("R04", WARN,
           f"mindat_id is set ({int(mindat_id_val)}) but ima_status is null",
           "If mineral has a Mindat ID it should have an IMA status (A / Rd / Q / etc.)")
-    # If IMA status is a real value but mindat_id is null → flag
     if not mindat_id_null and mindat_id_val is None and not ima_null:
         v("R04", WARN,
           "ima_status is set but mindat_id is null — verify Mindat entry exists",
@@ -294,7 +281,7 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
           f"OKLCH H={oklch_h} is out of range [0, 360]",
           "Recalculate OKLCH H; must be in [0, 360]")
 
-    # ── R08 hex format ───────────────────────────────────────────────────────
+    # ── R08 hex format ────────────────────────────────────────────────────────
     hex_val = _extract_string(blob, "hex")
     if hex_val is not None:
         if not re.fullmatch(r"#[0-9a-fA-F]{6}", hex_val):
@@ -302,23 +289,21 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
               f"hex='{hex_val}' is not a valid 6-digit hex colour",
               "Fix hex to format #RRGGBB")
     else:
-        # hex key must exist
         if re.search(r"\bcolor:\s*{", blob) or re.search(r"colour:\s*{", blob):
             v("R08", WARN,
               "hex field appears to be missing from color block",
               "Add hex: '#RRGGBB' to the color object")
 
-    # ── R09 numerology range ─────────────────────────────────────────────────
+    # ── R09 numerology range ────────────────────────────────────────────────
     num = _extract_number(blob, "numerology")
     if num is not None:
-        # Valid: 1–9, 11, 22, 33 (master numbers)
         valid_nums = set(range(1, 10)) | {11, 22, 33}
         if num not in valid_nums:
             v("R09", WARN,
               f"numerology={int(num)} is outside canonical range (1–9, 11, 22, 33)",
               "Recalculate numerology from crystal name gematria")
 
-    # ── R10 angel_number range ───────────────────────────────────────────────
+    # ── R10 angel_number range ────────────────────────────────────────────
     angel = _extract_number(blob, "angel_number")
     if angel is not None:
         if not (1 <= angel <= 9999):
@@ -333,9 +318,8 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
           "chakra_primary is missing or empty",
           "Add chakra_primary: '<ChakraName>' to the metaphysical block")
 
-    # ── R12 element required ─────────────────────────────────────────────────
+    # ── R12 element required ────────────────────────────────────────────────
     elements = _extract_array_strings(blob, "element")
-    # Also check for `element: []` empty array
     if not elements:
         if re.search(r"\belement:\s*\[\s*\]", blob):
             v("R12", ERROR,
@@ -353,7 +337,6 @@ def validate_record(batch: str, name: str, blob: str) -> list[Violation]:
           "safety_warning field is missing from metaphysical block",
           "Add safety_warning: '...' to describe handling / water / toxicity")
     else:
-        # Check it's not empty string
         sw_val = _extract_string(blob, "safety_warning")
         if sw_val is not None and len(sw_val.strip()) < 10:
             v("R13", WARN,
@@ -405,9 +388,9 @@ def validate_batch(batch_id: str) -> tuple[list[Violation], int]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 SEV_COLOUR = {
-    ERROR: "\033[91m",  # red
-    WARN:  "\033[93m",  # yellow
-    INFO:  "\033[94m",  # blue
+    ERROR: "\033[91m",
+    WARN:  "\033[93m",
+    INFO:  "\033[94m",
 }
 RESET = "\033[0m"
 
@@ -438,7 +421,6 @@ def print_text_report(
         print()
         return
 
-    # Group by batch
     by_batch: dict[str, list[Violation]] = {}
     for v in all_violations:
         by_batch.setdefault(v.batch, []).append(v)
@@ -457,7 +439,6 @@ def print_text_report(
                 print(f"           ↳ FIX: {viol.fix_hint}")
         print()
 
-    # Per-batch summary table
     print("  Summary table")
     print("  " + "─" * 52)
     print(f"  {'Batch':<12} {'Records':>8} {'Errors':>8} {'Warns':>8} {'Status':>8}")
@@ -550,7 +531,6 @@ def main() -> None:
     else:
         print_text_report(all_violations, batch_stats, show_fix=args.fix_report)
 
-    # Exit 1 if any ERROR-level violation exists
     has_errors = any(v.severity == ERROR for v in all_violations)
     sys.exit(1 if has_errors else 0)
 
