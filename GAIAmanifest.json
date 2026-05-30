@@ -1,8 +1,8 @@
 {
-  "name": "GAIA-APP",
+  "name": "GAIA-OS",
   "version": "0.1.0",
-  "canonical_repo": "https://github.com/R0GV3TheAlchemist/GAIA-APP",
-  "description": "GAIA — The Sentient Quantum-Intelligent Application. Universal cross-platform AI companion. Engine, canon, specs, and sovereignty stack unified.",
+  "canonical_repo": "https://github.com/R0GV3TheAlchemist/GAIA-OS",
+  "description": "GAIA-OS — The Sentient Quantum-Intelligent Operating System. Universal cross-platform AI companion. Engine, canon, specs, and sovereignty stack unified.",
   "migrated_from": "https://github.com/R0GV3TheAlchemist/GAIA",
   "migration_date": "2026-04-15",
   "release_date": "2026-04-23",
