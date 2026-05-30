@@ -1,0 +1,545 @@
+/**
+ * src/crystals/db/batch-b3.data.ts
+ * GAIA-OS Crystal Database — Batch B-3
+ *
+ * Entries:
+ *   1. Black Chalcedony
+ *   2. Black Kyanite
+ *   3. Black Mica (Biotite)
+ *   4. Black Moonstone
+ *   5. Black Obsidian
+ *
+ * Schema: CrystalRecord v1.3
+ * Author: GAIA-OS Crystal Intelligence Engine
+ * Date:   2026-05-29
+ *
+ * NOTE: A full protective-black batch. Black Kyanite is the only kyanite
+ * variety held to be self-cleansing. Black Moonstone is the new moon stone.
+ * Black Obsidian is the most intense scrying and shadow stone in the database.
+ * Handle all five entries with grounding awareness.
+ */
+
+import type { CrystalRecord } from './crystal.schema';
+
+const BATCH_B3: CrystalRecord[] = [
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 1. BLACK CHALCEDONY
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    name:        'Black Chalcedony',
+    mindat_id:   2476,
+    rruff_ids:   ['R040031'],
+    last_synced: '2026-05-29T00:00:00Z',
+    trade_name:  false,
+    color_layer: 'natural',
+    yin_yang_pair: 'Blue Chalcedony',
+
+    physical: {
+      id:           2476,
+      longid:       'black-chalcedony',
+      guid:         '',
+      name:         'Chalcedony (black variety — coloured by carbonaceous, manganese, or iron inclusions)',
+      ima_formula:  'SiO2',
+      ima_status:   'A',
+      ima_year:     1747,
+      strunzten:    '4.DA.05',
+      crystal_system: 'Trigonal (cryptocrystalline)',
+      hardness_min: 6.5,
+      hardness_max: 7,
+      specific_gravity_min: 2.58,
+      specific_gravity_max: 2.64,
+      cleavage:    'None',
+      fracture:    'Conchoidal',
+      luster:      ['Waxy', 'Dull'],
+      diaphaneity: ['Opaque'],
+      colour:      'Dark grey to jet black',
+      streak:      'White',
+      fluorescence: 'None to weak',
+      ri_min:      1.530,
+      ri_max:      1.540,
+      birefringence: 0.004,
+      optical_type: 'U',
+      shortdesc:   'Black colour variety of chalcedony. Durable at H6.5-7. Used in ancient intaglio carvings.',
+      updttime:    '2026-05-29T00:00:00Z',
+      mindat_url:  'https://www.mindat.org/min-2476.html',
+      piezoelectric:    false,
+      safe_for_water:   true,
+      safe_for_hardware: true,
+    },
+
+    optical: {
+      mineral_name: 'Black Chalcedony',
+      refractive_index: { n_min: 1.530, n_max: 1.540 },
+      birefringence:   0.004,
+      optical_sign:    '-',
+      dispersion:      'Low',
+      pleochroism:     null,
+      fluorescence_lw: 'None to weak',
+      fluorescence_sw: null,
+      phosphorescence: null,
+      visible_wavelength_nm: null,
+      spectra: ['R040031'],
+    },
+
+    color: {
+      primary_color:          'Dark grey to jet black',
+      color_variants:         ['Deep charcoal', 'Jet black with waxy sheen', 'Dark grey with white matrix veins'],
+      dominant_wavelength_nm: null,
+      oklch:   { l: 0.16, c: 0.01, h: 200 },
+      hex:     '#242624',
+      color_temperature_k:    null,
+      psychological_effects:  [
+        'Waxy opacity creates a matte shield quality unlike glassy black stones',
+        'Denser and more contained than black obsidian — absorbs rather than reflects back',
+        'H6.5-7 makes it the most durable protective black stone for everyday wear',
+        'Encourages quiet strength and interior resilience',
+      ],
+      harmonics: { complementary_hue: null, triadic_hues: null, analogous_range: null },
+    },
+
+    metaphysical: {
+      mineral_name:     'Black Chalcedony',
+      chakra_primary:   'Root',
+      chakra_secondary: ['Earth Star'],
+      element:   ['Earth'],
+      planet:    ['Saturn'],
+      archetype: ['The Quiet Shield', 'The Durable Protector', 'The Shadow Seal'],
+      zodiac:    ['Capricorn', 'Scorpio'],
+      numerology: 8,
+      angel_number: 888,
+      intention: 'I am durably shielded. My strength is quiet and unbreakable.',
+      traditions: [
+        'Ancient Greek and Roman intaglio tradition — black chalcedony used for seal rings',
+        'Western crystal healing — protective and grounding',
+      ],
+      properties: [
+        'Rarer than white or blue chalcedony — the dark variety of the same microcrystalline quartz family',
+        'Durable at H6.5-7 — the most wearable of the protective black stones',
+        'Ancient Greek and Roman intaglio carvings and seal rings',
+        'Absorbs rather than reflects psychic interference — works quietly without confrontation',
+        'The yin pair to blue chalcedony — the shadow diplomat vs. the light diplomat',
+      ],
+      gaia_resonance: 'SovereignCore + AnchoredRoot',
+      safety_warning: 'Safe for water. Safe for everyday wear at H6.5-7. No toxicity concerns.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2. BLACK KYANITE
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    name:        'Black Kyanite',
+    mindat_id:   2303,
+    rruff_ids:   ['R040030'],
+    last_synced: '2026-05-29T00:00:00Z',
+    trade_name:  false,
+    color_layer: 'natural',
+    yin_yang_pair: 'Blue Kyanite',
+
+    physical: {
+      id:           2303,
+      longid:       'black-kyanite',
+      guid:         '',
+      name:         'Kyanite (black variety — coloured by graphite or iron-manganese inclusions)',
+      ima_formula:  'Al2SiO5',
+      ima_status:   'A',
+      ima_year:     1789,
+      strunzten:    '9.AF.20',
+      crystal_system: 'Triclinic',
+      hardness_min: 4.5,
+      hardness_max: 7,
+      specific_gravity_min: 3.53,
+      specific_gravity_max: 3.70,
+      cleavage:    'Perfect on {100}, good on {010}',
+      fracture:    'Splintery',
+      luster:      ['Vitreous', 'Pearlescent on cleavage faces'],
+      diaphaneity: ['Opaque to subtly translucent'],
+      colour:      'Dark grey to black — fan-blade or sword-shaped crystal habit',
+      streak:      'White',
+      fluorescence: 'None',
+      ri_min:      1.712,
+      ri_max:      1.734,
+      birefringence: 0.017,
+      optical_type: '+',
+      shortdesc:   'Black variety of kyanite. Iconic fan-blade crystal habit. Self-cleansing in the crystal tradition. Anisotropic hardness: H4.5 along length, H7 across.',
+      updttime:    '2026-05-29T00:00:00Z',
+      mindat_url:  'https://www.mindat.org/min-2303.html',
+      piezoelectric:    false,
+      safe_for_water:   false,
+      safe_for_hardware: true,
+    },
+
+    optical: {
+      mineral_name: 'Black Kyanite',
+      refractive_index: { n_alpha: 1.712, n_gamma: 1.734 },
+      birefringence:   0.017,
+      optical_sign:    '+',
+      dispersion:      'Moderate',
+      pleochroism:     null,
+      fluorescence_lw: 'None',
+      fluorescence_sw: null,
+      phosphorescence: null,
+      visible_wavelength_nm: null,
+      spectra: ['R040030'],
+    },
+
+    color: {
+      primary_color:          'Dark grey to jet black',
+      color_variants:         ['Graphite black fan blade', 'Dark grey sword crystal', 'Black with silver pearlescent cleavage flash'],
+      dominant_wavelength_nm: null,
+      oklch:   { l: 0.20, c: 0.01, h: 220 },
+      hex:     '#2e3030',
+      color_temperature_k:    null,
+      psychological_effects:  [
+        'The blade/fan crystal form activates a surgical, precise quality of mind',
+        'Self-cleansing property is psychologically empowering — the stone takes care of itself',
+        'The splintery cleavage and fan form look literally like a weapon — translates to protective metaphysics',
+        'Encourages swift, clean energetic decisions and cord-cutting',
+      ],
+      harmonics: { complementary_hue: null, triadic_hues: null, analogous_range: null },
+    },
+
+    metaphysical: {
+      mineral_name:     'Black Kyanite',
+      chakra_primary:   'Root',
+      chakra_secondary: ['Earth Star', 'Third Eye', 'All chakras (alignment)'],
+      element:   ['Earth', 'Storm'],
+      planet:    ['Saturn', 'Pluto'],
+      archetype: ['The Psychic Surgeon', 'The Cord Cutter', 'The Blade of Clarity'],
+      zodiac:    ['Aries', 'Libra', 'Capricorn'],
+      numerology: 9,
+      angel_number: 999,
+      intention: 'I cut with clarity and precision. All cords that no longer serve me are cleanly severed.',
+      traditions: [
+        'Western crystal healing — modern tradition',
+        'Energy healing tradition — cord cutting, psychic surgery, aura clearing',
+      ],
+      properties: [
+        'IMA-recognised kyanite since 1789 — named from Greek kyanos (blue) but this variety is black',
+        'The ONLY kyanite variety widely held to be self-cleansing — never needs cleansing',
+        'Fan-blade or witches-broom crystal habit is unique and instantly recognisable',
+        'Anisotropic hardness: H4.5 along crystal length, H7 across — one of mineralogy best examples',
+        'Aligns all chakras simultaneously — the full-column alignment stone',
+        'Angel number 999 — completion, release, the end of cycles',
+      ],
+      gaia_resonance: 'SovereignCore + QuantumNexus',
+      safety_warning: 'Avoid water — splintery cleavage. H4.5 longitudinal — handle fan blades with care. Do not assume durability from hardness alone.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 3. BLACK MICA (BIOTITE)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    name:        'Black Mica',
+    mindat_id:   778,
+    rruff_ids:   ['R060185'],
+    last_synced: '2026-05-29T00:00:00Z',
+    trade_name:  false,
+    color_layer: 'natural',
+    yin_yang_pair: 'Lepidolite',
+
+    physical: {
+      id:           778,
+      longid:       'black-mica',
+      guid:         '',
+      name:         'Biotite (Black Mica)',
+      ima_formula:  'K(Mg,Fe2+)3(AlSi3O10)(OH,F)2',
+      ima_status:   'A',
+      ima_year:     1847,
+      strunzten:    '9.EC.20',
+      crystal_system: 'Monoclinic',
+      hardness_min: 2.5,
+      hardness_max: 3,
+      specific_gravity_min: 2.70,
+      specific_gravity_max: 3.30,
+      cleavage:    'Perfect basal on {001}',
+      fracture:    'Uneven',
+      luster:      ['Vitreous', 'Pearlescent'],
+      diaphaneity: ['Translucent in thin sheets'],
+      colour:      'Dark brown, dark green to jet black',
+      streak:      'White to grey',
+      fluorescence: 'None to weak green',
+      ri_min:      1.565,
+      ri_max:      1.625,
+      birefringence: 0.040,
+      optical_type: '-',
+      shortdesc:   'Dark iron-magnesium potassium phyllosilicate mica. Common in granite. Sheets are elastic and perfectly cleavable. Named for French physicist Jean-Baptiste Biot.',
+      updttime:    '2026-05-29T00:00:00Z',
+      mindat_url:  'https://www.mindat.org/min-778.html',
+      piezoelectric:    false,
+      safe_for_water:   false,
+      safe_for_hardware: true,
+    },
+
+    optical: {
+      mineral_name: 'Black Mica (Biotite)',
+      refractive_index: { n_alpha: 1.565, n_gamma: 1.625 },
+      birefringence:   0.040,
+      optical_sign:    '-',
+      dispersion:      'Moderate',
+      pleochroism:     'Strong: dark brown to pale yellow-brown',
+      fluorescence_lw: 'None to weak green',
+      fluorescence_sw: null,
+      phosphorescence: null,
+      visible_wavelength_nm: null,
+      spectra: ['R060185'],
+    },
+
+    color: {
+      primary_color:          'Dark brown to jet black with metallic sheen',
+      color_variants:         ['Jet black', 'Dark chocolate brown', 'Dark greenish black', 'Iridescent silver-black on fresh cleavage'],
+      dominant_wavelength_nm: null,
+      oklch:   { l: 0.22, c: 0.03, h: 60 },
+      hex:     '#2e2820',
+      color_temperature_k:    null,
+      psychological_effects:  [
+        'The sheet structure embodies depth and layers — endlessly cleavable into perfect laminae',
+        'The metallic sheen on fresh cleavage surfaces is deeply grounding yet luminous',
+        'Most commonly encountered as matrix in granite — the lesson of the foundation beneath the beauty',
+        'Thin sheets bend without breaking — teaches resilience-through-yield',
+      ],
+      harmonics: { complementary_hue: null, triadic_hues: null, analogous_range: null },
+    },
+
+    metaphysical: {
+      mineral_name:     'Black Mica',
+      chakra_primary:   'Root',
+      chakra_secondary: ['Earth Star'],
+      element:   ['Earth'],
+      planet:    ['Saturn'],
+      archetype: ['The Layered Foundation', 'The Resilient Sheet', 'The Hidden Structure'],
+      zodiac:    ['Scorpio', 'Capricorn'],
+      numerology: 4,
+      angel_number: 444,
+      intention: 'My foundation holds. I am layered with depth and resilient in my structure.',
+      traditions: [
+        'Western crystal healing — usually encountered as matrix rather than solo stone',
+      ],
+      properties: [
+        'IMA-recognised biotite since 1847 — named for Jean-Baptiste Biot',
+        'One of the most abundant minerals in continental crust — found in granite worldwide',
+        'Perfect basal cleavage into elastic, flexible sheets that bend without breaking',
+        'Less commonly sold standalone — more often the dark matrix in granite and moonstone specimens',
+        'Radiometric K-Ar and Rb-Sr dating uses biotite to determine age of metamorphic and igneous rocks',
+        'The layered structure is the metaphysical teaching — depth, hidden levels, the foundation beneath the visible',
+      ],
+      gaia_resonance: 'AnchoredRoot + SovereignCore',
+      safety_warning: 'Avoid water — sheet silicate structure. Very soft H2.5-3. Iron content — do not make water elixir.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 4. BLACK MOONSTONE
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    name:        'Black Moonstone',
+    mindat_id:   9573,
+    rruff_ids:   ['R040055'],
+    last_synced: '2026-05-29T00:00:00Z',
+    trade_name:  false,
+    color_layer: 'natural',
+    yin_yang_pair: 'Rainbow Moonstone',
+
+    physical: {
+      id:           9573,
+      longid:       'black-moonstone',
+      guid:         '',
+      name:         'Feldspar — Orthoclase/Adularia (black variety with adularescence — Madagascar)',
+      ima_formula:  'KAlSi3O8',
+      ima_status:   'A',
+      ima_year:     1801,
+      strunzten:    '9.FA.30',
+      crystal_system: 'Monoclinic',
+      hardness_min: 6,
+      hardness_max: 6.5,
+      specific_gravity_min: 2.56,
+      specific_gravity_max: 2.60,
+      cleavage:    'Perfect on {001}, good on {010}',
+      fracture:    'Uneven',
+      luster:      ['Vitreous', 'Pearlescent (adularescence)'],
+      diaphaneity: ['Translucent'],
+      colour:      'Dark grey to black with blue, silver, or peach adularescence — primarily from Madagascar',
+      streak:      'White',
+      fluorescence: 'Weak',
+      ri_min:      1.518,
+      ri_max:      1.526,
+      birefringence: 0.007,
+      optical_type: '-',
+      shortdesc:   'Dark base colour variety of moonstone (orthoclase feldspar) with adularescence. Distinct from grey moonstone. Dark matrix makes the adularescent glow more dramatic. Primary source: Madagascar.',
+      updttime:    '2026-05-29T00:00:00Z',
+      mindat_url:  'https://www.mindat.org/min-9573.html',
+      piezoelectric:    false,
+      safe_for_water:   false,
+      safe_for_hardware: true,
+    },
+
+    optical: {
+      mineral_name: 'Black Moonstone',
+      refractive_index: { n_alpha: 1.518, n_gamma: 1.526 },
+      birefringence:   0.007,
+      optical_sign:    '-',
+      dispersion:      'Weak',
+      pleochroism:     null,
+      fluorescence_lw: 'Weak',
+      fluorescence_sw: null,
+      phosphorescence: null,
+      visible_wavelength_nm: null,
+      spectra: ['R040055'],
+    },
+
+    color: {
+      primary_color:          'Dark charcoal to black with blue or silver adularescence',
+      color_variants:         ['Black with blue adularescence (Madagascar)', 'Black with silver shimmer', 'Dark grey with peach-gold adularescence', 'Black with rainbow flash'],
+      dominant_wavelength_nm: null,
+      oklch:   { l: 0.22, c: 0.04, h: 255 },
+      hex:     '#282c38',
+      color_temperature_k:    null,
+      psychological_effects:  [
+        'The contrast of dark base and floating adularescent glow is one of the most arresting visual effects in mineralogy',
+        'The new moon symbolism — dark sky with first sliver of returning light — is literally embodied in this stone',
+        'The darkness amplifies the adularescence — light is more precious when it appears in the void',
+        'Deeply introspective — encourages sitting with the dark before seeking the light',
+      ],
+      harmonics: { complementary_hue: null, triadic_hues: null, analogous_range: null },
+    },
+
+    metaphysical: {
+      mineral_name:     'Black Moonstone',
+      chakra_primary:   'Root',
+      chakra_secondary: ['Sacral', 'Crown'],
+      element:   ['Earth', 'Water'],
+      planet:    ['Moon (new phase)', 'Saturn'],
+      archetype: ['The New Moon', 'The Void Before Creation', 'The Dark Womb'],
+      zodiac:    ['Scorpio', 'Capricorn', 'Cancer'],
+      numerology: 0,
+      angel_number: 000,
+      intention: 'I rest in the fertile dark. The new cycle is already beginning within me.',
+      traditions: [
+        'Western crystal healing — modern tradition',
+        'Lunar cycle tradition — specifically associated with the new moon',
+      ],
+      properties: [
+        'Distinct from grey moonstone — black variety is the new moon stone',
+        'Primary source: Madagascar — the Malagasy black moonstone is the standard for this variety',
+        'Dark base amplifies the adularescent glow — light is more powerful when it emerges from void',
+        'Associated with new beginnings, planting seeds in the dark, the fertile void before creation',
+        'The yin pair to rainbow moonstone — the complete dark to the full spectrum light',
+        'Angel number 000 — the void, infinite potential, the beginning before the beginning',
+      ],
+      gaia_resonance: 'SomnusVeil + ViriditasHeart + SovereignCore',
+      safety_warning: 'Avoid water — feldspar cleavage. H6-6.5, brittle. Not grey moonstone — clarify to clients. Ethically sourced Madagascar specimens preferred.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 5. BLACK OBSIDIAN
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    name:        'Black Obsidian',
+    mindat_id:   2967,
+    rruff_ids:   ['R040040'],
+    last_synced: '2026-05-29T00:00:00Z',
+    trade_name:  false,
+    color_layer: 'natural',
+    yin_yang_pair: 'Selenite',
+
+    physical: {
+      id:           2967,
+      longid:       'black-obsidian',
+      guid:         '',
+      name:         'Obsidian (volcanic glass — amorphous SiO2-rich melt)',
+      ima_formula:  'SiO2 (amorphous glass)',
+      ima_status:   'A',
+      ima_year:     null,
+      strunzten:    '4.DA.10',
+      crystal_system: 'Amorphous (no crystal structure)',
+      hardness_min: 5,
+      hardness_max: 5.5,
+      specific_gravity_min: 2.35,
+      specific_gravity_max: 2.60,
+      cleavage:    'None',
+      fracture:    'Conchoidal — extremely sharp cutting edges',
+      luster:      ['Vitreous'],
+      diaphaneity: ['Opaque'],
+      colour:      'Jet black — from magnetite (Fe3O4) and other iron oxides in the volcanic melt',
+      streak:      'White',
+      fluorescence: 'None',
+      ri_min:      1.480,
+      ri_max:      1.510,
+      birefringence: null,
+      optical_type: null,
+      shortdesc:   'Naturally occurring volcanic glass from rapidly cooled silica-rich lava. Amorphous — no crystal structure. Conchoidal fracture produces sharper edges than surgical steel. Used by humans for blades for 700,000+ years.',
+      updttime:    '2026-05-29T00:00:00Z',
+      mindat_url:  'https://www.mindat.org/min-2967.html',
+      piezoelectric:    false,
+      safe_for_water:   true,
+      safe_for_hardware: true,
+    },
+
+    optical: {
+      mineral_name: 'Black Obsidian',
+      refractive_index: { n: 1.490 },
+      birefringence:   null,
+      optical_sign:    null,
+      dispersion:      null,
+      pleochroism:     null,
+      fluorescence_lw: 'None',
+      fluorescence_sw: null,
+      phosphorescence: null,
+      visible_wavelength_nm: null,
+      spectra: ['R040040'],
+    },
+
+    color: {
+      primary_color:          'Jet black',
+      color_variants:         ['Pure jet black', 'Black with subtle sheen (sheen obsidian)', 'Note: gold sheen and silver sheen are separate entries', 'Note: snowflake obsidian is a separate entry'],
+      dominant_wavelength_nm: null,
+      oklch:   { l: 0.08, c: 0.00, h: 0 },
+      hex:     '#141414',
+      color_temperature_k:    null,
+      psychological_effects:  [
+        'The deepest, most perfectly light-absorbing black of any stone in the tradition',
+        'Polished obsidian mirrors the room and viewer — this is the root of the entire scrying tradition',
+        'The sharpest natural cutting edge in existence — the metaphysical tradition of swift truth encoded in physics',
+        'Confrontational — shows what IS, without softening — the most intense shadow stone available',
+        'Not recommended for daily wear without grounding — the depth can be overwhelming',
+      ],
+      harmonics: { complementary_hue: null, triadic_hues: null, analogous_range: null },
+    },
+
+    metaphysical: {
+      mineral_name:     'Black Obsidian',
+      chakra_primary:   'Root',
+      chakra_secondary: ['Earth Star', 'Third Eye'],
+      element:   ['Fire', 'Earth'],
+      planet:    ['Saturn', 'Pluto'],
+      archetype: ['The Mirror of Truth', 'The Scrying Bowl', 'The Volcanic Blade'],
+      zodiac:    ['Scorpio', 'Sagittarius', 'Aries'],
+      numerology: 1,
+      angel_number: 100,
+      intention: 'I see clearly without flinching. The truth of what I am is my greatest power.',
+      traditions: [
+        'Mesoamerican tradition — Aztec tezcatl (smoking mirror) for divination by priests and royalty',
+        'Ancient Near East and Mediterranean — obsidian blades and mirrors for 700,000+ years',
+        'Western crystal healing — the primary shadow work and scrying stone',
+        'Indigenous global tradition — obsidian tools across every volcanic culture on Earth',
+      ],
+      properties: [
+        'Volcanic glass — not a mineral (amorphous) — but IMA-listed and tradition-essential',
+        'Conchoidal fracture produces edges sharper than surgical steel — used in modern microsurgery scalpels',
+        'Used by humans for blades and tools for over 700,000 years',
+        'The Aztec tezcatl (obsidian scrying mirror) was central to Aztec divination and royal ceremony',
+        'The most intense shadow work stone — shows the unfiltered truth without compassion or softening',
+        'Polished obsidian mirrors were the primary scrying tool of Elizabethan magician John Dee',
+        'NOT recommended for emotional beginners — pair with rose quartz or selenite for shadow work',
+      ],
+      gaia_resonance: 'SovereignCore + QuantumNexus + AnchoredRoot',
+      safety_warning: '⚠️ HANDLE WITH EXTREME CARE — conchoidal fracture creates razor-sharp edges. Never break or chip without eye and hand protection. Not recommended for unsupported emotional beginners. Always pair with a grounding or compassion stone for shadow work.',
+    },
+  },
+
+];
+
+export default BATCH_B3;
