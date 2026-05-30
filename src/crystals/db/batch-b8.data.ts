@@ -388,14 +388,14 @@ const BATCH_B8: CrystalRecord[] = [
         'DO NOT use in water — arsenic sulphide micro-inclusions may leach',
         'H3 — not suitable for jewellery without protective setting',
       ],
-      gaia_resonance: 'SovereignCore + AnchoredRoot',
-      safety_warning: '⚠️ CAUTION — may contain arsenic sulphide micro-inclusions (orpiment/realgar) in yellow bands. DO NOT use in water elixirs or gem water. Wash hands after handling. Keep away from children and pets. H3 — very soft.',
+      gaia_resonance: 'SovereignCore + AnchorPrism',
+      safety_warning: '\u26a0\ufe0f CAUTION — may contain arsenic sulphide micro-inclusions (orpiment/realgar) in yellow bands. DO NOT use in water elixirs or gem water. Wash hands after handling. Keep away from children and pets. H3 — very soft.',
     },
   },
 
   // ─────────────────────────────────────────────────────────────────────────
   // 4. BUMBLEBEE JASPER
-  // 🚨 HIGHLY TOXIC — NOT a true jasper
+  // \U0001f6a8 HIGHLY TOXIC — NOT a true jasper
   // Volcanic rock from Mount Papandayan, West Java, Indonesia
   // Contains realgar (AsS) and orpiment (As₂S₃) — arsenic sulphides
   // ─────────────────────────────────────────────────────────────────────────
@@ -501,7 +501,7 @@ const BATCH_B8: CrystalRecord[] = [
         'Forms at volcanic fumaroles where sulphurous gases (H₂S, SO₂, AsH₃) deposit arsenic sulphides and elemental sulphur at 100–300°C',
         'Trade name coined by Indonesian mineral dealers in the 2000s — originally "Eclipse Jasper" or "Indonesian Eclipse Jasper"',
         'Modern Western crystal healing — used for Solar Plexus activation, personal power, and transformation through fire',
-        '⚠️ MISIDENTIFICATION RISK: frequently sold with inadequate safety information; many sellers unaware of arsenic content',
+        '\u26a0\ufe0f MISIDENTIFICATION RISK: frequently sold with inadequate safety information; many sellers unaware of arsenic content',
       ],
       properties: [
         'TRADE NAME ONLY — not a true jasper (jasper = microcrystalline quartz); this is a volcanic fumarolic deposit',
@@ -513,8 +513,8 @@ const BATCH_B8: CrystalRecord[] = [
         'Realgar is photosensitive — prolonged UV/sunlight converts to pararealgar (yellow powder); store away from direct sunlight',
         'Polished surface reduces but does not eliminate risk from grinding dust or chipping',
       ],
-      gaia_resonance: 'AnchoredRoot + SovereignCore + QuantumNexus',
-      safety_warning: '🚨 HIGHLY TOXIC — contains realgar (AsS) and orpiment (As₂S₃), both arsenic sulphides. NEVER use in water, elixirs, or gem water. NEVER ingest or place near food/drink. Wash hands IMMEDIATELY after handling. Use nitrile gloves for extended handling. Do NOT sand, grind, or polish without full respiratory protection. Keep away from children and pets. Do NOT leave in direct sunlight (realgar converts to pararealgar orange powder).',
+      gaia_resonance: 'AnchorPrism + SovereignCore + QuantumNexus',
+      safety_warning: '\U0001f6a8 HIGHLY TOXIC — contains realgar (AsS) and orpiment (As₂S₃), both arsenic sulphides. NEVER use in water, elixirs, or gem water. NEVER ingest or place near food/drink. Wash hands IMMEDIATELY after handling. Use nitrile gloves for extended handling. Do NOT sand, grind, or polish without full respiratory protection. Keep away from children and pets. Do NOT leave in direct sunlight (realgar converts to pararealgar orange powder).',
     },
   },
 
@@ -637,8 +637,8 @@ const BATCH_B8: CrystalRecord[] = [
         'Safe for water — no toxic elements; iron oxides are insoluble and stable',
         'One of the most affordable entry-point crystals — widely available, non-toxic, durable, and immediately pleasing in the hand',
       ],
-      gaia_resonance: 'AnchoredRoot + SovereignCore + ViriditasHeart',
-      safety_warning: '⚠️ PIEZOELECTRIC — keep away from hard drives and sensitive electronics. Safe for water. H6.5–7 — durable for everyday use. No toxic elements. No significant hazards.',
+      gaia_resonance: 'AnchorPrism + SovereignCore + ViriditasHeart',
+      safety_warning: '\u26a0\ufe0f PIEZOELECTRIC — keep away from hard drives and sensitive electronics. Safe for water. H6.5–7 — durable for everyday use. No toxic elements. No significant hazards.',
     },
   },
 
