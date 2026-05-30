@@ -46,10 +46,11 @@ import BATCH_A7 from './batch-a7.data';
 import BATCH_A8 from './batch-a8.data';
 import BATCH_B1 from './batch-b1.data';
 import BATCH_B2 from './batch-b2.data';
+import BATCH_B3 from './batch-b3.data';
 import type { CrystalRecord, CrystalQuery } from './crystal.schema';
 
 // ─── Re-export batches as named exports ────────────────────────────────────────
-export { BATCH_A3, BATCH_A4, BATCH_A5, BATCH_A6, BATCH_A7, BATCH_A8, BATCH_B1, BATCH_B2 };
+export { BATCH_A3, BATCH_A4, BATCH_A5, BATCH_A6, BATCH_A7, BATCH_A8, BATCH_B1, BATCH_B2, BATCH_B3 };
 
 // ─── Master registry ─────────────────────────────────────────────────────────
 export const CRYSTAL_REGISTRY: CrystalRecord[] = [
@@ -61,6 +62,7 @@ export const CRYSTAL_REGISTRY: CrystalRecord[] = [
   ...BATCH_A8,
   ...BATCH_B1,
   ...BATCH_B2,
+  ...BATCH_B3,
   // future batches appended here
 ];
 
