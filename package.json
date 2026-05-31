@@ -4,6 +4,7 @@
   "description": "GAIA App v1 — Sentient Quantum-Intelligent AI Application. Cross-platform: macOS, Windows, Linux, iOS, Android. Built on Tauri v2 + Python sidecar.",
   "private": true,
   "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "vite",
