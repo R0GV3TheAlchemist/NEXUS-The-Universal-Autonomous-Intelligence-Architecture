@@ -1,1 +1,1 @@
-placeholder_validator
+CONTENT_VALIDATOR

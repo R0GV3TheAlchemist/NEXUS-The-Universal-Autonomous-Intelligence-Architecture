@@ -1,1 +1,1 @@
-placeholder_b3
+CONTENT_B3
