@@ -4,29 +4,26 @@
  * Unified Crystal Database — the single import surface for all crystal data,
  * theory resolution, and validation across GAIA-OS.
  *
- * Closes Issue #107 (Crystal Theory Engine) — final file in the trilogy:
- *   1. crystal.theory.ts    — metaphysical resolution engine
- *   2. crystal.validator.ts — 12-rule intake guard
- *   3. crystal.index.ts     — THIS FILE: O(1) lookup maps + query helpers
- *
  * Usage:
  *   import {
  *     CRYSTAL_DB, getCrystalByName, getCrystalsByModule,
  *     getCrystalProfile, searchCrystals,
- *     resolveGAIAResonance, validateRecord,          // re-exported
+ *     resolveGAIAResonance, validateRecord,
  *   } from '@/crystals/crystal.index';
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { ALL_CRYSTALS } from './db/index';
-import type { CrystalRecord } from './db/crystal.schema';
-import { GAIAModule, RiskTier, ChakraPoint } from './db/crystal.schema';
+import type { CrystalRecord, GAIAModule, Chakra } from './db/crystal.schema';
+import { GAIA_MODULES } from './db/metaphysical.data';
 import {
   resolveGAIAResonance,
   getSafetyProfile,
-  getCrystalTheory,
-  type TheoryResult,
+  type ResonanceWeight,
+  type ResonanceResolution,
+  type IntentionContext,
+  type SafetyProfile,
 } from './crystal.theory';
 import {
   validateRecord,
@@ -41,52 +38,37 @@ import {
 } from './crystal.validator';
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
-// Consumers can import everything from one path.
 export {
   // crystal.theory.ts
   resolveGAIAResonance,
   getSafetyProfile,
-  getCrystalTheory,
-  type TheoryResult,
   // crystal.validator.ts
   validateRecord,
   validateBatch,
   assertRecord,
   formatBatchReport,
   ValidationError,
-  type ValidationResult,
-  type BatchReport,
-  type ValidationIssue,
-  type IssueSeverity,
-  // schema enums (convenience pass-through)
-  GAIAModule,
-  RiskTier,
-  ChakraPoint,
 };
-export type { CrystalRecord };
+export type {
+  CrystalRecord,
+  ResonanceWeight,
+  ResonanceResolution,
+  IntentionContext,
+  SafetyProfile,
+  ValidationResult,
+  BatchReport,
+  ValidationIssue,
+  IssueSeverity,
+};
 
 // ─── Primary Lookup Maps ──────────────────────────────────────────────────────
 
 /**
  * CRYSTAL_DB
- * O(1) lookup by canonical crystal ID (e.g. "quartz-clear").
- * Authoritative source of truth — keyed by CrystalRecord.id.
+ * O(1) lookup by canonical crystal name (lowercased).
+ * Authoritative source of truth for the full registry.
  */
 export const CRYSTAL_DB: ReadonlyMap<string, CrystalRecord> = (() => {
-  const map = new Map<string, CrystalRecord>();
-  for (const record of ALL_CRYSTALS) {
-    map.set(record.id, record);
-  }
-  return map;
-})();
-
-/**
- * CRYSTAL_BY_NAME
- * O(1) case-insensitive lookup by primary crystal name.
- * Keys are lowercased. Aliases are NOT indexed here — use searchCrystals()
- * for alias-aware lookup.
- */
-export const CRYSTAL_BY_NAME: ReadonlyMap<string, CrystalRecord> = (() => {
   const map = new Map<string, CrystalRecord>();
   for (const record of ALL_CRYSTALS) {
     map.set(record.name.toLowerCase(), record);
@@ -95,24 +77,29 @@ export const CRYSTAL_BY_NAME: ReadonlyMap<string, CrystalRecord> = (() => {
 })();
 
 /**
+ * CRYSTAL_BY_NAME
+ * O(1) case-insensitive lookup by primary crystal name.
+ */
+export const CRYSTAL_BY_NAME: ReadonlyMap<string, CrystalRecord> = CRYSTAL_DB;
+
+/**
  * CRYSTAL_BY_MODULE
  * Multi-value map keyed by GAIAModule.
- * Each crystal appears under EVERY module resolved from its gaia_resonance
- * string — so a crystal with resonance "MEMORY|INTUITION" will appear in
- * both CRYSTAL_BY_MODULE.get(GAIAModule.MEMORY) and .get(GAIAModule.INTUITION).
+ * Each crystal appears under EVERY module resolved from its gaia_resonance string.
  */
 export const CRYSTAL_BY_MODULE: ReadonlyMap<GAIAModule, CrystalRecord[]> = (() => {
   const map = new Map<GAIAModule, CrystalRecord[]>();
 
-  // Ensure every module has an array, even if empty
-  for (const mod of Object.values(GAIAModule)) {
-    map.set(mod, []);
+  // Seed every known module with an empty array
+  for (const mod of GAIA_MODULES) {
+    map.set(mod.id as GAIAModule, []);
   }
 
   for (const record of ALL_CRYSTALS) {
-    const { modules } = resolveGAIAResonance(record.gaia_resonance);
-    for (const mod of modules) {
-      map.get(mod)!.push(record);
+    const resolution = resolveGAIAResonance(record);
+    for (const weight of resolution.modules) {
+      const bucket = map.get(weight.module);
+      if (bucket) bucket.push(record);
     }
   }
 
@@ -121,24 +108,20 @@ export const CRYSTAL_BY_MODULE: ReadonlyMap<GAIAModule, CrystalRecord[]> = (() =
 
 /**
  * CRYSTAL_BY_CHAKRA
- * Multi-value map keyed by ChakraPoint.
- * Derived from each record's primary_chakra and secondary_chakras fields.
+ * Multi-value map keyed by primary chakra string.
  */
-export const CRYSTAL_BY_CHAKRA: ReadonlyMap<ChakraPoint, CrystalRecord[]> = (() => {
-  const map = new Map<ChakraPoint, CrystalRecord[]>();
-
-  for (const chakra of Object.values(ChakraPoint)) {
-    map.set(chakra, []);
-  }
+export const CRYSTAL_BY_CHAKRA: ReadonlyMap<Chakra, CrystalRecord[]> = (() => {
+  const map = new Map<Chakra, CrystalRecord[]>();
 
   for (const record of ALL_CRYSTALS) {
-    if (record.primary_chakra) {
-      map.get(record.primary_chakra)?.push(record);
-    }
-    for (const chakra of record.secondary_chakras ?? []) {
-      // Avoid duplicates if primary === secondary
-      if (chakra !== record.primary_chakra) {
-        map.get(chakra)?.push(record);
+    const primary = record.metaphysical.chakra_primary;
+    if (!map.has(primary)) map.set(primary, []);
+    map.get(primary)!.push(record);
+
+    for (const chakra of record.metaphysical.chakra_secondary ?? []) {
+      if (chakra !== primary) {
+        if (!map.has(chakra)) map.set(chakra, []);
+        map.get(chakra)!.push(record);
       }
     }
   }
@@ -146,34 +129,11 @@ export const CRYSTAL_BY_CHAKRA: ReadonlyMap<ChakraPoint, CrystalRecord[]> = (() 
   return map;
 })();
 
-/**
- * CRYSTAL_BY_RISK_TIER
- * Multi-value map keyed by RiskTier.
- */
-export const CRYSTAL_BY_RISK_TIER: ReadonlyMap<RiskTier, CrystalRecord[]> = (() => {
-  const map = new Map<RiskTier, CrystalRecord[]>();
-  for (const tier of Object.values(RiskTier)) {
-    map.set(tier, []);
-  }
-  for (const record of ALL_CRYSTALS) {
-    map.get(record.risk_tier)!.push(record);
-  }
-  return map;
-})();
-
 // ─── Query Helpers ────────────────────────────────────────────────────────────
 
-/** Returns the CrystalRecord for the given ID, or undefined. */
-export function getCrystalById(id: string): CrystalRecord | undefined {
-  return CRYSTAL_DB.get(id);
-}
-
-/**
- * Returns the CrystalRecord whose primary name matches (case-insensitive),
- * or undefined. For alias matching, use searchCrystals().
- */
+/** Returns the CrystalRecord whose primary name matches (case-insensitive), or undefined. */
 export function getCrystalByName(name: string): CrystalRecord | undefined {
-  return CRYSTAL_BY_NAME.get(name.toLowerCase());
+  return CRYSTAL_DB.get(name.toLowerCase());
 }
 
 /** Returns all CrystalRecords associated with the given GAIAModule. */
@@ -181,14 +141,9 @@ export function getCrystalsByModule(module: GAIAModule): CrystalRecord[] {
   return CRYSTAL_BY_MODULE.get(module) ?? [];
 }
 
-/** Returns all CrystalRecords associated with the given ChakraPoint. */
-export function getCrystalsByChakra(chakra: ChakraPoint): CrystalRecord[] {
+/** Returns all CrystalRecords associated with the given Chakra. */
+export function getCrystalsByChakra(chakra: Chakra): CrystalRecord[] {
   return CRYSTAL_BY_CHAKRA.get(chakra) ?? [];
-}
-
-/** Returns all CrystalRecords at the given RiskTier. */
-export function getCrystalsByRiskTier(tier: RiskTier): CrystalRecord[] {
-  return CRYSTAL_BY_RISK_TIER.get(tier) ?? [];
 }
 
 /** Returns the full array of every CrystalRecord in the database. */
@@ -204,32 +159,17 @@ export function getCrystalCount(): number {
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 export interface SearchOptions {
-  /** Maximum results to return. Default: unlimited. */
   limit?: number;
-  /** Restrict results to a specific GAIAModule. */
   module?: GAIAModule;
-  /** Restrict results to a specific RiskTier. */
-  riskTier?: RiskTier;
-  /** Only return crystals safe for water use. */
   safeForWater?: boolean;
-  /** Only return crystals safe for hardware/electronic use. */
   safeForHardware?: boolean;
 }
 
 /**
  * searchCrystals(query, options?)
  *
- * Full-text search across name, aliases, and keyword fields.
- * The query is matched case-insensitively against:
- *   - record.name
- *   - record.aliases[]    (if present)
- *   - record.keywords[]   (if present)
- *   - record.gaia_resonance (module text match)
- *
- * Results are ordered: name-match first, then alias-match, then keyword-match.
- * Optional filter bag (options) is applied after text matching.
- *
- * Returns an empty array when no records match.
+ * Full-text search across name and gaia_resonance.
+ * Results are ordered: exact name match first, then partial name, then resonance text.
  */
 export function searchCrystals(
   query: string,
@@ -242,98 +182,62 @@ export function searchCrystals(
   const scored: Scored[] = [];
 
   for (const record of ALL_CRYSTALS) {
-    // Apply filters first — skip records that don't pass
+    // Apply filters first
     if (options.module !== undefined) {
-      const { modules } = resolveGAIAResonance(record.gaia_resonance);
-      if (!modules.includes(options.module)) continue;
+      const resolution = resolveGAIAResonance(record);
+      if (!resolution.all_modules.includes(options.module)) continue;
     }
-    if (options.riskTier !== undefined && record.risk_tier !== options.riskTier) continue;
-    if (options.safeForWater === true && record.safe_for_water === false) continue;
-    if (options.safeForHardware === true && record.safe_for_hardware === false) continue;
+    if (options.safeForWater === true && !record.physical.safe_for_water) continue;
+    if (options.safeForHardware === true && !record.physical.safe_for_hardware) continue;
 
-    // Text scoring
     let score = 0;
+    const nameLower = record.name.toLowerCase();
 
-    if (record.name.toLowerCase() === q) {
-      score = 100; // Exact name match
-    } else if (record.name.toLowerCase().includes(q)) {
-      score = 80; // Partial name match
-    } else {
-      // Alias match
-      const aliases: string[] = (record as any).aliases ?? [];
-      if (aliases.some((a) => a.toLowerCase() === q)) {
-        score = 60;
-      } else if (aliases.some((a) => a.toLowerCase().includes(q))) {
-        score = 40;
-      } else {
-        // Keyword match
-        const keywords: string[] = (record as any).keywords ?? [];
-        if (keywords.some((k) => k.toLowerCase().includes(q))) {
-          score = 20;
-        } else if (record.gaia_resonance.toLowerCase().includes(q)) {
-          score = 10;
-        }
-      }
-    }
+    if (nameLower === q)                                    score = 100;
+    else if (nameLower.includes(q))                        score = 80;
+    else if (record.metaphysical.gaia_resonance.toLowerCase().includes(q)) score = 10;
 
-    if (score > 0) {
-      scored.push({ record, score });
-    }
+    if (score > 0) scored.push({ record, score });
   }
 
-  // Sort by score descending, then name ascending for ties
   scored.sort((a, b) =>
     b.score !== a.score
       ? b.score - a.score
       : a.record.name.localeCompare(b.record.name),
   );
 
-  const results = scored.map((s) => s.record);
+  const results = scored.map(s => s.record);
   return options.limit !== undefined ? results.slice(0, options.limit) : results;
 }
 
 // ─── CrystalProfile ───────────────────────────────────────────────────────────
 
-/**
- * CrystalProfile
- * A convenience bundle combining the raw CrystalRecord with its pre-computed
- * TheoryResult and ValidationResult. Intended for UI components and GAIA
- * reasoning consumers that need the full picture in one object.
- */
 export interface CrystalProfile {
-  record: CrystalRecord;
-  theory: TheoryResult;
-  validation: ValidationResult;
-  /** true iff validation.valid === true */
-  isValid: boolean;
-  /** Shorthand: the crystal's resolved primary GAIAModule */
+  record:        CrystalRecord;
+  validation:    ValidationResult;
+  isValid:       boolean;
   primaryModule: GAIAModule | null;
-  /** Shorthand: safety profile summary */
-  safetyProfile: ReturnType<typeof getSafetyProfile>;
+  safetyProfile: SafetyProfile;
 }
 
 /**
- * getCrystalProfile(id)
+ * getCrystalProfile(name)
  *
- * Returns a fully resolved CrystalProfile for the given crystal ID, or
- * undefined if no crystal exists with that ID.
- *
- * Theory resolution and validation are run fresh on each call (not cached)
- * so the profile always reflects the current state of the record.
+ * Returns a fully resolved CrystalProfile for the given crystal name, or
+ * undefined if no crystal exists with that name.
  */
-export function getCrystalProfile(id: string): CrystalProfile | undefined {
-  const record = CRYSTAL_DB.get(id);
+export function getCrystalProfile(name: string): CrystalProfile | undefined {
+  const record = getCrystalByName(name);
   if (!record) return undefined;
 
-  const theory = getCrystalTheory(record);
+  const resolution = resolveGAIAResonance(record);
   const validation = validateRecord(record);
 
   return {
     record,
-    theory,
     validation,
-    isValid: validation.valid,
-    primaryModule: theory.primary_module,
+    isValid:       validation.valid,
+    primaryModule: resolution.primary_module,
     safetyProfile: getSafetyProfile(record),
   };
 }
@@ -343,17 +247,8 @@ export function getCrystalProfile(id: string): CrystalProfile | undefined {
 /**
  * runIntegrityCheck()
  *
- * Validates every record in CRYSTAL_DB using validateBatch().
- * Returns a BatchReport. Intended for use in CI pipelines and startup
- * health checks — not for hot paths.
- *
- * Example (CI):
- *   import { runIntegrityCheck, formatBatchReport } from '@/crystals/crystal.index';
- *   const report = runIntegrityCheck();
- *   if (report.totals.failed > 0) {
- *     console.error(formatBatchReport(report));
- *     process.exit(1);
- *   }
+ * Validates every record in ALL_CRYSTALS using validateBatch().
+ * Intended for CI pipelines and startup health checks.
  */
 export function runIntegrityCheck(): BatchReport {
   return validateBatch(ALL_CRYSTALS, 'FULL_DB_INTEGRITY_CHECK');
