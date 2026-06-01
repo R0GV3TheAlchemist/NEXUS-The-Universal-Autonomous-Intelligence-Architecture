@@ -1,0 +1,29 @@
+{
+  "_source": "Mindat.org (ID 4219) + Jaffe et al. (1971) + Merz (1953)",
+  "_material": "Ba(Ti0.6Sn0.4)O3 — BTS perovskite, tetragonal P4mm",
+  "_note": "Lattice params from Mindat ID 4219. Piezoelectric from Jaffe et al. 1971.",
+
+  "lattice_a_angstrom": 3.9835,
+  "lattice_c_angstrom": 4.0361,
+  "tetragonality": 1.0133,
+  "lattice_system": "tetragonal (P4mm)",
+
+  "curie_temperature_k": 277.8,
+  "curie_temperature_tolerance_k": 30.0,
+  "curie_temperature_note": "Vegard-law interpolation BaTiO3 (393K) + BaSnO3 (105K) at x=0.4",
+
+  "spontaneous_polarisation_c_m2": 0.26,
+  "spontaneous_polarisation_tolerance_c_m2": 0.05,
+  "spontaneous_polarisation_note": "BaTiO3 reference 0.26 C/m2; Sn reduces Ps",
+
+  "e33_c_m2": 6.7,
+  "e33_tolerance_c_m2": 1.5,
+  "e33_note": "Jaffe et al. (1971) BaTiO3 reference; BTS reduces e33",
+
+  "references": [
+    "Mindat.org ID 4219 (mindat.org)",
+    "Jaffe et al. (1971) Piezoelectric Ceramics, Academic Press",
+    "Merz (1953) Phys. Rev. 91, 513",
+    "Fischbach et al. (2019) J. Appl. Phys. 125, 114103"
+  ]
+}

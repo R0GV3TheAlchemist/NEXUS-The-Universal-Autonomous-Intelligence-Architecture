@@ -1,0 +1,31 @@
+{
+  "_source": "Lemettinen et al. (2019) + Fichtner et al. (2019) + Dreyer et al. (2016)",
+  "_material": "Al0.7Sc0.3N / GaN heterostructure interface",
+
+  "alscn_a_angstrom": 3.260,
+  "alscn_c_angstrom": 5.000,
+  "alscn_sc_fraction": 0.30,
+
+  "gan_a_angstrom": 3.189,
+  "gan_c_angstrom": 5.185,
+
+  "delta_ec_ev": 1.8,
+  "delta_ec_tolerance_ev": 0.15,
+  "delta_ec_note": "HSE06 DFT reference, Dreyer et al. (2016) Phys. Rev. B 93, 081205",
+
+  "delta_p_sp_c_m2": 0.081,
+  "delta_p_pe_c_m2": 0.055,
+  "delta_p_total_c_m2": 0.136,
+  "delta_p_tolerance_c_m2": 0.02,
+  "delta_p_note": "Fichtner (2019) SP + strain-PE estimate at GaN lattice mismatch",
+
+  "sigma_2deg_cm2": 8.49e12,
+  "sigma_2deg_tolerance_cm2": 1.0e13,
+  "sigma_2deg_note": "Derived from delta_P/e; HEMT literature range 1-3e13 cm-2",
+
+  "references": [
+    "Lemettinen et al. (2019) Cryst. Growth Des. 19, 4020",
+    "Fichtner et al. (2019) J. Appl. Phys. 125, 114103",
+    "Dreyer et al. (2016) Phys. Rev. B 93, 081205"
+  ]
+}

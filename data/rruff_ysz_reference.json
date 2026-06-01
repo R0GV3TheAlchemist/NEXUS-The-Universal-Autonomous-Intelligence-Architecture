@@ -1,0 +1,29 @@
+{
+  "_source": "RRUFF Project (rruff.info) + experimental literature",
+  "_material": "Yttria-Stabilised Zirconia (8 mol% Y2O3), fluorite phase",
+  "_note": "Lattice params from RRUFF R040094. Conductivity / dielectric from Ivers-Tiffée et al. 2001.",
+
+  "lattice_a_angstrom": 5.1415,
+  "lattice_c_angstrom": 5.1415,
+  "lattice_system": "cubic (Fm-3m)",
+  "y_fraction": 0.08,
+
+  "oxygen_vacancy_formation_ev": 0.6,
+  "oxygen_vacancy_formation_tolerance_ev": 0.3,
+
+  "ionic_conductivity_proxy": 1.0,
+  "ionic_conductivity_proxy_note": "Normalised reference (sim value should be 0.8-1.2)",
+
+  "dielectric_constant": 27.0,
+  "dielectric_constant_tolerance": 5.0,
+
+  "ground_state_energy_kcal_mol": -2891350.0,
+  "ground_state_energy_kcal_mol_note": "DFT-PBE reference for 7-atom Zr3Y1O12 cluster (approximate)",
+  "ground_state_energy_tolerance_kcal_mol": 2.0,
+
+  "references": [
+    "RRUFF R040094 (rruff.info)",
+    "Ivers-Tiffée et al. (2001) J. Eur. Ceram. Soc. 21, 1787",
+    "Stapper et al. (1999) Phys. Rev. B 59, 7896"
+  ]
+}
