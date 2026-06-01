@@ -1,7 +1,7 @@
 # .github/workflows/validate_crystal_db.yml
 # GAIA-OS — Crystal Database Consistency Checker
 #
-# Runs scripts/validate_crystal_db.py against all 25 batch files (A1–C7).
+# Runs scripts/validate_crystal_db.py against all 29 batch files (A1–C9b).
 #
 # Triggers:
 #   • push to main    — when crystal DB files or the validator itself change
@@ -35,7 +35,7 @@ on:
       batch:
         description: |
           Single batch to validate (e.g. a1, b3, c7).
-          Leave blank to scan all 25 batches.
+          Leave blank to scan all 29 batches.
         required: false
         default: ''
 
@@ -79,6 +79,8 @@ jobs:
         continue-on-error: true
 
       # ── 4. Run validator (JSON artifact) ───────────────────────────────────
+      # FIX: use --json-out <file> flag (not --json), which writes valid JSON
+      # directly to the file rather than redirecting mixed text+JSON stdout.
       - name: Run validator — JSON report
         id: validate_json
         run: |
@@ -86,8 +88,7 @@ jobs:
           if [ -n "${{ github.event.inputs.batch }}" ]; then
             BATCH_ARG="--batch ${{ github.event.inputs.batch }}"
           fi
-          python scripts/validate_crystal_db.py --json $BATCH_ARG \
-            > crystal-db-audit-report.json 2>&1 || true
+          python scripts/validate_crystal_db.py --json-out crystal-db-audit-report.json $BATCH_ARG || true
 
       # ── 5. Upload JSON artifact ─────────────────────────────────────────────
       - name: Upload audit JSON
@@ -101,7 +102,7 @@ jobs:
       - name: Write step summary
         if: always()
         run: |
-          echo "## 🔮 Crystal DB Audit — ${{ github.event.inputs.batch || 'All Batches (A1–C7)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔮 Crystal DB Audit — ${{ github.event.inputs.batch || 'All Batches (A1–C9b)' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           BATCH_ARG=""
