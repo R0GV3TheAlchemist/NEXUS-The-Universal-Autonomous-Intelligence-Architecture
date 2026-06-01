@@ -32,6 +32,10 @@
  *                        — RefractiveIndexValues: added n_max, n_o; widened n_beta to number | null
  *                        — AngelNumber: added '000' (void / new-cycle sequence)
  *                        — IMAStatus: added 9 missing descriptive variants
+ *   2026-06-01 (v1.6)   — Element: added 'Aether' (fifth element / quintessence)
+ *                        — OpticalRecord: added phosphorescence field (string | null)
+ *                        — MetaphysicalRecord: added mineral_name field (string)
+ *                        — MetaphysicalRecord: added safety_warning field (string | null)
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +94,8 @@ export type ChakraPoint = typeof ChakraPoint[keyof typeof ChakraPoint];
 
 /**
  * Classical + expanded elements.
- * Includes Akasha (fifth element / spirit in Vedic / Theosophical tradition),
+ * Includes Aether (fifth element / quintessence in Western esoteric tradition),
+ * Akasha (fifth element / spirit in Vedic / Theosophical tradition),
  * Light (radiant / photonic), and 'All elements' for omnispectral stones.
  */
 export type Element =
@@ -99,6 +104,7 @@ export type Element =
   | 'Earth'
   | 'Air'
   | 'Storm'
+  | 'Aether'
   | 'Akasha'
   | 'Light'
   | 'All elements';
@@ -330,6 +336,8 @@ export interface OpticalRecord {
   pleochroism:      string | null;
   fluorescence_lw:  string | null;
   fluorescence_sw:  string | null;
+  /** Phosphorescent emission after removal of excitation source (null if none / unknown) */
+  phosphorescence:  string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -343,6 +351,8 @@ export interface ColorInfo {
 }
 
 export interface MetaphysicalRecord {
+  /** Common / trade mineral name used in metaphysical and healing contexts */
+  mineral_name:      string;
   color_info:        ColorInfo;
   chakra_primary:    Chakra;
   chakra_secondary:  Chakra[];
@@ -358,6 +368,8 @@ export interface MetaphysicalRecord {
   gaia_resonance:    string | null;
   risk_tier:         RiskTier;
   safety_notes:      string | null;
+  /** Specific safety warning text for display in GAIA UI (null if none) */
+  safety_warning:    string | null;
   companion_stones:  string[];
   yin_yang_polarity: 'yin' | 'yang' | 'neutral' | null;
 }
