@@ -46,6 +46,10 @@
  *                        — Added OKLCHValue, ColorRecord, MetaphysicalProfile type alias
  *                        — Added CrystalQuery, CrystalMatrixResult, RruffSpectrum
  *                        — Added ColorHarmonics interface
+ *   2026-06-01 (v1.9)   — ColorLayer: added 'natural' (unenhanced body colour) and
+ *                          'treated' (colour-enhanced stone, state adjective form)
+ *                        — Both were used consistently across all batch files but were
+ *                          missing from the union; this aligns schema with batch data
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -186,8 +190,21 @@ export type OpticalType = 'U' | 'B' | 'I' | null;
 
 /**
  * ColorLayer — describes the origin / type of a crystal's colour.
+ *
+ * Values:
+ *   'natural'    — unenhanced, body colour as it occurs in nature
+ *   'treated'    — colour has been enhanced or altered (heat, irradiation, coating, etc.)
+ *   'body'       — intrinsic body colour (synonym for 'natural'; retained for compatibility)
+ *   'surface'    — colour resides on the surface (oxide film, iridescence, adularescence)
+ *   'inclusion'  — colour derives from mineral inclusions within the stone
+ *   'irradiation'— colour induced by natural or artificial radiation
+ *   'treatment'  — catch-all for laboratory treatment not otherwise specified
+ *   'man-made'   — synthetic / lab-created stone
+ *    null        — colour layer not yet classified
  */
 export type ColorLayer =
+  | 'natural'
+  | 'treated'
   | 'body'
   | 'surface'
   | 'inclusion'
@@ -305,6 +322,14 @@ export interface OKLCHValue {
 
 /**
  * ColorHarmonics — related hues derived from a stone's dominant colour.
+ *
+ * Field names:
+ *   complementary — the hue directly opposite on the colour wheel (180°)
+ *   analogous     — two hues adjacent to the primary (±30°)
+ *   triadic       — two hues forming a triangle on the colour wheel (±120°)
+ *
+ * Note: the field is `complementary` (not `complementary_hue`). Batch data
+ * that used `complementary_hue` should be updated to match this interface.
  */
 export interface ColorHarmonics {
   complementary: OKLCHValue | null;
