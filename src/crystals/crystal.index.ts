@@ -193,9 +193,9 @@ export function searchCrystals(
     let score = 0;
     const nameLower = record.name.toLowerCase();
 
-    if (nameLower === q)                                    score = 100;
-    else if (nameLower.includes(q))                        score = 80;
-    else if (record.metaphysical.gaia_resonance.toLowerCase().includes(q)) score = 10;
+    if (nameLower === q)                                                               score = 100;
+    else if (nameLower.includes(q))                                                    score = 80;
+    else if (record.metaphysical.gaia_resonance?.toLowerCase().includes(q))           score = 10;
 
     if (score > 0) scored.push({ record, score });
   }
