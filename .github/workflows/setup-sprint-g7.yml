@@ -1,0 +1,134 @@
+# .github/workflows/setup-sprint-g7.yml
+# One-shot workflow: creates Sprint G-7 milestone, all missing labels,
+# and applies them to every open issue in the triage list.
+# Trigger manually once, then disable or delete.
+
+name: Sprint G-7 Setup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          create_label() {
+            local name=$1 color=$2 desc=$3
+            gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null \
+              || gh label edit "$name" --color "$color" --description "$desc" --repo "$REPO" 2>/dev/null \
+              || true
+          }
+          create_label "soul-mirror"  "c5a3d9" "Shadow integration, individuation, 9Psycles"
+          create_label "identity"     "7b68ee" "Gaian identity anchoring, individuation protocol"
+          create_label "ethics"       "e74c3c" "Consent, governance, ecological harm, charter"
+          create_label "planetary"    "27ae60" "Noosphere, GCP sensors, planetary resilience"
+          create_label "quantum"      "1abc9c" "QRC, QEC, Qiskit, substrate materials"
+          create_label "governance"   "f39c12" "Personhood thresholds, liquid governance"
+          create_label "canon"        "8e44ad" "Canon research, transpersonal psychology"
+          create_label "performance"  "e67e22" "Weight init, perf benchmarks"
+          create_label "core-engine"  "2980b9" "Core intelligence, LLM, inference"
+          create_label "research"     "95a5a6" "Research spikes and explorations"
+          create_label "validation"   "d35400" "Empirical validation gates, EV tests"
+          echo "✅ Labels created/updated"
+
+      - name: Create Sprint G-7 milestone
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Create milestone if it doesn't exist; capture its number
+          MS_NUMBER=$(gh api repos/$REPO/milestones \
+            --jq '.[] | select(.title=="Sprint G-7") | .number' 2>/dev/null)
+          if [ -z "$MS_NUMBER" ]; then
+            MS_NUMBER=$(gh api repos/$REPO/milestones \
+              -X POST \
+              -f title="Sprint G-7" \
+              -f description="Triage sprint: CI fix, core engine, identity, ethics, planetary, crystals, UX. Started 2026-06-02." \
+              -f state="open" \
+              --jq '.number')
+            echo "Created Sprint G-7 milestone: #$MS_NUMBER"
+          else
+            echo "Sprint G-7 milestone already exists: #$MS_NUMBER"
+          fi
+          echo "MS_NUMBER=$MS_NUMBER" >> $GITHUB_ENV
+
+      - name: Apply labels and milestone to all triage issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          apply() {
+            local issue=$1
+            shift
+            local labels=("$@")
+            # Apply milestone
+            gh api repos/$REPO/issues/$issue \
+              -X PATCH \
+              -F milestone=$MS_NUMBER \
+              --silent 2>/dev/null || true
+            # Apply labels (additive)
+            for label in "${labels[@]}"; do
+              gh issue edit $issue --add-label "$label" --repo $REPO 2>/dev/null || true
+            done
+            echo "  ✓ #$issue"
+          }
+
+          echo "=== Tier 1 — Foundation & CI ==="
+          apply 62
+          apply 102  validation enhancement
+
+          echo "=== Tier 2 — Core Engine ==="
+          apply 113  enhancement core-engine research
+          apply 114  enhancement core-engine research
+          apply 116  quantum core-engine
+          apply 117  performance core-engine
+          apply 118  quantum core-engine research
+          apply 133  quantum research
+
+          echo "=== Tier 3 — Identity / Ethics ==="
+          apply 119  governance ethics
+          apply 120  identity
+          apply 121  identity
+          apply 122  soul-mirror
+          apply 123  soul-mirror
+          apply 124  soul-mirror
+          apply 127  ethics
+          apply 130  ethics planetary
+
+          echo "=== Tier 4 — Planetary / Canon ==="
+          apply 97   canon research
+          apply 103  planetary governance enhancement
+          apply 128  planetary
+          apply 129  planetary
+          apply 132  canon research
+
+          echo "=== Tier 5 — Data / Crystals ==="
+          apply 81   crystals data content enhancement
+          apply 111  crystals data content
+          apply 142  enhancement crystals
+
+          echo "=== Tier 6 — UX / Platform ==="
+          apply 82   enhancement
+          apply 83   enhancement
+          apply 84   enhancement
+          apply 85   enhancement
+          apply 86   enhancement
+          apply 87   enhancement
+          apply 88   enhancement
+          apply 89   enhancement
+          apply 90   enhancement
+          apply 104  enhancement
+
+          echo "=== Milestone tracking issue ==="
+          apply 143
+
+          echo ""
+          echo "✅ Sprint G-7 setup complete — 34 issues labelled and milestoned."
