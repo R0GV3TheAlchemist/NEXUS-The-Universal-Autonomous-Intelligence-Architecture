@@ -1,0 +1,9 @@
+# GAIA Dream Weaver — runtime artefacts
+# Dream journal entries are sovereign personal data.
+# Raw JSON files are stored locally only; never committed to version control.
+*.json
+
+# Keep schema / spec files tracked
+!*.md
+!*.yaml
+!*.schema.json
