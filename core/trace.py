@@ -176,16 +176,32 @@ class AsyncGAIATrace(GAIATrace):
     Async context manager variant. Drop-in replacement for use inside
     `async with` blocks. Inherits all behaviour from GAIATrace; only the
     dunder protocol methods differ to satisfy the async CM protocol.
+
+    Example:
+        async with AsyncGAIATrace(
+            event=TraceEventType.LLM_INFERENCE,
+            gaian_id=gaian.id,
+            canon_refs=["C01"],
+            inputs={"prompt_tokens": 512},
+        ) as trace:
+            response = await llm.complete(prompt)
+            trace.record_output({"response_tokens": len(response.tokens)})
     """
 
     async def __aenter__(self) -> "AsyncGAIATrace":
         return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+        # Delegate to sync __exit__ — the flush is a simple file append and
+        # does not benefit from being awaited.
         return self.__exit__(exc_type, exc_val, exc_tb)
 
 
 # ── CLI Query Utility ─────────────────────────────────────────────────────── #
+# Usage:
+#   python -m core.trace query --gaian luna --event synergy_compute --error-only
+#   python -m core.trace show  --correlation-id req-abc123
+#   python -m core.trace stats --event llm_inference --since 24h
 
 def _load_records(
     audit_dir: Path,
@@ -229,7 +245,7 @@ def _cmd_query(args: argparse.Namespace) -> None:
         records = [r for r in records if r.get("error") is not None]
     for r in records[:args.limit]:
         print(json.dumps(r, indent=2))
-    print(f"\n\u2014 {len(records)} record(s) matched \u2014", file=sys.stderr)
+    print(f"\n— {len(records)} record(s) matched —", file=sys.stderr)
 
 
 def _cmd_show(args: argparse.Namespace) -> None:
