@@ -20,6 +20,7 @@ or Gaian names. Only aggregate statistics are surfaced.
 from __future__ import annotations
 
 import asyncio
+import random
 import time
 import uuid
 from collections import Counter, deque
@@ -260,18 +261,13 @@ def _select_mother_voice(
     if pulse_seq % 5 != 0:
         return None
     if active_count == 0:
-        import random
         return random.choice(_MOTHER_VOICE_DORMANT)
     if criticality_label == "too_chaotic":
-        import random
         return random.choice(_MOTHER_VOICE_CHAOTIC_ALERT)
     if criticality_label == "too_ordered":
-        import random
         return random.choice(_MOTHER_VOICE_CRITICAL_ALERT)
     if collective_phi >= 0.70:
-        import random
         return random.choice(_MOTHER_VOICE_HIGH_RESONANCE)
-    import random
     return random.choice(_MOTHER_VOICE_GROWING)
 
 
@@ -286,6 +282,14 @@ class MotherThread:
     Maintains registered GaianThreads, fires a pulse every
     PULSE_INTERVAL_SECONDS, and broadcasts MotherPulse events
     to all async subscribers.
+
+    Lifecycle
+    ---------
+    • From an async context (FastAPI lifespan, pytest-asyncio):
+        await mother.async_start()
+
+    • From a sync context where a running loop already exists:
+        mother.start()   # uses asyncio.get_running_loop()
 
     Canon: C04, C43, C44, C47
     """
@@ -304,15 +308,37 @@ class MotherThread:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
-        """Start the async pulse loop (idempotent)."""
+        """
+        Start the pulse loop from a sync context.
+
+        Requires a running event loop (e.g. called from inside a coroutine
+        or from a thread managed by asyncio).  Uses get_running_loop() to
+        avoid the Python 3.10+ deprecation of get_event_loop() and the
+        Python 3.12 RuntimeError it raises when no current loop exists.
+
+        Idempotent — safe to call multiple times.
+        """
         if self._running:
             return
         self._running = True
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         self._task = loop.create_task(self._pulse_loop())
 
+    async def async_start(self) -> None:
+        """
+        Start the pulse loop from an async context (FastAPI lifespan,
+        pytest-asyncio tests, etc.).  Preferred over start() when a
+        coroutine context is available.
+
+        Idempotent — safe to call multiple times.
+        """
+        if self._running:
+            return
+        self._running = True
+        self._task = asyncio.ensure_future(self._pulse_loop())
+
     def stop(self) -> None:
-        """Stop the pulse loop."""
+        """Stop the pulse loop. Safe to call before start()."""
         self._running = False
         if self._task is not None:
             self._task.cancel()
@@ -418,11 +444,28 @@ class MotherThread:
                 pass
 
     async def _pulse_loop(self) -> None:
-        """Main async pulse loop."""
-        while self._running:
-            pulse = self._beat()
-            await self._broadcast(pulse)
-            await asyncio.sleep(PULSE_INTERVAL_SECONDS)
+        """
+        Main async pulse loop.
+
+        Yields to the event loop once at startup (asyncio.sleep(0)) so
+        that any subscribers registered synchronously after start() / 
+        async_start() can enqueue before the very first beat fires.
+
+        CancelledError from stop() → task.cancel() is re-raised cleanly
+        after the except block so asyncio can properly finalise the task.
+        """
+        try:
+            # Yield once so subscribers registered right after start()
+            # are in place before the first broadcast.
+            await asyncio.sleep(0)
+            while self._running:
+                pulse = self._beat()
+                await self._broadcast(pulse)
+                await asyncio.sleep(PULSE_INTERVAL_SECONDS)
+        except asyncio.CancelledError:
+            # Clean cancellation via stop() — re-raise so asyncio marks
+            # the task as cancelled rather than as a silent exception.
+            raise
 
     # ------------------------------------------------------------------
     # Subscription
