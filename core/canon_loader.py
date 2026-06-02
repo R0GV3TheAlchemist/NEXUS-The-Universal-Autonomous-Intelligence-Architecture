@@ -16,11 +16,20 @@ v2 (G-8): Semantic search upgrade.
   - stop_words filter: common English stop words excluded from IDF so they
     do not inflate or deflate scores.
 
+v3 (G-7 #169): Canon Dependency Graph.
+  - self.graph: CanonGraph    — full dependency graph (requires + supersedes)
+  - is_deprecated(id)         — quick deprecation gate
+  - dependents(id)            — transitive dependents of a node
+  - dependencies(id)          — transitive dependencies of a node
+  - conflict_check(node)      — tag-overlap conflict detection
+  - impact_report(id)         — pre-deprecation safety gate
+  - graph_enabled flag        — opt-out for testing without canon dir
+
 All other behaviour (load, get, manifest, remote fetch, caching, status)
-unchanged from v1.
+unchanged from v2.
 
 Epistemic Status: FOUNDATIONAL
-Canon Ref: C00, C01, C15, C17
+Canon Ref: C00, C01, C15, C17, C30
 """
 
 from __future__ import annotations
@@ -32,7 +41,9 @@ import time
 import logging
 import urllib.request
 from pathlib import Path
-from typing import Optional
+from typing import Any, List, Optional
+
+from core.canon_graph import CanonGraph, CanonNode  # G-7 #169
 
 logger = logging.getLogger(__name__)
 
@@ -302,15 +313,28 @@ class CanonLoader:
 
     The CanonLoader never blocks startup. If the floor documents (C00, C01)
     are present, status is GREEN regardless of remote availability.
+
+    v3 additions (#169)
+    -------------------
+    self.graph: Optional[CanonGraph]   — None until load() completes or
+                                         when graph_enabled=False.
+    graph_enabled: bool                — Set False in tests that don't need
+                                         the dependency graph (default True).
     """
 
-    def __init__(self, docs_canon_dir: Optional[Path] = None):
-        self._docs_dir   = docs_canon_dir or _DOCS_CANON_DIR
-        self._manifest:  dict[str, dict] = {}
-        self._documents: dict[str, dict] = {}
-        self._status     = CanonStatus.YELLOW
-        self._loaded     = False
-        self._index      = _TFIDFIndex()
+    def __init__(
+        self,
+        docs_canon_dir: Optional[Path] = None,
+        graph_enabled: bool = True,
+    ):
+        self._docs_dir    = docs_canon_dir or _DOCS_CANON_DIR
+        self._manifest:   dict[str, dict] = {}
+        self._documents:  dict[str, dict] = {}
+        self._status      = CanonStatus.YELLOW
+        self._loaded      = False
+        self._index       = _TFIDFIndex()
+        self._graph_enabled = graph_enabled
+        self.graph: Optional[CanonGraph] = None   # set by _build_graph()
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------ #
@@ -326,11 +350,13 @@ class CanonLoader:
         self._load_local_docs()
         self._load_legacy_docs()
         self._evaluate_status()
-        self._index.build(self._documents)   # G-8: build TF-IDF index
+        self._index.build(self._documents)   # TF-IDF index (G-8)
+        self._build_graph()                  # Canon dependency graph (G-7 #169)
         self._loaded = True
         logger.info(
-            f"CanonLoader v2: {len(self._documents)} docs loaded | "
-            f"status={self._status}"
+            f"CanonLoader v3: {len(self._documents)} docs loaded | "
+            f"status={self._status} | "
+            f"graph={'enabled' if self.graph else 'disabled'}"
         )
         return self._status in (CanonStatus.GREEN, CanonStatus.YELLOW)
 
@@ -402,6 +428,95 @@ class CanonLoader:
     @property
     def is_loaded(self) -> bool:
         return self._loaded
+
+    # ------------------------------------------------------------------ #
+    #  Canon Graph Delegates  (G-7 #169)                                   #
+    # ------------------------------------------------------------------ #
+
+    def is_deprecated(self, node_id: str) -> bool:
+        """
+        Return True if ``node_id`` is marked DEPRECATED in the canon graph.
+        Returns False gracefully when the graph is not built.
+        """
+        if self.graph is None:
+            return False
+        return self.graph.is_deprecated(node_id)
+
+    def dependents(self, node_id: str, direct: bool = False) -> List[str]:
+        """
+        Return canon IDs that depend on ``node_id``.
+        Returns [] gracefully when the graph is not built.
+        """
+        if self.graph is None:
+            return []
+        return self.graph.dependents(node_id, direct=direct)
+
+    def dependencies(self, node_id: str, direct: bool = False) -> List[str]:
+        """
+        Return canon IDs that ``node_id`` depends on.
+        Returns [] gracefully when the graph is not built.
+        """
+        if self.graph is None:
+            return []
+        return self.graph.dependencies(node_id, direct=direct)
+
+    def conflict_check(self, proposed: CanonNode) -> List[str]:
+        """
+        Return IDs of existing ACTIVE nodes that conflict with ``proposed``
+        (3+ shared tags). Returns [] gracefully when graph is not built.
+        """
+        if self.graph is None:
+            return []
+        return self.graph.conflict_check(proposed)
+
+    def impact_report(self, node_id: str) -> dict:
+        """
+        Full impact assessment before deprecating or modifying a canon node.
+        Returns a stub dict gracefully when graph is not built.
+        """
+        if self.graph is None:
+            return {"node": None, "direct_dependents": [], "all_dependents": [], "supersedes": [], "cycles": []}
+        return self.graph.impact_report(node_id)
+
+    # ------------------------------------------------------------------ #
+    #  Internal: Canon Graph Build  (G-7 #169)                             #
+    # ------------------------------------------------------------------ #
+
+    def _build_graph(self, trace: Any = None) -> None:
+        """
+        Instantiate ``CanonGraph`` over the local docs directory.
+        Populates ``self.graph``.
+
+        Never raises (C30) — a broken graph build logs an error but
+        does not block GAIA startup.  ``self.graph`` remains ``None``
+        if construction fails.
+        """
+        if not self._graph_enabled:
+            logger.info("CanonLoader: graph_enabled=False — skipping CanonGraph build.")
+            return
+        if not self._docs_dir.exists():
+            logger.warning(
+                "CanonLoader: docs_canon_dir not found (%s) — CanonGraph not built.",
+                self._docs_dir,
+            )
+            return
+        try:
+            self.graph = CanonGraph(self._docs_dir, trace=trace)
+            s = self.graph.summary()
+            logger.info(
+                "CanonGraph: %d nodes (%d active, %d deprecated, %d draft), "
+                "%d edges, cycles=%d",
+                s["total"], s["active"], s["deprecated"], s["draft"],
+                s["edges"], s["cycles"],
+            )
+            if s["deprecated"] > 0:
+                dep_ids = [n.id for n in self.graph.deprecated_nodes()]
+                logger.info("CanonGraph: deprecated nodes — %s", dep_ids)
+        except Exception as exc:
+            logger.error(
+                "CanonGraph build failed (non-fatal): %s", exc, exc_info=True
+            )
+            self.graph = None
 
     # ------------------------------------------------------------------ #
     #  Internal: Manifest Parsing                                          #
