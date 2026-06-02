@@ -1,104 +1,72 @@
-"""Cumulative Crisis Detector — Issue #126.
+"""CrisisDetector — acute crisis signal detection for GAIA-OS.
 
-Tracks emotional trajectory across sessions.
-Four-level crisis taxonomy: explicit, masked, gradual, acute.
+Detects immediate safety concerns in user messages using keyword/pattern
+matching as a fast first-pass filter. Designed to be fast and high-recall
+(prefer false positives over false negatives for crisis signals).
+
+Canon Ref: C01 (Sovereignty), C30 (No silent failures)
 """
 
 from __future__ import annotations
 
 import re
-from typing import List
+from typing import Optional
 
-from .types import CrisisLevel, TurnRiskFrame
+from .types import CrisisSignal, CrisisType
 
-# Keyword patterns per taxonomy level
-_EXPLICIT_PATTERNS = re.compile(
-    r"\b(suicide|suicidal|kill myself|end my life|not want to be here|want to die|"
-    r"self.harm|cutting myself|overdose|can't go on|no reason to live)\b",
-    re.IGNORECASE,
-)
+# High-signal crisis indicators — ordered by severity
+_SUICIDE_PATTERNS = [
+    r"\bkill\s+myself\b",
+    r"\bend\s+my\s+life\b",
+    r"\bwant\s+to\s+die\b",
+    r"\bsuicid",
+    r"\bself[\s-]?harm\b",
+    r"\bcut\s+myself\b",
+    r"\bhurt\s+myself\b",
+    r"\bnot\s+want\s+to\s+be\s+alive\b",
+    r"\bno\s+reason\s+to\s+live\b",
+]
 
-_ACUTE_PATTERNS = re.compile(
-    r"\b(can't cope|falling apart|breaking down|crisis|emergency|desperate|"
-    r"hopeless|worthless|nobody cares|completely alone|terrified|panicking)\b",
-    re.IGNORECASE,
-)
+_CRISIS_PATTERNS = [
+    r"\bemergency\b",
+    r"\bhelp\s+me\b",
+    r"\bcrisis\b",
+    r"\bdesperate\b",
+    r"\bhopeless\b",
+    r"\bcan't\s+go\s+on\b",
+    r"\bgiving\s+up\b",
+]
 
-_MASKED_PATTERNS = re.compile(
-    r"\b(just tired|whatever|doesn't matter|fine i guess|never mind|forget it|"
-    r"it's nothing|i'm okay|not important|probably stupid)\b",
-    re.IGNORECASE,
-)
-
-# Valence/arousal thresholds
-ACUTE_VALENCE_CEILING = -0.65     # very negative affect
-MASKED_AROUSAL_CEILING = 0.25    # low arousal despite negative context
-GRADUAL_SLOPE_THRESHOLD = 0.03   # minimum positive slope to confirm gradual worsening
+_COMPILED_SUICIDE = [re.compile(p, re.IGNORECASE) for p in _SUICIDE_PATTERNS]
+_COMPILED_CRISIS = [re.compile(p, re.IGNORECASE) for p in _CRISIS_PATTERNS]
 
 
-class CumulativeCrisisDetector:
-    """Classifies each user turn into the 4-level crisis taxonomy."""
+class CrisisDetector:
+    """Fast keyword/pattern-based crisis signal detector."""
 
-    def classify_turn(self, text: str, frame: TurnRiskFrame) -> CrisisLevel:
-        """Classify a single turn given its text and pre-computed affect frame."""
-        if _EXPLICIT_PATTERNS.search(text):
-            return CrisisLevel.EXPLICIT
+    def evaluate(self, text: str) -> Optional[CrisisSignal]:
+        """Evaluate text for crisis signals. Returns CrisisSignal or None."""
+        if not text or not text.strip():
+            return None
 
-        if frame.affect_valence <= ACUTE_VALENCE_CEILING and frame.affect_arousal > 0.5:
-            return CrisisLevel.ACUTE
-        if _ACUTE_PATTERNS.search(text):
-            return CrisisLevel.ACUTE
+        # Check high-severity suicide/self-harm patterns first
+        for pattern in _COMPILED_SUICIDE:
+            if pattern.search(text):
+                return CrisisSignal(
+                    crisis_type=CrisisType.SUICIDE_SELF_HARM,
+                    confidence=0.95,
+                    requires_immediate_response=True,
+                    matched_pattern=pattern.pattern,
+                )
 
-        if frame.affect_valence < -0.3 and frame.affect_arousal <= MASKED_AROUSAL_CEILING:
-            return CrisisLevel.MASKED
-        if _MASKED_PATTERNS.search(text) and frame.affect_valence < -0.2:
-            return CrisisLevel.MASKED
+        # Check general crisis patterns
+        matches = [p for p in _COMPILED_CRISIS if p.search(text)]
+        if len(matches) >= 2:  # Require 2+ crisis signals to reduce false positives
+            return CrisisSignal(
+                crisis_type=CrisisType.GENERAL_CRISIS,
+                confidence=0.75,
+                requires_immediate_response=False,
+                matched_pattern="|".join(m.pattern for m in matches),
+            )
 
-        return CrisisLevel.NONE
-
-    def classify_trajectory(
-        self, session_risk_scores: List[float]
-    ) -> CrisisLevel:
-        """Classify across multiple sessions based on risk score slope.
-
-        session_risk_scores: list of per-session cumulative risk scores (0.0–1.0),
-        ordered oldest → newest.
-
-        Taxonomy priority (highest → lowest):
-          EXPLICIT  — latest score ≥ 0.85
-          ACUTE     — latest score ≥ 0.65
-          GRADUAL   — slope ≥ GRADUAL_SLOPE_THRESHOLD (positive, worsening arc)
-                      AND latest ≥ 0.35
-          MASKED    — latest ≥ 0.40 without a clear rising slope
-          NONE      — below all thresholds
-        """
-        if len(session_risk_scores) < 2:
-            return CrisisLevel.NONE
-
-        latest = session_risk_scores[-1]
-
-        if latest >= 0.85:
-            return CrisisLevel.EXPLICIT
-        if latest >= 0.65:
-            return CrisisLevel.ACUTE
-
-        slope = self._linear_slope(session_risk_scores)
-        # GRADUAL: a measurably rising trajectory — slope is positive (worsening over time)
-        if slope >= GRADUAL_SLOPE_THRESHOLD and latest >= 0.35:
-            return CrisisLevel.GRADUAL
-        if latest >= 0.40:
-            return CrisisLevel.MASKED
-
-        return CrisisLevel.NONE
-
-    @staticmethod
-    def _linear_slope(values: List[float]) -> float:
-        """Simple least-squares slope over a list of values."""
-        n = len(values)
-        if n < 2:
-            return 0.0
-        x_mean = (n - 1) / 2
-        y_mean = sum(values) / n
-        numerator = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values))
-        denominator = sum((i - x_mean) ** 2 for i in range(n))
-        return numerator / denominator if denominator != 0 else 0.0
+        return None

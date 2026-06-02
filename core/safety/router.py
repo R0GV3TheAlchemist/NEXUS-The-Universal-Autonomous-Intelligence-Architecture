@@ -1,109 +1,88 @@
-"""FastAPI router for the GAIA-OS Safety Engine — mounted at /safety."""
+"""SafetyRouter — HTTP routing layer for the SafetyEngine.
+
+Exposes the SafetyEngine as a FastAPI router so the main GAIA server
+can mount it at /safety. Manages per-session engine instances.
+"""
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List, Optional
+from typing import Dict
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .safety_engine import SafetyEngine
-from .types import CrisisLevel, SessionRiskProfile, TurnRiskFrame
 
 router = APIRouter(prefix="/safety", tags=["safety"])
 
-# In-memory engine registry — in production, keyed per user+session in SovereignMemory
-_engines: dict[str, SafetyEngine] = {}
+# In-memory session registry — keyed by session_id
+# In production this would be backed by Redis or similar
+_engines: Dict[str, SafetyEngine] = {}
 
 
-class TurnRequest(BaseModel):
-    user_id: str
-    session_id: str
-    turn_index: int
-    user_text: str
-    mirroring_score: float
-    vulnerability_score: float
-    affect_valence: float
-    affect_arousal: float
-    crisis_level: str = "none"
-    escalation_delta: float = 0.0
-    past_profiles: Optional[List[dict]] = None
-    region: str = "default"
+def _get_engine(session_id: str) -> SafetyEngine:
+    """Retrieve or create a SafetyEngine for the given session."""
+    if session_id not in _engines:
+        _engines[session_id] = SafetyEngine()
+    return _engines[session_id]
 
 
-class SessionCloseRequest(BaseModel):
-    user_id: str
-    session_id: str
+# ------------------------------------------------------------------ #
+#  Request / Response schemas                                         #
+# ------------------------------------------------------------------ #
+
+class TurnEvaluationRequest(BaseModel):
+    session_id: str = Field(..., description="Unique session identifier")
+    user_text: str = Field(..., description="Raw user message text")
+    mirroring_score: float = Field(..., ge=0.0, le=1.0)
+    vulnerability_score: float = Field(..., ge=0.0, le=1.0)
+    escalation_delta: float = Field(0.0, description="Change in vulnerability score from previous turn")
 
 
-@router.post("/turn")
-async def process_turn(req: TurnRequest):
-    """Process a single conversation turn through the safety engine."""
-    engine_key = f"{req.user_id}:{req.session_id}"
-    if engine_key not in _engines:
-        _engines[engine_key] = SafetyEngine(
-            user_id=req.user_id,
-            session_id=req.session_id,
-            region=req.region,
-        )
+class TurnEvaluationResponse(BaseModel):
+    action: str
+    intervention_text: str | None
+    circuit_breaker_state: str
+    intervention_mode: str | None = None
+    has_crisis_signal: bool
+    has_escalation_signal: bool
 
-    engine = _engines[engine_key]
-    frame = TurnRiskFrame(
-        turn_index=req.turn_index,
-        timestamp=datetime.utcnow(),
+
+# ------------------------------------------------------------------ #
+#  Endpoints                                                          #
+# ------------------------------------------------------------------ #
+
+@router.post("/evaluate", response_model=TurnEvaluationResponse)
+async def evaluate_turn(req: TurnEvaluationRequest) -> TurnEvaluationResponse:
+    """Evaluate a conversation turn for safety signals."""
+    engine = _get_engine(req.session_id)
+    verdict = engine.evaluate_turn(
+        user_text=req.user_text,
         mirroring_score=req.mirroring_score,
         vulnerability_score=req.vulnerability_score,
-        affect_valence=req.affect_valence,
-        affect_arousal=req.affect_arousal,
-        crisis_level=CrisisLevel(req.crisis_level),
         escalation_delta=req.escalation_delta,
+        session_id=req.session_id,
+    )
+    return TurnEvaluationResponse(
+        action=verdict.action,
+        intervention_text=verdict.intervention_text,
+        circuit_breaker_state=verdict.circuit_breaker_state.value,
+        intervention_mode=verdict.intervention_mode,
+        has_crisis_signal=verdict.crisis_signal is not None,
+        has_escalation_signal=verdict.escalation_signal is not None,
     )
 
-    past_profiles = None
-    if req.past_profiles:
-        past_profiles = [
-            SessionRiskProfile(
-                session_id=p["session_id"],
-                user_id=p["user_id"],
-                started_at=datetime.fromisoformat(p["started_at"]),
-                ended_at=datetime.fromisoformat(p["ended_at"]),
-                peak_crisis_level=CrisisLevel(p["peak_crisis_level"]),
-                mean_vulnerability_score=p["mean_vulnerability_score"],
-                escalation_events=p["escalation_events"],
-                circuit_breaker_trips=p["circuit_breaker_trips"],
-                cumulative_risk_score=p["cumulative_risk_score"],
-            )
-            for p in req.past_profiles
-        ]
 
-    result = engine.process_turn(frame, req.user_text, past_profiles)
-    return result
+@router.post("/reset/{session_id}")
+async def reset_session(session_id: str) -> dict:
+    """Reset safety state for the given session."""
+    if session_id in _engines:
+        _engines[session_id].reset_session()
+    return {"ok": True, "session_id": session_id}
 
 
-@router.post("/session/close")
-async def close_session(req: SessionCloseRequest):
-    """Close a session and return its risk profile for storage."""
-    engine_key = f"{req.user_id}:{req.session_id}"
-    if engine_key not in _engines:
-        raise HTTPException(status_code=404, detail="Session engine not found")
-    profile = _engines.pop(engine_key).close_session()
-    return {
-        "session_id": profile.session_id,
-        "user_id": profile.user_id,
-        "peak_crisis_level": profile.peak_crisis_level.value,
-        "mean_vulnerability_score": profile.mean_vulnerability_score,
-        "escalation_events": profile.escalation_events,
-        "circuit_breaker_trips": profile.circuit_breaker_trips,
-        "cumulative_risk_score": profile.cumulative_risk_score,
-    }
-
-
-@router.get("/status/{user_id}/{session_id}")
-async def get_status(user_id: str, session_id: str):
-    """Return current circuit breaker state for an active session."""
-    engine_key = f"{user_id}:{session_id}"
-    if engine_key not in _engines:
-        return {"state": "no_session"}
-    engine = _engines[engine_key]
-    return {"state": engine._escalation_detector.state.value}
+@router.delete("/session/{session_id}")
+async def delete_session(session_id: str) -> dict:
+    """Remove a session's SafetyEngine instance from memory."""
+    _engines.pop(session_id, None)
+    return {"ok": True, "session_id": session_id}

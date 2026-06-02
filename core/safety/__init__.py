@@ -1,21 +1,12 @@
-"""GAIA-OS Safety Engine — Reflective Escalation + Multi-Turn Crisis Detection."""
+"""core.safety — GAIA Safety Subsystem."""
 
 from .safety_engine import SafetyEngine
-from .types import (
-    EscalationSignal,
-    CrisisSignal,
-    CrisisLevel,
-    CircuitBreakerState,
-    SessionRiskProfile,
-    TurnRiskFrame,
-)
+from .types import CircuitBreakerState, CrisisSignal, EscalationSignal, SafetyVerdict
 
 __all__ = [
     "SafetyEngine",
-    "EscalationSignal",
-    "CrisisSignal",
-    "CrisisLevel",
     "CircuitBreakerState",
-    "SessionRiskProfile",
-    "TurnRiskFrame",
+    "CrisisSignal",
+    "EscalationSignal",
+    "SafetyVerdict",
 ]
