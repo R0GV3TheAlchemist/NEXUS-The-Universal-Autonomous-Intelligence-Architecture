@@ -1,83 +1,78 @@
 """
 core/memory/__init__.py
-GAIA Memory Hierarchy Package — Sprint G-8
+GAIA Memory Package — Sprint G-8
 
-Public surface area for all memory operations.
-All callers should import from here, not from sub-modules.
+Clean public surface. Two MemoryTier definitions exist in this package:
+  - taxonomy.MemoryTier  : old string enum (short_term, long_term ...)
+                           used by MemoryStore / SQLite store.py
+  - hierarchy.MemoryTier : new auto() enum used by MemoryRouter / tiers
 
-Usage::
+To avoid a clash we expose ONLY hierarchy.MemoryTier as `MemoryTier`.
+The old taxonomy.MemoryTier is still used internally by store.py but
+is NOT re-exported from this package.
+
+Public imports::
 
     from core.memory import MemoryTier, MemoryQuery, MemoryRouter
     from core.memory import build_default_router
-
-    # Concrete SQLite-backed store (used by tests and production)
-    from core.memory import MemoryStore, MemoryItem, MemoryKind
-    from core.memory import FallbackEmbedder, MemoryPruner, RetrievedMemory
+    from core.memory import MemoryItem, MemoryKind, RetrievedMemory
+    from core.memory import FallbackEmbedder, MemoryPruner
+    from core.memory import WorkingMemoryStore, ShortTermMemoryStore
+    from core.memory import EpisodicMemoryStore, SemanticMemoryStore
+    from core.memory import LongTermMemoryStore
 """
 
 # ---------------------------------------------------------------------------
-# Hierarchy abstractions (MemoryQuery, MemoryRouter, abstract MemoryStore,
-# MemoryTier) — imported first so the concrete MemoryStore below can
-# shadow the abstract one in __all__ without a circular import.
+# 1. Hierarchy abstractions  (MemoryTier is the canonical one going forward)
 # ---------------------------------------------------------------------------
 from core.memory.hierarchy import (
     MemoryQuery,
     MemoryRouter,
-    MemoryStore as _AbstractMemoryStore,
+    MemoryStore as AbstractMemoryStore,
     MemoryTier,
 )
 
 # ---------------------------------------------------------------------------
-# Concrete SQLite-backed MemoryStore + domain types
+# 2. Domain types from taxonomy  (MemoryKind, MemoryItem only — NOT MemoryTier)
 # ---------------------------------------------------------------------------
-from core.memory.store import (
-    MemoryStore,      # concrete SQLite store — shadows abstract above
-    MemoryItem,
-    MemoryKind,
-    RetrievedMemory,
-)
+from core.memory.taxonomy import MemoryKind, MemoryItem
 
 # ---------------------------------------------------------------------------
-# Embedder
+# 3. Concrete SQLite store + RetrievedMemory
+# ---------------------------------------------------------------------------
+from core.memory.store import MemoryStore, RetrievedMemory
+
+# ---------------------------------------------------------------------------
+# 4. Embedder
 # ---------------------------------------------------------------------------
 from core.memory.embedder import FallbackEmbedder
 
 # ---------------------------------------------------------------------------
-# Pruner
+# 5. Pruner
 # ---------------------------------------------------------------------------
 from core.memory.pruner import MemoryPruner
 
 # ---------------------------------------------------------------------------
-# Tier stores
+# 6. Tier stores
 # ---------------------------------------------------------------------------
-from core.memory.tiers.working import WorkingMemoryStore
+from core.memory.tiers.working    import WorkingMemoryStore
 from core.memory.tiers.short_term import ShortTermMemoryStore
-from core.memory.tiers.episodic import EpisodicMemoryStore
-from core.memory.tiers.semantic import SemanticMemoryStore
-from core.memory.tiers.long_term import LongTermMemoryStore
+from core.memory.tiers.episodic   import EpisodicMemoryStore
+from core.memory.tiers.semantic   import SemanticMemoryStore
+from core.memory.tiers.long_term  import LongTermMemoryStore
 
 
 # ---------------------------------------------------------------------------
-# build_default_router — convenience factory
+# 7. Factory
 # ---------------------------------------------------------------------------
 
 def build_default_router(
     *,
-    semantic_store: _AbstractMemoryStore | None = None,
-    long_term_store: _AbstractMemoryStore | None = None,
+    semantic_store: AbstractMemoryStore | None = None,
+    long_term_store: AbstractMemoryStore | None = None,
 ) -> MemoryRouter:
-    """Construct a MemoryRouter wired with the five canonical tier stores.
-
-    Args:
-        semantic_store:  Optional custom SemanticMemoryStore (e.g., Crystal DB).
-                         If None, falls back to the default in-process stub.
-        long_term_store: Optional custom LongTermMemoryStore (e.g., Tauri Store).
-                         If None, falls back to the default in-process stub.
-
-    Returns:
-        A fully configured MemoryRouter ready for production use.
-    """
-    stores: dict[MemoryTier, _AbstractMemoryStore] = {
+    """Return a MemoryRouter wired with all five canonical tier stores."""
+    stores = {
         MemoryTier.WORKING:    WorkingMemoryStore(),
         MemoryTier.SHORT_TERM: ShortTermMemoryStore(),
         MemoryTier.EPISODIC:   EpisodicMemoryStore(),
@@ -88,14 +83,16 @@ def build_default_router(
 
 
 __all__ = [
-    # Hierarchy abstractions
+    # Hierarchy
     "MemoryTier",
     "MemoryQuery",
     "MemoryRouter",
-    # Concrete SQLite store + domain types
-    "MemoryStore",
+    "AbstractMemoryStore",
+    # Domain types
     "MemoryItem",
     "MemoryKind",
+    # Concrete store
+    "MemoryStore",
     "RetrievedMemory",
     # Embedder
     "FallbackEmbedder",
