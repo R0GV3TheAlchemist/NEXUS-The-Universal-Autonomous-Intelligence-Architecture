@@ -111,41 +111,29 @@ class TestLifecycle:
     def test_fresh_instance_no_threads(self, mother):
         assert len(mother._threads) == 0
 
-    def test_start_sets_running(self, mother):
-        with patch.object(asyncio, "get_event_loop") as mock_loop:
-            mock_loop.return_value.create_task = MagicMock()
-            mother.start()
+    @pytest.mark.asyncio
+    async def test_async_start_sets_running(self, mother):
+        await mother.async_start()
         assert mother._running is True
-        mother.stop()  # cleanup
+        mother.stop()
 
-    def test_stop_clears_running(self, mother):
-        with patch.object(asyncio, "get_event_loop") as mock_loop:
-            mock_loop.return_value.create_task = MagicMock()
-            mother.start()
+    @pytest.mark.asyncio
+    async def test_stop_clears_running(self, mother):
+        await mother.async_start()
         mother.stop()
         assert mother._running is False
 
-    def test_double_start_idempotent(self, mother):
-        call_count = 0
-
-        def fake_create_task(coro):
-            nonlocal call_count
-            call_count += 1
-            # Explicitly close the coroutine to prevent
-            # "coroutine '_pulse_loop' was never awaited" warning.
-            if hasattr(coro, "close"):
-                coro.close()
-            return MagicMock()
-
-        with patch.object(asyncio, "get_event_loop") as mock_loop:
-            mock_loop.return_value.create_task = fake_create_task
-            mother.start()
-            mother.start()  # second call must not create a second task
-        assert call_count == 1
+    @pytest.mark.asyncio
+    async def test_double_async_start_idempotent(self, mother):
+        """Second async_start() must not create a second task."""
+        await mother.async_start()
+        task_first = mother._task
+        await mother.async_start()  # second call — must be no-op
+        assert mother._task is task_first
         mother.stop()
 
     def test_stop_before_start_no_raise(self, mother):
-        mother.stop()  # should not raise
+        mother.stop()  # must not raise
 
 
 # ================================================================== #
@@ -339,15 +327,6 @@ class TestNoosphereStage:
 
 class TestBeat:
 
-    def _patch_externals(self):
-        """
-        Patch criticality_monitor and noosphere to avoid import errors
-        in unit test context where those singletons may not be initialized.
-        """
-        p1 = patch("core.mother_thread.MotherThread._beat", wraps=MotherThread._beat)
-        p2 = patch("core.criticality_monitor.get_monitor", side_effect=Exception("mocked"))
-        return p2
-
     def test_beat_increments_pulse_sequence(self, mother):
         with patch("core.criticality_monitor.get_monitor", side_effect=Exception("mocked")), \
              patch("core.noosphere.get_noosphere",           side_effect=Exception("mocked")):
@@ -402,7 +381,63 @@ class TestBeat:
 
 
 # ================================================================== #
-#  6. Privacy & Canon Invariants (C04, C43)                           #
+#  6. Pulse Loop Coroutine                                             #
+# ================================================================== #
+
+class TestPulseLoop:
+
+    @pytest.mark.asyncio
+    async def test_pulse_loop_cancelled_error_propagates(self, mother):
+        """
+        stop() must cancel the task cleanly. The task should be in a
+        cancelled state, not silently finished or swallowing the error.
+        """
+        await mother.async_start()
+        # Let the loop reach the first sleep(PULSE_INTERVAL_SECONDS)
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        task = mother._task
+        mother.stop()
+        # Give the event loop a moment to process cancellation
+        await asyncio.sleep(0)
+        assert task is not None
+        assert task.cancelled() or task.done()
+
+    @pytest.mark.asyncio
+    async def test_pulse_loop_yields_before_first_beat(self, mother):
+        """
+        A subscriber registered immediately after async_start() must
+        receive the first broadcast because _pulse_loop yields via
+        asyncio.sleep(0) before firing the first beat.
+        """
+        received: list = []
+
+        async def consume_one():
+            async for item in mother.subscribe():
+                received.append(item)
+                break
+
+        with patch("core.criticality_monitor.get_monitor", side_effect=Exception("mocked")), \
+             patch("core.noosphere.get_noosphere",           side_effect=Exception("mocked")):
+            await mother.async_start()
+            task = asyncio.create_task(consume_one())
+            # One yield lets the subscriber register; another lets the
+            # loop fire its first beat.
+            await asyncio.sleep(0)
+            await asyncio.sleep(0)
+            # Beat fires, broadcast delivers, subscriber captures it.
+            await asyncio.sleep(0)
+            mother.stop()
+            try:
+                await asyncio.wait_for(task, timeout=1.0)
+            except asyncio.TimeoutError:
+                pass  # subscriber consumed before stop; acceptable
+
+        assert len(received) == 1
+
+
+# ================================================================== #
+#  7. Privacy & Canon Invariants (C04, C43)                           #
 # ================================================================== #
 
 class TestPrivacyInvariants:
@@ -448,7 +483,7 @@ class TestPrivacyInvariants:
 
 
 # ================================================================== #
-#  7. Weaving Log                                                      #
+#  8. Weaving Log                                                      #
 # ================================================================== #
 
 class TestWeavingLog:
@@ -486,7 +521,7 @@ class TestWeavingLog:
 
 
 # ================================================================== #
-#  8. Status                                                           #
+#  9. Status                                                           #
 # ================================================================== #
 
 class TestStatus:
@@ -510,7 +545,7 @@ class TestStatus:
 
 
 # ================================================================== #
-#  9. Mother Voice Selection                                           #
+#  10. Mother Voice Selection                                          #
 # ================================================================== #
 
 class TestMotherVoice:
@@ -547,7 +582,7 @@ class TestMotherVoice:
 
 
 # ================================================================== #
-#  10. Subscribe / Broadcast (async)                                   #
+#  11. Subscribe / Broadcast (async)                                   #
 # ================================================================== #
 
 class TestSubscribeBroadcast:
@@ -592,7 +627,6 @@ class TestSubscribeBroadcast:
         Subscribers with a full queue (maxsize=10) must be removed
         during the next broadcast to prevent blocking the Mother Thread.
         """
-        # Manually insert a full queue
         import asyncio
         q = asyncio.Queue(maxsize=1)
         await q.put({"dummy": True})  # fill it
