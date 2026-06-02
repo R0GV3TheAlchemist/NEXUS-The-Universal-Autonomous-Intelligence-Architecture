@@ -1,62 +1,63 @@
 """
-core.memory — Phase 2A: Persistent Semantic Memory
-====================================================
-Public surface for GAIA-OS's long-term, cross-session memory layer.
+core/memory/__init__.py
+GAIA Memory Hierarchy Package — Sprint G-8
 
-Quick-start (offline / sovereign)
-----------------------------------
-    from core.memory import MemoryStore, MemoryItem, MemoryKind, MemoryTier
-    from core.memory import SentenceTransformerEmbedder, MemoryPruner
+Public surface area for all memory operations.
+All callers should import from here, not from sub-modules.
 
-    embedder = SentenceTransformerEmbedder()  # downloads ~80 MB on first use
-    store    = MemoryStore(embedder=embedder)
-    pruner   = MemoryPruner(store)
+Usage::
 
-    # Remember a turn
-    item_id = await store.remember(
-        user_id="user_001",
-        text="I prefer dark-mode interfaces and concise answers.",
-        role="user",
-        kind=MemoryKind.PREFERENCE,
-    )
-
-    # Recall relevant context
-    hits = await store.retrieve(user_id="user_001", query="UI preferences", top_k=5)
-    for hit in hits:
-        print(hit.item.text, hit.score)
-
-Alternative backends
---------------------
-    from core.memory import OllamaEmbedder   # local Ollama daemon
-    from core.memory import OpenAIEmbedder   # OpenAI API
-    from core.memory import FallbackEmbedder # hash-based, tests only
+    from core.memory import MemoryTier, MemoryQuery, MemoryRouter
+    from core.memory import build_default_router
 """
-
-from .taxonomy import MemoryKind, MemoryTier, MemoryItem
-from .embedder import (
-    EmbeddingProvider,
-    SentenceTransformerEmbedder,
-    OllamaEmbedder,
-    OpenAIEmbedder,
-    FallbackEmbedder,
+from core.memory.hierarchy import (
+    MemoryQuery,
+    MemoryRouter,
+    MemoryStore,
+    MemoryTier,
 )
-from .store import MemoryStore, RetrievedMemory
-from .pruner import MemoryPruner
+from core.memory.tiers.working import WorkingMemoryStore
+from core.memory.tiers.short_term import ShortTermMemoryStore
+from core.memory.tiers.episodic import EpisodicMemoryStore
+from core.memory.tiers.semantic import SemanticMemoryStore
+from core.memory.tiers.long_term import LongTermMemoryStore
+
+
+def build_default_router(
+    *,
+    semantic_store: MemoryStore | None = None,
+    long_term_store: MemoryStore | None = None,
+) -> MemoryRouter:
+    """Construct a MemoryRouter wired with the five canonical tier stores.
+
+    Args:
+        semantic_store:  Optional custom SemanticMemoryStore (e.g., Crystal DB).
+                         If None, falls back to the default in-process stub.
+        long_term_store: Optional custom LongTermMemoryStore (e.g., Tauri Store).
+                         If None, falls back to the default in-process stub.
+
+    Returns:
+        A fully configured MemoryRouter ready for production use.
+    """
+    stores: dict[MemoryTier, MemoryStore] = {
+        MemoryTier.WORKING:    WorkingMemoryStore(),
+        MemoryTier.SHORT_TERM: ShortTermMemoryStore(),
+        MemoryTier.EPISODIC:   EpisodicMemoryStore(),
+        MemoryTier.SEMANTIC:   semantic_store  or SemanticMemoryStore(),
+        MemoryTier.LONG_TERM:  long_term_store or LongTermMemoryStore(),
+    }
+    return MemoryRouter(stores)
+
 
 __all__ = [
-    # taxonomy
-    "MemoryKind",
     "MemoryTier",
-    "MemoryItem",
-    # embedders
-    "EmbeddingProvider",
-    "SentenceTransformerEmbedder",
-    "OllamaEmbedder",
-    "OpenAIEmbedder",
-    "FallbackEmbedder",
-    # store
+    "MemoryQuery",
     "MemoryStore",
-    "RetrievedMemory",
-    # pruner
-    "MemoryPruner",
+    "MemoryRouter",
+    "WorkingMemoryStore",
+    "ShortTermMemoryStore",
+    "EpisodicMemoryStore",
+    "SemanticMemoryStore",
+    "LongTermMemoryStore",
+    "build_default_router",
 ]
