@@ -1,0 +1,9 @@
+# Ignore runtime trace files — these are volatile audit logs, not source.
+# The directory itself is tracked so the audit path always exists on clone.
+*.jsonl
+
+# Keep schema, config, and README files tracked.
+!*.md
+!*.json
+!*.yaml
+!*.yml
