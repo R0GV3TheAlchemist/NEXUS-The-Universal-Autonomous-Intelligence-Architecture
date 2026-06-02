@@ -9,13 +9,47 @@ Usage::
 
     from core.memory import MemoryTier, MemoryQuery, MemoryRouter
     from core.memory import build_default_router
+
+    # Concrete SQLite-backed store (used by tests and production)
+    from core.memory import MemoryStore, MemoryItem, MemoryKind
+    from core.memory import FallbackEmbedder, MemoryPruner, RetrievedMemory
 """
+
+# ---------------------------------------------------------------------------
+# Hierarchy abstractions (MemoryQuery, MemoryRouter, abstract MemoryStore,
+# MemoryTier) — imported first so the concrete MemoryStore below can
+# shadow the abstract one in __all__ without a circular import.
+# ---------------------------------------------------------------------------
 from core.memory.hierarchy import (
     MemoryQuery,
     MemoryRouter,
-    MemoryStore,
+    MemoryStore as _AbstractMemoryStore,
     MemoryTier,
 )
+
+# ---------------------------------------------------------------------------
+# Concrete SQLite-backed MemoryStore + domain types
+# ---------------------------------------------------------------------------
+from core.memory.store import (
+    MemoryStore,      # concrete SQLite store — shadows abstract above
+    MemoryItem,
+    MemoryKind,
+    RetrievedMemory,
+)
+
+# ---------------------------------------------------------------------------
+# Embedder
+# ---------------------------------------------------------------------------
+from core.memory.embedder import FallbackEmbedder
+
+# ---------------------------------------------------------------------------
+# Pruner
+# ---------------------------------------------------------------------------
+from core.memory.pruner import MemoryPruner
+
+# ---------------------------------------------------------------------------
+# Tier stores
+# ---------------------------------------------------------------------------
 from core.memory.tiers.working import WorkingMemoryStore
 from core.memory.tiers.short_term import ShortTermMemoryStore
 from core.memory.tiers.episodic import EpisodicMemoryStore
@@ -23,10 +57,14 @@ from core.memory.tiers.semantic import SemanticMemoryStore
 from core.memory.tiers.long_term import LongTermMemoryStore
 
 
+# ---------------------------------------------------------------------------
+# build_default_router — convenience factory
+# ---------------------------------------------------------------------------
+
 def build_default_router(
     *,
-    semantic_store: MemoryStore | None = None,
-    long_term_store: MemoryStore | None = None,
+    semantic_store: _AbstractMemoryStore | None = None,
+    long_term_store: _AbstractMemoryStore | None = None,
 ) -> MemoryRouter:
     """Construct a MemoryRouter wired with the five canonical tier stores.
 
@@ -39,7 +77,7 @@ def build_default_router(
     Returns:
         A fully configured MemoryRouter ready for production use.
     """
-    stores: dict[MemoryTier, MemoryStore] = {
+    stores: dict[MemoryTier, _AbstractMemoryStore] = {
         MemoryTier.WORKING:    WorkingMemoryStore(),
         MemoryTier.SHORT_TERM: ShortTermMemoryStore(),
         MemoryTier.EPISODIC:   EpisodicMemoryStore(),
@@ -50,14 +88,25 @@ def build_default_router(
 
 
 __all__ = [
+    # Hierarchy abstractions
     "MemoryTier",
     "MemoryQuery",
-    "MemoryStore",
     "MemoryRouter",
+    # Concrete SQLite store + domain types
+    "MemoryStore",
+    "MemoryItem",
+    "MemoryKind",
+    "RetrievedMemory",
+    # Embedder
+    "FallbackEmbedder",
+    # Pruner
+    "MemoryPruner",
+    # Tier stores
     "WorkingMemoryStore",
     "ShortTermMemoryStore",
     "EpisodicMemoryStore",
     "SemanticMemoryStore",
     "LongTermMemoryStore",
+    # Factory
     "build_default_router",
 ]
