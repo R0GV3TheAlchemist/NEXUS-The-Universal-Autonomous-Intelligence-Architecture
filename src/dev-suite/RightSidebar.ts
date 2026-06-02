@@ -1,6 +1,7 @@
 // GAIA Dev Suite — AI Pair Programmer (Right Sidebar)
 // Phase 4.6 — Full implementation
 
+import './RightSidebar.css';
 import {
   getSelectedCode,
   getEditorContent,
@@ -93,7 +94,6 @@ export function mountRightSidebar(root: HTMLElement): void {
 // ---------------------------------------------------------------------------
 
 function bindEvents(root: HTMLElement): void {
-  // Tab switching
   root.querySelectorAll<HTMLButtonElement>('.rs-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action as PairAction;
@@ -101,10 +101,7 @@ function bindEvents(root: HTMLElement): void {
     });
   });
 
-  // Run button
   root.querySelector<HTMLButtonElement>('#rs-run')?.addEventListener('click', runAction);
-
-  // Stop button
   root.querySelector<HTMLButtonElement>('#rs-stop')?.addEventListener('click', stopStreaming);
 }
 
@@ -262,7 +259,6 @@ function renderActionButtons(container: HTMLElement): void {
     setTimeout(() => { insertBtn.textContent = '⬇ Insert at cursor'; }, 2000);
   });
 
-  // Insert button only makes sense for refactor/fix/tests
   if (_activeAction !== 'explain') {
     row.appendChild(insertBtn);
   }
@@ -305,3 +301,7 @@ function showError(msg: string): void {
   if (!el) return;
   el.innerHTML = `<div class="rs-error">⚠ ${msg}</div>`;
 }
+
+// Suppress unused variable warning — _lastCode is reserved for future
+// context-aware features (diff view, history).
+void _lastCode;
