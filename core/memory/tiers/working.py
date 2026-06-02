@@ -10,16 +10,17 @@ Canon Refs: C34 (Presence), C01 (Sovereignty)
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from core.memory.hierarchy import MemoryQuery
+if TYPE_CHECKING:
+    from core.memory.hierarchy import MemoryQuery
 
 
 class WorkingMemoryStore:
     """In-memory dict store; lives only for the duration of the current turn."""
 
     def __init__(self) -> None:
-        self._store: dict[str, dict] = {}  # key -> {value, gaian_id, ts}
+        self._store: dict[str, dict] = {}
 
     async def write(
         self,
@@ -38,14 +39,14 @@ class WorkingMemoryStore:
             return None
         return entry["value"]
 
-    async def search(self, query: MemoryQuery) -> list[dict]:
+    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
         now = time.time()
         results = []
         for key, entry in self._store.items():
             if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
                 continue
             age = now - entry.get("ts", now)
-            recency = max(0.0, 1.0 - age / 3600.0)  # decays over 1 hour
+            recency = max(0.0, 1.0 - age / 3600.0)
             results.append({
                 "key": key,
                 "value": entry["value"],
@@ -55,7 +56,6 @@ class WorkingMemoryStore:
         return results
 
     async def evict_expired(self) -> int:
-        """Evict everything — working memory does not persist beyond the turn."""
         count = len(self._store)
         self._store.clear()
         return count

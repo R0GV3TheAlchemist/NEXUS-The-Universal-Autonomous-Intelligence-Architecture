@@ -10,9 +10,10 @@ Canon Refs: C34 (Presence), C01 (Sovereignty)
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from core.memory.hierarchy import MemoryQuery
+if TYPE_CHECKING:
+    from core.memory.hierarchy import MemoryQuery
 
 _DEFAULT_TTL_HOURS = 48.0
 
@@ -47,7 +48,7 @@ class ShortTermMemoryStore:
             return None
         return entry["value"]
 
-    async def search(self, query: MemoryQuery) -> list[dict]:
+    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
         now = time.time()
         results = []
         for key, entry in self._store.items():

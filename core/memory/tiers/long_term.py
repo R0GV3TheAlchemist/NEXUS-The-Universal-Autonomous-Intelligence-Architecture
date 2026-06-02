@@ -9,9 +9,10 @@ Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from core.memory.hierarchy import MemoryQuery
+if TYPE_CHECKING:
+    from core.memory.hierarchy import MemoryQuery
 
 
 class LongTermMemoryStore:
@@ -25,7 +26,7 @@ class LongTermMemoryStore:
         key: str,
         value: Any,
         gaian_id: str | None = None,
-        ttl_hours: float | None = None,  # ignored — long-term is permanent
+        ttl_hours: float | None = None,
     ) -> None:
         self._store[key] = {"value": value, "gaian_id": gaian_id}
 
@@ -37,7 +38,7 @@ class LongTermMemoryStore:
             return None
         return entry["value"]
 
-    async def search(self, query: MemoryQuery) -> list[dict]:
+    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
         results = []
         for key, entry in self._store.items():
             if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
@@ -45,10 +46,10 @@ class LongTermMemoryStore:
             results.append({
                 "key": key,
                 "value": entry["value"],
-                "_relevance": 0.8,  # identity facts are highly relevant by default
+                "_relevance": 0.8,
                 "_recency": 0.0,
             })
         return results
 
     async def evict_expired(self) -> int:
-        return 0  # long-term memory never expires
+        return 0
