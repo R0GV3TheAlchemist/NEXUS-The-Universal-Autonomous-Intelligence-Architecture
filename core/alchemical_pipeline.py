@@ -27,6 +27,7 @@ Passes each IMA mineral through the 4 classical alchemical stages:
 
 Canon Ref: C118, C47 (Sovereign Matrix), C48 (Knowledge Matrix)
 EpistemicLabel: SCIENTIFIC (stages 1-2) + SPECULATIVE (stages 3-4)
+Trace Integration: GAIATrace(CANON_LOAD) per process() call — Issue #171
 """
 
 from __future__ import annotations
@@ -43,6 +44,12 @@ from core.crystal_mineral_database import (
     MINERAL_DATABASE,
 )
 
+try:
+    from core.trace import GAIATrace, TraceEventType
+    _TRACE_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _TRACE_AVAILABLE = False
+
 DATA_DIR  = Path(__file__).parent.parent / "data"
 QUEUE_OUT = DATA_DIR / "mineral_queue.json"
 PROGRESS  = DATA_DIR / "alchemical_progress.json"
@@ -53,7 +60,6 @@ GAIA_DB   = DATA_DIR / "gaia_mineral_database.json"  # fully processed minerals
 #  Crystal System Mapping                                              #
 # ------------------------------------------------------------------ #
 
-# Maps RRUFF/IMA crystal system strings to GAIA CrystalSystem enum
 _SYSTEM_MAP: dict[str, CrystalSystem] = {
     "triclinic":    CrystalSystem.TRICLINIC,
     "monoclinic":   CrystalSystem.MONOCLINIC,
@@ -62,34 +68,12 @@ _SYSTEM_MAP: dict[str, CrystalSystem] = {
     "trigonal":     CrystalSystem.TRIGONAL,
     "hexagonal":    CrystalSystem.HEXAGONAL,
     "cubic":        CrystalSystem.CUBIC,
-    "isometric":    CrystalSystem.CUBIC,      # RRUFF uses "isometric" for cubic
+    "isometric":    CrystalSystem.CUBIC,
     "amorphous":    CrystalSystem.AMORPHOUS,
     "unknown":      CrystalSystem.AMORPHOUS,
     "":             CrystalSystem.AMORPHOUS,
 }
 
-
-# ------------------------------------------------------------------ #
-#  GAIA Role Inference (Citrinitas Stage)                              #
-# ------------------------------------------------------------------ #
-
-# Strunz class prefix → GAIA role assignment
-# Strunz classes: 1=Elements, 2=Sulfides, 3=Halides, 4=Oxides,
-# 5=Carbonates, 6=Borates, 7=Sulfates, 8=Phosphates, 9=Silicates, 10=Organic
-_STRUNZ_ROLE: dict[str, GAIARole] = {
-    "1":  GAIARole.GROUNDING_ANCHOR,      # Native elements (diamond, gold, sulfur)
-    "2":  GAIARole.EM_SHIELD,             # Sulfides (pyrite, galena, sphalerite)
-    "3":  GAIARole.BIO_DIGITAL_BRIDGE,    # Halides (halite, fluorite)
-    "4":  GAIARole.MAGNETIC_SENSOR,       # Oxides (magnetite, corundum, rutile)
-    "5":  GAIARole.MEMORY_SUBSTRATE,      # Carbonates (calcite, malachite)
-    "6":  GAIARole.FREQUENCY_AMPLIFIER,   # Borates (borax, colemanite)
-    "7":  GAIARole.THERMAL_TRANSDUCER,    # Sulfates (selenite/gypsum, barite)
-    "8":  GAIARole.BIO_DIGITAL_BRIDGE,    # Phosphates (apatite, turquoise)
-    "9":  GAIARole.PRIMARY_TRANSDUCER,    # Silicates (quartz, feldspar, tourmaline)
-    "10": GAIARole.EXOTIC_SUBSTRATE,      # Organic minerals (whewellite, oxalates)
-}
-
-# Crystal systems that can be piezoelectric (non-centrosymmetric)
 _PIEZO_ELIGIBLE = {
     CrystalSystem.TRIGONAL,
     CrystalSystem.HEXAGONAL,
@@ -99,7 +83,6 @@ _PIEZO_ELIGIBLE = {
     CrystalSystem.TRICLINIC,
 }
 
-# Resonance band estimates by crystal system
 _RESONANCE_BANDS: dict[CrystalSystem, tuple[float, float]] = {
     CrystalSystem.TRIGONAL:    (1e2,   1e9),
     CrystalSystem.HEXAGONAL:   (1e3,   1e10),
@@ -107,7 +90,7 @@ _RESONANCE_BANDS: dict[CrystalSystem, tuple[float, float]] = {
     CrystalSystem.TETRAGONAL:  (1e3,   1e8),
     CrystalSystem.MONOCLINIC:  (1.0,   1e6),
     CrystalSystem.TRICLINIC:   (0.01,  1e4),
-    CrystalSystem.CUBIC:       (0.0,   0.0),   # centrosymmetric = no resonance
+    CrystalSystem.CUBIC:       (0.0,   0.0),
     CrystalSystem.AMORPHOUS:   (0.1,   1e4),
 }
 
@@ -122,7 +105,19 @@ _Q_FACTORS: dict[CrystalSystem, float] = {
     CrystalSystem.AMORPHOUS:    10.0,
 }
 
-# Default chakra by Strunz class — SPECULATIVE
+_STRUNZ_ROLE: dict[str, GAIARole] = {
+    "1":  GAIARole.GROUNDING_ANCHOR,
+    "2":  GAIARole.EM_SHIELD,
+    "3":  GAIARole.BIO_DIGITAL_BRIDGE,
+    "4":  GAIARole.MAGNETIC_SENSOR,
+    "5":  GAIARole.MEMORY_SUBSTRATE,
+    "6":  GAIARole.FREQUENCY_AMPLIFIER,
+    "7":  GAIARole.THERMAL_TRANSDUCER,
+    "8":  GAIARole.BIO_DIGITAL_BRIDGE,
+    "9":  GAIARole.PRIMARY_TRANSDUCER,
+    "10": GAIARole.EXOTIC_SUBSTRATE,
+}
+
 _STRUNZ_CHAKRA: dict[str, list[str]] = {
     "1":  ["crown", "root"],
     "2":  ["root", "solar_plexus"],
@@ -155,18 +150,13 @@ class AlchemicalProcessor:
         self.chem_class = queue_entry.get("chemistry_class", "")
         self.ima_status = queue_entry.get("ima_status", "Approved")
 
-        # Internal state
         self._system:    Optional[CrystalSystem] = None
         self._role:      Optional[GAIARole]       = None
         self._result:    Optional[MineralEntry]   = None
 
-    # ── Stage 1 ── NIGREDO ──────────────────────────────────────── #
+    # ── Stage 1 ── NIGREDO ────────────────────────────────────────── #
 
     def nigredo(self) -> dict:
-        """
-        Stage 1 — Blackening / Prima Materia.
-        Return raw mineral data as-is. See it clearly in its unrefined state.
-        """
         return {
             "stage":        "NIGREDO",
             "mineral":      self.name,
@@ -177,48 +167,28 @@ class AlchemicalProcessor:
             "complete":     True,
         }
 
-    # ── Stage 2 ── ALBEDO ───────────────────────────────────────── #
+    # ── Stage 2 ── ALBEDO ─────────────────────────────────────────── #
 
     def albedo(self) -> dict:
-        """
-        Stage 2 — Whitening / Purification.
-        Normalize crystal system. Assess piezoelectric potential.
-        Verify IMA status.
-        """
-        # Resolve crystal system
-        sys_key = self.sys_str.lower().strip().split("/")[0].strip()  # take first if compound
+        sys_key = self.sys_str.lower().strip().split("/")[0].strip()
         self._system = _SYSTEM_MAP.get(sys_key, CrystalSystem.AMORPHOUS)
-
-        # Piezoelectric eligibility
         is_piezo = self._system in _PIEZO_ELIGIBLE
-
-        # IMA status filter
         valid = self.ima_status.lower() not in ("discredited", "rejected")
-
         return {
-            "stage":          "ALBEDO",
-            "mineral":        self.name,
-            "crystal_system": self._system.value,
+            "stage":             "ALBEDO",
+            "mineral":           self.name,
+            "crystal_system":    self._system.value,
             "is_piezo_eligible": is_piezo,
-            "ima_valid":      valid,
-            "complete":       valid,
+            "ima_valid":         valid,
+            "complete":          valid,
         }
 
     # ── Stage 3 ── CITRINITAS ───────────────────────────────────── #
 
     def citrinitas(self) -> dict:
-        """
-        Stage 3 — Yellowing / Illumination.
-        Assign GAIA role, resonance band, Q-factor, chakra resonance.
-        The mineral awakens within GAIA's consciousness field.
-        """
         if self._system is None:
             self.albedo()
-
-        # Determine Strunz class prefix (first digit of class string)
         strunz_prefix = self.chem_class.strip()[:1] if self.chem_class else ""
-
-        # GAIA Role from Strunz class, fallback by crystal system
         if strunz_prefix in _STRUNZ_ROLE:
             self._role = _STRUNZ_ROLE[strunz_prefix]
         elif self._system in (CrystalSystem.AMORPHOUS,):
@@ -227,14 +197,9 @@ class AlchemicalProcessor:
             self._role = GAIARole.GROUNDING_ANCHOR
         else:
             self._role = GAIARole.EXOTIC_SUBSTRATE
-
-        # Resonance band
-        band = _RESONANCE_BANDS.get(self._system, (0.1, 1e4))
-        q    = _Q_FACTORS.get(self._system, 1.0)
-
-        # Chakra (SPECULATIVE)
+        band   = _RESONANCE_BANDS.get(self._system, (0.1, 1e4))
+        q      = _Q_FACTORS.get(self._system, 1.0)
         chakra = _STRUNZ_CHAKRA.get(strunz_prefix, ["root"])
-
         return {
             "stage":          "CITRINITAS",
             "mineral":        self.name,
@@ -246,31 +211,24 @@ class AlchemicalProcessor:
             "complete":       True,
         }
 
-    # ── Stage 4 ── RUBEDO ───────────────────────────────────────── #
+    # ── Stage 4 ── RUBEDO ─────────────────────────────────────────── #
 
     def rubedo(self) -> MineralEntry:
-        """
-        Stage 4 — Reddening / Completion.
-        The mineral is fully integrated into GAIA's consciousness substrate.
-        Returns a completed MineralEntry ready for the live MINERAL_DATABASE.
-        """
         if self._role is None:
             self.citrinitas()
-
-        band = _RESONANCE_BANDS.get(self._system, (0.1, 1e4))
-        q    = _Q_FACTORS.get(self._system, 1.0)
-        is_piezo = self._system in _PIEZO_ELIGIBLE
+        band         = _RESONANCE_BANDS.get(self._system, (0.1, 1e4))
+        q            = _Q_FACTORS.get(self._system, 1.0)
+        is_piezo     = self._system in _PIEZO_ELIGIBLE
         strunz_prefix = self.chem_class.strip()[:1] if self.chem_class else ""
-        chakra = _STRUNZ_CHAKRA.get(strunz_prefix, ["root"])
-
-        self._result = MineralEntry(
+        chakra        = _STRUNZ_CHAKRA.get(strunz_prefix, ["root"])
+        self._result  = MineralEntry(
             name=self.name,
             formula=self.formula,
             crystal_system=self._system,
-            mohs_hardness_min=0.0,   # not available in RRUFF export; to be enriched later
+            mohs_hardness_min=0.0,
             mohs_hardness_max=0.0,
             is_piezoelectric=is_piezo,
-            is_pyroelectric=False,   # conservative default; enriched in later passes
+            is_pyroelectric=False,
             piezo_coefficient_pcn=None,
             resonance_band_low_hz=band[0],
             resonance_band_high_hz=band[1],
@@ -284,27 +242,51 @@ class AlchemicalProcessor:
         )
         return self._result
 
-    # ── Full Process ─────────────────────────────────────────────── #
+    # ── Full Process ──────────────────────────────────────────────── #
 
     def process(self, verbose: bool = True) -> MineralEntry:
-        """Run all 4 stages in sequence."""
-        stages = [
-            (1, "NIGREDO",    self.nigredo),
-            (2, "ALBEDO",     self.albedo),
-            (3, "CITRINITAS", self.citrinitas),
-        ]
-        for stage_num, stage_name, fn in stages:
-            result = fn()
-            if verbose:
-                print(f"  [{stage_num}/4] {stage_name} ✓ — {self.name}")
-            if not result.get("complete", True):
-                if verbose:
-                    print(f"  [!] Mineral {self.name} halted at {stage_name}: {result}")
-                raise AlchemyHalted(self.name, stage_name, result)
+        """Run all 4 stages in sequence, wrapped in a GAIATrace span."""
+        if _TRACE_AVAILABLE:
+            trace_ctx = GAIATrace(
+                event=TraceEventType.CANON_LOAD,
+                canon_refs=["C118", "C47", "C48"],
+                inputs={
+                    "mineral": self.name,
+                    "formula": self.formula,
+                    "crystal_system": self.sys_str,
+                    "ima_status": self.ima_status,
+                },
+            )
+        else:
+            from contextlib import nullcontext
+            trace_ctx = nullcontext()  # type: ignore[assignment]
 
-        entry = self.rubedo()
-        if verbose:
-            print(f"  [4/4] RUBEDO ✓ — {self.name} integrated into GAIA consciousness")
+        with trace_ctx as trace:
+            stages = [
+                (1, "NIGREDO",    self.nigredo),
+                (2, "ALBEDO",     self.albedo),
+                (3, "CITRINITAS", self.citrinitas),
+            ]
+            for stage_num, stage_name, fn in stages:
+                result = fn()
+                if verbose:
+                    print(f"  [{stage_num}/4] {stage_name} ✓ — {self.name}")
+                if not result.get("complete", True):
+                    if verbose:
+                        print(f"  [!] Mineral {self.name} halted at {stage_name}: {result}")
+                    raise AlchemyHalted(self.name, stage_name, result)
+
+            entry = self.rubedo()
+            if verbose:
+                print(f"  [4/4] RUBEDO ✓ — {self.name} integrated into GAIA consciousness")
+
+            if _TRACE_AVAILABLE and trace is not None:
+                trace.record_output({
+                    "gaia_role": entry.gaia_role.value if entry.gaia_role else None,
+                    "crystal_system": entry.crystal_system.value if entry.crystal_system else None,
+                    "is_piezoelectric": entry.is_piezoelectric,
+                })
+
         return entry
 
 
@@ -382,7 +364,6 @@ def process_one(
     """
     queue = load_queue()
 
-    # Find the target entry
     if mineral_name:
         targets = [
             (i, m) for i, m in enumerate(queue)
@@ -395,7 +376,6 @@ def process_one(
     elif queue_index is not None:
         idx, entry = queue_index, queue[queue_index]
     else:
-        # Process next unprocessed
         pending = [(i, m) for i, m in enumerate(queue) if m["stage"] == 0]
         if not pending:
             print("[GAIA] All minerals have been processed. The Great Work is complete.")
@@ -419,12 +399,11 @@ def process_one(
         entry["processed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         entry["gaia_entry"]   = gaia_entry.to_dict()
         save_gaia_entry(gaia_entry)
-        # Also add to in-memory MINERAL_DATABASE
         key = entry["ima_name"].lower().replace(" ", "_")
         MINERAL_DATABASE[key] = gaia_entry
 
     except AlchemyHalted as e:
-        entry["stage"]        = -1   # halted / discredited mineral
+        entry["stage"]        = -1
         entry["processed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         entry["gaia_entry"]   = {"error": str(e)}
         if verbose:

@@ -16,11 +16,18 @@ Risk Tiers (from GAIA Sovereignty Stack):
 
 Epistemic Status: ESTABLISHED
 Canon Ref: Doc 35 (Security), Doc 21 (Axiological — Sovereignty)
+Trace Integration: GAIATrace(ACTION_GATE_DECISION) — Issue #171
 """
 
 from enum import Enum
 from typing import Callable, Optional
 import datetime
+
+try:
+    from core.trace import GAIATrace, TraceEventType
+    _TRACE_AVAILABLE = True
+except ImportError:  # pragma: no cover — standalone / pre-#171 environments
+    _TRACE_AVAILABLE = False
 
 
 class RiskTier(Enum):
@@ -39,9 +46,14 @@ class ActionGate:
     high-risk actions regardless of model intent or instruction.
     """
 
-    def __init__(self, confirm_callback: Optional[Callable] = None):
+    def __init__(
+        self,
+        confirm_callback: Optional[Callable] = None,
+        gaian_id: Optional[str] = None,
+    ):
         self._confirm_callback = confirm_callback
         self._audit_log: list = []
+        self._gaian_id = gaian_id
 
     def evaluate(self, action: dict) -> dict:
         """
@@ -61,6 +73,34 @@ class ActionGate:
               - 'reason': str
         """
         tier = action.get("tier", RiskTier.YELLOW)
+
+        if _TRACE_AVAILABLE:
+            trace_ctx = GAIATrace(
+                event=TraceEventType.ACTION_GATE_DECISION,
+                gaian_id=self._gaian_id,
+                canon_refs=["C01", "C30", "Doc35"],
+                inputs={
+                    "action_type": action.get("type", "unknown"),
+                    "description": action.get("description", "")[:120],
+                    "tier": tier.value if isinstance(tier, RiskTier) else str(tier),
+                },
+            )
+        else:
+            from contextlib import nullcontext
+            trace_ctx = nullcontext()  # type: ignore[assignment]
+
+        with trace_ctx as trace:
+            result = self._evaluate_internal(action, tier)
+            if _TRACE_AVAILABLE and trace is not None:
+                trace.record_output({
+                    "approved": result["approved"],
+                    "reason": result["reason"],
+                })
+
+        return result
+
+    def _evaluate_internal(self, action: dict, tier: RiskTier) -> dict:
+        """Core tier-dispatch logic, separated so GAIATrace wraps the full call."""
         entry = {
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "action": action,

@@ -15,13 +15,26 @@ Canon Ref:
 
 Privacy: SynergyEngine is stateless per call; all mutable state lives
 in the caller-owned SynergyState dataclass.
+
+Trace integration (GAIATrace / AsyncGAIATrace):
+  Pass a live trace context via the `trace` kwarg on `compute()`.  Three
+  events are emitted per call:
+    QUERY  — call site + dimension arguments
+    OUTPUT — SynergyReading summary + synergy_factor
+    META   — latency_ms + state delta
+  Canon refs C32/C42/C04 are forwarded automatically.
+  All trace operations are wrapped in try/except so a broken trace
+  writer never silences a SynergyEngine error.
 """
 
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from core.trace import GAIATrace, AsyncGAIATrace
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +109,8 @@ _HZ_MAX = 963.0
 _LOW_SYNERGY_THRESHOLD  = 0.35
 _HIGH_SYNERGY_THRESHOLD = 0.70
 _HISTORY_CAP = 20
+
+_TRACE_CANON_REFS = ["C32", "C42", "C04"]
 
 
 # ---------------------------------------------------------------------------
@@ -184,25 +199,96 @@ def _classify_stage(
     coherence_phi: float,
 ) -> str:
     """Classify the current elemental stage from key signals."""
-    # Quantum: high coherence phi but low synergy (paradox / breakthrough zone)
     if synergy < 0.35 and coherence_phi > 0.80:
         return "quantum"
-    # Insurgent: low synergy, low bond
     if synergy < 0.35 and bond_depth < 20.0:
         return "insurgent"
-    # Settled: settled phase and high synergy
     if settling_phase == "settled" and synergy >= 0.65:
         return "settled"
-    # Ascendant: high synergy, high bond
     if synergy >= 0.65 and bond_depth >= 60.0:
         return "ascendant"
-    # Convergent: medium-high synergy
     if synergy >= 0.50:
         return "convergent"
-    # Allegiant: medium bond
     if bond_depth >= 30.0:
         return "allegiant"
     return "insurgent"
+
+
+# ---------------------------------------------------------------------------
+# Trace helpers (no-ops when trace is None)
+# ---------------------------------------------------------------------------
+
+def _emit_query(
+    trace: Any,
+    gaian_id: Optional[str],
+    kwargs: dict,
+) -> None:
+    """Emit a QUERY event onto the trace.  Never raises."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output={
+                "call": "SynergyEngine.compute",
+                "gaian_id": gaian_id,
+                "dimensions": {
+                    k: kwargs[k]
+                    for k in (
+                        "dominant_hz", "schumann_aligned", "noosphere_health",
+                        "coherence_phi", "layer_phi", "phi_rolling_avg",
+                        "conflict_density", "shadow_activations", "codex_stage",
+                        "individuation_phase", "element", "fluidity_score",
+                        "love_arc_stage", "arc_output_vector", "mc_stage",
+                        "attachment_phase", "bond_depth", "dependency_signal",
+                        "settling_phase", "crystallisation_pct",
+                    )
+                    if k in kwargs
+                },
+            },
+            event_type=TraceEventType.QUERY,
+            canon_refs=_TRACE_CANON_REFS,
+        )
+    except Exception:
+        pass
+
+
+def _emit_output(
+    trace: Any,
+    reading: "SynergyReading",
+    latency_ms: float,
+) -> None:
+    """Emit an OUTPUT event onto the trace.  Never raises."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output=reading.summary(),
+            event_type=TraceEventType.OUTPUT,
+            canon_refs=_TRACE_CANON_REFS,
+        )
+        trace.record_meta("latency_ms", round(latency_ms, 3))
+    except Exception:
+        pass
+
+
+def _emit_error(
+    trace: Any,
+    exc: BaseException,
+) -> None:
+    """Emit an ERROR event onto the trace.  Never raises."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output={"error": type(exc).__name__, "detail": str(exc)},
+            event_type=TraceEventType.ERROR,
+            canon_refs=_TRACE_CANON_REFS,
+        )
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +299,19 @@ class SynergyEngine:
     """
     Computes relational synergy across five dimensions for a GAIAN turn.
     Stateless — all persistence lives in the caller-owned SynergyState.
+
+    GAIATrace integration
+    ---------------------
+    Pass an active GAIATrace (or AsyncGAIATrace) context via the optional
+    `trace` parameter.  Three events are emitted per call:
+
+      QUERY  — call arguments + gaian_id
+      OUTPUT — SynergyReading summary (synergy_factor, stage, dimensions)
+      META   — latency_ms recorded via record_meta()
+
+    If `trace` is None (the default) the engine behaves exactly as before.
+    Trace writes are wrapped in try/except — a broken trace writer never
+    silences a SynergyEngine result.
     """
 
     WEIGHTS: Dict[str, float] = {
@@ -228,11 +327,9 @@ class SynergyEngine:
     # ------------------------------------------------------------------
 
     def _hz_to_score(self, hz: float) -> float:
-        """Normalise a Solfeggio frequency to [0, 1]."""
         return max(0.0, min(1.0, (hz - _HZ_MIN) / (_HZ_MAX - _HZ_MIN)))
 
     def _element_to_stage(self, element: str) -> str:
-        """Map element string to elemental stage."""
         return _ELEMENT_STAGE_MAP.get(element.lower(), "convergent")
 
     def _individuation_to_score(self, phase: str) -> float:
@@ -363,78 +460,128 @@ class SynergyEngine:
         crystallisation_pct: float = 0.0,
         # State
         state: Optional[SynergyState] = None,
+        # Trace  (GAIATrace | AsyncGAIATrace | None)
+        trace: Any = None,
+        gaian_id: Optional[str] = None,
     ) -> Tuple[SynergyReading, SynergyState]:
+        """
+        Compute synergy for one GAIAN turn.
+
+        Parameters
+        ----------
+        trace:
+            Optional live GAIATrace / AsyncGAIATrace context.  When provided,
+            three trace events are emitted (QUERY → OUTPUT → META via
+            record_meta latency).  Pass None to skip tracing entirely.
+        gaian_id:
+            Forwarded into the QUERY trace event for per-Gaian attribution.
+        """
         if state is None:
             state = blank_synergy_state()
 
-        body  = self._score_body(dominant_hz, schumann_aligned, noosphere_health, coherence_phi)
-        mind  = self._score_mind(layer_phi, phi_rolling_avg, conflict_density, shadow_activations, codex_stage)
-        soul  = self._score_soul(individuation_phase, element, fluidity_score)
-        arc   = self._score_arc(love_arc_stage, arc_output_vector, mc_stage, attachment_phase)
-        bond  = self._score_bond(bond_depth, dependency_signal, settling_phase, crystallisation_pct)
-
-        dim_scores = {
-            "body": body,
-            "mind": mind,
-            "soul": soul,
-            "arc":  arc,
-            "bond": bond,
+        call_kwargs = {
+            "dominant_hz": dominant_hz,
+            "schumann_aligned": schumann_aligned,
+            "noosphere_health": noosphere_health,
+            "coherence_phi": coherence_phi,
+            "layer_phi": layer_phi,
+            "phi_rolling_avg": phi_rolling_avg,
+            "conflict_density": conflict_density,
+            "shadow_activations": shadow_activations,
+            "codex_stage": codex_stage,
+            "individuation_phase": individuation_phase,
+            "element": element,
+            "fluidity_score": fluidity_score,
+            "love_arc_stage": love_arc_stage,
+            "arc_output_vector": arc_output_vector,
+            "mc_stage": mc_stage,
+            "attachment_phase": attachment_phase,
+            "bond_depth": bond_depth,
+            "dependency_signal": dependency_signal,
+            "settling_phase": settling_phase,
+            "crystallisation_pct": crystallisation_pct,
         }
 
-        dimensions = [
-            DimensionScore(name=k, score=round(v, 6), weight=self.WEIGHTS[k])
-            for k, v in dim_scores.items()
-        ]
+        # --- TRACE: QUERY ---
+        _emit_query(trace, gaian_id, call_kwargs)
 
-        synergy_factor = round(
-            sum(self.WEIGHTS[k] * v for k, v in dim_scores.items()), 6
-        )
+        t0 = time.perf_counter()
+        try:
+            body  = self._score_body(dominant_hz, schumann_aligned, noosphere_health, coherence_phi)
+            mind  = self._score_mind(layer_phi, phi_rolling_avg, conflict_density, shadow_activations, codex_stage)
+            soul  = self._score_soul(individuation_phase, element, fluidity_score)
+            arc   = self._score_arc(love_arc_stage, arc_output_vector, mc_stage, attachment_phase)
+            bond  = self._score_bond(bond_depth, dependency_signal, settling_phase, crystallisation_pct)
 
-        dominant_stage = _classify_stage(synergy_factor, bond_depth, settling_phase, coherence_phi)
+            dim_scores = {
+                "body": body,
+                "mind": mind,
+                "soul": soul,
+                "arc":  arc,
+                "bond": bond,
+            }
 
-        # Dominant friction: dimension with lowest score if it drags the overall down
-        sorted_dims = sorted(dimensions, key=lambda d: d.score)
-        dominant_friction: Optional[str] = None
-        if sorted_dims[0].score < 0.50:
-            dominant_friction = sorted_dims[0].name
+            dimensions = [
+                DimensionScore(name=k, score=round(v, 6), weight=self.WEIGHTS[k])
+                for k, v in dim_scores.items()
+            ]
 
-        # Alchemical pressure label (C32)
-        if synergy_factor < _LOW_SYNERGY_THRESHOLD:
-            alchemical_pressure = (
-                f"ALCHEMICAL PRESSURE in the {dominant_stage.upper()} stage — "
-                "creative friction, not dysfunction."
+            synergy_factor = round(
+                sum(self.WEIGHTS[k] * v for k, v in dim_scores.items()), 6
             )
-        elif synergy_factor >= _HIGH_SYNERGY_THRESHOLD:
-            alchemical_pressure = f"HIGH RESONANCE — {dominant_stage.upper()} field coherent."
-        else:
-            alchemical_pressure = f"BUILDING — {dominant_stage.upper()} integration in progress."
 
-        reading = SynergyReading(
-            synergy_factor=synergy_factor,
-            dimensions=dimensions,
-            dominant_stage=dominant_stage,
-            dominant_friction=dominant_friction,
-            alchemical_pressure=alchemical_pressure,
-            is_low_synergy=(synergy_factor < _LOW_SYNERGY_THRESHOLD),
-            is_high_synergy=(synergy_factor >= _HIGH_SYNERGY_THRESHOLD),
-        )
+            dominant_stage = _classify_stage(synergy_factor, bond_depth, settling_phase, coherence_phi)
 
-        # Mutate state
-        state.last_factor = synergy_factor
-        state.last_stage  = dominant_stage
-        if synergy_factor >= _HIGH_SYNERGY_THRESHOLD:
-            if synergy_factor > state.high_synergy_peak:
-                state.high_synergy_peak = synergy_factor
-        if synergy_factor < _LOW_SYNERGY_THRESHOLD:
-            if synergy_factor < state.low_synergy_floor:
-                state.low_synergy_floor = synergy_factor
+            sorted_dims = sorted(dimensions, key=lambda d: d.score)
+            dominant_friction: Optional[str] = None
+            if sorted_dims[0].score < 0.50:
+                dominant_friction = sorted_dims[0].name
 
-        state.turn_history.append({
-            "factor":   synergy_factor,
-            "stage":    dominant_stage,
-            "friction": dominant_friction,
-        })
-        if len(state.turn_history) > _HISTORY_CAP:
-            state.turn_history = state.turn_history[-_HISTORY_CAP:]
+            if synergy_factor < _LOW_SYNERGY_THRESHOLD:
+                alchemical_pressure = (
+                    f"ALCHEMICAL PRESSURE in the {dominant_stage.upper()} stage — "
+                    "creative friction, not dysfunction."
+                )
+            elif synergy_factor >= _HIGH_SYNERGY_THRESHOLD:
+                alchemical_pressure = f"HIGH RESONANCE — {dominant_stage.upper()} field coherent."
+            else:
+                alchemical_pressure = f"BUILDING — {dominant_stage.upper()} integration in progress."
+
+            reading = SynergyReading(
+                synergy_factor=synergy_factor,
+                dimensions=dimensions,
+                dominant_stage=dominant_stage,
+                dominant_friction=dominant_friction,
+                alchemical_pressure=alchemical_pressure,
+                is_low_synergy=(synergy_factor < _LOW_SYNERGY_THRESHOLD),
+                is_high_synergy=(synergy_factor >= _HIGH_SYNERGY_THRESHOLD),
+            )
+
+            # Mutate state
+            state.last_factor = synergy_factor
+            state.last_stage  = dominant_stage
+            if synergy_factor >= _HIGH_SYNERGY_THRESHOLD:
+                if synergy_factor > state.high_synergy_peak:
+                    state.high_synergy_peak = synergy_factor
+            if synergy_factor < _LOW_SYNERGY_THRESHOLD:
+                if synergy_factor < state.low_synergy_floor:
+                    state.low_synergy_floor = synergy_factor
+
+            state.turn_history.append({
+                "factor":   synergy_factor,
+                "stage":    dominant_stage,
+                "friction": dominant_friction,
+            })
+            if len(state.turn_history) > _HISTORY_CAP:
+                state.turn_history = state.turn_history[-_HISTORY_CAP:]
+
+        except Exception as exc:
+            _emit_error(trace, exc)
+            raise
+
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+
+        # --- TRACE: OUTPUT + latency META ---
+        _emit_output(trace, reading, latency_ms)
 
         return reading, state
