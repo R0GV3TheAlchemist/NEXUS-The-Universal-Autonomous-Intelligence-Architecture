@@ -1,33 +1,24 @@
 """
 core/memory/tiers/semantic.py
-SEMANTIC memory tier — Sprint G-8
+GAIA Semantic Memory Tier — Sprint G-8 stub
 
-Permanent, fact-oriented knowledge.  Backs the Crystal Knowledge Graph
-and canon-derived facts.  Entries never auto-expire.
+Permanent fact store. Backed by Crystal DB in production.
+This stub uses an in-process dict; swap for Crystal DB integration in G-9.
 
-TTL:         None (permanent)
-Persistence: in-process dict (production backend: Crystal DB / graph store)
-Search:      keyword match + static relevance scoring
-
-Canon Ref: C34 (Presence — GAIA knows established facts about the world)
-           C01 (Sovereignty — facts are explicit, not hallucinated)
+Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from core.memory.hierarchy import MemoryQuery
 
 
 class SemanticMemoryStore:
-    """Permanent fact store.  Writes overwrite the previous value for the
-    same (gaian_id, key).  Nothing ever expires.
-    """
+    """Permanent canon-fact store. No TTL. Production backend: Crystal DB."""
 
     def __init__(self) -> None:
-        # {(gaian_id, key): {"value": Any, "ts": float}}
-        self._store: dict[tuple[str | None, str], dict] = {}
+        self._store: dict[str, dict] = {}
 
     async def write(
         self,
@@ -36,44 +27,28 @@ class SemanticMemoryStore:
         gaian_id: str | None = None,
         ttl_hours: float | None = None,  # ignored — semantic is permanent
     ) -> None:
-        self._store[(gaian_id, key)] = {"value": value, "ts": time.time()}
+        self._store[key] = {"value": value, "gaian_id": gaian_id}
 
-    async def read(
-        self,
-        key: str,
-        gaian_id: str | None = None,
-    ) -> Any | None:
-        entry = self._store.get((gaian_id, key))
-        return entry["value"] if entry else None
+    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
+            return None
+        return entry["value"]
 
     async def search(self, query: MemoryQuery) -> list[dict]:
-        text = query.query_text.lower()
-        entries = [
-            (k, v)
-            for (g, k), v in self._store.items()
-            if g == query.gaian_id
-        ]
-        if not entries:
-            return []
-
-        ts_vals = [v["ts"] for _, v in entries]
-        ts_min, ts_max = min(ts_vals), max(ts_vals)
-        ts_range = ts_max - ts_min or 1.0
-
         results = []
-        for k, v in entries:
-            val_str = str(v["value"]).lower()
-            relevance = 0.85 if text in val_str or text in k.lower() else 0.15
-            recency = (v["ts"] - ts_min) / ts_range
+        for key, entry in self._store.items():
+            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+                continue
             results.append({
-                "key":        k,
-                "value":      v["value"],
-                "_relevance": relevance,
-                "_recency":   recency,
-                "_ts":        v["ts"],
+                "key": key,
+                "value": entry["value"],
+                "_relevance": 0.5,
+                "_recency": 0.0,  # semantic facts have no recency bias
             })
         return results
 
     async def evict_expired(self) -> int:
-        """No-op — semantic memory is permanent.  Always returns 0."""
-        return 0
+        return 0  # semantic memory never expires

@@ -1,16 +1,11 @@
 """
 core/memory/tiers/working.py
-WORKING memory tier — Sprint G-8
+GAIA Working Memory Tier — Sprint G-8 stub
 
-The most volatile tier. Holds the current-turn scratch-pad only.
-All entries are stored in a plain dict and evicted at turn end via
-evict_expired() (which clears everything) or explicit key deletion.
+Volatile in-process store for the current turn.
+Evicts all entries at turn end; zero persistence across sessions.
 
-TTL: 0 hours — everything expires immediately when evict_expired() is called.
-Persistence: none (in-process dict).
-Concurrency: not thread-safe; designed for single-coroutine turn loops.
-
-Canon Ref: C34 (Presence — GAIA knows what tier a moment belongs to)
+Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
@@ -21,70 +16,46 @@ from core.memory.hierarchy import MemoryQuery
 
 
 class WorkingMemoryStore:
-    """In-process working memory.  Keys live until evict_expired() is called
-    (i.e. at turn end) or until overwritten.  There is no per-key TTL because
-    the entire working context is considered stale once the turn completes.
-    """
+    """In-memory dict store; lives only for the duration of the current turn."""
 
     def __init__(self) -> None:
-        # {(gaian_id_or_None, key): {"value": Any, "ts": float}}
-        self._store: dict[tuple[str | None, str], dict] = {}
+        self._store: dict[str, dict] = {}  # key -> {value, gaian_id, ts}
 
     async def write(
         self,
         key: str,
         value: Any,
         gaian_id: str | None = None,
-        ttl_hours: float | None = None,  # ignored — working tier always evicts at turn end
+        ttl_hours: float | None = None,
     ) -> None:
-        self._store[(gaian_id, key)] = {"value": value, "ts": time.time()}
+        self._store[key] = {"value": value, "gaian_id": gaian_id, "ts": time.time()}
 
-    async def read(
-        self,
-        key: str,
-        gaian_id: str | None = None,
-    ) -> Any | None:
-        entry = self._store.get((gaian_id, key))
-        return entry["value"] if entry else None
+    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
+            return None
+        return entry["value"]
 
     async def search(self, query: MemoryQuery) -> list[dict]:
-        """Linear scan of all working-memory entries for this gaian.
-        Returns results with _relevance=0.9 (high — working context is
-        always fresh) and _recency normalised to [0, 1].
-        """
         now = time.time()
-        entries = [
-            (k, v)
-            for (g, k), v in self._store.items()
-            if g == query.gaian_id
-        ]
-        if not entries:
-            return []
-
-        ts_vals = [v["ts"] for _, v in entries]
-        ts_min, ts_max = min(ts_vals), max(ts_vals)
-        ts_range = ts_max - ts_min or 1.0
-
         results = []
-        text = query.query_text.lower()
-        for k, v in entries:
-            raw_val = v["value"]
-            val_str = str(raw_val).lower()
-            relevance = 0.9 if text in val_str or text in k.lower() else 0.3
-            recency = (v["ts"] - ts_min) / ts_range
+        for key, entry in self._store.items():
+            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+                continue
+            age = now - entry.get("ts", now)
+            recency = max(0.0, 1.0 - age / 3600.0)  # decays over 1 hour
             results.append({
-                "key":        k,
-                "value":      raw_val,
-                "_relevance": relevance,
-                "_recency":   recency,
-                "_ts":        v["ts"],
+                "key": key,
+                "value": entry["value"],
+                "_relevance": 0.5,
+                "_recency": recency,
             })
         return results
 
     async def evict_expired(self) -> int:
-        """Clear ALL working-memory entries (called at turn end).
-        Returns count of evicted entries.
-        """
+        """Evict everything — working memory does not persist beyond the turn."""
         count = len(self._store)
         self._store.clear()
         return count

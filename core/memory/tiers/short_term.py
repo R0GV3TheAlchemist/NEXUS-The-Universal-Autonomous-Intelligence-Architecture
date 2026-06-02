@@ -1,41 +1,28 @@
 """
 core/memory/tiers/short_term.py
-SHORT_TERM memory tier — Sprint G-8
+GAIA Short-Term Memory Tier — Sprint G-8 stub
 
-Holds the last N turns of recent context.  Entries expire after
-``ttl_hours`` (default 48 h).  Backed by an in-process ordered dict;
-production deployments swap this for SQLite or Redis.
+TTL-bounded in-memory store. Default TTL: 48 hours.
+Holds the last N turns of context; evicts on TTL expiry.
 
-TTL:         48 hours (configurable per-write via ttl_hours param)
-Persistence: in-process OrderedDict (no disk I/O in this stub)
-Eviction:    time-based; evict_expired() removes stale entries
-
-Canon Ref: C34 (Presence), C01 (Sovereignty)
+Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
 import time
-from collections import OrderedDict
 from typing import Any
 
-from core.memory.hierarchy import MemoryQuery, MemoryTier
+from core.memory.hierarchy import MemoryQuery
 
-_DEFAULT_TTL_HOURS = MemoryTier.SHORT_TERM.default_ttl_hours or 48.0
-_DEFAULT_TTL_SECS = _DEFAULT_TTL_HOURS * 3600
+_DEFAULT_TTL_HOURS = 48.0
 
 
 class ShortTermMemoryStore:
-    """Recent-context store with time-based expiry.
+    """TTL-bounded in-memory store for recent context (last N turns)."""
 
-    Internally keyed by (gaian_id, key).  Oldest entries are at the
-    front of the OrderedDict so eviction is O(n) in the number of
-    expired entries, not the total store size.
-    """
-
-    def __init__(self, max_entries: int = 2048) -> None:
-        self._max = max_entries
-        # {(gaian_id, key): {"value": Any, "ts": float, "expires": float}}
-        self._store: OrderedDict[tuple[str | None, str], dict] = OrderedDict()
+    def __init__(self, default_ttl_hours: float = _DEFAULT_TTL_HOURS) -> None:
+        self._store: dict[str, dict] = {}
+        self._default_ttl = default_ttl_hours * 3600
 
     async def write(
         self,
@@ -44,55 +31,43 @@ class ShortTermMemoryStore:
         gaian_id: str | None = None,
         ttl_hours: float | None = None,
     ) -> None:
-        ttl_secs = (ttl_hours * 3600) if ttl_hours is not None else _DEFAULT_TTL_SECS
-        now = time.time()
-        k = (gaian_id, key)
-        self._store[k] = {"value": value, "ts": now, "expires": now + ttl_secs}
-        self._store.move_to_end(k)
-        # LRU-style cap
-        while len(self._store) > self._max:
-            self._store.popitem(last=False)
+        ttl = (ttl_hours * 3600) if ttl_hours is not None else self._default_ttl
+        self._store[key] = {
+            "value": value,
+            "gaian_id": gaian_id,
+            "ts": time.time(),
+            "expires_at": time.time() + ttl,
+        }
 
-    async def read(
-        self,
-        key: str,
-        gaian_id: str | None = None,
-    ) -> Any | None:
-        entry = self._store.get((gaian_id, key))
-        if entry is None:
+    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
+        entry = self._store.get(key)
+        if entry is None or time.time() > entry["expires_at"]:
             return None
-        if time.time() > entry["expires"]:
-            del self._store[(gaian_id, key)]
+        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
             return None
         return entry["value"]
 
     async def search(self, query: MemoryQuery) -> list[dict]:
         now = time.time()
-        text = query.query_text.lower()
         results = []
-        for (g, k), v in self._store.items():
-            if g != query.gaian_id:
+        for key, entry in self._store.items():
+            if now > entry.get("expires_at", 0):
                 continue
-            if now > v["expires"]:
+            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
                 continue
-            val_str = str(v["value"]).lower()
-            relevance = 0.8 if text in val_str or text in k.lower() else 0.25
-            # Recency: fraction of TTL remaining (higher = fresher)
-            age_secs = now - v["ts"]
-            ttl_secs = v["expires"] - v["ts"] or 1.0
-            recency = max(0.0, 1.0 - age_secs / ttl_secs)
+            age = now - entry.get("ts", now)
+            recency = max(0.0, 1.0 - age / (self._default_ttl or 1))
             results.append({
-                "key":        k,
-                "value":      v["value"],
-                "_relevance": relevance,
-                "_recency":   recency,
-                "_ts":        v["ts"],
+                "key": key,
+                "value": entry["value"],
+                "_relevance": 0.5,
+                "_recency": recency,
             })
         return results
 
     async def evict_expired(self) -> int:
         now = time.time()
-        expired = [k for k, v in self._store.items() if now > v["expires"]]
+        expired = [k for k, v in self._store.items() if now > v.get("expires_at", 0)]
         for k in expired:
             del self._store[k]
         return len(expired)

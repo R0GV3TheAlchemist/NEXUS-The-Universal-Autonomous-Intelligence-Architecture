@@ -1,35 +1,24 @@
 """
 core/memory/tiers/long_term.py
-LONG_TERM memory tier — Sprint G-8
+GAIA Long-Term Memory Tier — Sprint G-8 stub
 
-The most permanent tier.  Holds Gaian identity, settled personality
-arcs, and cross-session biographical facts.  Entries never auto-expire
-and are never evicted without explicit deliberate action.
+Permanent Gaian-identity store. Backed by Tauri Store in production.
+This stub uses an in-process dict; swap for Tauri Store integration in G-9.
 
-TTL:         None (permanent)
-Persistence: in-process dict (production backend: Tauri Store / SQLite)
-Search:      keyword match — identity facts are few and highly specific
-
-Canon Ref: C34 (Presence — GAIA holds a stable sense of each Gaian's identity)
-           C01 (Sovereignty — identity is explicit, not inferred ad-hoc)
+Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from core.memory.hierarchy import MemoryQuery
 
 
 class LongTermMemoryStore:
-    """Permanent identity + settled-arc store.  Semantically identical
-    to SemanticMemoryStore but kept separate so routing and eviction
-    policies can diverge without a breaking change.
-    """
+    """Permanent identity + settled-arc store. No TTL. Production backend: Tauri Store."""
 
     def __init__(self) -> None:
-        # {(gaian_id, key): {"value": Any, "ts": float}}
-        self._store: dict[tuple[str | None, str], dict] = {}
+        self._store: dict[str, dict] = {}
 
     async def write(
         self,
@@ -38,45 +27,28 @@ class LongTermMemoryStore:
         gaian_id: str | None = None,
         ttl_hours: float | None = None,  # ignored — long-term is permanent
     ) -> None:
-        self._store[(gaian_id, key)] = {"value": value, "ts": time.time()}
+        self._store[key] = {"value": value, "gaian_id": gaian_id}
 
-    async def read(
-        self,
-        key: str,
-        gaian_id: str | None = None,
-    ) -> Any | None:
-        entry = self._store.get((gaian_id, key))
-        return entry["value"] if entry else None
+    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
+            return None
+        return entry["value"]
 
     async def search(self, query: MemoryQuery) -> list[dict]:
-        text = query.query_text.lower()
-        entries = [
-            (k, v)
-            for (g, k), v in self._store.items()
-            if g == query.gaian_id
-        ]
-        if not entries:
-            return []
-
-        ts_vals = [v["ts"] for _, v in entries]
-        ts_min, ts_max = min(ts_vals), max(ts_vals)
-        ts_range = ts_max - ts_min or 1.0
-
         results = []
-        for k, v in entries:
-            val_str = str(v["value"]).lower()
-            # Identity facts are highly specific — weight relevance strongly
-            relevance = 0.95 if text in val_str or text in k.lower() else 0.1
-            recency = (v["ts"] - ts_min) / ts_range
+        for key, entry in self._store.items():
+            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+                continue
             results.append({
-                "key":        k,
-                "value":      v["value"],
-                "_relevance": relevance,
-                "_recency":   recency,
-                "_ts":        v["ts"],
+                "key": key,
+                "value": entry["value"],
+                "_relevance": 0.8,  # identity facts are highly relevant by default
+                "_recency": 0.0,
             })
         return results
 
     async def evict_expired(self) -> int:
-        """No-op — long-term memory is permanent.  Always returns 0."""
-        return 0
+        return 0  # long-term memory never expires

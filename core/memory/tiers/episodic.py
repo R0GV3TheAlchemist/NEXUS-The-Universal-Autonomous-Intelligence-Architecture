@@ -1,39 +1,28 @@
 """
 core/memory/tiers/episodic.py
-EPISODIC memory tier — Sprint G-8
+GAIA Episodic Memory Tier — Sprint G-8 stub
 
-Stores significant session moments that persist weeks to months.
-Designed for narrative retrieval: "what happened last Tuesday with Luna".
+Session-level event store. Default TTL: 720 hours (30 days).
+Captures meaningful moments; candidates for long-term promotion.
 
-TTL:         720 hours / 30 days (configurable per-write)
-Persistence: in-process list (production backend: ArcadeDB / graph DB)
-Search:      linear keyword scan + recency scoring (embedding search added later)
-
-Canon Ref: C34 (Presence — GAIA remembers significant moments)
+Canon Refs: C34 (Presence), C01 (Sovereignty)
 """
 from __future__ import annotations
 
 import time
 from typing import Any
 
-from core.memory.hierarchy import MemoryQuery, MemoryTier
+from core.memory.hierarchy import MemoryQuery
 
-_DEFAULT_TTL_SECS = (MemoryTier.EPISODIC.default_ttl_hours or 720.0) * 3600
+_DEFAULT_TTL_HOURS = 720.0
 
 
 class EpisodicMemoryStore:
-    """Session-moment store with long TTL and keyword-based search.
+    """Session-event store with 30-day default TTL."""
 
-    Each write appends an episode record.  Episodes are not deduplicated;
-    the same key may appear multiple times (each write is a new moment).
-    Retrieval returns the most recent matching episodes.
-    """
-
-    def __init__(self) -> None:
-        # List of {"gaian_id", "key", "value", "ts", "expires"}
-        self._episodes: list[dict] = []
-        # Latest-write index for keyed reads: {(gaian_id, key): index}
-        self._latest: dict[tuple[str | None, str], int] = {}
+    def __init__(self, default_ttl_hours: float = _DEFAULT_TTL_HOURS) -> None:
+        self._store: dict[str, dict] = {}
+        self._default_ttl = default_ttl_hours * 3600
 
     async def write(
         self,
@@ -42,64 +31,43 @@ class EpisodicMemoryStore:
         gaian_id: str | None = None,
         ttl_hours: float | None = None,
     ) -> None:
-        now = time.time()
-        ttl_secs = (ttl_hours * 3600) if ttl_hours is not None else _DEFAULT_TTL_SECS
-        idx = len(self._episodes)
-        self._episodes.append({
+        ttl = (ttl_hours * 3600) if ttl_hours is not None else self._default_ttl
+        self._store[key] = {
+            "value": value,
             "gaian_id": gaian_id,
-            "key":      key,
-            "value":    value,
-            "ts":       now,
-            "expires":  now + ttl_secs,
-        })
-        self._latest[(gaian_id, key)] = idx
+            "ts": time.time(),
+            "expires_at": time.time() + ttl,
+        }
 
-    async def read(
-        self,
-        key: str,
-        gaian_id: str | None = None,
-    ) -> Any | None:
-        idx = self._latest.get((gaian_id, key))
-        if idx is None:
+    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
+        entry = self._store.get(key)
+        if entry is None or time.time() > entry["expires_at"]:
             return None
-        ep = self._episodes[idx]
-        if time.time() > ep["expires"]:
+        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
             return None
-        return ep["value"]
+        return entry["value"]
 
     async def search(self, query: MemoryQuery) -> list[dict]:
         now = time.time()
-        text = query.query_text.lower()
-        ts_vals = [ep["ts"] for ep in self._episodes
-                   if ep["gaian_id"] == query.gaian_id and now <= ep["expires"]]
-        ts_min = min(ts_vals) if ts_vals else 0.0
-        ts_max = max(ts_vals) if ts_vals else 1.0
-        ts_range = ts_max - ts_min or 1.0
-
         results = []
-        for ep in self._episodes:
-            if ep["gaian_id"] != query.gaian_id:
+        for key, entry in self._store.items():
+            if now > entry.get("expires_at", 0):
                 continue
-            if now > ep["expires"]:
+            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
                 continue
-            val_str = str(ep["value"]).lower()
-            relevance = 0.75 if text in val_str or text in ep["key"].lower() else 0.2
-            recency = (ep["ts"] - ts_min) / ts_range
+            age = now - entry.get("ts", now)
+            recency = max(0.0, 1.0 - age / (self._default_ttl or 1))
             results.append({
-                "key":        ep["key"],
-                "value":      ep["value"],
-                "_relevance": relevance,
-                "_recency":   recency,
-                "_ts":        ep["ts"],
+                "key": key,
+                "value": entry["value"],
+                "_relevance": 0.5,
+                "_recency": recency,
             })
         return results
 
     async def evict_expired(self) -> int:
         now = time.time()
-        before = len(self._episodes)
-        self._episodes = [ep for ep in self._episodes if now <= ep["expires"]]
-        # Rebuild latest index
-        self._latest = {}
-        for idx, ep in enumerate(self._episodes):
-            self._latest[(ep["gaian_id"], ep["key"])] = idx
-        return before - len(self._episodes)
+        expired = [k for k, v in self._store.items() if now > v.get("expires_at", 0)]
+        for k in expired:
+            del self._store[k]
+        return len(expired)
