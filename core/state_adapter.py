@@ -31,6 +31,7 @@ Migration Plan:
 from __future__ import annotations
 
 import logging
+import math
 from typing import Any, Dict, List, Optional, TypedDict
 
 log = logging.getLogger(__name__)
@@ -58,6 +59,13 @@ SOLFEGGIO_HZ: Dict[str, float] = {
 
 SCHUMANN_BASELINE_HZ: float = 7.83  # Earth's fundamental electromagnetic resonance
 SCHUMANN_HARMONIC_TOLERANCE: float = 0.10  # ±10% harmonic window
+
+# Floating-point micro-residual floor: modulo results below this value are
+# treated as exactly zero.  Chosen to be well below any physically meaningful
+# difference while safely absorbing IEEE-754 rounding noise.
+# e.g.  15.66 % 7.83 → 7.82999999999999929 (residual from exact multiple)
+# After normalisation: (7.83 - 7.829999...) / 7.83 ≈ 9e-14  → clamped to 0
+_SCHUMANN_FLOAT_EPSILON: float = 1e-9
 
 
 # ── Typed contract between adapter and SynergyEngine ────────────────────── #
@@ -216,9 +224,37 @@ class GAIAStateAdapter:
     def _resolve_schumann_alignment(self) -> bool:
         """Determine whether the Gaian's dominant Hz is in Schumann harmonic.
 
-        Algorithm: compute (hz mod schumann) / schumann.  If within
-        SCHUMANN_HARMONIC_TOLERANCE (10%) of a harmonic node, aligned.
+        Algorithm
+        ---------
+        Compute the fractional position of ``hz`` within one Schumann period::
 
+            harmonic_phase = (hz % schumann) / schumann
+
+        The value is aligned when it lies within SCHUMANN_HARMONIC_TOLERANCE
+        (10%) of either the *lower* boundary (0.0) or the *upper* boundary
+        (1.0), i.e. near a harmonic node.
+
+        Float-precision fixes (see _SCHUMANN_FLOAT_EPSILON)
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        IEEE-754 modulo of exact integer multiples produces micro-residuals:
+
+            15.66 % 7.83  →  7.82999999999999929   (should be 0.0)
+
+        Without correction, ``(7.83 - 7.830e0) / 7.83 ≈ 9e-14`` lands
+        *inside* the upper window only by luck; for other multiples it can
+        miss entirely.  The fix: if the raw modulo exceeds
+        ``schumann - _SCHUMANN_FLOAT_EPSILON`` we treat it as exactly
+        ``schumann`` (i.e. phase 0.0 of the next cycle).
+
+        Non-finite / degenerate schumann guard
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Sensors may supply NaN, ±inf, zero, or a negative value for
+        ``schumann_hz``.  All non-finite and non-positive values return
+        ``False`` (not aligned) rather than propagating NaN arithmetic
+        into SynergyEngine.
+
+        Explicit override
+        ~~~~~~~~~~~~~~~~~
         Falls back to the boolean ``schumann_aligned`` attribute when present
         (allows external sensors to override the computed value).
         """
@@ -227,11 +263,37 @@ class GAIAStateAdapter:
             return explicit
 
         hz = self._resolve_hz()
-        schumann = float(self._safe_get("schumann_hz", SCHUMANN_BASELINE_HZ))
-        if schumann <= 0:
+        schumann_raw = self._safe_get("schumann_hz", SCHUMANN_BASELINE_HZ)
+
+        try:
+            schumann = float(schumann_raw)
+        except (TypeError, ValueError):
             return False
-        harmonic_phase = (hz % schumann) / schumann
-        return harmonic_phase < SCHUMANN_HARMONIC_TOLERANCE or harmonic_phase > (1.0 - SCHUMANN_HARMONIC_TOLERANCE)
+
+        # Guard: non-finite or non-positive baseline → not aligned
+        if not math.isfinite(schumann) or schumann <= 0.0:
+            return False
+
+        # Compute fractional harmonic phase with IEEE-754 residual correction.
+        # math.fmod mirrors C fmod — same precision as %, but explicit.
+        raw_mod = math.fmod(hz, schumann)
+
+        # Correct upward-biased residuals: if the modulo is within epsilon of
+        # a full period, snap it to 0.0 (start of next cycle).
+        if raw_mod >= schumann - _SCHUMANN_FLOAT_EPSILON:
+            raw_mod = 0.0
+
+        # Correct downward-biased residuals: tiny negatives from fmod on
+        # negative hz inputs (defensive; hz should always be positive).
+        if raw_mod < 0.0:
+            raw_mod = 0.0
+
+        harmonic_phase = raw_mod / schumann
+
+        return (
+            harmonic_phase < SCHUMANN_HARMONIC_TOLERANCE
+            or harmonic_phase > (1.0 - SCHUMANN_HARMONIC_TOLERANCE)
+        )
 
     def _resolve_coherence(self) -> float:
         """Return HRV coherence score clamped to [0.0, 1.0]."""

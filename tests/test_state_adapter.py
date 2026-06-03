@@ -108,6 +108,8 @@ class TestResolveLoveArc:
 # ── Schumann resolver ─────────────────────────────────────────────────────── #
 
 class TestResolveSchumannAlignment:
+    # ── original passing tests (unchanged) ───────────────────────────────── #
+
     def test_explicit_true_override(self):
         assert make_adapter(schumann_aligned=True).resolved_schumann_aligned() is True
 
@@ -128,6 +130,89 @@ class TestResolveSchumannAlignment:
         adapter = make_adapter(dominant_hz=14.0, schumann_hz=7.0)
         # 14.0 mod 7.0 = 0.0 → harmonic_phase = 0.0 < 0.10 → aligned
         assert adapter.resolved_schumann_aligned() is True
+
+    # ── Bug 1: float modulo precision at exact harmonic multiples ─────────── #
+    #
+    # 15.66 / 7.83 = 2.0 exactly, but IEEE-754 fmod yields a residual close
+    # to 7.83 instead of 0.0.  Without the epsilon correction the old code
+    # would land this in the upper window only by luck; for other exact
+    # multiples it could miss entirely.
+
+    def test_exact_double_harmonic_aligned(self):
+        """2× schumann — float residual must be snapped to 0 (aligned)."""
+        # 15.66 % 7.83 → ~7.8299... without correction → phase ~0.9999...
+        # With correction: raw_mod snapped to 0.0 → phase 0.0 → aligned
+        adapter = make_adapter(dominant_hz=15.66, schumann_hz=7.83)
+        assert adapter.resolved_schumann_aligned() is True
+
+    def test_exact_triple_harmonic_aligned(self):
+        """3× schumann — same residual trap at a higher multiple."""
+        adapter = make_adapter(dominant_hz=23.49, schumann_hz=7.83)
+        assert adapter.resolved_schumann_aligned() is True
+
+    def test_exact_large_harmonic_aligned(self):
+        """67× schumann (≈ 524.61 Hz) — residual at a high harmonic."""
+        hz = 7.83 * 67  # 524.61 — near mi (528 Hz)
+        adapter = make_adapter(dominant_hz=hz, schumann_hz=7.83)
+        assert adapter.resolved_schumann_aligned() is True
+
+    # ── Tolerance boundary tests ──────────────────────────────────────────── #
+    #
+    # Verify the 10% window is respected precisely at its edges.
+
+    def test_just_inside_lower_boundary_aligned(self):
+        """harmonic_phase = tolerance - small_delta → aligned."""
+        schumann = 10.0
+        # phase = 0.09 (just inside 10% lower window)
+        hz = schumann * 10 + schumann * 0.09   # 100 + 0.9 = 100.9
+        adapter = make_adapter(dominant_hz=hz, schumann_hz=schumann)
+        assert adapter.resolved_schumann_aligned() is True
+
+    def test_just_outside_lower_boundary_not_aligned(self):
+        """harmonic_phase = tolerance + small_delta → not aligned."""
+        schumann = 10.0
+        # phase = 0.11 (just outside 10% lower window)
+        hz = schumann * 10 + schumann * 0.11   # 100 + 1.1 = 101.1
+        adapter = make_adapter(dominant_hz=hz, schumann_hz=schumann)
+        assert adapter.resolved_schumann_aligned() is False
+
+    def test_just_inside_upper_boundary_aligned(self):
+        """harmonic_phase = 1 - tolerance + small_delta → aligned."""
+        schumann = 10.0
+        # phase = 0.91 (just inside 10% upper window)
+        hz = schumann * 10 + schumann * 0.91   # 100 + 9.1 = 109.1
+        adapter = make_adapter(dominant_hz=hz, schumann_hz=schumann)
+        assert adapter.resolved_schumann_aligned() is True
+
+    def test_just_outside_upper_boundary_not_aligned(self):
+        """harmonic_phase = 1 - tolerance - small_delta → not aligned."""
+        schumann = 10.0
+        # phase = 0.89 (just outside 10% upper window)
+        hz = schumann * 10 + schumann * 0.89   # 100 + 8.9 = 108.9
+        adapter = make_adapter(dominant_hz=hz, schumann_hz=schumann)
+        assert adapter.resolved_schumann_aligned() is False
+
+    # ── Bug 2: degenerate / non-finite schumann_hz values ─────────────────── #
+
+    def test_schumann_hz_zero_returns_false(self):
+        """schumann_hz=0 must not cause ZeroDivisionError or NaN result."""
+        adapter = make_adapter(dominant_hz=528.0, schumann_hz=0.0)
+        assert adapter.resolved_schumann_aligned() is False
+
+    def test_schumann_hz_negative_returns_false(self):
+        """Negative schumann is physically nonsensical → not aligned."""
+        adapter = make_adapter(dominant_hz=528.0, schumann_hz=-7.83)
+        assert adapter.resolved_schumann_aligned() is False
+
+    def test_schumann_hz_nan_returns_false(self):
+        """NaN from a broken sensor must not propagate into SynergyEngine."""
+        adapter = make_adapter(dominant_hz=528.0, schumann_hz=float("nan"))
+        assert adapter.resolved_schumann_aligned() is False
+
+    def test_schumann_hz_inf_returns_false(self):
+        """Infinite schumann_hz is non-physical → not aligned."""
+        adapter = make_adapter(dominant_hz=528.0, schumann_hz=float("inf"))
+        assert adapter.resolved_schumann_aligned() is False
 
 
 # ── Coherence resolver ────────────────────────────────────────────────────── #
