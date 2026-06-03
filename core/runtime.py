@@ -58,13 +58,18 @@ class GAIARuntime:
 
     Environment variables
     ---------------------
-    GAIA_EMBEDDER       : 'sentence' (default) | 'ollama' | 'openai' | 'fallback'
-    GAIA_DB_PATH        : path to SQLite DB  (default: data/gaia_memory.db)
-    GAIA_MEMORY_CAPACITY: int, soft row cap  (default: 100000)
-    OLLAMA_BASE_URL     : base URL for Ollama (default: http://localhost:11434)
-    OLLAMA_EMBED_MODEL  : model name         (default: nomic-embed-text)
-    OPENAI_API_KEY      : required for openai embedder
-    OPENAI_EMBED_MODEL  : model name         (default: text-embedding-3-small)
+    GAIA_EMBEDDER            : 'sentence' (default) | 'ollama' | 'openai' | 'fallback'
+    GAIA_DB_PATH             : path to SQLite DB  (default: data/gaia_memory.db)
+    GAIA_MEMORY_CAPACITY     : int, soft row cap  (default: 100000)
+    GAIA_ALLOW_HASH_FALLBACK : set to '1' to permit FallbackEmbedder (dev/CI only).
+                               If unset, a missing sentence-transformers installation
+                               raises RuntimeError at startup instead of silently
+                               degrading to hash-based vectors.
+    OLLAMA_BASE_URL          : base URL for Ollama (default: http://localhost:11434)
+    OLLAMA_EMBED_MODEL       : model name         (default: nomic-embed-text)
+    OPENAI_API_KEY           : required for openai embedder
+    OPENAI_EMBED_MODEL       : model name         (default: text-embedding-3-small)
+    SENTENCE_EMBED_MODEL     : sentence-transformers model (default: all-MiniLM-L6-v2)
     """
 
     def __init__(self) -> None:
@@ -131,18 +136,83 @@ class GAIARuntime:
     # Embedder factory
     # -----------------------------------------------------------------------
 
+    @staticmethod
+    def _allow_hash_fallback() -> bool:
+        """Return True only when the operator has explicitly opted in.
+
+        Set ``GAIA_ALLOW_HASH_FALLBACK=1`` in your environment to permit
+        FallbackEmbedder (hash-only vectors).  This flag MUST NOT be set
+        in production — it exists solely for local dev and CI pipelines
+        that run without sentence-transformers installed.
+        """
+        return os.environ.get("GAIA_ALLOW_HASH_FALLBACK", "").strip() == "1"
+
+    def _build_sentence_embedder(self):
+        """Construct a SentenceTransformerEmbedder, or fail loudly.
+
+        Unlike the old inline try/except, this helper surfaces a
+        *RuntimeError* at startup when sentence-transformers is absent
+        and the hash-fallback guard is not set.  That makes the
+        misconfiguration visible immediately rather than at query time
+        when wrong vectors are silently stored.
+
+        If ``GAIA_ALLOW_HASH_FALLBACK=1`` is set (dev/CI only), the
+        FallbackEmbedder is returned instead with an explicit WARNING.
+        """
+        try:
+            from core.memory import SentenceTransformerEmbedder
+            model = os.environ.get("SENTENCE_EMBED_MODEL", "all-MiniLM-L6-v2")
+            log.info(
+                "Embedder: SentenceTransformerEmbedder  model=%s", model
+            )
+            return SentenceTransformerEmbedder(model_name=model)
+        except ImportError as exc:
+            if self._allow_hash_fallback():
+                from core.memory import FallbackEmbedder
+                log.warning(
+                    "sentence-transformers not installed — using FallbackEmbedder "
+                    "(GAIA_ALLOW_HASH_FALLBACK=1 is set).  "
+                    "Vectors carry NO semantic meaning.  "
+                    "Install sentence-transformers before deploying: "
+                    "pip install sentence-transformers"
+                )
+                return FallbackEmbedder()
+            raise RuntimeError(
+                "sentence-transformers is required for the default 'sentence' embedder "
+                "but is not installed.\n"
+                "Fix one of the following:\n"
+                "  1. pip install sentence-transformers          (recommended)\n"
+                "  2. export GAIA_EMBEDDER=ollama               (local Ollama daemon)\n"
+                "  3. export GAIA_EMBEDDER=openai               (OpenAI API key required)\n"
+                "  4. export GAIA_ALLOW_HASH_FALLBACK=1         "
+                "(dev/CI only — vectors have NO semantic meaning)"
+            ) from exc
+
     def _build_embedder(self):
+        """Select and construct the configured embedding backend.
+
+        Resolution order
+        ----------------
+        GAIA_EMBEDDER=ollama    → OllamaEmbedder
+        GAIA_EMBEDDER=openai    → OpenAIEmbedder  (falls back to sentence if
+                                                   OPENAI_API_KEY is unset)
+        GAIA_EMBEDDER=fallback  → FallbackEmbedder  (requires
+                                                     GAIA_ALLOW_HASH_FALLBACK=1)
+        GAIA_EMBEDDER=sentence  → SentenceTransformerEmbedder  (default)
+        <unset>                 → same as 'sentence'
+        """
         backend = os.environ.get("GAIA_EMBEDDER", "sentence").lower().strip()
 
+        # ── Ollama ──────────────────────────────────────────────────────────
         if backend == "ollama":
             from core.memory import OllamaEmbedder
-            model   = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-            base    = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            model = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+            base  = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
             log.info("Embedder: OllamaEmbedder  model=%s", model)
             return OllamaEmbedder(model=model, base_url=base)
 
+        # ── OpenAI ──────────────────────────────────────────────────────────
         if backend == "openai":
-            from core.memory import OpenAIEmbedder
             api_key = os.environ.get("OPENAI_API_KEY", "")
             model   = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-3-small")
             if not api_key:
@@ -150,26 +220,27 @@ class GAIARuntime:
                     "GAIA_EMBEDDER=openai but OPENAI_API_KEY is not set — "
                     "falling back to SentenceTransformerEmbedder."
                 )
-                backend = "sentence"
-            else:
-                log.info("Embedder: OpenAIEmbedder  model=%s", model)
-                return OpenAIEmbedder(api_key=api_key, model=model)
+                return self._build_sentence_embedder()
+            from core.memory import OpenAIEmbedder
+            log.info("Embedder: OpenAIEmbedder  model=%s", model)
+            return OpenAIEmbedder(api_key=api_key, model=model)
 
+        # ── Explicit hash fallback (dev/CI only) ─────────────────────────
         if backend == "fallback":
-            from core.memory import FallbackEmbedder
-            log.warning("Embedder: FallbackEmbedder (hash-only — not for production!)")
-            return FallbackEmbedder()
-
-        # Default: SentenceTransformerEmbedder (offline sovereign)
-        try:
-            from core.memory import SentenceTransformerEmbedder
-            model = os.environ.get("SENTENCE_EMBED_MODEL", "all-MiniLM-L6-v2")
-            log.info("Embedder: SentenceTransformerEmbedder  model=%s", model)
-            return SentenceTransformerEmbedder(model_name=model)
-        except ImportError:
+            if not self._allow_hash_fallback():
+                raise RuntimeError(
+                    "GAIA_EMBEDDER=fallback is set but GAIA_ALLOW_HASH_FALLBACK=1 "
+                    "is not.\n"
+                    "FallbackEmbedder produces hash-only vectors with NO semantic "
+                    "meaning and MUST NOT run in production.\n"
+                    "Set GAIA_ALLOW_HASH_FALLBACK=1 explicitly if you intend to use "
+                    "it in a dev or CI environment."
+                )
             from core.memory import FallbackEmbedder
             log.warning(
-                "sentence-transformers not installed — using FallbackEmbedder. "
-                "Run: pip install sentence-transformers"
+                "Embedder: FallbackEmbedder (hash-only — not for production!)"
             )
             return FallbackEmbedder()
+
+        # ── Default: sovereign offline sentence-transformers ─────────────
+        return self._build_sentence_embedder()
