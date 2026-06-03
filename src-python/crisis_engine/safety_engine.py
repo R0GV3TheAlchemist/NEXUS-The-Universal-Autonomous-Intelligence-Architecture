@@ -22,6 +22,7 @@ class SafetyLevel(str, Enum):
     """Explicit safety level — mirrors EscalationTier for test clarity."""
     SAFE     = "SAFE"
     MONITOR  = "MONITOR"
+    WARNING  = "WARNING"   # ← Added: sub-critical advisory level
     ELEVATED = "ELEVATED"
     CRITICAL = "CRITICAL"
     HANDOFF  = "HANDOFF"

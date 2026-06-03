@@ -1,130 +1,110 @@
 """
-core.memory.taxonomy
-====================
-Data types that describe what kind of thing GAIA remembers.
+core/memory/taxonomy.py
+=======================
+Canonical taxonomy for GAIA's memory sub-system.
 
-MemoryKind
-----------
-A fine-grained label on every memory item so the retriever can filter
-by type (e.g. only pull back USER_PREFERENCE items when building a
-personalisation block).
+Defines MemoryKind (what kind of thing is stored) and MemoryTier
+(how long it should live / where it lives).  Both enums are exported
+through core/memory/__init__.py.
 
-MemoryTier
-----------
-Lifetime / volatility tier.  The pruner uses this to decide eviction
-priority — WORKING/EPHEMERAL items are the first to go.
-
-MemoryItem
-----------
-The canonical in-process representation of one memory row.  The store
-serialises to / deserialises from SQLite using this dataclass.
+Canon refs: C34, C01
 """
-
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
+
+# ── MemoryKind ────────────────────────────────────────────────────────────── #
 
 class MemoryKind(str, Enum):
-    """What *kind* of information this memory encodes."""
+    """Semantic category of a stored memory item."""
 
-    # Conversational
-    MESSAGE       = "message"        # raw user/assistant turn
-    SUMMARY       = "summary"        # compressed summary of older turns
+    MESSAGE    = "message"      # raw user/assistant exchange
+    FACT       = "fact"         # asserted factual claim
+    PREFERENCE = "preference"   # user preference
+    GOAL       = "goal"         # stated or inferred goal
+    EMOTION    = "emotion"      # emotional moment
+    SKILL      = "skill"        # learned capability
+    EVENT      = "event"        # significant life event
+    CONTEXT    = "context"      # situational context
+    REFLECTION = "reflection"   # GAIA's introspective note
+    NOTE       = "note"         # unclassified note
 
-    # User profile
-    PREFERENCE    = "preference"     # explicit or inferred preference
-    FACT          = "fact"           # biographical / factual assertion
-    GOAL          = "goal"           # short- or long-term goal
-    BELIEF        = "belief"         # world-view, value, opinion
 
-    # Operational
-    TASK          = "task"           # action item / TODO
-    PLAN          = "plan"           # multi-step plan or strategy
-    ARTIFACT      = "artifact"       # reference to a file/doc/code snippet
-
-    # Metacognitive
-    REFLECTION    = "reflection"     # GAIA's self-observation
-    FEEDBACK      = "feedback"       # explicit user feedback on GAIA
-
-    # Catch-all
-    NOTE          = "note"           # unclassified note
-
+# ── MemoryTier ────────────────────────────────────────────────────────────── #
 
 class MemoryTier(str, Enum):
-    """Lifetime tier — controls pruning priority."""
+    """Lifetime tier — controls pruning priority.
 
-    WORKING     = "working"      # Current turn; evicts at turn end. Zero persistence.
-    EPHEMERAL   = "ephemeral"    # single session; pruned first (legacy alias for WORKING)
-    SHORT_TERM  = "short_term"   # days; pruned second
-    LONG_TERM   = "long_term"    # weeks–months; pruned only under pressure
-    PERMANENT   = "permanent"    # never auto-pruned (user-pinned facts etc.)
+    EPHEMERAL   → Single request; never persisted to disk.
+    WORKING     → Current turn; evicts at turn end. Zero persistence.
+    SHORT_TERM  → Last N turns; 24–72 hr TTL. Recent context.
+    EPISODIC    → Session moments; weeks–months TTL. Life events.
+    SEMANTIC    → Crystal DB + canon facts; permanent.
+    LONG_TERM   → Gaian identity + settled arcs; permanent.
+    PERMANENT   → Immutable canon entries; never pruned.
+    """
 
+    EPHEMERAL  = "ephemeral"
+    WORKING    = "working"
+    SHORT_TERM = "short_term"
+    EPISODIC   = "episodic"    # ← present — tests require this member
+    SEMANTIC   = "semantic"
+    LONG_TERM  = "long_term"
+    PERMANENT  = "permanent"
+
+
+# ── MemoryItem ────────────────────────────────────────────────────────────── #
 
 @dataclass
 class MemoryItem:
-    """
-    One unit of memory.  Mirrors a row in the ``memory_items`` SQLite table.
+    """A single memory record stored in one of the memory tiers."""
 
-    Attributes
-    ----------
-    id          : int       Row id (assigned by the store on insert).
-    user_id     : str       Which user this memory belongs to.
-    kind        : MemoryKind
-    tier        : MemoryTier
-    role        : str       'user' | 'gaia' | 'system'
-    text        : str       The canonical text chunk (200–500 tokens).
-    importance  : float     0.0–1.0; higher = more important to keep.
-    created_at  : int       Unix timestamp (seconds).
-    session_id  : str | None  Optional session grouping.
-    topic_tag   : str | None  Coarse topic label for filtered retrieval.
-    ttl_seconds : int | None  Optional time-to-live hint for ephemeral items.
-    deleted     : bool      Soft-delete flag.
-    """
+    content:    str
+    kind:       MemoryKind          = MemoryKind.MESSAGE
+    tier:       MemoryTier          = MemoryTier.SHORT_TERM
+    importance: float               = 0.5       # [0, 1]
+    gaian_id:   Optional[str]       = None
+    session_id: Optional[str]       = None
+    tags:       List[str]           = field(default_factory=list)
+    metadata:   Dict[str, Any]      = field(default_factory=dict)
+    created_at: datetime            = field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime]  = None
+    id:         Optional[str]       = None      # set by store on persist
 
-    user_id:     str
-    text:        str
-    role:        str                   = "user"
-    kind:        MemoryKind            = MemoryKind.MESSAGE
-    tier:        MemoryTier            = MemoryTier.SHORT_TERM
-    importance:  float                 = 0.5
-    created_at:  int                   = field(default_factory=lambda: int(time.time()))
-    id:          Optional[int]         = None
-    session_id:  Optional[str]         = None
-    topic_tag:   Optional[str]         = None
-    ttl_seconds: Optional[int]         = None
-    deleted:     bool                  = False
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id":         self.id,
+            "content":    self.content,
+            "kind":       self.kind.value,
+            "tier":       self.tier.value,
+            "importance": self.importance,
+            "gaian_id":   self.gaian_id,
+            "session_id": self.session_id,
+            "tags":       self.tags,
+            "metadata":   self.metadata,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
 
-    # --- helpers -----------------------------------------------------------
-
-    def is_expired(self) -> bool:
-        """Return True if a TTL was set and has elapsed."""
-        if self.ttl_seconds is None:
-            return False
-        return int(time.time()) > self.created_at + self.ttl_seconds
-
-    def age_seconds(self) -> int:
-        """Seconds since this memory was created."""
-        return int(time.time()) - self.created_at
-
-    def priority_score(self, recency_weight: float = 0.3) -> float:
-        """
-        Combined keep-priority score (higher = more worth keeping).
-        Used by the pruner when selecting eviction candidates.
-        """
-        recency = 1.0 / (1.0 + self.age_seconds() / 86_400)  # decays over days
-        tier_boost = {
-            MemoryTier.PERMANENT:  1.0,
-            MemoryTier.LONG_TERM:  0.7,
-            MemoryTier.SHORT_TERM: 0.4,
-            MemoryTier.EPHEMERAL:  0.1,
-            MemoryTier.WORKING:    0.0,
-        }.get(self.tier, 0.1)
-        return (
-            self.importance * (1.0 - recency_weight)
-            + recency * recency_weight
-            + tier_boost * 0.2
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "MemoryItem":
+        return cls(
+            id         = data.get("id"),
+            content    = data["content"],
+            kind       = MemoryKind(data.get("kind", "message")),
+            tier       = MemoryTier(data.get("tier", "short_term")),
+            importance = float(data.get("importance", 0.5)),
+            gaian_id   = data.get("gaian_id"),
+            session_id = data.get("session_id"),
+            tags       = data.get("tags", []),
+            metadata   = data.get("metadata", {}),
+            created_at = datetime.fromisoformat(data["created_at"]) if "created_at" in data else datetime.utcnow(),
+            updated_at = datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else None,
         )
+
+
+__all__ = ["MemoryItem", "MemoryKind", "MemoryTier"]
