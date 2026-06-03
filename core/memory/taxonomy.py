@@ -31,13 +31,8 @@ class MemoryKind(str, Enum):
 class MemoryTier(str, Enum):
     """Lifetime tier — controls pruning priority.
 
-    EPHEMERAL  → Single request; never persisted to disk.
-    WORKING    → Current turn; evicts at turn end.
-    SHORT_TERM → Last N turns; 24–72 hr TTL.
-    EPISODIC   → Session moments; weeks–months TTL.
-    SEMANTIC   → Crystal DB + canon facts; permanent.
-    LONG_TERM  → Gaian identity + settled arcs; permanent.
-    PERMANENT  → Immutable canon entries; never pruned.
+    String values allow transparent storage in SQL / JSON without a
+    separate mapping table.  Use ``.value`` to get the string for DB writes.
     """
 
     EPHEMERAL  = "ephemeral"
@@ -51,20 +46,70 @@ class MemoryTier(str, Enum):
 
 @dataclass
 class MemoryItem:
-    """A single memory record stored in one of the memory tiers."""
+    """A single memory record stored in one of the memory tiers.
+
+    Parameters
+    ----------
+    content / text :
+        The memory content string.  ``text`` is an alias for ``content``
+        accepted at construction time for compatibility with callers that
+        use ``MemoryItem(text=...)``.  Stored internally as ``content``.
+    role :
+        Optional conversational role label (e.g. ``"user"``, ``"assistant"``).
+        Stored as a metadata key when provided.
+    """
 
     content:    str
     kind:       MemoryKind          = MemoryKind.MESSAGE
     tier:       MemoryTier          = MemoryTier.SHORT_TERM
     importance: float               = 0.5
-    user_id:    Optional[str]       = None   # ← user-scoped identity key
+    user_id:    Optional[str]       = None
     gaian_id:   Optional[str]       = None
     session_id: Optional[str]       = None
+    role:       Optional[str]       = None     # ← conversational role label
     tags:       List[str]           = field(default_factory=list)
     metadata:   Dict[str, Any]      = field(default_factory=dict)
     created_at: datetime            = field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime]  = None
     id:         Optional[str]       = None
+
+    def __init__(
+        self,
+        content: str = "",
+        *,
+        text:       Optional[str]       = None,   # ← alias for content
+        kind:       MemoryKind          = MemoryKind.MESSAGE,
+        tier:       MemoryTier          = MemoryTier.SHORT_TERM,
+        importance: float               = 0.5,
+        user_id:    Optional[str]       = None,
+        gaian_id:   Optional[str]       = None,
+        session_id: Optional[str]       = None,
+        role:       Optional[str]       = None,
+        tags:       Optional[List[str]] = None,
+        metadata:   Optional[Dict[str, Any]] = None,
+        created_at: Optional[datetime]  = None,
+        updated_at: Optional[datetime]  = None,
+        id:         Optional[str]       = None,
+    ) -> None:
+        # Accept ``text`` as an alias for ``content``
+        self.content    = text if text is not None else content
+        self.kind       = kind
+        self.tier       = tier
+        self.importance = importance
+        self.user_id    = user_id
+        self.gaian_id   = gaian_id
+        self.session_id = session_id
+        self.role       = role
+        self.tags       = tags if tags is not None else []
+        self.metadata   = metadata if metadata is not None else {}
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at
+        self.id         = id
+
+    @property
+    def text(self) -> str:
+        """Alias: return content as 'text' for callers that read item.text."""
+        return self.content
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -76,6 +121,7 @@ class MemoryItem:
             "user_id":    self.user_id,
             "gaian_id":   self.gaian_id,
             "session_id": self.session_id,
+            "role":       self.role,
             "tags":       self.tags,
             "metadata":   self.metadata,
             "created_at": self.created_at.isoformat(),
@@ -85,18 +131,19 @@ class MemoryItem:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MemoryItem":
         return cls(
-            id         = data.get("id"),
-            content    = data["content"],
+            content    = data.get("content", data.get("text", "")),
             kind       = MemoryKind(data.get("kind", "message")),
             tier       = MemoryTier(data.get("tier", "short_term")),
             importance = float(data.get("importance", 0.5)),
             user_id    = data.get("user_id"),
             gaian_id   = data.get("gaian_id"),
             session_id = data.get("session_id"),
+            role       = data.get("role"),
             tags       = data.get("tags", []),
             metadata   = data.get("metadata", {}),
             created_at = datetime.fromisoformat(data["created_at"]) if "created_at" in data else datetime.utcnow(),
             updated_at = datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else None,
+            id         = data.get("id"),
         )
 
 

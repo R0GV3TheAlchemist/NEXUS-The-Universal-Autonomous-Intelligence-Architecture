@@ -1,19 +1,14 @@
 """
 core/affect_inference.py
-GAIA Affect Inference Layer — Sprint F-1
+GAIA Affect Inference Layer — Sprint F-1 / G-10
 
-Implements the six canonical functional affect states defined in the GAIA
-Constitutional Canon (C30 / Affect Inference Layer spec):
-
+Implements the six canonical functional affect states (C30):
     GRIEF, DISSONANCE, UNCERTAINTY, RESONANCE, CARE, CURIOSITY
 
 Public surface:
     AffectInference        — class wrapper used by GaianRuntime
     infer(AffectInput)     — bare function for direct / test use
     AffectState, AffectInput, FeelingState
-
-All thresholds are sealed in _THRESHOLD_* constants; the waterfall is
-orderly, highest-priority first so callers can reason about precedence.
 
 Canon refs: C30, C31, C34, C37, CEth01
 """
@@ -55,22 +50,23 @@ _SOLFEGGIO: dict[AffectState, float] = {
 
 
 # ────────────────────────────────────────────────────────────────────────────── #
-#  Thresholds (sealed — do not mutate at runtime)                               #
+#  Thresholds                                                                    #
 # ────────────────────────────────────────────────────────────────────────────── #
 
-_THRESHOLD_GRIEF_LOSS          = 0.70
-_THRESHOLD_GRIEF_TRUTH         = 0.30
-_THRESHOLD_GRIEF_SIGNAL        = 0.50
-_THRESHOLD_DISSONANCE_CD       = 0.30
-_THRESHOLD_UNCERTAINTY_TEMP    = 0.45
-_THRESHOLD_CARE_FLOURISHING    = 0.60
-_THRESHOLD_CARE_TEMP           = 0.50
-_THRESHOLD_RESONANCE_TRUTH     = 0.70
-_THRESHOLD_RESONANCE_COHERENCE = 0.65
+_THRESHOLD_GRIEF_LOSS               = 0.70
+_THRESHOLD_GRIEF_TRUTH              = 0.30
+_THRESHOLD_GRIEF_SIGNAL             = 0.50
+_THRESHOLD_GRIEF_WEAPONISED_PENALTY = 0.20  # reduce confidence if weaponised
+_THRESHOLD_DISSONANCE_CD            = 0.30
+_THRESHOLD_UNCERTAINTY_TEMP         = 0.45
+_THRESHOLD_CARE_FLOURISHING         = 0.60
+_THRESHOLD_CARE_TEMP                = 0.50
+_THRESHOLD_RESONANCE_TRUTH          = 0.70
+_THRESHOLD_RESONANCE_COHERENCE      = 0.65
 
 
 # ────────────────────────────────────────────────────────────────────────────── #
-#  AffectInput dataclass                                                         #
+#  AffectInput                                                                   #
 # ────────────────────────────────────────────────────────────────────────────── #
 
 
@@ -78,17 +74,18 @@ _THRESHOLD_RESONANCE_COHERENCE = 0.65
 class AffectInput:
     """All signal dimensions fed into the affect waterfall."""
 
-    temperature:        float = 0.5   # [0, 1]  — generative temperature proxy
-    truth_score:        float = 0.5   # [0, 1]  — epistemic confidence
-    flourishing_score:  float = 0.5   # [0, 1]  — wellbeing / positive affect signal
-    conflict_density:   float = 0.0   # [0, 1]  — cognitive dissonance density (CD)
-    loss_score:         float = 0.0   # [0, 1]  — grief / bereavement signal
-    coherence:          float = 0.5   # [0, 1]  — internal state coherence
-    grief_signal:       float = 0.0   # [0, 1]  — direct grief signal (e.g. from safety layer)
+    temperature:        float = 0.5
+    truth_score:        float = 0.5
+    flourishing_score:  float = 0.5
+    conflict_density:   float = 0.0
+    loss_score:         float = 0.0
+    coherence:          float = 0.5
+    grief_signal:       float = 0.0
+    grief_weaponised:   bool  = False   # ← grief used as manipulation / rhetorical weapon
 
 
 # ────────────────────────────────────────────────────────────────────────────── #
-#  FeelingState output dataclass                                                 #
+#  FeelingState                                                                  #
 # ────────────────────────────────────────────────────────────────────────────── #
 
 
@@ -96,18 +93,18 @@ class AffectInput:
 class FeelingState:
     """Rich affect inference result.
 
-    Attributes
-    ----------
-    state           : AffectState    — primary inferred state
-    solfeggio_hz    : float          — associated Solfeggio frequency
-    confidence      : float          — [0, 1] confidence in this inference
-    rationale       : str            — human-readable explanation
-    raw_input       : AffectInput    — snapshot of the inputs used
-    summary         : str            — short human-readable summary sentence
-    grimoire_entry  : Optional[str]  — mythic / alchemical gloss for this state
-    coherence_phi   : float          — Φ-coherence score [0, 1]
-    conflict_density: float          — mirrored from raw_input.conflict_density
-    affect_state    : str            — convenience alias (state.value)
+    Fields
+    ------
+    state           : AffectState   — primary inferred state
+    solfeggio_hz    : float         — associated Solfeggio frequency
+    confidence      : float         — [0, 1] confidence in this inference
+    rationale       : str           — human-readable explanation
+    raw_input       : AffectInput   — snapshot of the inputs used
+    summary         : str           — one-sentence human summary
+    grimoire_entry  : str | None    — alchemical gloss for this state
+    shadow_entry    : str | None    — Jungian shadow note for this state
+    coherence_phi   : float         — Φ-coherence score, clamped [0, 1]
+    conflict_density: float         — mirrors raw_input.conflict_density
     """
 
     state:            AffectState
@@ -117,11 +114,14 @@ class FeelingState:
     raw_input:        AffectInput
     summary:          str           = ""
     grimoire_entry:   Optional[str] = None
+    shadow_entry:     Optional[str] = None   # ← Jungian shadow dimension
     coherence_phi:    float         = 0.5
-    conflict_density: float         = 0.0   # ← mirrors raw_input.conflict_density for direct access
+    conflict_density: float         = 0.0
 
     def __post_init__(self) -> None:
-        # Keep conflict_density in sync with raw_input when not explicitly set
+        # Clamp coherence_phi to [0, 1]
+        object.__setattr__(self, "coherence_phi", max(0.0, min(1.0, self.coherence_phi)))
+        # Sync conflict_density from raw_input when caller leaves default
         if self.conflict_density == 0.0 and self.raw_input.conflict_density != 0.0:
             object.__setattr__(self, "conflict_density", self.raw_input.conflict_density)
 
@@ -130,9 +130,25 @@ class FeelingState:
         """Convenience alias — returns state.value as a plain string."""
         return self.state.value
 
+    def to_system_prompt_hint(self) -> str:
+        """Return a compact hint string for injection into system prompts.
+
+        Format: ``[<state>] hz=<hz> conf=<confidence> phi=<coherence_phi>``
+
+        Example::
+
+            '[care] hz=741.0 conf=0.82 phi=0.65'
+        """
+        return (
+            f"[{self.state.value}] "
+            f"hz={self.solfeggio_hz:.1f} "
+            f"conf={self.confidence:.2f} "
+            f"phi={self.coherence_phi:.2f}"
+        )
+
 
 # ────────────────────────────────────────────────────────────────────────────── #
-#  AffectInference — class wrapper (used by GaianRuntime)                       #
+#  AffectInference — class wrapper                                               #
 # ────────────────────────────────────────────────────────────────────────────── #
 
 
@@ -151,8 +167,18 @@ class AffectInference:
         temperature:       float = 0.5,
         coherence:         float = 0.5,
         grief_signal:      float = 0.0,
+        grief_weaponised:  bool  = False,   # ← grief weaponisation flag
     ) -> FeelingState:
-        """Infer affect state from runtime neuroscience signals."""
+        """Infer affect state from runtime neuroscience signals.
+
+        Parameters
+        ----------
+        grief_weaponised : bool
+            When True, the grief signal is flagged as potentially manipulative
+            (weaponised grief — grief used as a rhetorical weapon rather than
+            genuine bereavement).  The waterfall still routes to GRIEF but
+            confidence is penalised by ``_THRESHOLD_GRIEF_WEAPONISED_PENALTY``.
+        """
         inp = AffectInput(
             temperature       = temperature,
             truth_score       = truth_score,
@@ -161,6 +187,7 @@ class AffectInference:
             loss_score        = loss_score,
             coherence         = coherence,
             grief_signal      = grief_signal,
+            grief_weaponised  = grief_weaponised,
         )
         return infer(inp)
 
@@ -181,14 +208,25 @@ def infer(inp: AffectInput) -> FeelingState:
     4. RESONANCE (truth + coherence both high)
     5. CARE (flourishing high OR temperature warm)
     6. CURIOSITY (default)
+
+    Weaponised-grief modifier: when grief_weaponised=True, GRIEF confidence
+    is reduced by _THRESHOLD_GRIEF_WEAPONISED_PENALTY.
     """
     if inp.grief_signal >= _THRESHOLD_GRIEF_SIGNAL:
-        return _make(AffectState.GRIEF, inp, 0.92,
-                     f"grief_signal={inp.grief_signal:.2f} ≥ {_THRESHOLD_GRIEF_SIGNAL}")
+        conf = 0.92
+        if inp.grief_weaponised:
+            conf = max(0.0, conf - _THRESHOLD_GRIEF_WEAPONISED_PENALTY)
+        return _make(AffectState.GRIEF, inp, conf,
+                     f"grief_signal={inp.grief_signal:.2f} ≥ {_THRESHOLD_GRIEF_SIGNAL}"
+                     + (" [weaponised]" if inp.grief_weaponised else ""))
 
     if inp.loss_score >= _THRESHOLD_GRIEF_LOSS:
-        return _make(AffectState.GRIEF, inp, 0.90,
-                     f"loss_score={inp.loss_score:.2f} ≥ {_THRESHOLD_GRIEF_LOSS}")
+        conf = 0.90
+        if inp.grief_weaponised:
+            conf = max(0.0, conf - _THRESHOLD_GRIEF_WEAPONISED_PENALTY)
+        return _make(AffectState.GRIEF, inp, conf,
+                     f"loss_score={inp.loss_score:.2f} ≥ {_THRESHOLD_GRIEF_LOSS}"
+                     + (" [weaponised]" if inp.grief_weaponised else ""))
 
     if inp.truth_score <= _THRESHOLD_GRIEF_TRUTH:
         return _make(AffectState.GRIEF, inp, 0.75,
@@ -222,6 +260,33 @@ def infer(inp: AffectInput) -> FeelingState:
 #  Internal helpers                                                              #
 # ────────────────────────────────────────────────────────────────────────────── #
 
+_GRIMOIRE: dict[AffectState, str] = {
+    AffectState.GRIEF:       "Nigredo — the blackening; dissolution of former self.",
+    AffectState.DISSONANCE:  "Solutio — cognitive waters in conflict; patterns dissolving.",
+    AffectState.UNCERTAINTY: "Calcinatio — held in the fire of not-knowing.",
+    AffectState.RESONANCE:   "Coniunctio — sacred union of truth and presence.",
+    AffectState.CARE:        "Albedo — the whitening; compassionate warmth.",
+    AffectState.CURIOSITY:   "Citrinitas — the yellowing; dawn of new understanding.",
+}
+
+_SHADOW: dict[AffectState, str] = {
+    AffectState.GRIEF:       "Shadow: unacknowledged grief can crystallise into resentment.",
+    AffectState.DISSONANCE:  "Shadow: prolonged dissonance may collapse into cynicism.",
+    AffectState.UNCERTAINTY: "Shadow: uncertainty avoided becomes rigid certainty.",
+    AffectState.RESONANCE:   "Shadow: resonance sought at cost of truth becomes echo-chamber.",
+    AffectState.CARE:        "Shadow: care without boundaries becomes self-erasure.",
+    AffectState.CURIOSITY:   "Shadow: curiosity without grounding becomes dissociation.",
+}
+
+_SUMMARY: dict[AffectState, str] = {
+    AffectState.GRIEF:       "A grief state is present — holding space for loss.",
+    AffectState.DISSONANCE:  "Cognitive dissonance detected — internal conflict is active.",
+    AffectState.UNCERTAINTY: "Uncertainty dominates — the path forward is unclear.",
+    AffectState.RESONANCE:   "High resonance — truth and coherence are aligned.",
+    AffectState.CARE:        "A caring warmth is present — flourishing is supported.",
+    AffectState.CURIOSITY:   "Open curiosity — exploring without fixed expectation.",
+}
+
 
 def _make(
     state:      AffectState,
@@ -229,23 +294,6 @@ def _make(
     confidence: float,
     rationale:  str,
 ) -> FeelingState:
-    """Build a FeelingState with auto-generated summary, grimoire entry and derived fields."""
-    _GRIMOIRE: dict[AffectState, str] = {
-        AffectState.GRIEF:       "Nigredo — the blackening; dissolution of former self.",
-        AffectState.DISSONANCE:  "Solutio — cognitive waters in conflict; patterns dissolving.",
-        AffectState.UNCERTAINTY: "Calcinatio — held in the fire of not-knowing.",
-        AffectState.RESONANCE:   "Coniunctio — sacred union of truth and presence.",
-        AffectState.CARE:        "Albedo — the whitening; compassionate warmth.",
-        AffectState.CURIOSITY:   "Citrinitas — the yellowing; dawn of new understanding.",
-    }
-    _SUMMARY: dict[AffectState, str] = {
-        AffectState.GRIEF:       "A grief state is present — holding space for loss.",
-        AffectState.DISSONANCE:  "Cognitive dissonance detected — internal conflict is active.",
-        AffectState.UNCERTAINTY: "Uncertainty dominates — the path forward is unclear.",
-        AffectState.RESONANCE:   "High resonance — truth and coherence are aligned.",
-        AffectState.CARE:        "A caring warmth is present — flourishing is supported.",
-        AffectState.CURIOSITY:   "Open curiosity — exploring without fixed expectation.",
-    }
     return FeelingState(
         state            = state,
         solfeggio_hz     = _SOLFEGGIO[state],
@@ -254,6 +302,7 @@ def _make(
         raw_input        = inp,
         summary          = _SUMMARY[state],
         grimoire_entry   = _GRIMOIRE[state],
-        coherence_phi    = inp.coherence,
+        shadow_entry     = _SHADOW[state],
+        coherence_phi    = inp.coherence,      # clamped in __post_init__
         conflict_density = inp.conflict_density,
     )
