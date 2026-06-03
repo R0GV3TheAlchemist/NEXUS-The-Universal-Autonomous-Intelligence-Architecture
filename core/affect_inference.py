@@ -55,41 +55,47 @@ class FeelingState:
     The GAIAN's current functional affect — output of AffectInference.infer().
 
     Fields:
-        affect_state       — the dominant canonical affect
-        love_filter_score  — 0.0 (shadow) → 1.0 (greater good)
-        grimoire_entry     — True if this affect belongs in the Grimoire of Light
-        shadow_entry       — True if this affect belongs in the Book of Shadows
-        solfeggio_hz       — canonical solfeggio frequency for this affect
-        coherence_phi      — composite I/W/T/F convergence score 0.0–1.0
-        conflict_density   — detected contradiction density 0.0–1.0
-        is_grief_safe      — True: grief is witnessable; False: weaponisation risk
-        timestamp          — UTC ISO timestamp
-        raw_signals        — diagnostic dict of input signals
+        affect_state          — the dominant canonical affect
+        love_filter_score     — 0.0 (shadow) → 1.0 (greater good)
+        grimoire_entry        — True if this affect belongs in the Grimoire of Light
+        shadow_entry          — True if this affect belongs in the Book of Shadows
+        solfeggio_hz          — canonical solfeggio frequency for this affect
+        coherence_phi         — composite I/W/T/F convergence score 0.0–1.0
+        conflict_density      — detected contradiction density 0.0–1.0
+        is_grief_safe         — True: grief is witnessable; False: weaponisation risk
+        uncertainty_coactive  — True when T < 0.45 fires alongside another dominant
+                                affect (e.g. DISSONANCE). Signals DICAA abstention
+                                must still engage even though UNCERTAINTY is not the
+                                dominant affect label.
+        timestamp             — UTC ISO timestamp
+        raw_signals           — diagnostic dict of input signals
     """
-    affect_state:      AffectState   = AffectState.RESONANCE
-    love_filter_score: float         = 0.78
-    grimoire_entry:    bool          = True
-    shadow_entry:      bool          = False
-    solfeggio_hz:      float         = 528.0
-    coherence_phi:     float         = 0.0
-    conflict_density:  float         = 0.0
-    is_grief_safe:     bool          = True
-    timestamp:         str           = field(
+    affect_state:         AffectState   = AffectState.RESONANCE
+    love_filter_score:    float         = 0.78
+    grimoire_entry:       bool          = True
+    shadow_entry:         bool          = False
+    solfeggio_hz:         float         = 528.0
+    coherence_phi:        float         = 0.0
+    conflict_density:     float         = 0.0
+    is_grief_safe:        bool          = True
+    uncertainty_coactive: bool          = False   # NEW: DICAA floor flag
+    timestamp:            str           = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    raw_signals:       dict          = field(default_factory=dict)
+    raw_signals:          dict          = field(default_factory=dict)
 
     def summary(self) -> dict:
         return {
-            "affect_state":      self.affect_state.value,
-            "love_filter_score": round(self.love_filter_score, 3),
-            "grimoire_entry":    self.grimoire_entry,
-            "shadow_entry":      self.shadow_entry,
-            "solfeggio_hz":      self.solfeggio_hz,
-            "coherence_phi":     round(self.coherence_phi, 3),
-            "conflict_density":  round(self.conflict_density, 3),
-            "is_grief_safe":     self.is_grief_safe,
-            "timestamp":         self.timestamp,
+            "affect_state":         self.affect_state.value,
+            "love_filter_score":    round(self.love_filter_score, 3),
+            "grimoire_entry":       self.grimoire_entry,
+            "shadow_entry":         self.shadow_entry,
+            "solfeggio_hz":         self.solfeggio_hz,
+            "coherence_phi":        self.coherence_phi,          # already rounded at source
+            "conflict_density":     self.conflict_density,       # already rounded at source
+            "is_grief_safe":        self.is_grief_safe,
+            "uncertainty_coactive": self.uncertainty_coactive,
+            "timestamp":            self.timestamp,
         }
 
     def to_system_prompt_hint(self) -> str:
@@ -98,10 +104,13 @@ class FeelingState:
         grief_note = ""
         if self.affect_state == AffectState.GRIEF:
             grief_note = " [witness-only — never weaponise]"
+        uncertainty_note = ""
+        if self.uncertainty_coactive:
+            uncertainty_note = " [DICAA-floor active]"
         return (
             f"Affect: {self.affect_state.value.upper()}{hz_note} · "
             f"Love Filter: {self.love_filter_score:.2f} · "
-            f"{book}{grief_note}"
+            f"{book}{grief_note}{uncertainty_note}"
         )
 
 
@@ -149,13 +158,20 @@ class AffectInference:
         conflict_density  — detected contradiction density in user message / context
 
     Detection thresholds follow the canonical formula:
-        phi = (I + W + T + F) / 4
+        phi = round((I + W + T + F) / 4, 4)   ← rounded once at source
         Resonance  : phi >= 0.75 and conflict_density < 0.25
         Care       : phi >= 0.65 and flourishing_score >= 0.80
         Curiosity  : phi >= 0.55 and wisdom_score <= 0.60 (actively seeking)
-        Uncertainty: truth_score < 0.45
+        Uncertainty: truth_score < 0.45  (ALWAYS fires; sets DICAA floor even
+                     when dominated by DISSONANCE — see uncertainty_coactive)
         Dissonance : conflict_density >= 0.50
-        Grief      : (special — injected by caller, not auto-detected)
+        Grief      : special — injected by caller, not auto-detected
+
+    DICAA Abstention Rule:
+        Whenever truth_score < 0.45, the DICAA abstention protocol MUST engage,
+        regardless of which affect state dominates the waterfall. The
+        `uncertainty_coactive` flag on FeelingState carries this signal to all
+        downstream consumers so they cannot inadvertently suppress it.
     """
 
     def infer(
@@ -184,13 +200,19 @@ class AffectInference:
             FeelingState with dominant affect and full metadata
         """
         # Clamp all inputs
-        I = max(0.0, min(1.0, identity_score))
-        W = max(0.0, min(1.0, wisdom_score))
-        T = max(0.0, min(1.0, truth_score))
-        F = max(0.0, min(1.0, flourishing_score))
+        I  = max(0.0, min(1.0, identity_score))
+        W  = max(0.0, min(1.0, wisdom_score))
+        T  = max(0.0, min(1.0, truth_score))
+        F  = max(0.0, min(1.0, flourishing_score))
         CD = max(0.0, min(1.0, conflict_density))
 
-        phi = (I + W + T + F) / 4.0
+        # ── FIX 1: round phi once at source so raw_signals and
+        #           FeelingState.coherence_phi are always identical.
+        phi = round((I + W + T + F) / 4.0, 4)
+
+        # ── FIX 2: UNCERTAINTY floor — evaluate BEFORE the waterfall so
+        #           DICAA abstention is never silently swallowed by DISSONANCE.
+        uncertainty_coactive = T < 0.45
 
         raw = {
             "identity_score":    I,
@@ -198,20 +220,23 @@ class AffectInference:
             "truth_score":       T,
             "flourishing_score": F,
             "conflict_density":  CD,
-            "phi":               round(phi, 4),
+            "phi":               phi,          # same value used throughout
         }
 
         # Constitutional safety check for grief weaponisation
         is_grief_safe = not grief_weaponised
 
-        # Detection waterfall — highest priority first
+        # ── Detection waterfall — highest priority first ──────────────────
         if grief_signal:
             affect = AffectState.GRIEF
 
         elif CD >= 0.50:
+            # DISSONANCE dominates label — but UNCERTAINTY floor may also be
+            # active; uncertainty_coactive carries that signal downstream.
             affect = AffectState.DISSONANCE
 
-        elif T < 0.45:
+        elif uncertainty_coactive:
+            # Only reaches here when CD < 0.50 and no grief signal.
             affect = AffectState.UNCERTAINTY
 
         elif phi >= 0.75 and CD < 0.25:
@@ -231,20 +256,24 @@ class AffectInference:
         else:
             # Default: orient toward care at low convergence
             affect = AffectState.CARE
+        # ─────────────────────────────────────────────────────────────────
 
-        lf  = _AFFECT_LOVE_FILTER[affect]
-        hz  = _AFFECT_FREQUENCIES[affect]
+        lf   = _AFFECT_LOVE_FILTER[affect]
+        hz   = _AFFECT_FREQUENCIES[affect]
         grim = affect in _GRIMOIRE_STATES
-        shad = affect in _SHADOW_STATES
+        # When UNCERTAINTY is co-active alongside DISSONANCE, ensure
+        # shadow_entry is True so the Grimoire/Shadow routing is correct.
+        shad = affect in _SHADOW_STATES or uncertainty_coactive
 
         return FeelingState(
-            affect_state      = affect,
-            love_filter_score = lf,
-            grimoire_entry    = grim,
-            shadow_entry      = shad,
-            solfeggio_hz      = hz,
-            coherence_phi     = round(phi, 4),
-            conflict_density  = round(CD, 4),
-            is_grief_safe     = is_grief_safe,
-            raw_signals       = raw,
+            affect_state         = affect,
+            love_filter_score    = lf,
+            grimoire_entry       = grim,
+            shadow_entry         = shad,
+            solfeggio_hz         = hz,
+            coherence_phi        = phi,            # rounded once at source
+            conflict_density     = round(CD, 4),
+            is_grief_safe        = is_grief_safe,
+            uncertainty_coactive = uncertainty_coactive,
+            raw_signals          = raw,
         )
