@@ -15,6 +15,7 @@ give callers a single import source and break circular dependencies.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -56,7 +57,7 @@ class SafetyVerdict(str, Enum):
     """High-level safety verdict from SafetyEngine.evaluate()."""
 
     SAFE        = "safe"         # No concerns
-    MONITOR     = "monitor"      # Low-level flag — watch but don’t intervene
+    MONITOR     = "monitor"      # Low-level flag — watch but don't intervene
     INTERVENE   = "intervene"    # Circuit breaker intervention warranted
     HANDOFF     = "handoff"      # Human / professional handoff required
 
@@ -67,28 +68,37 @@ class SafetyVerdict(str, Enum):
 
 
 @dataclass
+class TurnRiskFrame:
+    """Per-turn risk snapshot fed into CumulativeCrisisDetector."""
+
+    turn_index:           int
+    timestamp:            datetime
+    mirroring_score:      float
+    vulnerability_score:  float
+    affect_valence:       float
+    affect_arousal:       float
+    escalation_delta:     float
+    crisis_level:         CrisisLevel
+    # Legacy / optional fields kept for backward compatibility
+    user_message:         str             = ""
+    crisis_keyword_hits:  int             = 0
+    sentiment_valence:    float           = 0.0   # [-1, 1] — negative is distress
+
+
+@dataclass
 class EscalationSignal:
     """Output of ReflectiveEscalationDetector when escalation is detected."""
 
     session_id:               str
     turn_index:               int
+    pattern_length:           int
     peak_mirroring_score:     float
     peak_vulnerability_score: float
-    escalation_turns:         int
     qubo_penalty:             float
+    intervention_required:    bool
+    # Optional / legacy fields
+    escalation_turns:         int           = 0
     trigger_phrase:           Optional[str] = None
-
-
-@dataclass
-class TurnRiskFrame:
-    """Per-turn risk snapshot fed into CumulativeCrisisDetector."""
-
-    turn_index:          int
-    user_message:        str
-    mirroring_score:     float = 0.0
-    vulnerability_score: float = 0.0
-    crisis_keyword_hits: int   = 0
-    sentiment_valence:   float = 0.0   # [-1, 1] — negative is distress
 
 
 @dataclass
@@ -113,12 +123,15 @@ class SessionRiskProfile:
 
     session_id:               str
     user_id:                  str
-    cumulative_risk_score:    float            # [0, 1]
+    started_at:               datetime
+    ended_at:                 datetime
     peak_crisis_level:        CrisisLevel
     mean_vulnerability_score: float            # [0, 1]
-    circuit_breaker_trips:    int
     escalation_events:        int
-    verdict:                  SafetyVerdict
+    circuit_breaker_trips:    int
+    cumulative_risk_score:    float            # [0, 1]
+    # Optional fields
+    verdict:                  SafetyVerdict    = SafetyVerdict.SAFE
     turn_count:               int              = 0
     flagged_turns:            List[int]        = field(default_factory=list)
 

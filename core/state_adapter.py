@@ -21,6 +21,7 @@ SynergyParams             — TypedDict contract for the output dict
 SOLFEGGIO_HZ              — canonical note-name → Hz mapping
 SCHUMANN_BASELINE_HZ      — Earth baseline resonance frequency
 SCHUMANN_HARMONIC_TOLERANCE — ±% window for alignment detection
+_TRACE_AVAILABLE          — bool flag: True when core.trace is importable
 
 Canon refs: C30, C31, C34, C37
 """
@@ -31,6 +32,14 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
+
+# ── Trace availability flag ────────────────────────────────────────────────── #
+# Allows tests and callers to branch on whether the trace subsystem is present.
+try:
+    from core.trace import Trace  # noqa: F401
+    _TRACE_AVAILABLE: bool = True
+except ImportError:
+    _TRACE_AVAILABLE: bool = False
 
 
 # ── Solfeggio frequency table ──────────────────────────────────────────────── #
@@ -121,6 +130,11 @@ class GAIAStateAdapter:
         self._record = record
         self._trace  = trace or _NullTrace()
 
+    def __repr__(self) -> str:
+        """Return a readable representation including record ID if available."""
+        record_id = getattr(self._record, 'id', None) or 'unknown'
+        return f"<GAIAStateAdapter(id={record_id})>"
+
     # ── Public resolvers ────────────────────────────────────────────────────── #
 
     def to_synergy_params(self) -> SynergyParams:
@@ -166,6 +180,21 @@ class GAIAStateAdapter:
         """Return True if the dominant Hz is harmonically aligned with Schumann."""
         return self._resolve_schumann()
 
+    @property
+    def resolved_coherence(self) -> float:
+        """Return the resolved coherence score [0, 1]."""
+        return self._resolve_coherence()
+
+    @property
+    def resolved_emotional_valence(self) -> float:
+        """Return the resolved emotional valence [-1, 1]."""
+        return self._resolve_valence()
+
+    @property
+    def resolved_bond_depth(self) -> float:
+        """Return the resolved bond depth [0, 1]."""
+        return self._resolve_bond()
+
     # ── Private resolvers ───────────────────────────────────────────────────── #
 
     def _resolve_hz(self) -> float:
@@ -185,7 +214,7 @@ class GAIAStateAdapter:
         return hz
 
     def _resolve_individuation(self) -> str:
-        return str(self._safe_get("individuation_phase", "ego"))
+        return str(self._safe_get("individuation_phase", "persona"))
 
     def _resolve_love_arc(self) -> str:
         return str(self._safe_get("love_arc_stage", "awakening"))
