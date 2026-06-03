@@ -39,11 +39,22 @@ _RISK_ORDER = {
 
 
 class EscalationTier(str, Enum):
-    """What GAIA does in response to the current risk level."""
-    MONITOR         = "MONITOR"          # Log only
-    SOFT_INTERVENE  = "SOFT_INTERVENE"   # Compassionate check-in
-    HARD_INTERVENE  = "HARD_INTERVENE"   # Direct safety conversation
-    HANDOFF         = "HANDOFF"          # Route to qualified human resource
+    """What GAIA does in response to the current risk level.
+
+    Ordered from lowest to highest severity:
+      NONE           — no signal detected, normal operation
+      MONITOR        — log only, no user-visible action
+      SOFT_INTERVENE — compassionate check-in
+      SUPPORT        — advisory-level support response
+      HARD_INTERVENE — direct safety conversation
+      HANDOFF        — route to qualified human resource
+    """
+    NONE           = "NONE"            # No crisis signal — baseline tier
+    MONITOR        = "MONITOR"         # Log only
+    SOFT_INTERVENE = "SOFT_INTERVENE"  # Compassionate check-in
+    SUPPORT        = "SUPPORT"         # Advisory-level support
+    HARD_INTERVENE = "HARD_INTERVENE"  # Direct safety conversation
+    HANDOFF        = "HANDOFF"         # Route to qualified human resource
 
 
 class SignalClass(str, Enum):
@@ -82,7 +93,7 @@ class CrisisSnapshot:
 
     @property
     def requires_action(self) -> bool:
-        return self.escalation_tier != EscalationTier.MONITOR
+        return self.escalation_tier not in (EscalationTier.NONE, EscalationTier.MONITOR)
 
     def to_dict(self) -> dict:
         return {
