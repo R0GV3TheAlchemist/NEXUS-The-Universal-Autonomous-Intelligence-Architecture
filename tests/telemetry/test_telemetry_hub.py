@@ -21,10 +21,10 @@ from pathlib import Path
 
 import pytest
 
-from src_python.telemetry.models import TelemetryEvent, OrchestrationEfficiency, SkillHealthReport
-from src_python.telemetry.store import TelemetryStore
-from src_python.telemetry.collector import TelemetryCollector
-from src_python.telemetry.emit_points import (
+from telemetry.models import TelemetryEvent, OrchestrationEfficiency, SkillHealthReport
+from telemetry.store import TelemetryStore
+from telemetry.collector import TelemetryCollector
+from telemetry.emit_points import (
     emit_job_started,
     emit_job_completed,
     emit_job_failed,
