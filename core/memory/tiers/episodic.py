@@ -1,29 +1,45 @@
 """
 core/memory/tiers/episodic.py
-GAIA Episodic Memory Tier — Sprint G-8
+EpisodicMemoryStore — in-memory, tag-indexed, TTL-aware (days–weeks).
 
-Session-level event store. Default TTL: 720 hours (30 days).
-Captures meaningful moments; candidates for long-term promotion.
+Stores life-moment records with optional tags. Eviction is lazy
+(checked on every read) plus explicit via evict_expired().
 
-Canon Refs: C34 (Presence), C01 (Sovereignty)
+Canon refs: C34, C01
 """
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, field
+from typing import Any
 
-if TYPE_CHECKING:
-    from core.memory.hierarchy import MemoryQuery
 
-_DEFAULT_TTL_HOURS = 720.0
+@dataclass
+class _Episode:
+    gaian_id:   str | None
+    key:        str
+    value:      Any
+    tags:       list[str]
+    created_at: float
+    expires_at: float | None  # None = permanent
 
 
 class EpisodicMemoryStore:
-    """Session-event store with 30-day default TTL."""
+    """In-memory episodic store with tag indexing and TTL expiry."""
 
-    def __init__(self, default_ttl_hours: float = _DEFAULT_TTL_HOURS) -> None:
-        self._store: dict[str, dict] = {}
-        self._default_ttl = default_ttl_hours * 3600
+    DEFAULT_TTL_HOURS = 720.0  # 30 days
+
+    def __init__(self) -> None:
+        # keyed by (gaian_id, key)
+        self._episodes: dict[tuple[str | None, str], _Episode] = {}
+
+    def _now(self) -> float:
+        return time.time()
+
+    def _expired(self, ep: _Episode) -> bool:
+        return ep.expires_at is not None and ep.expires_at < self._now()
+
+    # ── MemoryStore Protocol ───────────────────────────────────────── #
 
     async def write(
         self,
@@ -31,44 +47,57 @@ class EpisodicMemoryStore:
         value: Any,
         gaian_id: str | None = None,
         ttl_hours: float | None = None,
+        tags: list[str] | None = None,
     ) -> None:
-        ttl = (ttl_hours * 3600) if ttl_hours is not None else self._default_ttl
-        self._store[key] = {
-            "value": value,
-            "gaian_id": gaian_id,
-            "ts": time.time(),
-            "expires_at": time.time() + ttl,
-        }
+        ttl = ttl_hours if ttl_hours is not None else self.DEFAULT_TTL_HOURS
+        now = self._now()
+        expires = now + ttl * 3600 if ttl > 0 else None
+        self._episodes[(gaian_id, key)] = _Episode(
+            gaian_id=gaian_id,
+            key=key,
+            value=value,
+            tags=tags or [],
+            created_at=now,
+            expires_at=expires,
+        )
 
-    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
-        entry = self._store.get(key)
-        if entry is None or time.time() > entry["expires_at"]:
+    async def read(
+        self,
+        key: str,
+        gaian_id: str | None = None,
+    ) -> Any | None:
+        ep = self._episodes.get((gaian_id, key))
+        if ep is None or self._expired(ep):
             return None
-        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
-            return None
-        return entry["value"]
+        return ep.value
 
-    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
-        now = time.time()
+    async def search(
+        self,
+        query: Any,
+    ) -> list[dict]:
+        text = getattr(query, "query_text", "").lower()
+        gid  = getattr(query, "gaian_id", None)
+        now  = self._now()
         results = []
-        for key, entry in self._store.items():
-            if now > entry.get("expires_at", 0):
+        for ep in self._episodes.values():
+            if self._expired(ep):
                 continue
-            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+            if gid is not None and ep.gaian_id != gid:
                 continue
-            age = now - entry.get("ts", now)
-            recency = max(0.0, 1.0 - age / (self._default_ttl or 1))
+            haystack = (ep.key + " " + str(ep.value) + " " + " ".join(ep.tags)).lower()
+            rel = 0.8 if text and text in haystack else 0.3
+            age_score = max(0.0, 1.0 - (now - ep.created_at) / (720 * 3600))
             results.append({
-                "key": key,
-                "value": entry["value"],
-                "_relevance": 0.5,
-                "_recency": recency,
+                "key": ep.key,
+                "value": ep.value,
+                "tags": ep.tags,
+                "_relevance": rel,
+                "_recency":   age_score,
             })
         return results
 
     async def evict_expired(self) -> int:
-        now = time.time()
-        expired = [k for k, v in self._store.items() if now > v.get("expires_at", 0)]
-        for k in expired:
-            del self._store[k]
-        return len(expired)
+        stale = [k for k, ep in self._episodes.items() if self._expired(ep)]
+        for k in stale:
+            del self._episodes[k]
+        return len(stale)

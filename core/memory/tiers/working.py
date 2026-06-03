@@ -1,61 +1,72 @@
 """
 core/memory/tiers/working.py
-GAIA Working Memory Tier — Sprint G-8
+WorkingMemoryStore — current-turn volatile store.
 
-Volatile in-process store for the current turn.
-Evicts all entries at turn end; zero persistence across sessions.
+Data lives in a plain dict; everything evicts at turn end (evict_expired)
+or when a specific Gaian's scope is flushed (evict_for_gaian).
 
-Canon Refs: C34 (Presence), C01 (Sovereignty)
+Canon refs: C34, C01
 """
 from __future__ import annotations
 
-import time
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from core.memory.hierarchy import MemoryQuery
+from typing import Any
 
 
 class WorkingMemoryStore:
-    """In-memory dict store; lives only for the duration of the current turn."""
+    """Ephemeral, in-process, zero-persistence memory for the current turn."""
 
     def __init__(self) -> None:
-        self._store: dict[str, dict] = {}
+        # { (gaian_id_or_None, key): value }
+        self._data: dict[tuple[str | None, str], Any] = {}
+
+    # ── MemoryStore Protocol ───────────────────────────────────────── #
 
     async def write(
         self,
         key: str,
         value: Any,
         gaian_id: str | None = None,
-        ttl_hours: float | None = None,
+        ttl_hours: float | None = None,  # ignored — working memory never TTLs mid-turn
     ) -> None:
-        self._store[key] = {"value": value, "gaian_id": gaian_id, "ts": time.time()}
+        self._data[(gaian_id, key)] = value
 
-    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
-        entry = self._store.get(key)
-        if entry is None:
-            return None
-        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
-            return None
-        return entry["value"]
+    async def read(
+        self,
+        key: str,
+        gaian_id: str | None = None,
+    ) -> Any | None:
+        return self._data.get((gaian_id, key))
 
-    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
-        now = time.time()
+    async def search(
+        self,
+        query: Any,  # MemoryQuery — imported lazily to avoid circular deps
+    ) -> list[dict]:
+        """Simple substring match on string values; returns all matches."""
+        text = getattr(query, "query_text", "").lower()
+        gid  = getattr(query, "gaian_id", None)
         results = []
-        for key, entry in self._store.items():
-            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+        for (g, k), v in self._data.items():
+            if gid is not None and g != gid:
                 continue
-            age = now - entry.get("ts", now)
-            recency = max(0.0, 1.0 - age / 3600.0)
-            results.append({
-                "key": key,
-                "value": entry["value"],
-                "_relevance": 0.5,
-                "_recency": recency,
-            })
+            haystack = (str(v) + " " + k).lower()
+            rel = 0.8 if text and text in haystack else 0.3
+            results.append({"key": k, "value": v, "_relevance": rel, "_recency": 0.9})
         return results
 
     async def evict_expired(self) -> int:
-        count = len(self._store)
-        self._store.clear()
+        """Flush ALL working memory (called at turn end). Returns count removed."""
+        count = len(self._data)
+        self._data.clear()
         return count
+
+    # ── Extra API ─────────────────────────────────────────────────── #
+
+    async def evict_for_gaian(self, gaian_id: str) -> int:
+        """Remove all entries scoped to a specific Gaian."""
+        keys = [k for k in self._data if k[0] == gaian_id]
+        for k in keys:
+            del self._data[k]
+        return len(keys)
+
+    def __len__(self) -> int:
+        return len(self._data)

@@ -1,55 +1,82 @@
 """
 core/memory/tiers/long_term.py
-GAIA Long-Term Memory Tier — Sprint G-8
+LongTermMemoryStore — permanent, Gaian-scoped identity + settled-arc store.
 
-Permanent Gaian-identity store. Backed by Tauri Store in production.
-This stub uses an in-process dict; swap for Tauri Store integration in G-9.
+No TTL; evict_expired() always returns 0.
+Each record is scoped to a specific Gaian; different Gaians can hold
+different values under the same key.
 
-Canon Refs: C34 (Presence), C01 (Sovereignty)
+Canon refs: C34, C01
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import time
+from dataclasses import dataclass
+from typing import Any
 
-if TYPE_CHECKING:
-    from core.memory.hierarchy import MemoryQuery
+
+@dataclass
+class _LongTermEntry:
+    gaian_id:  str | None
+    key:       str
+    value:     Any
+    arc_type:  str
+    created_at: float
 
 
 class LongTermMemoryStore:
-    """Permanent identity + settled-arc store. No TTL. Production backend: Tauri Store."""
+    """Permanent in-memory long-term identity store, keyed by (gaian_id, key)."""
 
     def __init__(self) -> None:
-        self._store: dict[str, dict] = {}
+        self._entries: dict[tuple[str | None, str], _LongTermEntry] = {}
+
+    # ── MemoryStore Protocol ───────────────────────────────────────── #
 
     async def write(
         self,
         key: str,
         value: Any,
         gaian_id: str | None = None,
-        ttl_hours: float | None = None,
+        ttl_hours: float | None = None,  # unused — permanent
+        arc_type: str = "general",
     ) -> None:
-        self._store[key] = {"value": value, "gaian_id": gaian_id}
+        self._entries[(gaian_id, key)] = _LongTermEntry(
+            gaian_id=gaian_id,
+            key=key,
+            value=value,
+            arc_type=arc_type,
+            created_at=time.time(),
+        )
 
-    async def read(self, key: str, gaian_id: str | None = None) -> Any | None:
-        entry = self._store.get(key)
-        if entry is None:
-            return None
-        if gaian_id is not None and entry.get("gaian_id") != gaian_id:
-            return None
-        return entry["value"]
+    async def read(
+        self,
+        key: str,
+        gaian_id: str | None = None,
+    ) -> Any | None:
+        entry = self._entries.get((gaian_id, key))
+        return entry.value if entry is not None else None
 
-    async def search(self, query: MemoryQuery) -> list[dict]:  # type: ignore[name-defined]
+    async def search(
+        self,
+        query: Any,
+    ) -> list[dict]:
+        text = getattr(query, "query_text", "").lower()
+        gid  = getattr(query, "gaian_id", None)
         results = []
-        for key, entry in self._store.items():
-            if query.gaian_id and entry.get("gaian_id") != query.gaian_id:
+        for (g, k), entry in self._entries.items():
+            if gid is not None and g != gid:
                 continue
+            haystack = (k + " " + str(entry.value) + " " + entry.arc_type).lower()
+            rel = 0.85 if text and text in haystack else 0.2
             results.append({
-                "key": key,
-                "value": entry["value"],
-                "_relevance": 0.8,
-                "_recency": 0.0,
+                "key":        k,
+                "value":      entry.value,
+                "_relevance": rel,
+                "_recency":   0.5,  # identity facts are timeless
+                "_arc_type":  entry.arc_type,
             })
         return results
 
     async def evict_expired(self) -> int:
+        """Long-term store is permanent — always returns 0."""
         return 0
