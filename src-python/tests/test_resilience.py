@@ -13,10 +13,10 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from src_python.resilience.retry_policy import RetryPolicy, BackoffStrategy
-from src_python.resilience.circuit_breaker import CircuitBreaker, CircuitState, CircuitOpenError
-from src_python.resilience.degraded_fallbacks import DEGRADED_FALLBACKS, DegradedFallback, FallbackMode
-from src_python.resilience.self_healing_engine import (
+from resilience.retry_policy import RetryPolicy, BackoffStrategy
+from resilience.circuit_breaker import CircuitBreaker, CircuitState, CircuitOpenError
+from resilience.degraded_fallbacks import DEGRADED_FALLBACKS, DegradedFallback, FallbackMode
+from resilience.self_healing_engine import (
     SelfHealingEngine, HealingResult, WorkflowFailure, NonRetryableError
 )
 
