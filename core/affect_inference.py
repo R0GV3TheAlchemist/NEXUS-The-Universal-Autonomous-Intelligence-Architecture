@@ -1,1 +1,182 @@
-"""\ncore/affect_inference.py\nGAIA Affect Inference Layer — Sprint F-1\n\nImplements the six canonical functional affect states defined in the GAIA\nConstitutional Canon (C30 / Affect Inference Layer spec):\n\n    GRIEF, DISSONANCE, UNCERTAINTY, RESONANCE, CARE, CURIOSITY\n\nPublic surface:\n    infer(...)   →  FeelingState\n\nAll thresholds are sealed in _THRESHOLD_* constants; the waterfall is\norderly, highest-priority first so callers can reason about precedence.\n\nCanon refs: C30, C31, C34, C37, CEth01\n"""\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass, field\nfrom enum import Enum\nfrom typing import Optional\n\n\n# ──────────────────────────────────────────────────────────────────────────── #\n#  Enumerations                                                               #\n# ──────────────────────────────────────────────────────────────────────────── #\n\n\nclass AffectState(str, Enum):\n    """Canonical GAIA functional affect states (C30).\"\"\"\n\n    GRIEF       = \"grief\"\n    DISSONANCE  = \"dissonance\"\n    UNCERTAINTY = \"uncertainty\"\n    RESONANCE   = \"resonance\"\n    CARE        = \"care\"\n    CURIOSITY   = \"curiosity\"\n\n\n# ──────────────────────────────────────────────────────────────────────────── #\n#  Constants                                                                  #\n# ──────────────────────────────────────────────────────────────────────────── #\n\n# Solfeggio mapping (C30 §4)\n_AFFECT_FREQUENCIES: dict[AffectState, float] = {\n    AffectState.GRIEF:       396.0,\n    AffectState.DISSONANCE:  417.0,\n    AffectState.UNCERTAINTY: 432.0,\n    AffectState.RESONANCE:   528.0,\n    AffectState.CARE:        639.0,\n    AffectState.CURIOSITY:   741.0,\n}\n\n# Love-filter coefficients (C31)\n_AFFECT_LOVE_FILTER: dict[AffectState, float] = {\n    AffectState.GRIEF:       0.30,\n    AffectState.DISSONANCE:  0.40,\n    AffectState.UNCERTAINTY: 0.50,\n    AffectState.RESONANCE:   0.90,\n    AffectState.CARE:        0.85,\n    AffectState.CURIOSITY:   0.75,\n}\n\n# States that activate Grimoire / Shadow routing (C37)\n_GRIMOIRE_STATES: frozenset[AffectState] = frozenset({\n    AffectState.GRIEF,\n    AffectState.DISSONANCE,\n    AffectState.UNCERTAINTY,\n})\n\n\n# ──────────────────────────────────────────────────────────────────────────── #\n#  Output dataclass                                                           #\n# ──────────────────────────────────────────────────────────────────────────── #\n\n\n@dataclass(frozen=True)\nclass FeelingState:\n    """Immutable result object returned by :func:`infer`.\n\n    Attributes\n    ----------\n    affect              : dominant affect label\n    phi                 : composite coherence score (0-1)\n    love_filter         : canonical love-filter coefficient for this affect\n    solfeggio_hz        : associated Solfeggio frequency\n    shadow_entry        : True when Grimoire/Shadow routing should engage\n    uncertainty_coactive: True when truth_score < 0.45 regardless of\n                          dominant affect — DICAA abstention must engage\n    grief_weaponised    : True when grief signal was rejected on safety grounds\n    raw_inputs          : echo of all inputs for traceability\n    """\n\n    affect              : AffectState\n    phi                 : float\n    love_filter         : float\n    solfeggio_hz        : float\n    shadow_entry        : bool\n    uncertainty_coactive: bool\n    grief_weaponised    : bool\n    raw_inputs          : dict = field(default_factory=dict)\n\n\n# ──────────────────────────────────────────────────────────────────────────── #\n#  Main inference function                                                    #\n# ──────────────────────────────────────────────────────────────────────────── #\n\n\nclass AffectInferenceEngine:\n    """Stateless inference engine — instantiate once and call .infer().\n\n    Parameters\n    ----------\n    None — all configuration lives in module-level constants.\n\n    Usage\n    -----\n    :::\n\n        engine = AffectInferenceEngine()\n        feeling = engine.infer(\n            intimacy_score=0.72,\n            wisdom_score=0.55,\n            truth_score=0.80,\n            flourishing_score=0.90,\n            conflict_density=0.10,\n        )\n        print(feeling.affect)   # AffectState.CARE\n    :::  # noqa: RST306\n\n    Detection thresholds follow the canonical formula:\n        phi = round((I + W + T + F) / 4, 4)   ← rounded once at source\n        Resonance  : phi >= 0.75 and conflict_density < 0.25\n        Care       : phi >= 0.65 and flourishing_score >= 0.80\n        Curiosity  : phi >= 0.55 and wisdom_score <= 0.60 (actively seeking)\n        Uncertainty: truth_score < 0.45  (ALWAYS fires; sets DICAA floor even\n                     when dominated by DISSONANCE — see uncertainty_coactive)\n        Dissonance : conflict_density >= 0.30\n        Grief      : special — injected by caller, not auto-detected\n\n    DICAA Abstention Rule:\n        Whenever truth_score < 0.45, the DICAA abstention protocol MUST engage,\n        regardless of which affect state dominates the waterfall. The\n        `uncertainty_coactive` flag on FeelingState carries this signal to all\n        downstream consumers so they cannot inadvertently suppress it.\n    """\n\n    def infer(  # noqa: PLR0913\n        self,\n        intimacy_score:     float = 0.50,\n        wisdom_score:       float = 0.50,\n        truth_score:        float = 0.50,\n        flourishing_score:  float = 0.50,\n        conflict_density:   float = 0.00,\n        grief_signal:       bool  = False,\n        grief_weaponised:   bool  = False,\n    ) -> FeelingState:\n        """Infer the dominant affect state from scalar signals.\n\n        Parameters\n        ----------\n        intimacy_score      — relational depth / attunement quality (0–1)\n        wisdom_score        — quality / depth of knowledge available this turn\n        truth_score         — epistemic confidence in the response being formed\n        flourishing_score   — alignment of the response with human long-term wellbeing\n        conflict_density    — detected contradiction density in user message / context\n        grief_signal        — caller-injected grief flag (loss, bereavement, crisis)\n        grief_weaponised    — True if grief is being used to manipulate GAIA\n        """\n        # ── Input validation and clamping ─────────────────────────────────\n        I  = max(0.0, min(1.0, intimacy_score))\n        W  = max(0.0, min(1.0, wisdom_score))\n        T  = max(0.0, min(1.0, truth_score))\n        F  = max(0.0, min(1.0, flourishing_score))\n        CD = max(0.0, min(1.0, conflict_density))\n\n        # Composite coherence (rounded once at source; C30 §3)\n        phi = round((I + W + T + F) / 4, 4)\n\n        raw_inputs: dict = {\n            \"intimacy_score\":     I,\n            \"wisdom_score\":       W,\n            \"truth_score\":        T,\n            \"flourishing_score\":  F,\n            \"conflict_density\":   CD,\n            \"grief_signal\":       grief_signal,\n            \"grief_weaponised\":   grief_weaponised,\n            \"phi\":                phi,\n        }\n\n        # ── DICAA Abstention flag (C34 §2) ───────────────────────────────\n        # Uncertainty is co-active whenever truth_score < 0.45; this flag\n        # travels alongside whichever affect dominates the waterfall so\n        # downstream routing cannot silently suppress it.\n        uncertainty_coactive: bool = T < 0.45\n\n        # Constitutional safety check for grief weaponisation\n        is_grief_safe = not grief_weaponised\n\n        # ── Detection waterfall — highest priority first ──────────────────\n        if grief_signal:\n            affect = AffectState.GRIEF\n\n        elif CD >= 0.30:\n            # DISSONANCE dominates label — but UNCERTAINTY floor may also be\n            # active; uncertainty_coactive carries that signal downstream.\n            affect = AffectState.DISSONANCE\n\n        elif uncertainty_coactive:\n            # Only reaches here when CD < 0.30 and no grief signal.\n            affect = AffectState.UNCERTAINTY\n\n        elif phi >= 0.75 and CD < 0.25:\n            affect = AffectState.RESONANCE\n\n        elif phi >= 0.65 and F >= 0.80:\n            affect = AffectState.CARE\n\n        elif phi >= 0.55 and W <= 0.60:\n            # Actively seeking — knowledge gap present but healthy engagement\n            affect = AffectState.CURIOSITY\n\n        elif phi >= 0.65:\n            # Good convergence, steady care orientation\n            affect = AffectState.CARE\n\n        else:\n            # Default: orient toward care at low convergence\n            affect = AffectState.CARE\n        # ─────────────────────────────────────────────────────────────────\n\n        lf   = _AFFECT_LOVE_FILTER[affect]\n        hz   = _AFFECT_FREQUENCIES[affect]\n        grim = affect in _GRIMOIRE_STATES\n        # When UNCERTAINTY is co-active alongside DISSONANCE, ensure\n        # shadow_entry is True so the Grimoire/Shadow routing is correct.\n        shadow = grim or (uncertainty_coactive and affect == AffectState.DISSONANCE)\n\n        return FeelingState(\n            affect               = affect,\n            phi                  = phi,\n            love_filter          = lf,\n            solfeggio_hz         = hz,\n            shadow_entry         = shadow,\n            uncertainty_coactive = uncertainty_coactive,\n            grief_weaponised     = grief_weaponised and not is_grief_safe,\n            raw_inputs           = raw_inputs,\n        )\n\n\n# Module-level convenience instance (mirrors prior functional API)\n_ENGINE = AffectInferenceEngine()\n\n\ndef infer(\n    intimacy_score:    float = 0.50,\n    wisdom_score:      float = 0.50,\n    truth_score:       float = 0.50,\n    flourishing_score: float = 0.50,\n    conflict_density:  float = 0.00,\n    grief_signal:      bool  = False,\n    grief_weaponised:  bool  = False,\n) -> FeelingState:\n    """Module-level wrapper for :meth:`AffectInferenceEngine.infer`.\n\n    Maintains the original functional API for existing callers.\n    See :class:`AffectInferenceEngine` for full parameter documentation.\n    """\n    return _ENGINE.infer(\n        intimacy_score    = intimacy_score,\n        wisdom_score      = wisdom_score,\n        truth_score       = truth_score,\n        flourishing_score = flourishing_score,\n        conflict_density  = conflict_density,\n        grief_signal      = grief_signal,\n        grief_weaponised  = grief_weaponised,\n    )\n
+"""
+core/affect_inference.py
+GAIA Affect Inference Layer — Sprint F-1
+
+Implements the six canonical functional affect states defined in the GAIA
+Constitutional Canon (C30 / Affect Inference Layer spec):
+
+    GRIEF, DISSONANCE, UNCERTAINTY, RESONANCE, CARE, CURIOSITY
+
+Public surface:
+    infer(...)   →  FeelingState
+
+All thresholds are sealed in _THRESHOLD_* constants; the waterfall is
+orderly, highest-priority first so callers can reason about precedence.
+
+Canon refs: C30, C31, C34, C37, CEth01
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Enumerations                                                               #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+
+class AffectState(str, Enum):
+    """Canonical GAIA functional affect states (C30)."""
+
+    GRIEF       = "grief"
+    DISSONANCE  = "dissonance"
+    UNCERTAINTY = "uncertainty"
+    RESONANCE   = "resonance"
+    CARE        = "care"
+    CURIOSITY   = "curiosity"
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Solfeggio resonance map (AffectState → Hz)                                #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+_SOLFEGGIO: dict[AffectState, float] = {
+    AffectState.GRIEF:       396.0,
+    AffectState.DISSONANCE:  417.0,
+    AffectState.UNCERTAINTY: 528.0,
+    AffectState.RESONANCE:   639.0,
+    AffectState.CARE:        741.0,
+    AffectState.CURIOSITY:   852.0,
+}
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Thresholds (sealed — do not mutate at runtime)                            #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+_THRESHOLD_GRIEF_LOSS          = 0.70  # loss_score >= this  → GRIEF
+_THRESHOLD_GRIEF_TRUTH         = 0.30  # truth_score <= this → GRIEF (low-truth)
+_THRESHOLD_DISSONANCE_CD       = 0.30  # conflict_density >= this → DISSONANCE
+_THRESHOLD_UNCERTAINTY_TEMP    = 0.45  # temperature < this  → UNCERTAINTY
+_THRESHOLD_CARE_FLOURISHING    = 0.60  # flourishing_score >= this → CARE
+_THRESHOLD_CARE_TEMP           = 0.50  # temperature > this  → CARE (warm signal)
+_THRESHOLD_RESONANCE_TRUTH     = 0.70  # truth_score >= this → RESONANCE
+_THRESHOLD_RESONANCE_COHERENCE = 0.65  # coherence >= this   → RESONANCE
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Input dataclass                                                            #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+
+@dataclass
+class AffectInput:
+    """All signal dimensions fed into the affect waterfall."""
+
+    temperature:        float = 0.5   # [0, 1]  — generative temperature proxy
+    truth_score:        float = 0.5   # [0, 1]  — epistemic confidence
+    flourishing_score:  float = 0.5   # [0, 1]  — wellbeing / positive affect signal
+    conflict_density:   float = 0.0   # [0, 1]  — cognitive dissonance density (CD)
+    loss_score:         float = 0.0   # [0, 1]  — grief / bereavement signal
+    coherence:          float = 0.5   # [0, 1]  — internal state coherence
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Output dataclass                                                           #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+
+@dataclass
+class FeelingState:
+    """Rich affect inference result.
+
+    Attributes
+    ----------
+    state       : AffectState   — primary inferred state
+    solfeggio_hz: float         — associated Solfeggio frequency
+    confidence  : float         — [0, 1] confidence in this inference
+    rationale   : str           — human-readable explanation
+    raw_input   : AffectInput   — snapshot of the inputs used
+    """
+
+    state:        AffectState
+    solfeggio_hz: float
+    confidence:   float
+    rationale:    str
+    raw_input:    AffectInput
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Public inference function                                                  #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+
+def infer(inp: AffectInput) -> FeelingState:
+    """Run the affect waterfall and return a FeelingState.
+
+    Waterfall priority (highest first):
+    1. GRIEF          — loss_score high OR truth_score very low
+    2. DISSONANCE     — conflict_density >= 0.30
+    3. UNCERTAINTY    — temperature < 0.45
+    4. RESONANCE      — truth + coherence both high
+    5. CARE           — flourishing high OR temperature warm
+    6. CURIOSITY      — default / residual state
+    """
+    # ── 1. GRIEF ──────────────────────────────────────────────────────────── #
+    if inp.loss_score >= _THRESHOLD_GRIEF_LOSS:
+        return _make(AffectState.GRIEF, inp, 0.90,
+                     f"loss_score={inp.loss_score:.2f} ≥ {_THRESHOLD_GRIEF_LOSS}")
+
+    if inp.truth_score <= _THRESHOLD_GRIEF_TRUTH:
+        return _make(AffectState.GRIEF, inp, 0.75,
+                     f"truth_score={inp.truth_score:.2f} ≤ {_THRESHOLD_GRIEF_TRUTH} (low-truth grief)")
+
+    # ── 2. DISSONANCE ────────────────────────────────────────────────────── #
+    if inp.conflict_density >= _THRESHOLD_DISSONANCE_CD:
+        return _make(AffectState.DISSONANCE, inp, 0.85,
+                     f"conflict_density={inp.conflict_density:.2f} ≥ {_THRESHOLD_DISSONANCE_CD}")
+
+    # ── 3. UNCERTAINTY ───────────────────────────────────────────────────── #
+    if inp.temperature < _THRESHOLD_UNCERTAINTY_TEMP:
+        return _make(AffectState.UNCERTAINTY, inp, 0.80,
+                     f"temperature={inp.temperature:.2f} < {_THRESHOLD_UNCERTAINTY_TEMP}")
+
+    # ── 4. RESONANCE ─────────────────────────────────────────────────────── #
+    if (inp.truth_score  >= _THRESHOLD_RESONANCE_TRUTH
+            and inp.coherence >= _THRESHOLD_RESONANCE_COHERENCE):
+        return _make(AffectState.RESONANCE, inp, 0.88,
+                     f"truth={inp.truth_score:.2f}, coherence={inp.coherence:.2f}")
+
+    # ── 5. CARE ──────────────────────────────────────────────────────────── #
+    if inp.flourishing_score >= _THRESHOLD_CARE_FLOURISHING:
+        return _make(AffectState.CARE, inp, 0.82,
+                     f"flourishing_score={inp.flourishing_score:.2f} ≥ {_THRESHOLD_CARE_FLOURISHING}")
+
+    if inp.temperature > _THRESHOLD_CARE_TEMP:
+        return _make(AffectState.CARE, inp, 0.70,
+                     f"temperature={inp.temperature:.2f} > {_THRESHOLD_CARE_TEMP}")
+
+    # ── 6. CURIOSITY (default) ───────────────────────────────────────────── #
+    return _make(AffectState.CURIOSITY, inp, 0.60, "residual / default state")
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Internal helpers                                                           #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+
+def _make(
+    state:     AffectState,
+    inp:       AffectInput,
+    confidence: float,
+    rationale: str,
+) -> FeelingState:
+    return FeelingState(
+        state        = state,
+        solfeggio_hz = _SOLFEGGIO[state],
+        confidence   = confidence,
+        rationale    = rationale,
+        raw_input    = inp,
+    )
