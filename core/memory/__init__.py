@@ -2,14 +2,10 @@
 core/memory/__init__.py
 GAIA Memory Package — Sprint G-8
 
-Clean public surface. Two MemoryTier definitions exist in this package:
-  - taxonomy.MemoryTier  : old string enum (short_term, long_term ...)
-                           used internally by store.py / SQLite layer
-  - hierarchy.MemoryTier : canonical auto() enum used by MemoryRouter / tiers
-
-We expose ONLY hierarchy.MemoryTier as `MemoryTier`.
-MemoryItem and MemoryKind are pulled directly from taxonomy to avoid
-store.py re-exporting them via a shadowed MemoryTier that clashes.
+Public surface. MemoryTier is exported from taxonomy (EPHEMERAL / SHORT_TERM /
+LONG_TERM / PERMANENT) — the string enum used by store.py, MemoryItem, and all
+tests. The hierarchy tier stores (WorkingMemoryStore etc.) use their own
+internal tier mapping and are unaffected.
 
 Public imports::
 
@@ -23,20 +19,21 @@ Public imports::
 """
 
 # ---------------------------------------------------------------------------
-# 1. Hierarchy abstractions  (MemoryTier is the canonical one going forward)
+# 1. Hierarchy abstractions — MemoryQuery and MemoryRouter only.
+#    MemoryTier is NOT imported from hierarchy; taxonomy is the canonical enum.
 # ---------------------------------------------------------------------------
 from core.memory.hierarchy import (
     MemoryQuery,
     MemoryRouter,
     MemoryStore as AbstractMemoryStore,
-    MemoryTier,
 )
 
 # ---------------------------------------------------------------------------
-# 2. Domain types from taxonomy — MemoryKind + MemoryItem ONLY.
-#    Do NOT import taxonomy.MemoryTier here; it clashes with hierarchy.MemoryTier.
+# 2. Canonical MemoryTier + domain types from taxonomy.
+#    taxonomy.MemoryTier: EPHEMERAL, SHORT_TERM, LONG_TERM, PERMANENT
+#    These are the values used by store.py, MemoryItem, and the test suite.
 # ---------------------------------------------------------------------------
-from core.memory.taxonomy import MemoryKind, MemoryItem
+from core.memory.taxonomy import MemoryKind, MemoryItem, MemoryTier
 
 # ---------------------------------------------------------------------------
 # 3. Concrete SQLite store + RetrievedMemory
@@ -73,25 +70,30 @@ def build_default_router(
     long_term_store: AbstractMemoryStore | None = None,
 ) -> MemoryRouter:
     """Return a MemoryRouter wired with all five canonical tier stores."""
+    _working   = WorkingMemoryStore()
+    _short     = ShortTermMemoryStore()
+    _episodic  = EpisodicMemoryStore()
+    _semantic  = semantic_store  or SemanticMemoryStore()
+    _long_term = long_term_store or LongTermMemoryStore()
     stores = {
-        MemoryTier.WORKING:    WorkingMemoryStore(),
-        MemoryTier.SHORT_TERM: ShortTermMemoryStore(),
-        MemoryTier.EPISODIC:   EpisodicMemoryStore(),
-        MemoryTier.SEMANTIC:   semantic_store  or SemanticMemoryStore(),
-        MemoryTier.LONG_TERM:  long_term_store or LongTermMemoryStore(),
+        getattr(_working,   "TIER", None) or "working":    _working,
+        getattr(_short,     "TIER", None) or "short_term": _short,
+        getattr(_episodic,  "TIER", None) or "episodic":   _episodic,
+        getattr(_semantic,  "TIER", None) or "semantic":   _semantic,
+        getattr(_long_term, "TIER", None) or "long_term":  _long_term,
     }
     return MemoryRouter(stores)
 
 
 __all__ = [
-    # Hierarchy
+    # Taxonomy (canonical)
     "MemoryTier",
+    "MemoryItem",
+    "MemoryKind",
+    # Hierarchy abstractions
     "MemoryQuery",
     "MemoryRouter",
     "AbstractMemoryStore",
-    # Domain types
-    "MemoryItem",
-    "MemoryKind",
     # Concrete store
     "MemoryStore",
     "RetrievedMemory",
