@@ -1,6 +1,6 @@
 """
 core/memory/tiers/long_term.py
-GAIA Long-Term Memory Tier — Sprint G-8 stub
+GAIA Long-Term Memory Tier — Sprint G-8
 
 Permanent Gaian-identity store. Backed by Tauri Store in production.
 This stub uses an in-process dict; swap for Tauri Store integration in G-9.

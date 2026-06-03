@@ -4,12 +4,12 @@ GAIA Memory Package — Sprint G-8
 
 Clean public surface. Two MemoryTier definitions exist in this package:
   - taxonomy.MemoryTier  : old string enum (short_term, long_term ...)
-                           used by MemoryStore / SQLite store.py
-  - hierarchy.MemoryTier : new auto() enum used by MemoryRouter / tiers
+                           used internally by store.py / SQLite layer
+  - hierarchy.MemoryTier : canonical auto() enum used by MemoryRouter / tiers
 
-To avoid a clash we expose ONLY hierarchy.MemoryTier as `MemoryTier`.
-The old taxonomy.MemoryTier is still used internally by store.py but
-is NOT re-exported from this package.
+We expose ONLY hierarchy.MemoryTier as `MemoryTier`.
+MemoryItem and MemoryKind are pulled directly from taxonomy to avoid
+store.py re-exporting them via a shadowed MemoryTier that clashes.
 
 Public imports::
 
@@ -33,7 +33,8 @@ from core.memory.hierarchy import (
 )
 
 # ---------------------------------------------------------------------------
-# 2. Domain types from taxonomy  (MemoryKind, MemoryItem only — NOT MemoryTier)
+# 2. Domain types from taxonomy — MemoryKind + MemoryItem ONLY.
+#    Do NOT import taxonomy.MemoryTier here; it clashes with hierarchy.MemoryTier.
 # ---------------------------------------------------------------------------
 from core.memory.taxonomy import MemoryKind, MemoryItem
 

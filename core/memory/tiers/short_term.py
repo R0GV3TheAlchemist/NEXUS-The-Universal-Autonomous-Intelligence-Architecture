@@ -1,6 +1,6 @@
 """
 core/memory/tiers/short_term.py
-GAIA Short-Term Memory Tier — Sprint G-8 stub
+GAIA Short-Term Memory Tier — Sprint G-8
 
 TTL-bounded in-memory store. Default TTL: 48 hours.
 Holds the last N turns of context; evicts on TTL expiry.

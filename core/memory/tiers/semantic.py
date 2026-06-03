@@ -1,6 +1,6 @@
 """
 core/memory/tiers/semantic.py
-GAIA Semantic Memory Tier — Sprint G-8 stub
+GAIA Semantic Memory Tier — Sprint G-8
 
 Permanent fact store. Backed by Crystal DB in production.
 This stub uses an in-process dict; swap for Crystal DB integration in G-9.

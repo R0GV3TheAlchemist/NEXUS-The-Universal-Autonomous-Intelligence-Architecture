@@ -61,9 +61,9 @@ class MemoryTier(Enum):
     def default_ttl_hours(self) -> float | None:
         """Canonical TTL for this tier, in hours. None = no expiry."""
         return {
-            MemoryTier.WORKING:    0.0,    # Evicts immediately at turn end
-            MemoryTier.SHORT_TERM: 48.0,   # 48-hour default; configurable
-            MemoryTier.EPISODIC:   720.0,  # 30 days
+            MemoryTier.WORKING:    0.0,
+            MemoryTier.SHORT_TERM: 48.0,
+            MemoryTier.EPISODIC:   720.0,
             MemoryTier.SEMANTIC:   None,
             MemoryTier.LONG_TERM:  None,
         }[self]
@@ -127,12 +127,7 @@ class MemoryQuery:
 
 @runtime_checkable
 class MemoryStore(Protocol):
-    """Protocol contract for all tier-specific memory store implementations.
-
-    Every tier (Working, ShortTerm, Episodic, Semantic, LongTerm) implements
-    this protocol. MemoryRouter depends ONLY on this protocol, never on
-    concrete implementations, so tiers can be swapped without touching routing.
-    """
+    """Protocol contract for all tier-specific memory store implementations."""
 
     async def write(
         self,
@@ -140,77 +135,26 @@ class MemoryStore(Protocol):
         value: Any,
         gaian_id: str | None = None,
         ttl_hours: float | None = None,
-    ) -> None:
-        """Persist a value under the given key.
-
-        Args:
-            key:       Storage key (must be unique within the tier).
-            value:     Any JSON-serialisable value.
-            gaian_id:  Optional Gaian scope.
-            ttl_hours: Override the tier default TTL. None = tier default.
-        """
-        ...
+    ) -> None: ...
 
     async def read(
         self,
         key: str,
         gaian_id: str | None = None,
-    ) -> Any | None:
-        """Retrieve a value by exact key. Returns None if not found or expired."""
-        ...
+    ) -> Any | None: ...
 
     async def search(
         self,
         query: MemoryQuery,
-    ) -> list[dict]:
-        """Full-text / semantic search within this tier.
+    ) -> list[dict]: ...
 
-        Each result dict MUST include:
-          'key'        (str)   the storage key
-          'value'      (Any)   the stored value
-          '_relevance' (float) 0.0–1.0 relevance score
-          '_recency'   (float) 0.0–1.0 recency score (1.0 = just written)
-
-        Optional fields: '_tier', '_gaian_id', '_ts_iso', any domain fields.
-        """
-        ...
-
-    async def evict_expired(self) -> int:
-        """Remove all expired entries. Returns count of evicted records."""
-        ...
+    async def evict_expired(self) -> int: ...
 
 
 # ── MemoryRouter ─────────────────────────────────────────────────────────────── #
 
 class MemoryRouter:
-    """Routes MemoryQuery objects to the correct tier(s).
-
-    All memory reads and writes in GAIA flow through this router.
-    No call site chooses tiers directly; the router owns that decision.
-
-    Intent-to-tier routing table:
-
-      Intent     │ Tiers searched
-      ───────────┼────────────────────────────────────────────
-      'context'  │ WORKING, SHORT_TERM
-      'recall'   │ SHORT_TERM, EPISODIC
-      'fact'     │ SEMANTIC
-      'identity' │ LONG_TERM
-      'full'     │ WORKING, SHORT_TERM, EPISODIC, SEMANTIC, LONG_TERM
-
-    Usage::
-
-        router = build_default_router()
-
-        # Search
-        results = await router.search(MemoryQuery("Tell me about our last session", intent="recall", gaian_id="luna"))
-
-        # Write
-        await router.write(MemoryTier.SHORT_TERM, "session:2026-06-02", summary_dict, gaian_id="luna")
-
-        # Promote
-        await router.promote("session:2026-06-02", MemoryTier.SHORT_TERM, MemoryTier.EPISODIC, gaian_id="luna")
-    """
+    """Routes MemoryQuery objects to the correct tier(s)."""
 
     CANON_REFS = ["C34", "C01"]
 
@@ -228,23 +172,9 @@ class MemoryRouter:
             log.warning("MemoryRouter: missing stores for tiers: %s", [t.name for t in missing])
         self._stores = stores
 
-    # ── Search ────────────────────────────────────────────────────────── #
-
     async def search(self, query: MemoryQuery) -> list[dict]:
-        """Search the tiers appropriate for query.intent (or query.tiers override).
-
-        Fans out to tier stores concurrently, annotates each result with
-        '_tier', then merges and ranks by the combined recency/relevance score.
-
-        Returns:
-            List of result dicts sorted by _score descending, capped at
-            query.max_results.
-        """
         tiers = query.tiers or self._INTENT_MAP.get(query.intent, list(MemoryTier))
-
         if _TRACE_AVAILABLE:
-            # TraceEventType.MEMORY_RECALL is the correct event for a read/search
-            # operation. RETRIEVAL does not exist in core/trace.TraceEventType.
             async with AsyncGAIATrace(
                 event=TraceEventType.MEMORY_RECALL,
                 gaian_id=query.gaian_id,
@@ -260,23 +190,15 @@ class MemoryRouter:
             results = await self._fan_out(tiers, query)
             return self._rank(results, query)
 
-    async def _fan_out(
-        self,
-        tiers: list[MemoryTier],
-        query: MemoryQuery,
-    ) -> list[dict]:
-        """Concurrently search all requested tiers and merge raw results."""
-        tasks = []
-        tier_labels = []
+    async def _fan_out(self, tiers: list[MemoryTier], query: MemoryQuery) -> list[dict]:
+        tasks, tier_labels = [], []
         for tier in tiers:
             store = self._stores.get(tier)
             if store:
                 tasks.append(store.search(query))
                 tier_labels.append(tier)
-
         if not tasks:
             return []
-
         gathered = await asyncio.gather(*tasks, return_exceptions=True)
         results: list[dict] = []
         for tier, outcome in zip(tier_labels, gathered):
@@ -289,20 +211,12 @@ class MemoryRouter:
         return results
 
     def _rank(self, results: list[dict], query: MemoryQuery) -> list[dict]:
-        """Compute _score = recency_weight * _recency + (1 - recency_weight) * _relevance.
-
-        Both _recency and _relevance are expected in [0, 1].
-        Defaults to 0.5 if not supplied by the store.
-        Results are sorted descending and truncated to max_results.
-        """
         w = query.recency_weight
         for r in results:
             rel = float(r.get("_relevance", 0.5))
             rec = float(r.get("_recency",   0.5))
             r["_score"] = w * rec + (1.0 - w) * rel
         return sorted(results, key=lambda x: x["_score"], reverse=True)[: query.max_results]
-
-    # ── Write ─────────────────────────────────────────────────────────── #
 
     async def write(
         self,
@@ -312,22 +226,11 @@ class MemoryRouter:
         gaian_id: str | None = None,
         ttl_hours: float | None = None,
     ) -> None:
-        """Write a value to the specified tier.
-
-        Args:
-            tier:      Target tier.
-            key:       Storage key.
-            value:     Any JSON-serialisable value.
-            gaian_id:  Optional Gaian scope.
-            ttl_hours: Override tier default TTL. None = tier default.
-        """
         store = self._stores.get(tier)
         if store is None:
             log.warning("MemoryRouter.write: no store registered for tier %s", tier.name)
             return
         await store.write(key, value, gaian_id, ttl_hours)
-
-    # ── Promote ────────────────────────────────────────────────────────── #
 
     async def promote(
         self,
@@ -336,48 +239,18 @@ class MemoryRouter:
         to_tier: MemoryTier,
         gaian_id: str | None = None,
     ) -> bool:
-        """Promote a memory from one tier to a higher (more permanent) one.
-
-        Typical usage:
-          - Session ends → SHORT_TERM → EPISODIC
-          - Significant identity shift detected → EPISODIC → LONG_TERM
-
-        Args:
-            key:       The storage key to promote.
-            from_tier: Source tier.
-            to_tier:   Destination tier.
-            gaian_id:  Optional Gaian scope.
-
-        Returns:
-            True if the value was found and promoted; False otherwise.
-        """
         src = self._stores.get(from_tier)
         dst = self._stores.get(to_tier)
         if not src or not dst:
-            log.warning(
-                "MemoryRouter.promote: missing store(s) for %s → %s",
-                from_tier.name, to_tier.name,
-            )
+            log.warning("MemoryRouter.promote: missing store(s) for %s → %s", from_tier.name, to_tier.name)
             return False
-
         value = await src.read(key, gaian_id)
         if value is None:
-            log.info(
-                "MemoryRouter.promote: key %r not found in %s", key, from_tier.name
-            )
             return False
-
         await dst.write(key, value, gaian_id)
-        log.info(
-            "MemoryRouter.promote: %r %s → %s (gaian=%s)",
-            key, from_tier.name, to_tier.name, gaian_id,
-        )
         return True
 
-    # ── Eviction ───────────────────────────────────────────────────────── #
-
     async def evict_all_expired(self) -> dict[str, int]:
-        """Run eviction on all tiers. Returns {tier_name: evicted_count}."""
         results: dict[str, int] = {}
         for tier, store in self._stores.items():
             try:
@@ -389,5 +262,4 @@ class MemoryRouter:
         return results
 
     def registered_tiers(self) -> list[MemoryTier]:
-        """Return list of tiers that have a registered store."""
         return list(self._stores.keys())

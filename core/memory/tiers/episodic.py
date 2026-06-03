@@ -1,6 +1,6 @@
 """
 core/memory/tiers/episodic.py
-GAIA Episodic Memory Tier — Sprint G-8 stub
+GAIA Episodic Memory Tier — Sprint G-8
 
 Session-level event store. Default TTL: 720 hours (30 days).
 Captures meaningful moments; candidates for long-term promotion.

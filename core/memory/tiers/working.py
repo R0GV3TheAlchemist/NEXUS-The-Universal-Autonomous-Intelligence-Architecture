@@ -1,6 +1,6 @@
 """
 core/memory/tiers/working.py
-GAIA Working Memory Tier — Sprint G-8 stub
+GAIA Working Memory Tier — Sprint G-8
 
 Volatile in-process store for the current turn.
 Evicts all entries at turn end; zero persistence across sessions.
