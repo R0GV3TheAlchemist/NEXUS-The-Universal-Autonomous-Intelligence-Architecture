@@ -16,16 +16,12 @@ from typing import Any, Dict, List, Optional
 # ---------------------------------------------------------------------------
 
 class MemoryTier(str, Enum):
-    """Tiers in GAIA's sovereign memory hierarchy.
-
-    Used by the memory router to decide which store to consult
-    and in which order, and by tests to assert tier registration.
-    """
-    WORKING   = "working"    # Short-lived, in-process scratchpad
-    SEMANTIC  = "semantic"   # Distilled patterns via sentence-transformers
-    LONG_TERM = "long_term"  # Persistent episodic + semantic SQLite store
-    BIOMETRIC = "biometric"  # Physiological signals (HRV, GSR, …)
-    ARCHIVAL  = "archival"   # Cold compressed store for older episodes
+    """Tiers in GAIA's sovereign memory hierarchy."""
+    WORKING   = "working"
+    SEMANTIC  = "semantic"
+    LONG_TERM = "long_term"
+    BIOMETRIC = "biometric"
+    ARCHIVAL  = "archival"
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +35,7 @@ class EpisodeRecord:
     content      : str
     type         : str
     tags         : List[str]
-    created_at   : int           # Unix ms
+    created_at   : int
     deleted      : bool = False
 
 
@@ -60,14 +56,13 @@ class BiometricSample:
 
     Note: principal_id is optional here because get_biometric_history()
     reconstructs BiometricSample via **dict(row) from a SELECT that does
-    NOT include principal_id in the column list (timestamp, signal_type,
-    value, source only).
+    NOT include principal_id in the column list.
     """
-    timestamp    : int           # Unix ms
+    timestamp    : int
     signal_type  : str
     value        : float
     source       : str
-    principal_id : str = ""     # Empty when reconstructed from partial row
+    principal_id : str = ""
 
 
 @dataclass
@@ -81,66 +76,70 @@ class SearchResult:
 
 
 # ---------------------------------------------------------------------------
-# Memory record  (returned by _row_to_memory_record and search_memory)
+# Memory record
 # ---------------------------------------------------------------------------
 
 @dataclass
 class MemoryRecord:
-    """Decrypted, caller-facing view of an episodic or semantic memory row.
-
-    Constructed by SovereignMemory._row_to_memory_record() and
-    _semantic_row_to_record() — field names must match exactly.
-    """
     id           : str
     principal_id : str
     type         : str
-    created_at   : int           # Unix ms
+    created_at   : int
     tags         : List[str]
-    preview      : str           # First 280 chars of decrypted content
+    preview      : str
 
 
 # ---------------------------------------------------------------------------
-# Affect snapshot  (used by store_affect_snapshot)
+# Affect snapshot
 # ---------------------------------------------------------------------------
+
+# Names of scalar affect fields and the signal_type string they map to in
+# biometric_history. Order is stable so to_biometric_rows() is predictable.
+_AFFECT_SIGNAL_FIELDS: List[tuple[str, str]] = [
+    ("valence",      "affect_valence"),
+    ("arousal",      "affect_arousal"),
+    ("dominance",    "affect_dominance"),
+    ("entropy",      "affect_entropy"),
+    ("arc_stability","affect_arc_stability"),
+    ("confidence",   "affect_confidence"),
+]
+
 
 @dataclass
 class AffectSnapshot:
     """Snapshot of biometric affect data at a point in time.
 
-    Holds one or more BiometricSample readings captured together and
-    exposes to_biometric_rows() for batch INSERT into biometric_history.
+    Two usage modes:
 
-    Used by SovereignMemory.store_affect_snapshot() (sovereign_memory/__init__.py)
-    to persist all samples in a single atomic transaction.
+    1. **Scalar-field mode** (used by tests and the affect inference pipeline):
+       Populate the scalar affect fields (valence, arousal, …) and leave
+       ``biometric_samples`` empty.  ``to_biometric_rows()`` synthesises one
+       ``BiometricSample`` per non-None scalar field automatically.
+
+    2. **Sample-list mode** (used by biometric sensors / HRV pipeline):
+       Populate ``biometric_samples`` directly.  ``to_biometric_rows()``
+       passes them through as-is, ignoring scalar affect fields.
 
     Fields
     ------
     principal_id      : GAIA principal this snapshot belongs to.
     timestamp         : Unix millisecond epoch of the snapshot.
-    biometric_samples : Individual readings captured at this instant.
-    id                : Optional stable snapshot identifier (default: "").
-    source            : Provenance label for the snapshot (e.g. "journal",
-                        "sensor", "manual"). Persisted alongside biometric
-                        rows so callers can filter by origin.
+    biometric_samples : Explicit list of BiometricSample readings.
+    id                : Optional stable snapshot identifier.
+    source            : Provenance label (e.g. "journal", "sensor", "manual").
 
-    Affect-signal fields (all optional, for test and runtime use)
-    ---------------------------------------------------------------
-    emotion           : Primary emotion label (e.g. "joy", "grief").
-    confidence        : Classifier confidence [0, 1].
-    valence           : Affective valence  [-1.0, 1.0].  Positive = pleasant.
-    arousal           : Arousal/activation [-1.0, 1.0].
-    dominance         : Dominance/control  [-1.0, 1.0].
-    entropy           : Shannon entropy of the emotion distribution [0, 1].
-    arc_stability     : Stability of the emotion arc over recent turns [0, 1].
-    is_neutral_primary: True when the primary affect is neutral/baseline.
+    Affect-signal scalar fields
+    ---------------------------
+    emotion, confidence, valence, arousal, dominance,
+    entropy, arc_stability, is_neutral_primary
     """
     principal_id      : str
-    timestamp         : int                              # Unix ms — snapshot time
+    timestamp         : int
     biometric_samples : List[BiometricSample] = field(default_factory=list)
-    id                : str = ""                         # Optional stable snapshot id
-    source            : str = ""                         # Provenance: "journal", "sensor", etc.
+    id                : str = ""
+    source            : str = ""
 
-    # Affect-signal fields — all optional with safe defaults
+    # Scalar affect fields — used by to_biometric_rows() when biometric_samples is empty
     emotion           : Optional[str]   = None
     confidence        : float           = 0.0
     valence           : float           = 0.0
@@ -151,81 +150,98 @@ class AffectSnapshot:
     is_neutral_primary: bool            = False
 
     def to_biometric_rows(self) -> List[Dict[str, Any]]:
-        """Convert samples to rows suitable for biometric_history INSERT.
+        """Convert this snapshot to a list of biometric_history row dicts.
 
-        Each dict maps to the five columns: principal_id, timestamp,
-        signal_type, value, source  — matching the executemany() call in
-        SovereignMemory.store_affect_snapshot().
+        **Sample-list mode**: if ``biometric_samples`` is non-empty, convert
+        each sample directly (existing behaviour — no change for callers that
+        populate the list explicitly).
+
+        **Scalar-field mode**: if ``biometric_samples`` is empty, synthesise
+        one row per scalar affect field that has a non-None value.  This
+        covers the test pattern::
+
+            snap = AffectSnapshot(
+                principal_id=PID,
+                timestamp=int(time.time() * 1000),
+                source="journal",
+                valence=0.7,
+                arousal=0.6,
+                ...
+            )
+            mem.store_affect_snapshot(snap)
+            rows = mem.get_biometric_history(PID, "affect_valence", days=1)
+            assert len(rows) == 1          # ✔ now passes
         """
-        return [
-            {
-                "principal_id": self.principal_id,
-                "timestamp"   : sample.timestamp,
-                "signal_type" : sample.signal_type,
-                "value"       : sample.value,
-                "source"      : sample.source,
-            }
-            for sample in self.biometric_samples
-        ]
+        if self.biometric_samples:
+            # Sample-list mode — pass through as before
+            return [
+                {
+                    "principal_id": self.principal_id,
+                    "timestamp"   : sample.timestamp,
+                    "signal_type" : sample.signal_type,
+                    "value"       : sample.value,
+                    "source"      : sample.source,
+                }
+                for sample in self.biometric_samples
+            ]
+
+        # Scalar-field mode — synthesise one row per non-None affect field
+        rows: List[Dict[str, Any]] = []
+        for attr_name, signal_type in _AFFECT_SIGNAL_FIELDS:
+            value = getattr(self, attr_name, None)
+            if value is not None:
+                rows.append({
+                    "principal_id": self.principal_id,
+                    "timestamp"   : self.timestamp,
+                    "signal_type" : signal_type,
+                    "value"       : float(value),
+                    "source"      : self.source,
+                })
+        return rows
 
 
 # ---------------------------------------------------------------------------
-# Stage types  (used by get_stage_history)
+# Stage types
 # ---------------------------------------------------------------------------
 
 @dataclass
 class StageRecord:
-    """Current Alchemical Stage state for a principal."""
     principal_id : str
-    stage        : int           # 0–8 (Nigredo → Rubedo)
-    entered_at   : int           # Unix ms
+    stage        : int
+    entered_at   : int
     notes        : str = ""
 
 
 @dataclass
 class StageTransitionRecord:
-    """One row from the stage_transitions table.
-
-    Field names match the column names used in get_stage_history().
-    """
     id              : str
     principal_id    : str
     from_stage      : int
     to_stage        : int
-    transitioned_at : int        # Unix ms
+    transitioned_at : int
     is_regression   : bool
     markers_met     : Dict[str, Any]
     ceremony_shown  : bool
 
 
 # ---------------------------------------------------------------------------
-# Marker scores  (used by MarkerScores import in __init__.py)
+# Marker scores
 # ---------------------------------------------------------------------------
 
 @dataclass
 class MarkerScores:
-    """Named marker weights for stage-transition eligibility.
-
-    `markers` is a free-form dict so that callers can pass arbitrary
-    signal names without requiring a schema change.
-    """
     markers : Dict[str, float] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
-# Legacy artifact  (used by tag_as_legacy / export_legacy)
+# Legacy artifact
 # ---------------------------------------------------------------------------
 
 @dataclass
 class LegacyArtifact:
-    """A decrypted legacy artifact record.
-
-    Returned after decryption — the DB stores cipher fields; this type
-    holds the plaintext view used in export and display.
-    """
     id                : str
     principal_id      : str
-    created_at        : int           # Unix ms
+    created_at        : int
     stage_at_creation : int
     title             : str
     content           : str
