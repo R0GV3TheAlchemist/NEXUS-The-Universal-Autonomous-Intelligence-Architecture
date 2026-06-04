@@ -60,7 +60,14 @@ from .types import (
 )
 from . import vec_search
 
-__all__ = ["SovereignMemory"]
+# Exported so tests/conftest.py can patch 'sovereign_memory.SentenceTransformer'
+# via unittest.mock.patch without AttributeError.
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:  # sentence-transformers not installed (e.g. lightweight CI)
+    SentenceTransformer = None  # type: ignore[assignment,misc]
+
+__all__ = ["SovereignMemory", "SentenceTransformer"]
 
 _SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
