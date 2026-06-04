@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time as _time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -43,6 +43,37 @@ class MemoryTier(str, Enum):
     SEMANTIC   = "semantic"
     LONG_TERM  = "long_term"
     PERMANENT  = "permanent"
+
+
+def _to_datetime(value: Any, default_factory=datetime.utcnow) -> datetime:
+    """Coerce *value* to a :class:`datetime`, regardless of its type.
+
+    Accepted input types
+    --------------------
+    - ``datetime``      → returned as-is
+    - ``int`` / ``float`` → treated as a UTC epoch (seconds since 1970-01-01)
+    - ``str``           → parsed with ``datetime.fromisoformat``
+    - anything else     → ``default_factory()`` is called and returned
+
+    This is the single normalisation point for all timestamp fields on
+    :class:`MemoryItem`.  Centralising the logic here means neither
+    ``__init__`` nor ``to_dict`` need bespoke type checks, and any future
+    storage layer that returns a non-datetime timestamp will be handled
+    automatically.
+    """
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, (int, float)):
+        # SQLite stores timestamps as integer epoch seconds (or millis).
+        # Heuristic: values > 1e10 are milliseconds, otherwise seconds.
+        epoch_s = value / 1000.0 if value > 1e10 else float(value)
+        return datetime.utcfromtimestamp(epoch_s)
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            pass
+    return default_factory()
 
 
 @dataclass
@@ -95,8 +126,8 @@ class MemoryItem:
         role:        Optional[str]       = None,
         tags:        Optional[List[str]] = None,
         metadata:    Optional[Dict[str, Any]] = None,
-        created_at:  Optional[datetime]  = None,
-        updated_at:  Optional[datetime]  = None,
+        created_at:  Any                 = None,   # int | float | str | datetime | None
+        updated_at:  Any                 = None,   # int | float | str | datetime | None
         id:          Optional[str]       = None,
         topic_tag:   Optional[str]       = None,
         ttl_seconds: Optional[int]       = None,
@@ -113,8 +144,12 @@ class MemoryItem:
         self.role        = role
         self.tags        = tags if tags is not None else []
         self.metadata    = metadata if metadata is not None else {}
-        self.created_at  = created_at or datetime.utcnow()
-        self.updated_at  = updated_at
+        # Normalise timestamps to datetime on ingestion — this is the
+        # single place where int/float/str timestamps from SQLite or any
+        # other storage layer are converted, so the rest of the codebase
+        # can safely assume created_at is always a datetime object.
+        self.created_at  = _to_datetime(created_at) if created_at is not None else datetime.utcnow()
+        self.updated_at  = _to_datetime(updated_at) if updated_at is not None else None
         self.id          = id
         self.topic_tag   = topic_tag
         self.ttl_seconds = ttl_seconds
@@ -137,7 +172,7 @@ class MemoryItem:
         """Return created_at as a UTC epoch integer."""
         if isinstance(self.created_at, datetime):
             return int(self.created_at.timestamp())
-        return int(self.created_at)
+        return int(self.created_at)  # fallback — should never reach here post-normalisation
 
     def age_seconds(self) -> int:
         """Return age of this item in whole seconds since created_at."""
@@ -176,6 +211,26 @@ class MemoryItem:
     # Serialisation
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _ts_to_iso(ts: Any) -> Optional[str]:
+        """Belt-and-suspenders: convert any timestamp representation to ISO-8601.
+
+        After normalisation in ``__init__``, ``created_at`` and ``updated_at``
+        should always be ``datetime`` objects by the time ``to_dict`` is called.
+        This helper exists as a safety net so that no future code path can
+        introduce a regression by passing a non-datetime value.
+        """
+        if ts is None:
+            return None
+        if isinstance(ts, datetime):
+            return ts.isoformat()
+        if isinstance(ts, (int, float)):
+            epoch_s = ts / 1000.0 if ts > 1e10 else float(ts)
+            return datetime.utcfromtimestamp(epoch_s).isoformat()
+        if isinstance(ts, str):
+            return ts  # already ISO-8601
+        return datetime.utcnow().isoformat()
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id":          self.id,
@@ -191,8 +246,8 @@ class MemoryItem:
             "metadata":    self.metadata,
             "topic_tag":   self.topic_tag,
             "ttl_seconds": self.ttl_seconds,
-            "created_at":  self.created_at.isoformat(),
-            "updated_at":  self.updated_at.isoformat() if self.updated_at else None,
+            "created_at":  self._ts_to_iso(self.created_at),
+            "updated_at":  self._ts_to_iso(self.updated_at),
         }
 
     @classmethod
@@ -210,8 +265,8 @@ class MemoryItem:
             metadata    = data.get("metadata", {}),
             topic_tag   = data.get("topic_tag"),
             ttl_seconds = data.get("ttl_seconds"),
-            created_at  = datetime.fromisoformat(data["created_at"]) if "created_at" in data else datetime.utcnow(),
-            updated_at  = datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else None,
+            created_at  = data.get("created_at"),   # _to_datetime handles str/int/datetime
+            updated_at  = data.get("updated_at"),   # _to_datetime handles str/int/datetime
             id          = data.get("id"),
         )
 
