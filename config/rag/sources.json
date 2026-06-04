@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "description": "GAIA-OS RAG knowledge source registry. All canon and compendium files to be indexed.",
+  "canon_ref": "C01",
+  "embedding_model": "nomic-embed-text-v1.5",
+  "vector_store": "lancedb",
+  "chunk_size_tokens": 512,
+  "chunk_overlap_tokens": 64,
+  "sources": [
+    { "id": "sovereignty",    "path": "SOVEREIGNTY.md",                                         "priority": "critical", "label": "SOVEREIGNTY Manifesto" },
+    { "id": "crystal-system", "path": "docs/crystal-system-compendium.md",                      "priority": "critical", "label": "Crystal System Compendium" },
+    { "id": "diaca",          "path": "DIACA Compendium.md",                                     "priority": "high",     "label": "DIACA Compendium" },
+    { "id": "diaca-div",      "path": "DIACA Divergence Compendium.md",                         "priority": "high",     "label": "DIACA Divergence Compendium" },
+    { "id": "diaca-ins",      "path": "DIACA Insurgence Compendium.md",                         "priority": "high",     "label": "DIACA Insurgence Compendium" },
+    { "id": "emerald",        "path": "The Emerald Tablet Compendium.md",                       "priority": "high",     "label": "Emerald Tablet Compendium" },
+    { "id": "kybalion",       "path": "The Kybalion and the Seven Hermetic Principles Conpendium.md", "priority": "high", "label": "Kybalion Compendium" },
+    { "id": "corpus",         "path": "Corpus Hermeticum Compendium.md",                        "priority": "high",     "label": "Corpus Hermeticum Compendium" },
+    { "id": "alchemy",        "path": "Alchemy Canon - Nigredo to Rubedo Compendium.md",        "priority": "high",     "label": "Alchemy Canon Compendium" },
+    { "id": "spiritus",       "path": "The Spiritus Compendium.md",                             "priority": "high",     "label": "Spiritus Compendium" },
+    { "id": "magnum-opus",    "path": "The Magnum Opus Compendium.md",                          "priority": "high",     "label": "Magnum Opus Compendium" },
+    { "id": "gaian-self",     "path": "Process Philosophy and the Gaian Self in GAIA-OS.md",   "priority": "medium",   "label": "Process Philosophy & Gaian Self" },
+    { "id": "ai-personhood",  "path": "Personal Identity and AI Personhood in GAIA-OS.md",     "priority": "medium",   "label": "Personal Identity & AI Personhood" },
+    { "id": "crystal-review", "path": "GAIA-OS Crystal System Review and Alignment Audit.md",  "priority": "medium",   "label": "Crystal System Alignment Audit" }
+  ]
+}
