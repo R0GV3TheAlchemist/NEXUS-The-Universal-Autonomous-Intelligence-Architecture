@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "description": "GAIA-OS default tool policy registry. Every tool must be registered here before use.",
+  "canon_ref": "C01",
+  "policies": {
+    "memory.read":         { "tier": 0, "scope": ["memory:read"],    "audit": false, "description": "Read from persistent memory" },
+    "memory.write":        { "tier": 1, "scope": ["memory:write"],   "audit": true,  "description": "Write to persistent memory" },
+    "memory.delete":       { "tier": 2, "scope": ["memory:delete"],  "audit": true,  "description": "Delete a memory entry" },
+    "rag.query":           { "tier": 0, "scope": ["rag:read"],       "audit": false, "description": "Query the RAG knowledge base" },
+    "files.list":          { "tier": 0, "scope": ["files:read"],     "audit": false, "description": "List files in a directory" },
+    "files.read":          { "tier": 0, "scope": ["files:read"],     "audit": false, "description": "Read file contents" },
+    "files.write":         { "tier": 1, "scope": ["files:write"],    "audit": true,  "description": "Write or create a local file" },
+    "files.delete":        { "tier": 2, "scope": ["files:delete"],   "audit": true,  "description": "Delete a local file" },
+    "github.create_issue": { "tier": 1, "scope": ["repo:write"],     "audit": true,  "description": "Create a GitHub issue" },
+    "github.push_files":   { "tier": 1, "scope": ["repo:write"],     "audit": true,  "description": "Push files to a GitHub repo" },
+    "github.merge_pr":     { "tier": 2, "scope": ["repo:admin"],     "audit": true,  "description": "Merge a pull request" },
+    "external.api_call":   { "tier": 2, "scope": ["external:write"], "audit": true,  "description": "Call an external third-party API" },
+    "os.config_change":    { "tier": 3, "scope": ["os:admin"],       "audit": true,  "description": "Modify OS-level config" },
+    "data.export":         { "tier": 3, "scope": ["data:export"],    "audit": true,  "description": "Export Gaian data outside system" }
+  }
+}
