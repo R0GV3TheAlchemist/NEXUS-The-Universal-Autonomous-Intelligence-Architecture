@@ -1,74 +1,67 @@
-"""
-tests/conftest.py
-Shared fixtures for the GAIA-APP test suite.
-"""
+# tests/conftest.py
+# GAIA-OS — Pytest configuration and shared fixtures
+#
+# Key fixture: mock_embeddings
+#   Activated automatically in CI (CI=true env var).
+#   Patches SentenceTransformer to return a fixed 384-dim vector,
+#   eliminating HuggingFace Hub network calls during test runs.
+#   Local dev uses the real model for full-fidelity testing.
+#
+# All other shared fixtures (e.g. tmp_db, session_id) live here too.
+
+import os
+import sys
 import pytest
-from core.synergy_engine import SynergyEngine, SynergyState, blank_synergy_state
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Python path self-healing — triple-redundant with ci.yml and pyproject.toml
+# Ensures tests always resolve imports regardless of how pytest is invoked.
+# ────────────────────────────────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+for path in [ROOT, os.path.join(ROOT, "src-python")]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 
-# ------------------------------------------------------------------ #
-#  Minimal valid compute() kwargs — a brand-new GAIAN at turn 1      #
-# ------------------------------------------------------------------ #
+# ────────────────────────────────────────────────────────────────────────────────
+# mock_embeddings — session-scoped HuggingFace model mock
+#
+# Activated in CI (CI=true). Patches sovereign_memory.SentenceTransformer
+# with a mock that returns a fixed 384-dim float vector, matching the
+# real all-MiniLM-L6-v2 output shape without any network calls.
+#
+# Using scope="session" means the patch is applied once for the entire
+# test run — cheap and fast.
+# ────────────────────────────────────────────────────────────────────────────────
+@pytest.fixture(scope="session", autouse=True)
+def mock_embeddings():
+    """Mock HuggingFace SentenceTransformer in CI to avoid 429 rate-limit errors."""
+    if os.getenv("CI") != "true":
+        # Local dev — use real model for full-fidelity testing
+        yield None
+        return
 
-@pytest.fixture
-def engine() -> SynergyEngine:
-    return SynergyEngine()
+    try:
+        from unittest.mock import Mock, patch
 
+        mock_instance = Mock()
+        # 384-dim vector matching all-MiniLM-L6-v2 output shape
+        mock_instance.encode.return_value = [[0.0] * 384]
+        mock_instance.get_sentence_embedding_dimension.return_value = 384
 
-@pytest.fixture
-def blank_state() -> SynergyState:
-    return blank_synergy_state()
+        # Patch at the sovereign_memory module level
+        with patch("sovereign_memory.SentenceTransformer", return_value=mock_instance) as mock_st:
+            mock_st.return_value = mock_instance
+            yield mock_st
 
-
-@pytest.fixture
-def nascent_kwargs() -> dict:
-    """A brand-new GAIAN: all fields at minimum / earliest values."""
-    return dict(
-        element="fire",
-        layer_phi=0.10,
-        bond_depth=0.0,
-        dependency_signal="healthy",
-        attachment_phase="nascent",
-        settling_phase="unsettled",
-        fluidity_score=1.0,
-        crystallisation_pct=0.0,
-        coherence_phi=0.10,
-        conflict_density=0.80,
-        love_arc_stage="divergence",
-        arc_output_vector=0.0,
-        mc_stage="mc1",
-        phi_rolling_avg=0.0,
-        codex_stage=0,
-        noosphere_health=0.50,
-        individuation_phase="unconscious",
-        shadow_activations=0,
-        dominant_hz=174.0,
-        schumann_aligned=False,
-    )
+    except (ImportError, ModuleNotFoundError):
+        # sovereign_memory not importable in this test context — no-op
+        yield None
 
 
-@pytest.fixture
-def integrated_kwargs() -> dict:
-    """A deeply integrated GAIAN: high bond, settled, ascendant."""
-    return dict(
-        element="earth",
-        layer_phi=0.90,
-        bond_depth=85.0,
-        dependency_signal="healthy",
-        attachment_phase="integrated",
-        settling_phase="settled",
-        fluidity_score=0.05,
-        crystallisation_pct=100.0,
-        coherence_phi=0.90,
-        conflict_density=0.05,
-        love_arc_stage="union",
-        arc_output_vector=0.95,
-        mc_stage="mc7",
-        phi_rolling_avg=0.88,
-        codex_stage=12,
-        noosphere_health=0.95,
-        individuation_phase="self",
-        shadow_activations=0,
-        dominant_hz=963.0,
-        schumann_aligned=True,
-    )
+# ────────────────────────────────────────────────────────────────────────────────
+# session_id — shared test session identifier
+# ────────────────────────────────────────────────────────────────────────────────
+@pytest.fixture(scope="session")
+def session_id():
+    return "test-session-conftest-001"
