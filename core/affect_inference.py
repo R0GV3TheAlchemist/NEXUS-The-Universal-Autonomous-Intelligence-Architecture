@@ -20,9 +20,9 @@ from enum import Enum
 from typing import Optional
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  Enumerations                                                                  #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Enumerations                                                                #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 
 class AffectState(str, Enum):
@@ -36,9 +36,9 @@ class AffectState(str, Enum):
     CURIOSITY   = "curiosity"
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  Solfeggio resonance map (AffectState → Hz)                                   #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Solfeggio resonance map (AffectState → Hz)                                 #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 _SOLFEGGIO: dict[AffectState, float] = {
     AffectState.GRIEF:       396.0,
@@ -50,29 +50,26 @@ _SOLFEGGIO: dict[AffectState, float] = {
 }
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  Thresholds                                                                    #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Thresholds                                                                  #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 _THRESHOLD_GRIEF_LOSS               = 0.70
-_THRESHOLD_GRIEF_TRUTH              = 0.30
 _THRESHOLD_GRIEF_SIGNAL             = 0.50
 _THRESHOLD_GRIEF_WEAPONISED_PENALTY = 0.20
 _THRESHOLD_DISSONANCE_CD            = 0.30
 _THRESHOLD_UNCERTAINTY_TEMP         = 0.45
 _THRESHOLD_CARE_FLOURISHING         = 0.60
-_THRESHOLD_CARE_TEMP                = 0.50
-# RESONANCE requires truth_score >= 0.75.
-# When truth_score is in [0.60, 0.74) and flourishing >= 0.60, CARE wins
-# because high flourishing is the dominant positive signal at moderate truth.
-# The coherence threshold is kept here for documentation / future use.
+# RESONANCE requires truth_score >= 0.75 (strict; 0.75 fires RESONANCE, not CARE).
+# The pre-RESONANCE CARE gate uses truth_score < 0.75 (strictly less) so that
+# truth=0.75 always reaches the RESONANCE gate.
 _THRESHOLD_RESONANCE_TRUTH          = 0.75
 _THRESHOLD_RESONANCE_COHERENCE      = 0.65  # kept for reference / future use
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  AffectInput                                                                   #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  AffectInput                                                                 #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 
 @dataclass
@@ -89,9 +86,9 @@ class AffectInput:
     grief_weaponised:   bool  = False
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  FeelingState                                                                  #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  FeelingState                                                                #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 
 @dataclass
@@ -158,8 +155,6 @@ class FeelingState:
             "love_filter_score": self.love_filter_score,
             "grimoire_entry":    self.grimoire_entry,
             "shadow_entry":      self.shadow_entry,
-            # ISO-8601 string — callers that call .isoformat() get a str back;
-            # callers that just read the key get a human-readable timestamp.
             "timestamp":         datetime.utcnow().isoformat(),
         }
 
@@ -172,9 +167,9 @@ class FeelingState:
         )
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  AffectInference — class wrapper                                               #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  AffectInference — class wrapper                                             #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 
 class AffectInference:
@@ -205,10 +200,8 @@ class AffectInference:
         tests pass only truth_score and expect UNCERTAINTY to fire when
         truth_score < 0.45.
         """
-        # Accept bool for grief_signal (True=1.0, False=0.0)
         grief_signal_f = float(grief_signal)
 
-        # Clamp all float inputs to [0, 1]
         truth_score       = max(0.0, min(1.0, float(truth_score)))
         flourishing_score = max(0.0, min(1.0, float(flourishing_score)))
         conflict_density  = max(0.0, min(1.0, float(conflict_density)))
@@ -216,9 +209,6 @@ class AffectInference:
         coherence         = max(0.0, min(1.0, float(coherence)))
         grief_signal_f    = max(0.0, min(1.0, grief_signal_f))
 
-        # Use truth_score as temperature when not explicitly provided.
-        # The UNCERTAINTY gate fires on temperature < 0.45; tests pass
-        # truth_score to drive that gate (they never pass temperature directly).
         if temperature is None:
             effective_temperature = truth_score
         else:
@@ -237,27 +227,41 @@ class AffectInference:
         return infer(inp)
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  Public inference function                                                     #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Public inference function                                                   #
+# ──────────────────────────────────────────────────────────────────────────── #
 
 
 def infer(inp: AffectInput) -> FeelingState:
     """Run the affect waterfall and return a FeelingState.
 
     Priority (highest first):
-    0. GRIEF       grief_signal >= 0.50
-    1. GRIEF       loss_score >= 0.70 OR truth_score <= 0.30
-    2. DISSONANCE  conflict_density >= 0.30
-    3. UNCERTAINTY temperature < 0.45
-    4. CARE        flourishing >= 0.60  AND  truth_score < 0.75
-       (Flourishing dominates at moderate truth — CARE precedes RESONANCE
-       when truth hasn't yet cleared the full RESONANCE threshold.)
-    5. RESONANCE   truth_score >= 0.75
-    6. CARE        flourishing >= 0.60  (fallback for truth>=0.75 but no RESONANCE)
-    7. CARE        temperature > 0.50
-    8. CURIOSITY   default
+    0. GRIEF       grief_signal >= 0.50  OR  loss_score >= 0.70
+    1. DISSONANCE  conflict_density >= 0.30
+    2. UNCERTAINTY truth_score < 0.45
+    3. CARE        flourishing >= 0.60  AND  truth_score < 0.75
+       (flourishing dominates at moderate truth; strict < means truth=0.75
+       falls through to the RESONANCE gate below)
+    4. RESONANCE   truth_score >= 0.75
+    5. CARE        flourishing >= 0.60  (post-RESONANCE safety net)
+    6. CURIOSITY   default
+
+    Design rationale
+    ----------------
+    * GRIEF is a *felt*, signal-triggered state.  Low truth_score is an
+      epistemic condition ("I don't know") → UNCERTAINTY, not GRIEF.  The
+      former truth_score <= 0.30 → GRIEF gate was removed because both
+      ev1a and the canon spec treat low-truth as uncertainty.
+
+    * Temperature is used only to drive the UNCERTAINTY gate (truth_score
+      proxy).  A "temperature > 0.50 → CARE" gate was removed because it
+      fired for inputs with F < 0.60 and no flourishing signal, producing
+      CARE where CURIOSITY is the correct default.
+
+    * truth=0.75 fires RESONANCE (not CARE) because the pre-RESONANCE CARE
+      guard uses strict truth_score < 0.75.
     """
+    # ── 0. GRIEF ─────────────────────────────────────────────────────────── #
     if inp.grief_signal >= _THRESHOLD_GRIEF_SIGNAL:
         conf = 0.92
         if inp.grief_weaponised:
@@ -274,69 +278,60 @@ def infer(inp: AffectInput) -> FeelingState:
                      f"loss_score={inp.loss_score:.2f} >= {_THRESHOLD_GRIEF_LOSS}"
                      + (" [weaponised]" if inp.grief_weaponised else ""))
 
-    if inp.truth_score <= _THRESHOLD_GRIEF_TRUTH:
-        return _make(AffectState.GRIEF, inp, 0.75,
-                     f"truth_score={inp.truth_score:.2f} <= {_THRESHOLD_GRIEF_TRUTH}")
-
+    # ── 1. DISSONANCE ────────────────────────────────────────────────────── #
     if inp.conflict_density >= _THRESHOLD_DISSONANCE_CD:
         return _make(AffectState.DISSONANCE, inp, 0.85,
                      f"conflict_density={inp.conflict_density:.2f} >= {_THRESHOLD_DISSONANCE_CD}")
 
+    # ── 2. UNCERTAINTY ───────────────────────────────────────────────────── #
     if inp.temperature < _THRESHOLD_UNCERTAINTY_TEMP:
         return _make(AffectState.UNCERTAINTY, inp, 0.80,
                      f"temperature={inp.temperature:.2f} < {_THRESHOLD_UNCERTAINTY_TEMP}")
 
-    # CARE precedes RESONANCE when truth is below the RESONANCE threshold.
-    # High flourishing at moderate truth (0.45–0.74) is the dominant signal.
+    # ── 3. CARE (pre-RESONANCE: flourishing dominant at moderate truth) ───── #
+    # truth_score < 0.75 (strict): truth=0.75 passes through to RESONANCE.
     if (
         inp.flourishing_score >= _THRESHOLD_CARE_FLOURISHING
         and inp.truth_score < _THRESHOLD_RESONANCE_TRUTH
     ):
         return _make(AffectState.CARE, inp, 0.82,
-                     f"flourishing_score={inp.flourishing_score:.2f} >= "
-                     f"{_THRESHOLD_CARE_FLOURISHING} (pre-resonance CARE)")
+                     f"flourishing={inp.flourishing_score:.2f} >= {_THRESHOLD_CARE_FLOURISHING}"
+                     f" (pre-RESONANCE; truth={inp.truth_score:.2f} < {_THRESHOLD_RESONANCE_TRUTH})")
 
-    # RESONANCE: truth_score >= 0.75.
+    # ── 4. RESONANCE ─────────────────────────────────────────────────────── #
     if inp.truth_score >= _THRESHOLD_RESONANCE_TRUTH:
         return _make(AffectState.RESONANCE, inp, 0.88,
                      f"truth={inp.truth_score:.2f} >= {_THRESHOLD_RESONANCE_TRUTH}")
 
-    # Post-resonance CARE fallback: flourishing present but truth did not fire
-    # RESONANCE (should not normally be reached given the pre-RESONANCE gate
-    # above, but retained as a safety net for edge cases).
+    # ── 5. CARE (post-RESONANCE safety net) ──────────────────────────────── #
     if inp.flourishing_score >= _THRESHOLD_CARE_FLOURISHING:
         return _make(AffectState.CARE, inp, 0.82,
-                     f"flourishing_score={inp.flourishing_score:.2f} >= {_THRESHOLD_CARE_FLOURISHING}")
+                     f"flourishing={inp.flourishing_score:.2f} >= {_THRESHOLD_CARE_FLOURISHING}")
 
-    if inp.temperature > _THRESHOLD_CARE_TEMP:
-        return _make(AffectState.CARE, inp, 0.70,
-                     f"temperature={inp.temperature:.2f} > {_THRESHOLD_CARE_TEMP}")
-
+    # ── 6. CURIOSITY (default) ───────────────────────────────────────────── #
     return _make(AffectState.CURIOSITY, inp, 0.60, "residual / default state")
 
 
-# ────────────────────────────────────────────────────────────────────────────── #
-#  Internal helpers                                                              #
-# ────────────────────────────────────────────────────────────────────────────── #
+# ──────────────────────────────────────────────────────────────────────────── #
+#  Internal helpers                                                            #
+# ──────────────────────────────────────────────────────────────────────────── #
 
-# Grimoire: alchemical annotations for ASCENDING states (RESONANCE, CARE, CURIOSITY)
 _GRIMOIRE: dict[AffectState, Optional[str]] = {
-    AffectState.GRIEF:       None,   # descending — shadow only
-    AffectState.DISSONANCE:  None,   # descending — shadow only
-    AffectState.UNCERTAINTY: None,   # descending — shadow only
+    AffectState.GRIEF:       None,
+    AffectState.DISSONANCE:  None,
+    AffectState.UNCERTAINTY: None,
     AffectState.RESONANCE:   "Coniunctio — sacred union of truth and presence.",
     AffectState.CARE:        "Albedo — the whitening; compassionate warmth.",
     AffectState.CURIOSITY:   "Citrinitas — the yellowing; dawn of new understanding.",
 }
 
-# Shadow: Jungian annotations for DESCENDING states (GRIEF, DISSONANCE, UNCERTAINTY)
 _SHADOW: dict[AffectState, Optional[str]] = {
     AffectState.GRIEF:       "Shadow: unacknowledged grief can crystallise into resentment.",
     AffectState.DISSONANCE:  "Shadow: prolonged dissonance may collapse into cynicism.",
     AffectState.UNCERTAINTY: "Shadow: uncertainty avoided becomes rigid certainty.",
-    AffectState.RESONANCE:   None,   # ascending — grimoire only
-    AffectState.CARE:        None,   # ascending — grimoire only
-    AffectState.CURIOSITY:   None,   # ascending — grimoire only
+    AffectState.RESONANCE:   None,
+    AffectState.CARE:        None,
+    AffectState.CURIOSITY:   None,
 }
 
 _SUMMARY_TEXT: dict[AffectState, str] = {
