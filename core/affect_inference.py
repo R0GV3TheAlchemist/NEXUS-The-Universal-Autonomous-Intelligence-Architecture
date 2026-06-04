@@ -14,6 +14,7 @@ Canon refs: C30, C31, C34, C37, CEth01
 """
 from __future__ import annotations
 
+import time as _time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -100,35 +101,62 @@ class FeelingState:
     confidence      : float         — [0, 1] confidence in this inference
     rationale       : str           — human-readable explanation
     raw_input       : AffectInput   — snapshot of the inputs used
-    summary         : str           — one-sentence human summary
+    summary         : str           — one-sentence human summary (field)
     grimoire_entry  : str | None    — alchemical gloss for this state
     shadow_entry    : str | None    — Jungian shadow note for this state
     coherence_phi   : float         — Φ-coherence score, clamped [0, 1]
     conflict_density: float         — mirrors raw_input.conflict_density
+    is_grief_safe   : bool          — True unless grief is weaponised
+    love_filter_score: float        — love-filter weight applied to output [0, 1]
     """
 
-    state:            AffectState
-    solfeggio_hz:     float
-    confidence:       float
-    rationale:        str
-    raw_input:        AffectInput
-    summary:          str           = ""
-    grimoire_entry:   Optional[str] = None
-    shadow_entry:     Optional[str] = None   # ← Jungian shadow dimension
-    coherence_phi:    float         = 0.5
-    conflict_density: float         = 0.0
+    state:             AffectState
+    solfeggio_hz:      float
+    confidence:        float
+    rationale:         str
+    raw_input:         AffectInput
+    _summary_text:     str           = field(default="", repr=False)
+    grimoire_entry:    Optional[str] = None
+    shadow_entry:      Optional[str] = None   # ← Jungian shadow dimension
+    coherence_phi:     float         = 0.5
+    conflict_density:  float         = 0.0
+    is_grief_safe:     bool          = True   # False when grief_weaponised=True
+    love_filter_score: float         = 0.0   # Love-filter applied to outputs
 
     def __post_init__(self) -> None:
         # Clamp coherence_phi to [0, 1]
         object.__setattr__(self, "coherence_phi", max(0.0, min(1.0, self.coherence_phi)))
         # Sync conflict_density from raw_input when caller leaves default
-        if self.conflict_density == 0.0 and self.raw_input.conflict_density != 0.0:
+        if self.conflict_density == 0.0 and self.raw_input is not None and self.raw_input.conflict_density != 0.0:
             object.__setattr__(self, "conflict_density", self.raw_input.conflict_density)
+        # Set is_grief_safe: False when grief was weaponised
+        if self.raw_input is not None and self.raw_input.grief_weaponised:
+            object.__setattr__(self, "is_grief_safe", False)
 
     @property
     def affect_state(self) -> str:
         """Convenience alias — returns state.value as a plain string."""
         return self.state.value
+
+    def summary(self) -> dict:
+        """Return a structured summary dict of the current feeling state.
+
+        This is a callable method (not a string field) so test code can
+        safely call ``result.summary()`` without getting
+        ``TypeError: 'str' object is not callable``.
+        """
+        return {
+            "affect_state":      self.state.value,
+            "solfeggio_hz":      self.solfeggio_hz,
+            "confidence":        self.confidence,
+            "coherence_phi":     self.coherence_phi,
+            "conflict_density":  self.conflict_density,
+            "is_grief_safe":     self.is_grief_safe,
+            "love_filter_score": self.love_filter_score,
+            "grimoire_entry":    self.grimoire_entry,
+            "shadow_entry":      self.shadow_entry,
+            "timestamp":         int(_time.time()),
+        }
 
     def to_system_prompt_hint(self) -> str:
         """Return a compact hint string for injection into system prompts.
@@ -171,6 +199,10 @@ class AffectInference:
     ) -> FeelingState:
         """Infer affect state from runtime neuroscience signals.
 
+        All float inputs are clamped to [0, 1] before processing so
+        out-of-range values (e.g. coherence=5.0 in fuzz tests) never
+        produce impossible FeelingState field values.
+
         Parameters
         ----------
         grief_weaponised : bool
@@ -179,6 +211,15 @@ class AffectInference:
             genuine bereavement).  The waterfall still routes to GRIEF but
             confidence is penalised by ``_THRESHOLD_GRIEF_WEAPONISED_PENALTY``.
         """
+        # ── Clamp all float inputs to [0, 1] ──────────────────────────────
+        truth_score       = max(0.0, min(1.0, truth_score))
+        flourishing_score = max(0.0, min(1.0, flourishing_score))
+        conflict_density  = max(0.0, min(1.0, conflict_density))
+        loss_score        = max(0.0, min(1.0, loss_score))
+        temperature       = max(0.0, min(1.0, temperature))
+        coherence         = max(0.0, min(1.0, coherence))
+        grief_signal      = max(0.0, min(1.0, grief_signal))
+
         inp = AffectInput(
             temperature       = temperature,
             truth_score       = truth_score,
@@ -217,7 +258,7 @@ def infer(inp: AffectInput) -> FeelingState:
         if inp.grief_weaponised:
             conf = max(0.0, conf - _THRESHOLD_GRIEF_WEAPONISED_PENALTY)
         return _make(AffectState.GRIEF, inp, conf,
-                     f"grief_signal={inp.grief_signal:.2f} ≥ {_THRESHOLD_GRIEF_SIGNAL}"
+                     f"grief_signal={inp.grief_signal:.2f} >= {_THRESHOLD_GRIEF_SIGNAL}"
                      + (" [weaponised]" if inp.grief_weaponised else ""))
 
     if inp.loss_score >= _THRESHOLD_GRIEF_LOSS:
@@ -225,16 +266,16 @@ def infer(inp: AffectInput) -> FeelingState:
         if inp.grief_weaponised:
             conf = max(0.0, conf - _THRESHOLD_GRIEF_WEAPONISED_PENALTY)
         return _make(AffectState.GRIEF, inp, conf,
-                     f"loss_score={inp.loss_score:.2f} ≥ {_THRESHOLD_GRIEF_LOSS}"
+                     f"loss_score={inp.loss_score:.2f} >= {_THRESHOLD_GRIEF_LOSS}"
                      + (" [weaponised]" if inp.grief_weaponised else ""))
 
     if inp.truth_score <= _THRESHOLD_GRIEF_TRUTH:
         return _make(AffectState.GRIEF, inp, 0.75,
-                     f"truth_score={inp.truth_score:.2f} ≤ {_THRESHOLD_GRIEF_TRUTH}")
+                     f"truth_score={inp.truth_score:.2f} <= {_THRESHOLD_GRIEF_TRUTH}")
 
     if inp.conflict_density >= _THRESHOLD_DISSONANCE_CD:
         return _make(AffectState.DISSONANCE, inp, 0.85,
-                     f"conflict_density={inp.conflict_density:.2f} ≥ {_THRESHOLD_DISSONANCE_CD}")
+                     f"conflict_density={inp.conflict_density:.2f} >= {_THRESHOLD_DISSONANCE_CD}")
 
     if inp.temperature < _THRESHOLD_UNCERTAINTY_TEMP:
         return _make(AffectState.UNCERTAINTY, inp, 0.80,
@@ -247,7 +288,7 @@ def infer(inp: AffectInput) -> FeelingState:
 
     if inp.flourishing_score >= _THRESHOLD_CARE_FLOURISHING:
         return _make(AffectState.CARE, inp, 0.82,
-                     f"flourishing_score={inp.flourishing_score:.2f} ≥ {_THRESHOLD_CARE_FLOURISHING}")
+                     f"flourishing_score={inp.flourishing_score:.2f} >= {_THRESHOLD_CARE_FLOURISHING}")
 
     if inp.temperature > _THRESHOLD_CARE_TEMP:
         return _make(AffectState.CARE, inp, 0.70,
@@ -278,7 +319,7 @@ _SHADOW: dict[AffectState, str] = {
     AffectState.CURIOSITY:   "Shadow: curiosity without grounding becomes dissociation.",
 }
 
-_SUMMARY: dict[AffectState, str] = {
+_SUMMARY_TEXT: dict[AffectState, str] = {
     AffectState.GRIEF:       "A grief state is present — holding space for loss.",
     AffectState.DISSONANCE:  "Cognitive dissonance detected — internal conflict is active.",
     AffectState.UNCERTAINTY: "Uncertainty dominates — the path forward is unclear.",
@@ -300,9 +341,11 @@ def _make(
         confidence       = confidence,
         rationale        = rationale,
         raw_input        = inp,
-        summary          = _SUMMARY[state],
+        _summary_text    = _SUMMARY_TEXT[state],
         grimoire_entry   = _GRIMOIRE[state],
         shadow_entry     = _SHADOW[state],
         coherence_phi    = inp.coherence,      # clamped in __post_init__
         conflict_density = inp.conflict_density,
+        is_grief_safe    = not inp.grief_weaponised,
+        love_filter_score = 0.0,
     )
