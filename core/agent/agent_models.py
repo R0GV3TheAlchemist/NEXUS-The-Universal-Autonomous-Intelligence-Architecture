@@ -78,6 +78,7 @@ class PlannedAction:
     """
     A single planned action within a Plan.
     Supports branching via on_success and on_failure step names.
+    risk_level is an optional declarative hint for ActionGate.
     """
     name:        str
     description: str
@@ -86,6 +87,7 @@ class PlannedAction:
     on_success:  Optional[str]                  = None   # Step name to jump to on success
     on_failure:  Optional[str]                  = None   # Step name to jump to on failure
     critical:    bool                           = False  # If True, failure halts the loop
+    risk_level:  Optional[str]                  = None   # low / medium / high / irreversible
 
 
 @dataclass
@@ -132,6 +134,11 @@ class AgentAction:
     def fail(self, error: str) -> None:
         self.error      = error
         self.status     = ActionStatus.FAILURE
+        self.finished_at = datetime.now(timezone.utc)
+
+    def skip(self, reason: str) -> None:
+        self.error       = reason
+        self.status      = ActionStatus.SKIPPED
         self.finished_at = datetime.now(timezone.utc)
 
 

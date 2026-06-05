@@ -10,7 +10,7 @@ Design principles:
   - The Gaian is always in control: pause, inspect, resume at any point.
   - Hard halt conditions prevent runaway execution.
   - Every action and observation is logged for full observability.
-  - The loop integrates with the Policy Engine (issue #220) before executing any action.
+  - The loop integrates with the Policy Engine before executing any action.
   - Canon ref: C01 (GAIA as orchestration layer), C-SENTINEL Article 4.
 
 Canon Reference: C01, C-SENTINEL Article 4
@@ -35,6 +35,12 @@ from core.agent.agent_models import (
     Plan,
     PlannedAction,
 )
+
+try:
+    from core.agent.action_gate import ActionGate, ActionRiskLevel
+except Exception:  # noqa: BLE001
+    ActionGate = None           # type: ignore[assignment,misc]
+    ActionRiskLevel = None      # type: ignore[assignment,misc]
 
 logger = logging.getLogger(__name__)
 
@@ -63,16 +69,20 @@ class AgentLoop:
         self,
         max_iterations: int = 50,
         on_observation: Optional[Callable[[Observation], None]] = None,
+        action_gate: Optional["ActionGate"] = None,
     ) -> None:
         """
         Args:
             max_iterations:  Hard limit on loop iterations. Prevents runaway execution.
             on_observation:  Optional callback fired after every observation. Use for
                              real-time UI updates or external logging.
+            action_gate:     Optional ActionGate. If provided, every action must pass
+                             consent / oversight enforcement before execution.
         """
-        self.max_iterations  = max_iterations
-        self.on_observation  = on_observation
-        self.state           = LoopState(max_iterations=max_iterations)
+        self.max_iterations   = max_iterations
+        self.on_observation   = on_observation
+        self.action_gate      = action_gate
+        self.state            = LoopState(max_iterations=max_iterations)
         self._pause_requested = False
 
     # ------------------------------------------------------------------
@@ -101,6 +111,11 @@ class AgentLoop:
                 self._halt(HaltReason.MAX_ITERATIONS_REACHED)
                 break
 
+            # --- External / policy halt ---
+            if self.action_gate and self.action_gate.is_halted(perception.session_id):
+                self._halt(HaltReason.GAIAN_REQUESTED)
+                break
+
             # --- Determine current step ---
             if step_index >= len(plan.steps):
                 self._complete()
@@ -110,7 +125,7 @@ class AgentLoop:
             self.state.current_step = planned.name
 
             # --- Act ---
-            action = self._act(planned)
+            action = self._act(planned, perception)
 
             # --- Observe ---
             observation = self._observe(action, planned)
@@ -144,7 +159,7 @@ class AgentLoop:
                 if action.status == ActionStatus.SUCCESS and planned.on_success:
                     target = plan.get_step(planned.on_success)
                     step_index = plan.steps.index(target) if target else step_index + 1
-                elif action.status == ActionStatus.FAILURE and planned.on_failure:
+                elif action.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and planned.on_failure:
                     target = plan.get_step(planned.on_failure)
                     step_index = plan.steps.index(target) if target else step_index + 1
                 else:
@@ -202,8 +217,10 @@ class AgentLoop:
             "[AgentLoop] START loop_id=%s goal='%s' steps=%d max_iter=%d",
             self.state.loop_id, perception.goal, len(plan.steps), self.max_iterations,
         )
+        if self.action_gate:
+            self.action_gate.register_session(perception.session_id)
 
-    def _act(self, planned: PlannedAction) -> AgentAction:
+    def _act(self, planned: PlannedAction, perception: Perception) -> AgentAction:
         """Execute a single planned action and return the execution record."""
         action = AgentAction(
             step_name=planned.name,
@@ -213,6 +230,32 @@ class AgentLoop:
             "[AgentLoop] ACT loop_id=%s step='%s' iter=%d",
             self.state.loop_id, planned.name, self.state.iteration,
         )
+
+        # --------------------------------------------------------------
+        # Consent gate check before execution
+        # --------------------------------------------------------------
+        if self.action_gate:
+            risk_level = None
+            if planned.risk_level and ActionRiskLevel is not None:
+                try:
+                    risk_level = ActionRiskLevel(planned.risk_level)
+                except Exception:  # noqa: BLE001
+                    risk_level = None
+            receipt = self.action_gate.request_approval(
+                tool_name=planned.name,
+                actor=perception.gaian_id,
+                args=planned.args,
+                session_id=perception.session_id,
+                risk_level=risk_level,
+            )
+            if not self.action_gate.is_approved(receipt.receipt_id):
+                action.skip(f"Approval not granted for '{planned.name}' ({receipt.requirement})")
+                logger.warning(
+                    "[AgentLoop] step '%s' SKIPPED — approval not granted receipt=%s",
+                    planned.name, receipt.receipt_id,
+                )
+                return action
+
         try:
             result = planned.handler(**planned.args)
             action.complete(result)
@@ -230,7 +273,16 @@ class AgentLoop:
         next_step    = None
         notes        = ""
 
-        if action.status == ActionStatus.FAILURE:
+        if action.status == ActionStatus.SKIPPED:
+            if planned.critical:
+                should_halt = True
+                halt_reason = HaltReason.POLICY_DENIED
+                notes = f"Critical step '{planned.name}' was skipped by ActionGate: {action.error}"
+            else:
+                notes = f"Step '{planned.name}' skipped by ActionGate: {action.error}"
+                if planned.on_failure:
+                    next_step = planned.on_failure
+        elif action.status == ActionStatus.FAILURE:
             if planned.critical:
                 should_halt = True
                 halt_reason = HaltReason.CRITICAL_ACTION_FAILED
