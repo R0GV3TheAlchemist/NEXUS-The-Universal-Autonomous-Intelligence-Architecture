@@ -6,7 +6,7 @@ Every piece of data GAIA holds about a Gaian is represented here.
 
 Canon Reference: C01 (Gaian Sovereignty), C-SENTINEL Article 4 (Memory Sovereignty)
 Issue:          #213
-Version:        1.0.0
+Version:        1.1.0
 """
 
 from __future__ import annotations
@@ -16,6 +16,13 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 import uuid
+
+
+# ---------------------------------------------------------------------------
+# Default store path
+# ---------------------------------------------------------------------------
+
+_default_store_path = "./data/memory_store.db"
 
 
 # ---------------------------------------------------------------------------
@@ -46,11 +53,11 @@ class MemoryCategory(Enum):
 
 class ProvenanceSource(Enum):
     """Where a memory entry originated."""
-    GAIAN_EXPLICIT   = "gaian_explicit"    # Gaian stated it directly
-    GAIAN_IMPLICIT   = "gaian_implicit"    # Inferred from Gaian behavior/language
-    SENTINEL_INFERRED = "sentinel_inferred" # Sentinel derived it from patterns
-    SYSTEM_GENERATED = "system_generated"  # Created by a system process
-    IMPORTED         = "imported"          # Imported from external source with consent
+    GAIAN_EXPLICIT    = "gaian_explicit"     # Gaian stated it directly
+    GAIAN_IMPLICIT    = "gaian_implicit"     # Inferred from Gaian behavior/language
+    SENTINEL_INFERRED = "sentinel_inferred"  # Sentinel derived it from patterns
+    SYSTEM_GENERATED  = "system_generated"   # Created by a system process
+    IMPORTED          = "imported"           # Imported from external source with consent
 
 
 # ---------------------------------------------------------------------------
@@ -89,18 +96,18 @@ class MemoryEntry:
       - Supports edit, delete, archive actions
       - "Why am I seeing this?" explanation available
     """
-    key:           str                          # Human-readable identifier, e.g. "preferred_name"
-    value:         str                          # The actual remembered content
-    category:      MemoryCategory
-    tier:          MemoryTier
-    provenance:    MemoryProvenance
-    id:            str                          = field(default_factory=lambda: str(uuid.uuid4()))
-    created_at:    datetime                     = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at:    datetime                     = field(default_factory=lambda: datetime.now(timezone.utc))
-    last_used_at:  Optional[datetime]           = None
-    last_used_context: Optional[str]            = None   # The response where this was last recalled
-    tags:          list[str]                    = field(default_factory=list)
-    explanation:   Optional[str]                = None   # "Why am I seeing this?" answer
+    key:               str
+    value:             str
+    category:          MemoryCategory
+    tier:              MemoryTier
+    provenance:        MemoryProvenance
+    id:                str               = field(default_factory=lambda: str(uuid.uuid4()))
+    created_at:        datetime          = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at:        datetime          = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_used_at:      Optional[datetime] = None
+    last_used_context: Optional[str]     = None
+    tags:              list[str]         = field(default_factory=list)
+    explanation:       Optional[str]     = None
 
     def to_dict(self) -> dict:
         """Human-readable export. Gaian owns this data."""
@@ -132,10 +139,10 @@ class SessionState:
     """
     session_id:     str
     gaian_id:       str
-    started_at:     datetime                   = field(default_factory=lambda: datetime.now(timezone.utc))
-    working_goals:  list[str]                  = field(default_factory=list)
-    active_context: dict                       = field(default_factory=dict)
-    scratchpad:     list[MemoryEntry]          = field(default_factory=list)
+    started_at:     datetime          = field(default_factory=lambda: datetime.now(timezone.utc))
+    working_goals:  list[str]         = field(default_factory=list)
+    active_context: dict              = field(default_factory=dict)
+    scratchpad:     list[MemoryEntry] = field(default_factory=list)
 
     def promote_to_durable(self, entry: MemoryEntry) -> MemoryEntry:
         """
@@ -145,3 +152,62 @@ class SessionState:
         entry.tier = MemoryTier.DURABLE
         entry.updated_at = datetime.now(timezone.utc)
         return entry
+
+
+# ---------------------------------------------------------------------------
+# MemoryStore
+# ---------------------------------------------------------------------------
+
+class MemoryStore:
+    """
+    Manages persistent storage and retrieval of MemoryEntry objects.
+
+    Acceptance Criterion: Gaian data is stored securely with full provenance tracking.
+    Canon Reference: C01 (Gaian Sovereignty), C-SENTINEL Article 4
+    """
+
+    def __init__(self, store_path: str = _default_store_path) -> None:
+        self.store_path = store_path
+        self._entries: dict[str, MemoryEntry] = {}
+
+    def store(self, entry: MemoryEntry) -> None:
+        """Store a memory entry."""
+        self._entries[entry.id] = entry
+
+    def retrieve(self, entry_id: str) -> Optional[MemoryEntry]:
+        """Retrieve a memory entry by ID."""
+        return self._entries.get(entry_id)
+
+    def list_entries(
+        self,
+        category: Optional[MemoryCategory] = None,
+        tier: Optional[MemoryTier] = None,
+    ) -> list[MemoryEntry]:
+        """List entries filtered by category and/or tier."""
+        entries: list[MemoryEntry] = list(self._entries.values())
+        if category:
+            entries = [e for e in entries if e.category == category]
+        if tier:
+            entries = [e for e in entries if e.tier == tier]
+        return entries
+
+    def delete(self, entry_id: str) -> bool:
+        """Permanently delete an entry. Returns True if found and deleted."""
+        if entry_id in self._entries:
+            del self._entries[entry_id]
+            return True
+        return False
+
+    def archive(self, entry_id: str) -> bool:
+        """Soft-delete an entry (set tier to ARCHIVED). Returns True if found."""
+        entry = self.retrieve(entry_id)
+        if entry:
+            entry.tier = MemoryTier.ARCHIVED
+            entry.updated_at = datetime.now(timezone.utc)
+            return True
+        return False
+
+
+def get_memory_store(store_path: str = _default_store_path) -> MemoryStore:
+    """Factory function to create a MemoryStore instance."""
+    return MemoryStore(store_path)
