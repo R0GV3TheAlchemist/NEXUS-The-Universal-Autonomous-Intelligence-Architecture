@@ -121,14 +121,21 @@ class RAGPipeline:
         Retrieve Canon passages relevant to *query* and return a
         citation-prefixed string for injection into the planner prompt.
 
-        Supports two result shapes:
-          - RetrievalResult  : has .chunk (Chunk) and .chunk.source
-          - flat mock/object : has .text and .metadata dict directly
+        Result shape dispatch (order matters — checked before hasattr):
+          1. Flat / test object : r.metadata is a plain dict
+                                  → r.text + r.metadata["canon_id"]
+          2. RetrievalResult    : r.chunk is a real Chunk-like object
+                                  → r.chunk.text + canon_id from r.chunk.source
+          3. Bare Chunk fallback: plain str conversion
+
+        The flat-dict check MUST come first because MagicMock responds
+        True to every hasattr() call, so testing hasattr(r, "chunk")
+        first would always fire on mock objects.
         """
         if not query or not query.strip():
             return ""
 
-        idx = getattr(self, "_index", None)
+        idx       = getattr(self, "_index", None)
         retriever = getattr(self, "_retriever", None)
 
         results = []
@@ -139,7 +146,7 @@ class RAGPipeline:
                 logger.warning("retrieve: retriever error — %s", exc)
         elif idx is not None:
             try:
-                raw = idx.search(query, top_k=top_k)
+                raw     = idx.search(query, top_k=top_k)
                 results = [chunk for chunk, _ in raw]
             except Exception as exc:  # noqa: BLE001
                 logger.warning("retrieve: index search error — %s", exc)
@@ -149,19 +156,29 @@ class RAGPipeline:
 
         parts: List[str] = []
         for r in results:
-            # RetrievalResult shape: r.chunk.text, r.chunk.source
-            if hasattr(r, "chunk"):
-                chunk   = r.chunk
-                text    = chunk.text
-                # Derive canon_id from source path: "canon/C-FOUNDATION.md" → "C-FOUNDATION"
-                source  = getattr(chunk, "source", "")
+            # ----------------------------------------------------------
+            # Shape 1 — flat object with a real dict metadata attribute.
+            # Checked FIRST so MagicMock objects (which satisfy every
+            # hasattr test) don't fall into the RetrievalResult branch.
+            # ----------------------------------------------------------
+            metadata = getattr(r, "metadata", None)
+            if isinstance(metadata, dict):
+                canon_id = metadata.get("canon_id", "unknown")
+                text     = getattr(r, "text", "")
+
+            # ----------------------------------------------------------
+            # Shape 2 — RetrievalResult with a .chunk sub-object.
+            # Derive canon_id from the source path stem.
+            # ----------------------------------------------------------
+            elif hasattr(r, "chunk"):
+                chunk    = r.chunk
+                text     = chunk.text
+                source   = getattr(chunk, "source", "")
                 canon_id = Path(source).stem if source else "unknown"
-            # Flat/mock shape: r.text, r.metadata["canon_id"]
-            elif hasattr(r, "text"):
-                text     = r.text
-                metadata = getattr(r, "metadata", {})
-                canon_id = metadata.get("canon_id", "unknown") if isinstance(metadata, dict) else "unknown"
-            # Bare Chunk from index.search fallback
+
+            # ----------------------------------------------------------
+            # Shape 3 — bare Chunk from VectorIndex.search fallback.
+            # ----------------------------------------------------------
             else:
                 text     = str(r)
                 canon_id = "unknown"
