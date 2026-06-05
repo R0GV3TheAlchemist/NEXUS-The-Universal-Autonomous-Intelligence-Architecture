@@ -1,1 +1,5 @@
-"""Test suite for the core.sentinel package."""
+"""
+tests/sentinel
+
+Test suite for Sentinel core modules.
+"""
