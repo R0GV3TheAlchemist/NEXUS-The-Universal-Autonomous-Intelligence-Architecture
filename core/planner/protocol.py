@@ -29,37 +29,58 @@ Optional keys:
 
 from __future__ import annotations
 
-from typing import Any, Protocol, TypedDict, runtime_checkable
+from dataclasses import dataclass
+from typing import Any, Optional, Protocol, TypedDict, runtime_checkable
 
 
 # ---------------------------------------------------------------------------
-# TypedDicts
+# ActionDict (TypedDict — plain dict at runtime, typed at check time)
 # ---------------------------------------------------------------------------
 
 class ActionDict(TypedDict, total=False):
     """
     The map returned by a planner after each reasoning step.
-
     Exactly one of ``tool`` or ``complete`` must be present.
     """
-    tool:           str    # name of the tool to invoke
-    complete:       bool   # True → session complete, halt loop
-    args:           dict   # kwargs forwarded to the tool callable
-    requires_human: bool   # True → route through ActionGate
-    progress:       str    # short human-readable progress note
-    reasoning:      str    # internal chain-of-thought (audit only)
+    tool:           str
+    complete:       bool
+    args:           dict
+    requires_human: bool
+    progress:       str
+    reasoning:      str
 
 
-class PlannerResult(TypedDict):
+# ---------------------------------------------------------------------------
+# PlannerResult (dataclass — supports both .attr and ["key"] access)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PlannerResult:
     """
-    Extended result returned by BasePlanner subclasses.
+    Extended result returned by BasePlanner.safe_call().
     Wraps ActionDict with planner-level metadata.
+
+    Supports both attribute access (result.action) and dict-style
+    access (result["action"]) for test and downstream compatibility.
     """
-    action:         ActionDict
-    planner_name:   str
-    canon_used:     bool   # True if non-empty canon_context was provided
-    canon_chars:    int    # length of the canon_context string
-    latency_s:      float  # wall-clock time for this planning step
+    action:       ActionDict
+    planner_name: str
+    canon_used:   bool
+    canon_chars:  int
+    latency_s:    float
+
+    # ------------------------------------------------------------------
+    # Dict-style access so callers can use result["action"] as well
+    # ------------------------------------------------------------------
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def __contains__(self, key: str) -> bool:
+        return hasattr(self, key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
 
 
 # ---------------------------------------------------------------------------
@@ -74,22 +95,6 @@ class PlannerProtocol(Protocol):
     Conforming objects are accepted by AgenticLoop._reason() without
     inheritance.  Use isinstance(obj, PlannerProtocol) to check at
     runtime (requires @runtime_checkable).
-
-    Example conforming callables
-    ----------------------------
-    # 1. Plain function
-    def my_planner(state, *, canon_context="") -> ActionDict:
-        return {"tool": "search", "args": {"q": state.goal}}
-
-    # 2. Class with __call__
-    class MyPlanner:
-        def __call__(self, state, *, canon_context="") -> ActionDict:
-            ...
-
-    # 3. BasePlanner subclass (also conforms)
-    class MyPlanner(BasePlanner):
-        def _plan(self, state, canon_context) -> ActionDict:
-            ...
     """
 
     def __call__(

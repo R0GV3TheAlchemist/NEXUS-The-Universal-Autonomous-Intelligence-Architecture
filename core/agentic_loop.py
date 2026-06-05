@@ -5,13 +5,14 @@ GAIA's core Perceive → Reason → Act → Observe (PRAO) loop.
 
 Revision notes
 --------------
-obs-wiring      : TraceContext spans, Telemetry counters, AuditLog events.
+obs-wiring      : TraceContext spans, StructuredLogger records, Telemetry
+                  counters, AuditLog events — all using real API signatures.
 canon-rag       : _reason() calls RAGPipeline.retrieve() before the planner.
 persisted-index : _maybe_ingest_canon() passes store_path to ingest_canon()
                   so Canon is only embedded once; subsequent cold starts
                   reuse the persisted SQLite index if the fingerprint matches.
-fix-ci          : Added HaltCondition, AgenticLoopResult, create_loop(),
-                  async run(), cancel() to satisfy test_agentic_loop_obs.py.
+fix-ci          : HaltCondition, AgenticLoopResult, create_loop(),
+                  async run(), cancel() satisfy test_agentic_loop_obs.py.
 """
 
 from __future__ import annotations
@@ -26,18 +27,27 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 # ---------------------------------------------------------------------------
-# Observability layer (optional)
+# Observability layer
 # ---------------------------------------------------------------------------
 try:
-    from core.obs.trace import TraceContext
+    from core.obs.tracer import TraceContext
     from core.obs.telemetry import Telemetry
-    from core.obs.audit import AuditLog
+    from core.obs.audit import AuditLog, AuditEventType
+    from core.obs.structured_logger import StructuredLogger, LogLevel
     _OBS_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _OBS_AVAILABLE = False
-    TraceContext = None  # type: ignore[assignment,misc]
-    Telemetry = None    # type: ignore[assignment,misc]
-    AuditLog = None     # type: ignore[assignment,misc]
+    TraceContext     = None  # type: ignore[assignment,misc]
+    Telemetry        = None  # type: ignore[assignment,misc]
+    AuditLog         = None  # type: ignore[assignment,misc]
+    AuditEventType   = None  # type: ignore[assignment,misc]
+    StructuredLogger = None  # type: ignore[assignment,misc]
+    LogLevel         = None  # type: ignore[assignment,misc]
+
+# Module-level singletons — patched by test fixtures
+_struct_logger: Optional[Any] = StructuredLogger() if _OBS_AVAILABLE else None
+_audit:         Optional[Any] = AuditLog()         if _OBS_AVAILABLE else None
+_telemetry:     Optional[Any] = Telemetry()        if _OBS_AVAILABLE else None
 
 # ---------------------------------------------------------------------------
 # RAG layer (optional)
@@ -94,12 +104,12 @@ class AgenticLoopResult:
 @dataclass
 class AgentState:
     """Mutable snapshot passed through each PRAO phase."""
-    goal: str
-    observations: List[str]       = field(default_factory=list)
+    goal:         str
+    observations: List[str]            = field(default_factory=list)
     history:      List[Dict[str, Any]] = field(default_factory=list)
-    memory:       Dict[str, Any]  = field(default_factory=dict)
-    complete:     bool            = False
-    error:        Optional[str]   = None
+    memory:       Dict[str, Any]       = field(default_factory=dict)
+    complete:     bool                 = False
+    error:        Optional[str]        = None
 
     def summary(self) -> str:
         obs_tail = self.observations[-3:] if self.observations else []
@@ -162,6 +172,53 @@ def _default_stub_planner(
 
 
 # ---------------------------------------------------------------------------
+# Helpers — thin wrappers so every call goes through the patchable singletons
+# ---------------------------------------------------------------------------
+
+def _sl_info(msg: str, meta: Optional[dict] = None) -> None:
+    """Emit an INFO record to the module-level structured logger."""
+    if _OBS_AVAILABLE and _struct_logger:
+        _struct_logger.info(msg, meta=meta or {})
+    logger.info("%s | %s", msg, meta)
+
+
+def _sl_warning(msg: str, meta: Optional[dict] = None) -> None:
+    if _OBS_AVAILABLE and _struct_logger:
+        _struct_logger.warning(msg, meta=meta or {})
+    logger.warning("%s | %s", msg, meta)
+
+
+def _sl_error(msg: str, meta: Optional[dict] = None) -> None:
+    if _OBS_AVAILABLE and _struct_logger:
+        _struct_logger.error(msg, meta=meta or {})
+    logger.error("%s | %s", msg, meta)
+
+
+def _audit_record(
+    event_type: str,
+    actor:      str = "gaia",
+    action:     str = "",
+    outcome:    str = "ok",
+    meta:       Optional[dict] = None,
+) -> None:
+    """Record an audit event via the module-level AuditLog singleton."""
+    if _OBS_AVAILABLE and _audit:
+        _audit.record(
+            event_type=event_type,
+            actor=actor,
+            action=action or event_type,
+            outcome=outcome,
+            meta=meta or {},
+        )
+
+
+def _tel_record(key: str, latency_s: float, error: bool = False) -> None:
+    """Record a latency sample (converted to ms) via module-level Telemetry."""
+    if _OBS_AVAILABLE and _telemetry:
+        _telemetry.record(key, latency_ms=latency_s * 1000, error=error)
+
+
+# ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
 
@@ -179,8 +236,6 @@ class AgenticLoop:
     human_callback   : callable(action) → bool for human-approval gate
     action_gate      : ActionGate-compatible object (optional)
     max_iterations   : safety ceiling (default 50)
-    telemetry        : Telemetry instance (optional)
-    audit            : AuditLog instance (optional)
     canon_store_path : Path to persist Canon SQLite index
     """
 
@@ -194,22 +249,23 @@ class AgenticLoop:
         human_callback:   Optional[Callable] = None,
         action_gate:      Optional[Any] = None,
         max_iterations:   int = 50,
-        telemetry:        Optional[Any] = None,
         audit:            Optional[Any] = None,
+        telemetry:        Optional[Any] = None,
         canon_store_path: Optional[Path] = _DEFAULT_CANON_STORE,
     ) -> None:
-        self._planner        = planner or _default_stub_planner
-        self._tools          = tools or {}
-        self._perceiver      = perceiver
-        self._observer       = observer
-        self._human_callback = human_callback
-        self._max_iterations = max_iterations
-        self._gate           = action_gate or ActionGate()
+        self._planner          = planner or _default_stub_planner
+        self._tools            = tools or {}
+        self._perceiver        = perceiver
+        self._observer         = observer
+        self._human_callback   = human_callback
+        self._max_iterations   = max_iterations
+        self._gate             = action_gate or ActionGate()
         self._canon_store_path = canon_store_path
-        self._cancelled      = False
+        self._cancelled        = False
 
-        self._telemetry = telemetry or (Telemetry() if _OBS_AVAILABLE and Telemetry else None)
-        self._audit     = audit     or (AuditLog()  if _OBS_AVAILABLE and AuditLog  else None)
+        # Allow per-instance overrides (used by tests via create_loop)
+        self._audit     = audit
+        self._telemetry = telemetry
 
         self._rag: Optional[Any] = rag
         if self._rag is None and _RAG_AVAILABLE:
@@ -224,31 +280,50 @@ class AgenticLoop:
         self._cancelled = True
 
     # ------------------------------------------------------------------
-    # Logging helpers
+    # Obs helpers (use instance override if set, else module singletons)
     # ------------------------------------------------------------------
 
+    def _get_audit(self):
+        return self._audit if self._audit is not None else _audit
+
+    def _get_telemetry(self):
+        return self._telemetry if self._telemetry is not None else _telemetry
+
     def _log_info(self, msg: str, meta: Optional[dict] = None) -> None:
-        if _OBS_AVAILABLE and self._audit:
-            self._audit.log("INFO", msg, meta=meta or {})
-        logger.info("%s | meta=%s", msg, meta)
+        _sl_info(msg, meta)
+        al = self._get_audit()
+        if al:
+            al.record(event_type=AuditEventType.AGENT_ACTION if _OBS_AVAILABLE else "agent.action",
+                      actor="gaia", action=msg, outcome="ok", meta=meta or {})
 
     def _log_warning(self, msg: str, meta: Optional[dict] = None) -> None:
-        if _OBS_AVAILABLE and self._audit:
-            self._audit.log("WARNING", msg, meta=meta or {})
-        logger.warning("%s | meta=%s", msg, meta)
+        _sl_warning(msg, meta)
 
     def _log_error(self, msg: str, meta: Optional[dict] = None) -> None:
-        if _OBS_AVAILABLE and self._audit:
-            self._audit.log("ERROR", msg, meta=meta or {})
-        logger.error("%s | meta=%s", msg, meta)
+        _sl_error(msg, meta)
 
-    def _audit_record(self, event: str, meta: Optional[dict] = None) -> None:
-        if _OBS_AVAILABLE and self._audit:
-            self._audit.record(event, meta=meta or {})
+    def _audit_event(
+        self,
+        event_type: str,
+        gaian_id:   str = "gaia",
+        action:     str = "",
+        outcome:    str = "ok",
+        meta:       Optional[dict] = None,
+    ) -> None:
+        al = self._get_audit()
+        if al and _OBS_AVAILABLE:
+            al.record(
+                event_type=event_type,
+                actor=gaian_id,
+                action=action or event_type,
+                outcome=outcome,
+                meta=meta or {},
+            )
 
-    def _telemetry_record(self, key: str, value: float, tags: Optional[dict] = None) -> None:
-        if _OBS_AVAILABLE and self._telemetry:
-            self._telemetry.record(key, value, tags=tags or {})
+    def _tel_record(self, key: str, latency_s: float, error: bool = False) -> None:
+        tel = self._get_telemetry()
+        if tel and _OBS_AVAILABLE:
+            tel.record(key, latency_ms=latency_s * 1000, error=error)
 
     # ------------------------------------------------------------------
     # Phase runner
@@ -257,17 +332,19 @@ class AgenticLoop:
     def _run_phase(self, name: str, fn: Callable, *args, **kwargs) -> Any:
         span_name = f"agentic_loop.{name}"
         t0 = time.monotonic()
+        exc_occurred = False
         try:
             if _OBS_AVAILABLE and TraceContext:
                 with TraceContext(span_name):
                     result = fn(*args, **kwargs)
             else:
                 result = fn(*args, **kwargs)
-            self._telemetry_record(span_name, time.monotonic() - t0)
             return result
         except Exception:
-            self._telemetry_record(span_name, time.monotonic() - t0, tags={"error": "1"})
+            exc_occurred = True
             raise
+        finally:
+            self._tel_record(span_name, time.monotonic() - t0, error=exc_occurred)
 
     # ------------------------------------------------------------------
     # PRAO phases
@@ -282,7 +359,7 @@ class AgenticLoop:
             try:
                 canon_context = self._rag.retrieve(state.summary())
             except Exception as exc:  # noqa: BLE001
-                self._log_warning(f"rag.retrieve failed — {exc}")
+                _sl_warning(f"rag.retrieve failed — {exc}")
         return self._planner(state, canon_context=canon_context)
 
     def _act(self, state: AgentState, action: dict) -> ActionResult:
@@ -297,15 +374,21 @@ class AgenticLoop:
             if asyncio.iscoroutine(output):
                 output = asyncio.get_event_loop().run_until_complete(output)
             elapsed = time.monotonic() - t0
-            self._telemetry_record(f"tool.{tool_name}", elapsed)
-            self._audit_record("AGENT_ACTION",
-                meta={"tool": tool_name, "success": True, "duration_s": round(elapsed, 4)})
+            self._tel_record(f"tool.{tool_name}", elapsed)
+            self._audit_event(
+                AuditEventType.AGENT_ACTION if _OBS_AVAILABLE else "agent.action",
+                action=tool_name, outcome="ok",
+                meta={"tool": tool_name, "success": True, "duration_s": round(elapsed, 4)},
+            )
             return ActionResult(tool=tool_name, output=output, success=True)
         except Exception as exc:  # noqa: BLE001
             elapsed = time.monotonic() - t0
-            self._telemetry_record(f"tool.{tool_name}", elapsed, tags={"error": "1"})
-            self._audit_record("AGENT_ACTION",
-                meta={"tool": tool_name, "success": False, "error": str(exc)})
+            self._tel_record(f"tool.{tool_name}", elapsed, error=True)
+            self._audit_event(
+                AuditEventType.AGENT_ACTION if _OBS_AVAILABLE else "agent.action",
+                action=tool_name, outcome="error",
+                meta={"tool": tool_name, "success": False, "error": str(exc)},
+            )
             return ActionResult(tool=tool_name, output=None, success=False, error=str(exc))
 
     def _observe(self, state: AgentState, result: ActionResult) -> AgentState:
@@ -325,19 +408,18 @@ class AgenticLoop:
             return
         if getattr(self._rag, "canon_loaded", False):
             return
-        self._log_info("canon.ingest.start",
+        _sl_info("canon.ingest.start",
             meta={"session_id": session_id,
                   "store_path": str(self._canon_store_path) if self._canon_store_path else "memory"})
         try:
             report = self._rag.ingest_canon(store_path=self._canon_store_path)
-            self._audit_record("CANON_INGESTED", meta={"session_id": session_id, **report})
             warm = report.get("warm_start", False)
-            self._log_info(
+            _sl_info(
                 f"canon.ingest.{'warm' if warm else 'cold'}_start_complete",
                 meta={"session_id": session_id, **report},
             )
         except Exception as exc:  # noqa: BLE001
-            self._log_error(f"canon.ingest.failed — {exc}",
+            _sl_error(f"canon.ingest.failed — {exc}",
                 meta={"session_id": session_id, "error": str(exc)})
 
     # ------------------------------------------------------------------
@@ -356,22 +438,25 @@ class AgenticLoop:
         iterations = 0
         halt       = HaltCondition.MAX_ITERATIONS
 
-        self._audit_record("SESSION_START",
-            meta={"session_id": session_id, "goal": goal, "gaian_id": gaian_id})
+        self._audit_event(
+            AuditEventType.SESSION_START if _OBS_AVAILABLE else "session.start",
+            gaian_id=gaian_id,
+            action="session_start",
+            meta={"session_id": session_id, "goal": goal, "gaian_id": gaian_id},
+        )
 
         try:
             self._maybe_ingest_canon(session_id)
 
             if self._cancelled:
-                self._log_info("CANCELLED before loop start",
-                    meta={"session_id": session_id})
+                _sl_info("CANCELLED before loop start", meta={"session_id": session_id})
                 halt = HaltCondition.GAIAN_CANCELLED
             else:
                 for iteration in range(1, self._max_iterations + 1):
                     iterations = iteration
 
                     if self._cancelled:
-                        self._log_info("CANCELLED",
+                        _sl_info("CANCELLED",
                             meta={"session_id": session_id, "iteration": iteration})
                         halt = HaltCondition.GAIAN_CANCELLED
                         break
@@ -384,41 +469,60 @@ class AgenticLoop:
                         halt = HaltCondition.GOAL_ACHIEVED
                         break
 
-                    # Gate — supports both sync ActionGate and async evaluate() objects
-                    gate_result = self._gate.approve(action, self._human_callback)
-                    if asyncio.iscoroutine(gate_result):
-                        gate_obj   = await gate_result
-                        approved   = getattr(gate_obj, "approved", False)
+                    # Gate — supports sync ActionGate and async evaluate() objects
+                    raw_gate = self._gate
+                    if hasattr(raw_gate, "evaluate") and asyncio.iscoroutinefunction(raw_gate.evaluate):
+                        gate_obj    = await raw_gate.evaluate(action, gaian_id)
+                        approved    = getattr(gate_obj, "approved", False)
                         needs_human = getattr(gate_obj, "requires_human_approval", False)
-                        reason     = getattr(gate_obj, "reason", None)
+                        reason      = getattr(gate_obj, "reason", None)
                     else:
+                        gate_result = self._gate.approve(action, self._human_callback)
+                        if asyncio.iscoroutine(gate_result):
+                            gate_result = await gate_result
                         approved    = bool(gate_result)
                         needs_human = False
                         reason      = None
 
                     if not approved:
-                        policy = "requires_human" if needs_human else "denied"
-                        self._audit_record("POLICY_DECISION",
+                        policy  = "blocked"
+                        outcome = "blocked"
+                        self._audit_event(
+                            AuditEventType.POLICY_DECISION if _OBS_AVAILABLE else "policy.decision",
+                            gaian_id=gaian_id,
+                            action="policy_check",
+                            outcome=outcome,
                             meta={"session_id": session_id, "iteration": iteration,
                                   "action": action, "approved": False,
-                                  "outcome": "blocked", "reason": reason or policy})
+                                  "outcome": outcome, "reason": reason or policy},
+                        )
                         if needs_human:
-                            self._audit_record("PERMISSION_DENY",
-                                meta={"session_id": session_id, "action": action})
+                            self._audit_event(
+                                AuditEventType.PERMISSION_DENY if _OBS_AVAILABLE else "permission.deny",
+                                gaian_id=gaian_id,
+                                action="permission_check",
+                                outcome="denied",
+                                meta={"session_id": session_id, "action": action},
+                            )
                         break
 
-                    self._audit_record("POLICY_DECISION",
+                    self._audit_event(
+                        AuditEventType.POLICY_DECISION if _OBS_AVAILABLE else "policy.decision",
+                        gaian_id=gaian_id,
+                        action="policy_check",
+                        outcome="approved",
                         meta={"session_id": session_id, "iteration": iteration,
-                              "action": action, "approved": True})
+                              "action": action, "approved": True},
+                    )
 
-                    result = self._run_phase("act",    self._act,    state, action)
-                    state  = self._run_phase("observe", self._observe, state, result)
+                    result = self._run_phase("act",     self._act,     state, action)
+                    state  = self._run_phase("observe",  self._observe, state, result)
 
-                    self._log_info("agentic_loop.cycle",
+                    _sl_info("agentic_loop.cycle",
                         meta={"session_id": session_id, "iteration": iteration,
                               "action": action.get("tool"), "success": result.success,
                               "progress": action.get("progress")})
-                    self._telemetry_record("agentic_loop.cycle", time.monotonic() - t_session)
+                    self._tel_record("agentic_loop.cycle", time.monotonic() - t_session)
 
                 else:
                     state.error = f"max_iterations ({self._max_iterations}) reached"
@@ -427,16 +531,21 @@ class AgenticLoop:
         except Exception as exc:  # noqa: BLE001
             state.error = str(exc)
             halt = HaltCondition.ERROR
-            self._log_error(f"agentic_loop.session.error — {exc}",
+            _sl_error(f"agentic_loop.session.error — {exc}",
                 meta={"session_id": session_id})
 
         finally:
             duration = time.monotonic() - t_session
-            self._telemetry_record("agentic_loop.session", duration,
-                tags={"error": "0" if state.complete else "1"})
-            self._audit_record("SESSION_END",
+            self._tel_record("agentic_loop.session", duration,
+                             error=halt == HaltCondition.ERROR)
+            self._audit_event(
+                AuditEventType.SESSION_END if _OBS_AVAILABLE else "session.end",
+                gaian_id=gaian_id,
+                action="session_end",
+                outcome="ok" if state.complete else "incomplete",
                 meta={"session_id": session_id, "halt_reason": halt.value,
-                      "duration_s": round(duration, 3), "iterations": iterations})
+                      "duration_s": round(duration, 3), "iterations": iterations},
+            )
 
         return AgenticLoopResult(
             session_id=session_id,
