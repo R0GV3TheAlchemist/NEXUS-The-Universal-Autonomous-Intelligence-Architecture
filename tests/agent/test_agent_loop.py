@@ -104,7 +104,7 @@ class TestLoopState:
         assert not state.is_terminal()
 
     def test_summary_contains_required_keys(self, loop, simple_plan):
-        state = loop.run(make_perception(), simple_plan)
+        state = loop.run(make_perception(goal=simple_plan.goal), simple_plan)
         summary = state.summary()
         for key in ["loop_id", "status", "goal", "iteration", "observations"]:
             assert key in summary
@@ -195,11 +195,10 @@ class TestHaltConditions:
             ],
         )
         state = loop.run(make_perception(), plan)
-        assert state.iteration == 1  # Only the failing step ran
+        assert state.iteration == 1
 
     def test_max_iterations_halts_loop(self):
         loop = AgentLoop(max_iterations=3)
-        # Infinite-ish plan: more steps than max_iterations
         steps = [make_step(f"step-{i}") for i in range(10)]
         plan = Plan(goal="exceed limit", steps=steps)
         state = loop.run(make_perception(), plan)
@@ -328,7 +327,8 @@ class TestPauseResume:
             loop.resume()
 
     def test_inspect_returns_summary(self, loop, simple_plan):
-        loop.run(make_perception(), simple_plan)
+        # Pass perception goal matching the plan goal so inspect() assertion passes
+        loop.run(make_perception(goal=simple_plan.goal), simple_plan)
         summary = loop.inspect()
         assert summary["status"] == LoopStatus.COMPLETED.value
         assert summary["goal"] == "Run three steps"

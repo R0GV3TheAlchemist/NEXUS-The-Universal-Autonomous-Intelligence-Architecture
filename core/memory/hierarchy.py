@@ -10,12 +10,14 @@ Tiers (fastest → most permanent):
   EPISODIC   — in-process dict, 30 day TTL default
   SEMANTIC   — in-process dict, permanent, canon-indexed
   LONG_TERM  — in-process dict, permanent, Gaian-identity-scoped
-  PERMANENT  — alias tier used by flat store (test_memory_store.py)
-  EPHEMERAL  — alias tier used by flat store (test_memory_store.py)
+
+Note: PERMANENT and EPHEMERAL are string literals used by the flat SQLite
+store (store_sqlite.py) and are NOT enum members here, keeping this enum
+strictly at 5 members as the hierarchy tests require.
 
 Canon Reference: C01 (GAIA as orchestration layer), C34 (Memory Sovereignty)
 Issue: #213
-Version: 1.1.0
+Version: 1.2.0
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ from typing import Any, Optional
 
 
 # ---------------------------------------------------------------------------
-# MemoryTier
+# MemoryTier — exactly 5 members (hierarchy tests assert len == 5)
 # ---------------------------------------------------------------------------
 
 class MemoryTier(Enum):
@@ -37,12 +39,10 @@ class MemoryTier(Enum):
     EPISODIC   = "episodic"
     SEMANTIC   = "semantic"
     LONG_TERM  = "long_term"
-    PERMANENT  = "permanent"
-    EPHEMERAL  = "ephemeral"
 
     @property
     def is_permanent(self) -> bool:
-        return self in (MemoryTier.SEMANTIC, MemoryTier.LONG_TERM, MemoryTier.PERMANENT)
+        return self in (MemoryTier.SEMANTIC, MemoryTier.LONG_TERM)
 
     @property
     def default_ttl_hours(self) -> Optional[float]:
@@ -52,9 +52,7 @@ class MemoryTier(Enum):
             MemoryTier.EPISODIC:   720.0,
             MemoryTier.SEMANTIC:   None,
             MemoryTier.LONG_TERM:  None,
-            MemoryTier.PERMANENT:  None,
-            MemoryTier.EPHEMERAL:  1.0,
-        }.get(self)
+        }[self]
 
 
 # ---------------------------------------------------------------------------
@@ -111,16 +109,23 @@ class MemoryStore(ABC):
 
 # ---------------------------------------------------------------------------
 # Intent → tier mapping
-# Note: 'full' maps only to the five hierarchy tiers, not PERMANENT/EPHEMERAL
+# 'full' explicitly maps to all 5 hierarchy tiers
 # ---------------------------------------------------------------------------
+
+_ALL_TIERS = [
+    MemoryTier.WORKING,
+    MemoryTier.SHORT_TERM,
+    MemoryTier.EPISODIC,
+    MemoryTier.SEMANTIC,
+    MemoryTier.LONG_TERM,
+]
 
 _INTENT_TIERS: dict[str, list[MemoryTier]] = {
     "context":  [MemoryTier.WORKING, MemoryTier.SHORT_TERM],
     "recall":   [MemoryTier.SHORT_TERM, MemoryTier.EPISODIC],
     "fact":     [MemoryTier.SEMANTIC],
     "identity": [MemoryTier.LONG_TERM],
-    "full":     [MemoryTier.WORKING, MemoryTier.SHORT_TERM,
-                 MemoryTier.EPISODIC, MemoryTier.SEMANTIC, MemoryTier.LONG_TERM],
+    "full":     _ALL_TIERS,
 }
 
 
