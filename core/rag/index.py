@@ -18,6 +18,14 @@ Schema:
         ingested_at TEXT
 
 Zero external dependencies: uses stdlib sqlite3 only.
+
+Changes in this revision
+------------------------
+* size()        -- alias for count(); required by RAGPipeline.status().
+* add()         -- alias for add_chunks(); matches pipeline call-site.
+* from_store()  -- classmethod to open a persistent db at the canonical
+                   path resolved by IndexStore, creating the directory
+                   and file on first use.
 """
 import json
 import sqlite3
@@ -53,6 +61,26 @@ class VectorIndex:
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._init_schema()
 
+    # ------------------------------------------------------------------
+    # Classmethod constructors
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_store(cls, store: "IndexStore", embedder=None) -> "VectorIndex":  # type: ignore[name-defined]
+        """
+        Open (or create) a VectorIndex backed by the SQLite file at
+        *store.db_path*, ensuring the parent directory exists first.
+
+        This is the preferred constructor for production use; the default
+        constructor with db_path=':memory:' remains the default for tests.
+        """
+        store.ensure_dir()
+        return cls(db_path=str(store.db_path), embedder=embedder)
+
+    # ------------------------------------------------------------------
+    # Schema
+    # ------------------------------------------------------------------
+
     def _init_schema(self) -> None:
         with self._conn:
             self._conn.execute("""
@@ -72,6 +100,10 @@ class VectorIndex:
                 "CREATE INDEX IF NOT EXISTS idx_source ON chunks(source)"
             )
 
+    # ------------------------------------------------------------------
+    # Write path
+    # ------------------------------------------------------------------
+
     def add_chunks(self, chunks: List[Chunk]) -> int:
         """
         Add chunks to the index. Fits embedder vocabulary, then embeds + stores.
@@ -80,7 +112,6 @@ class VectorIndex:
         if not chunks:
             return 0
 
-        # Fit embedder on new texts
         texts = [c.text for c in chunks]
         self.embedder.fit(texts)
 
@@ -114,6 +145,24 @@ class VectorIndex:
                 except sqlite3.Error:
                     pass
         return added
+
+    def add(self, chunks: List[Chunk], embedder=None) -> int:
+        """
+        Alias for add_chunks(), accepting an optional embedder override.
+        This matches the call-site in RAGPipeline.ingest_canon().
+        """
+        if embedder is not None:
+            # Temporarily swap embedder for this batch
+            original = self.embedder
+            self.embedder = embedder
+            result = self.add_chunks(chunks)
+            self.embedder = original
+            return result
+        return self.add_chunks(chunks)
+
+    # ------------------------------------------------------------------
+    # Read path
+    # ------------------------------------------------------------------
 
     def search(
         self, query_text: str, top_k: int = 5
@@ -184,10 +233,18 @@ class VectorIndex:
 
         return results[:top_k]
 
+    # ------------------------------------------------------------------
+    # Introspection
+    # ------------------------------------------------------------------
+
     def count(self) -> int:
         with self._lock:
             row = self._conn.execute("SELECT COUNT(*) FROM chunks").fetchone()
             return row[0] if row else 0
+
+    def size(self) -> int:
+        """Alias for count(). Required by RAGPipeline.status()."""
+        return self.count()
 
     def sources(self) -> List[str]:
         with self._lock:

@@ -1,43 +1,50 @@
-# GAIA-OS — developer task runner
+# GAIA-OS Makefile
 # Usage: make <target>
-# Requires: Python 3.11+, pip
 
-PYTHON      ?= python
-PYTHONPATH  := $(CURDIR):$(CURDIR)/src-python
-SRC_DIRS    := core src-python tests
+.PHONY: help install dev test lint type-check start canon doctor clean
 
-.PHONY: help install test lint typecheck ci clean
+PYTHON   ?= python
+GAIA_REF ?= feat/obs-rag
 
-help:          ## Show this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+help: ## Show this help message
+	@echo ""
+	@echo "  GAIA-OS — available targets"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@echo ""
 
-install:       ## Install all dependencies (runtime + dev)
-	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -r requirements.txt
-	$(PYTHON) -m pip install -e ".[dev]"
+install: ## Install Python dependencies
+	pip install -e .
 
-test:          ## Run the full test suite
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest tests/ \
-		--tb=short \
-		--asyncio-mode=auto \
-		-v
+dev: ## Install Python dependencies including dev extras
+	pip install -e ".[dev]"
 
-lint:          ## Run ruff linter across all source dirs
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m ruff check $(SRC_DIRS)
+test: ## Run the full test suite
+	$(PYTHON) -m pytest tests/ -v --tb=short
 
-typecheck:     ## Run mypy type checker
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m mypy core src-python --ignore-missing-imports
+lint: ## Lint with ruff
+	$(PYTHON) -m ruff check .
 
-ci:            ## Run exactly what CI runs (lint + test + coverage)
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest tests/ \
-		--tb=short \
-		--asyncio-mode=auto \
-		--cov=core \
-		--cov-report=term-missing \
-		-v
+type-check: ## Type-check with mypy
+	$(PYTHON) -m mypy core/ gaia/ --ignore-missing-imports
 
-clean:         ## Remove compiled Python files and cache dirs
+start: ## Boot GAIA (Canon ingestion + API server)
+	$(PYTHON) -m gaia.cli start --ref $(GAIA_REF)
+
+canon: ## Manually ingest (or re-ingest) the Canon
+	$(PYTHON) -m gaia.cli ingest-canon --ref $(GAIA_REF)
+
+canon-force: ## Force full Canon re-embed (ignores cached index)
+	$(PYTHON) -m gaia.cli ingest-canon --ref $(GAIA_REF) --force
+
+doctor: ## Run environment health checks
+	$(PYTHON) -m gaia.cli doctor
+
+status: ## Print Canon index status
+	$(PYTHON) -m gaia.cli status
+
+clean: ## Remove Python cache files and build artefacts
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name '*.pyc' -delete 2>/dev/null || true
-	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
+	find . -name '*.pyc' -delete 2>/dev/null || true
+	rm -rf dist/ build/ *.egg-info/ .mypy_cache/ .ruff_cache/

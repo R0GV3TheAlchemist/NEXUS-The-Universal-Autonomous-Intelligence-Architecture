@@ -7,6 +7,123 @@ All notable changes to GAIA-APP are recorded here in reverse-chronological sprin
 
 ---
 
+## [Phase 7] — 2026-06-05  ·  Canon RAG, Persistent Index, CLI & Planner Interface
+
+**Branch:** `feat/obs-rag`  
+**PR:** [#245](https://github.com/R0GV3TheAlchemist/GAIA-OS/pull/245)  
+**Status:** 🔀 OPEN — ready to merge
+
+### Summary
+
+Closes the full **Perceive-Reason-Act-Observe (PRAO) loop** by wiring a
+persistent Canon-RAG pipeline into the agentic core, shipping a typed
+Planner interface, and giving GAIA its first user-facing CLI (`gaia start`).
+
+Key properties of this phase:
+- **Warm start by default.** After the first cold-embed session the Canon
+  index is cached in SQLite under `~/.gaia/data/`. Subsequent boots skip
+  embedding entirely (~milliseconds vs ~minutes).
+- **Self-invalidating cache.** A SHA-256 fingerprint of sorted
+  `"canon_id:chunk_count"` strings detects any Canon update and
+  triggers an automatic cold-start rebuild.
+- **Fully offline tests.** All 39 tests across 5 suites mock GitHub API,
+  LLM backends, and embedders — safe to run in CI with zero credentials.
+- **Graceful degradation.** RAG unavailable? CLI still boots. LLM backend
+  missing? Planner returns a safe `noop`. Every failure surface has an
+  explicit fallback path.
+
+---
+
+### Delivered
+
+#### 7.1 — Canon RAG Pipeline (`core/rag/`)
+
+| Step | File(s) | Description |
+|---|---|---|
+| **7.1.1** | `core/rag/canon_loader.py` | Fetches Canon documents from the GitHub tree API, chunks by paragraph boundary, assigns `[Canon: ID]` citation prefixes to every chunk. |
+| **7.1.2** | `core/rag/embedder.py` | Thin wrapper around `sentence-transformers` with a pure-numpy stub fallback. Batch-embeds chunks; normalises to unit vectors for cosine similarity. |
+| **7.1.3** | `core/rag/index.py` | `VectorIndex` — SQLite-backed float32 store with `add_chunks()`, `retrieve(query, top_k)`, `count()`, `size()` methods. `from_store()` classmethod opens a persisted DB. |
+| **7.1.4** | `core/rag/index_store.py` | `IndexStore` dataclass — canonical paths (`~/.gaia/data/canon_index.db` + `.fingerprint` sidecar), `ensure_dir()`, atomic `write_fingerprint()` via `os.replace()`, `db_exists()`, `read_fingerprint()`, `delete_db()`. |
+| **7.1.5** | `core/rag/pipeline.py` | `RAGPipeline` — `ingest_canon(ref, force, store_path)` with five-branch warm/cold decision tree; `retrieve(query, top_k)` for downstream planner; `status()` returns full metadata dict including `warm_start`, `fingerprint`, `store_path`. |
+
+#### 7.2 — AgenticLoop Wiring (`core/agentic_loop.py`)
+
+| Step | Description |
+|---|---|
+| **7.2.1** | `__init__` accepts `canon_store_path` kwarg (default `~/.gaia/data/`). |
+| **7.2.2** | `_maybe_ingest_canon()` passes `store_path` through to `ingest_canon()`. |
+| **7.2.3** | Audit log now emits `canon.ingest.warm_start_complete` vs `canon.ingest.cold_start_complete` for telemetry dashboards. |
+
+#### 7.3 — `gaia` CLI (`gaia/cli.py`)
+
+Registered as a `console_scripts` entry point in `pyproject.toml`:
+```
+gaia start                   # boot Canon + launch uvicorn
+gaia start --no-server       # Canon only, skip uvicorn
+gaia start --force           # force Canon re-embed
+gaia start --ref <branch>    # Canon from a specific Git ref
+gaia ingest-canon            # manual Canon ingestion
+gaia ingest-canon --force    # delete index, rebuild from scratch
+gaia status                  # inspect on-disk index state
+gaia status --json           # machine-readable JSON to stdout
+gaia doctor                  # full environment health check
+```
+
+| Step | Description |
+|---|---|
+| **7.3.1** | `gaia/__init__.py` + `gaia/cli.py` — four subcommands with ANSI banner, coloured output, `--json` flag, and `NO_COLOR` / non-TTY support. |
+| **7.3.2** | `pyproject.toml` — `[project.scripts] gaia = "gaia.cli:main"`, `gaia*` added to `setuptools.packages.find`. |
+| **7.3.3** | `start.sh` — validates Python ≥3.11, loads `.env`, auto-installs package if missing, then `exec python -m gaia.cli start ...` (signals propagate to uvicorn). |
+| **7.3.4** | `Makefile` — `make start`, `make canon`, `make canon-force`, `make doctor`, `make status` targets. All respect `GAIA_REF` env var. |
+
+#### 7.4 — Planner Interface (`core/planner/`)
+
+| Step | File(s) | Description |
+|---|---|---|
+| **7.4.1** | `core/planner/protocol.py` | `PlannerProtocol` (`@runtime_checkable` `typing.Protocol`) — any callable matching `planner(state, *, canon_context="") -> ActionDict` is accepted. `ActionDict` TypedDict (tool, complete, args, requires_human, progress, reasoning). `PlannerResult` TypedDict with planner-level metadata (planner_name, canon_used, canon_chars, latency_s). |
+| **7.4.2** | `core/planner/base.py` | `BasePlanner` ABC — `_plan()` hook, `safe_call()` wrapper (timing + catch-all noop fallback), `validate_action()` (non-dict → noop, missing tool → noop, complete=True strips tool, args coercion, unknown-tool warning). |
+| **7.4.3** | `core/planner/canon_grounded.py` | `CanonGroundedPlanner` — injects Canon context under `## Grounding Context (Canon)` in system prompt; three-pass JSON extractor (raw → strip fences → first `{...}` block); STUB mode when no backend. `from_openai(model="gpt-4o")` and `from_anthropic(model="claude-sonnet-4-5")` factory classmethods. |
+| **7.4.4** | `core/planner/__init__.py` | Public re-exports: `PlannerProtocol`, `ActionDict`, `PlannerResult`, `BasePlanner`, `CanonGroundedPlanner`. |
+
+---
+
+### Tests Added
+
+| Suite | Tests | What's covered |
+|---|---|---|
+| `tests/test_canon_loader.py` | 6 | CanonLoader fetch, chunking, citation prefix format |
+| `tests/test_rag_pipeline.py` | 8 | Warm start, cold start, `force=True`, `retrieve()`, `status()` |
+| `tests/test_index_persistence.py` | 8 | IndexStore paths, fingerprint roundtrip, atomic write, `delete_db()`, size reporting |
+| `tests/test_cli.py` | 7 | All 4 subcommands, arg defaults, JSON output, error exit codes |
+| `tests/test_planner.py` | 10 | Protocol conformance (function, class, non-callable), BasePlanner validation (6 cases), CanonGroundedPlanner Canon injection, no-canon notice, malformed JSON |
+| **Total** | **39** | All offline — no API keys, no embedders, no LLM |
+
+---
+
+### PRAO Loop — End-to-End State After Phase 7
+
+```
+Perceive  →  RAGPipeline.retrieve(query, top_k)
+               └─ returns [Canon: ID] prefixed passages
+Reason    →  CanonGroundedPlanner(state, canon_context=passages)
+               └─ system prompt with ## Grounding Context (Canon)
+               └─ backend.chat() → JSON → ActionDict
+Act       →  AgenticLoop dispatches tool by ActionDict["tool"]
+Observe   →  result appended to state.observations
+```
+
+---
+
+### Migration Notes
+
+- **No breaking changes.** All new kwargs are optional with safe defaults.
+- `AgenticLoop(canon_store_path=...)` defaults to `~/.gaia/data/` — existing instantiation unchanged.
+- `RAGPipeline.ingest_canon()` — `store_path` and `force` are optional; existing call sites work as before.
+- `gaia` CLI requires `pip install -e .` (or `make install`) to land on `PATH`.
+- `start.sh` self-heals: runs `pip install -e .` automatically if the package is not found.
+
+---
+
 ## [Phase 6] — 2026-04-24  ·  Sidecar Hardening & Process Lifecycle
 
 **Status:** ✅ CLOSED
@@ -97,7 +214,7 @@ First official desktop release of GAIA-APP for Windows x64. This release package
 - Rust cache via `Swatinem/rust-cache@v2` — build time ~5 min from cache
 - Both `.msi` and `.nsis` bundles produced and uploaded as release assets
 
-### What’s Included in v0.1.0
+### What's Included in v0.1.0
 
 This release bundles all work from Sprints G-1 through G-8:
 
@@ -207,5 +324,5 @@ This release bundles all work from Sprints G-1 through G-8:
 
 ---
 
-*“The pattern beneath the pattern, willed into being.”*  
+*"The pattern beneath the pattern, willed into being."*  
 — R0GV3TheAlchemist, Builder & Architect

@@ -1,98 +1,87 @@
-#!/bin/bash
-# GAIA Launch Script — starts both the Python backend and Vite frontend
-# Usage: bash start.sh
+#!/usr/bin/env bash
+# start.sh — GAIA-OS unified startup script
+# Delegates to `gaia start` (gaia/cli.py) after environment validation.
+# Preserves direct uvicorn fallback for Docker/CI environments where
+# the package may not be installed as an editable install.
+set -euo pipefail
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+# ---------------------------------------------------------------------------
+# Colours
+# ---------------------------------------------------------------------------
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
-echo -e "${GREEN}⬡ GAIA Starting...${NC}"
-echo ""
+log()  { echo -e "${CYAN}[GAIA]${NC} $*"; }
+ok()   { echo -e "${GREEN}[GAIA] ✓${NC} $*"; }
+warn() { echo -e "${YELLOW}[GAIA] ⚠${NC} $*"; }
+die()  { echo -e "${RED}[GAIA] ✗${NC} $*" >&2; exit 1; }
 
-# ------------------------------------------------------------------ #
-#  Checks                                                              #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# Environment
+# ---------------------------------------------------------------------------
+GAIA_REF="${GAIA_REF:-feat/obs-rag}"
+GAIA_HOST="${GAIA_HOST:-0.0.0.0}"
+GAIA_PORT="${GAIA_PORT:-8000}"
+GAIA_STORE="${GAIA_STORE:-$HOME/.gaia/data}"
+GAIA_FORCE="${GAIA_FORCE:-false}"
+GAIA_NO_SERVER="${GAIA_NO_SERVER:-false}"
 
-if ! command -v python &> /dev/null; then
-    echo -e "${RED}ERROR: Python not found. Install Python 3.11+${NC}"
-    exit 1
+# ---------------------------------------------------------------------------
+# Python version check
+# ---------------------------------------------------------------------------
+log "Checking Python version..."
+PY_VERSION=$(python --version 2>&1 | awk '{print $2}')
+PY_MAJOR=$(echo "$PY_VERSION" | cut -d. -f1)
+PY_MINOR=$(echo "$PY_VERSION" | cut -d. -f2)
+
+if [[ "$PY_MAJOR" -lt 3 ]] || [[ "$PY_MAJOR" -eq 3 && "$PY_MINOR" -lt 11 ]]; then
+    die "Python >=3.11 required (found $PY_VERSION). Aborting."
 fi
+ok "Python $PY_VERSION"
 
-if ! command -v npm &> /dev/null; then
-    echo -e "${RED}ERROR: Node.js not found. Install Node.js 18+${NC}"
-    exit 1
-fi
-
-# ------------------------------------------------------------------ #
-#  Kill stale processes on our ports (Windows Git Bash compatible)     #
-# ------------------------------------------------------------------ #
-
-echo -e "${BLUE}▶ Clearing stale ports...${NC}"
-# Use netstat + taskkill (works on Windows Git Bash / MINGW64)
-for PORT in 8008 5173 1420; do
-    PID=$(netstat -ano 2>/dev/null | grep ":${PORT} " | grep LISTENING | awk '{print $NF}' | head -1)
-    if [ -n "$PID" ]; then
-        taskkill //PID $PID //F &>/dev/null || true
-        echo -e "  Cleared port ${PORT} (PID $PID)"
-    fi
-done
-sleep 1
-
-# ------------------------------------------------------------------ #
-#  Ollama                                                              #
-# ------------------------------------------------------------------ #
-
-if ! command -v ollama &> /dev/null; then
-    echo -e "${YELLOW}WARNING: Ollama not found. LLM synthesis will use fallback mode.${NC}"
+# ---------------------------------------------------------------------------
+# Load .env if present
+# ---------------------------------------------------------------------------
+if [[ -f ".env" ]]; then
+    log "Loading .env"
+    set -a
+    # shellcheck source=/dev/null
+    source .env
+    set +a
+    ok ".env loaded"
 else
-    echo -e "${BLUE}▶ Starting Ollama...${NC}"
-    ollama serve &>/dev/null &
-    sleep 2
-    echo -e "  Ollama ready."
+    warn ".env not found — using environment defaults"
 fi
 
-# ------------------------------------------------------------------ #
-#  Python Backend                                                      #
-# ------------------------------------------------------------------ #
-
-echo -e "${BLUE}▶ Starting GAIA backend (port 8008)...${NC}"
-# Run as a module so 'from core.x import y' resolves correctly
-python -m core.server &
-BACKEND_PID=$!
-echo -e "  Backend PID: ${BACKEND_PID}"
-sleep 3
-
-if kill -0 $BACKEND_PID 2>/dev/null; then
-    echo -e "  ${GREEN}Backend is alive ✓${NC}"
+# ---------------------------------------------------------------------------
+# Install / verify Python package
+# ---------------------------------------------------------------------------
+if python -c "import gaia.cli" 2>/dev/null; then
+    ok "gaia package found"
 else
-    echo -e "  ${RED}Backend failed. Check errors above.${NC}"
+    log "gaia package not found — running pip install -e . ..."
+    pip install -e . --quiet || die "pip install failed"
+    ok "gaia package installed"
 fi
 
-# ------------------------------------------------------------------ #
-#  Vite Frontend                                                       #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# Build CLI flags
+# ---------------------------------------------------------------------------
+CLI_FLAGS="--ref $GAIA_REF --store $GAIA_STORE"
 
-echo -e "${BLUE}▶ Starting GAIA frontend...${NC}"
-npm run dev &
-FRONTEND_PID=$!
-echo -e "  Frontend PID: ${FRONTEND_PID}"
-sleep 2
+if [[ "$GAIA_FORCE" == "true" ]]; then
+    CLI_FLAGS="$CLI_FLAGS --force"
+    warn "GAIA_FORCE=true — Canon index will be rebuilt from scratch"
+fi
 
-# ------------------------------------------------------------------ #
-#  Ready                                                               #
-# ------------------------------------------------------------------ #
+if [[ "$GAIA_NO_SERVER" == "true" ]]; then
+    CLI_FLAGS="$CLI_FLAGS --no-server"
+    warn "GAIA_NO_SERVER=true — API server will not be launched"
+fi
 
+# ---------------------------------------------------------------------------
+# Hand off to gaia CLI
+# ---------------------------------------------------------------------------
+log "Handing off to: python -m gaia.cli start $CLI_FLAGS"
 echo ""
-echo -e "${GREEN}✅ GAIA is running!${NC}"
-echo -e "  Frontend: ${BLUE}http://localhost:5173${NC}"
-echo -e "  Backend:  ${BLUE}http://127.0.0.1:8008${NC}"
-echo -e "  Status:   ${BLUE}http://127.0.0.1:8008/status${NC}"
-echo -e "  GAIANs:   ${BLUE}http://127.0.0.1:8008/gaians${NC}"
-echo ""
-echo -e "Press ${YELLOW}Ctrl+C${NC} to stop everything."
-
-trap "echo ''; echo -e '${YELLOW}Shutting down GAIA...${NC}'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0" INT
-
-wait
+exec python -m gaia.cli start $CLI_FLAGS
