@@ -29,7 +29,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from core.memory_chroma import get_chroma, store_turn
+from core.memory_chroma import get_chroma
 from core.memory_store import get_memory_store
 
 router = APIRouter(prefix="/memory", tags=["memory"])
@@ -266,8 +266,6 @@ def memory_context(req: MemoryContextRequest):
     scored: list[dict[str, Any]] = []
 
     for idx, hit in enumerate(raw_hits):
-        # ChromaDB distance: 0 = identical, 2 = maximally different (cosine space).
-        # Normalise to a 0–1 relevance score.
         distance = float(hit.get("distance", 1.0))
         relevance = max(0.0, min(1.0, 1.0 - (distance / 2.0)))
 
@@ -276,7 +274,6 @@ def memory_context(req: MemoryContextRequest):
 
         boost = _affect_boost(hit.get("text", ""), req.affect_state)
 
-        # De-prioritise same-session fragments to avoid repetition
         same_session_penalty = (
             0.10
             if req.session_id and metadata.get("session_id") == req.session_id
@@ -298,11 +295,10 @@ def memory_context(req: MemoryContextRequest):
             "metadata":    metadata,
         })
 
-    # Sort descending by final_score; discard very low-signal fragments
     scored.sort(key=lambda x: x["final_score"], reverse=True)
     scored = [f for f in scored if f["final_score"] >= 0.10]
 
-    max_chars = req.max_tokens * 4  # 1 token ≈ 4 chars (conservative estimate)
+    max_chars = req.max_tokens * 4
     context_block, truncated = _build_context_block(scored, max_chars)
 
     return {
@@ -346,7 +342,6 @@ def memory_edit(memory_id: str, new_content: str):
             status_code=404,
             detail=f"Memory '{memory_id}' not found, deleted, or frozen.",
         )
-    # Update ChromaDB with new content
     chroma = get_chroma()
     chroma.store(text=new_content.strip(), memory_id=memory_id, source="explicit")
     return {"status": "updated", "id": memory_id}
@@ -362,7 +357,6 @@ def memory_delete(memory_id: str):
             status_code=404,
             detail=f"Memory '{memory_id}' not found or already deleted.",
         )
-    # Mirror deletion to ChromaDB
     get_chroma().forget(memory_id)
     return {"status": "deleted", "id": memory_id}
 
