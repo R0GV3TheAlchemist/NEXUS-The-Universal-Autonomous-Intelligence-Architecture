@@ -97,7 +97,8 @@ __all__ = [
     "SessionState",
     "get_memory_store",
     "_default_store_path",
-    # Hierarchy (accessible via direct import from core.memory.hierarchy)
+    # Hierarchy
+    "_HierarchyMemoryTier",
     "MemoryQuery",
     "HierarchyMemoryStore",
     "MemoryRouter",
