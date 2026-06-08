@@ -80,7 +80,7 @@ def room_save(req: SaveRoomRequest):
         header, b64 = req.panorama.split(",", 1)
         img_bytes = base64.b64decode(b64)
         img_path.write_bytes(img_bytes)
-    except Exception as e:
+    except Exception:
         # If it's not a data URL, store raw (shouldn't happen)
         img_path.write_text(req.panorama, encoding="utf-8")
 
