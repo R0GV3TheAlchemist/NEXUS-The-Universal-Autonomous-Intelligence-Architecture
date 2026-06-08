@@ -42,6 +42,13 @@ Trace integration (GAIATrace / AsyncGAIATrace):
   All trace operations are wrapped in try/except so a broken trace
   writer never silences a SynergyEngine error.
 
+EventType shim (Issue #5):
+  A module-level EventType enum is provided so tests and callers can
+  reference synergy_engine.EventType.QUERY / OUTPUT / ERROR without
+  importing core.trace directly.  At import time the shim attempts to
+  alias core.trace.TraceEventType; if that module is not yet available
+  it falls back to a standalone Enum with identical member names.
+
 CanonEntry integration (Issue #253):
   _analyse_canon_context() now accepts either a plain str (legacy path)
   or a CanonEntry object (new path).  When a CanonEntry is supplied:
@@ -64,12 +71,33 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:
     from core.trace import GAIATrace, AsyncGAIATrace
     from core.agentic_loop import LoopContext
     from core.canon.canon_entry import CanonEntry
+
+
+# ---------------------------------------------------------------------------
+# EventType shim  (Issue #5)
+# ---------------------------------------------------------------------------
+# Expose a module-level EventType so tests can do:
+#   from core.synergy_engine import EventType
+#   trace.record_output(event_type=EventType.QUERY, ...)
+# At import time we attempt to alias TraceEventType from core.trace;
+# if that module is unavailable we fall back to a standalone Enum.
+# ---------------------------------------------------------------------------
+
+try:
+    from core.trace import TraceEventType as EventType  # type: ignore[assignment]
+except Exception:  # ImportError or circular-import during test bootstrap
+    class EventType(Enum):  # type: ignore[no-redef]
+        """Fallback event-type enum used when core.trace is not importable."""
+        QUERY  = "QUERY"
+        OUTPUT = "OUTPUT"
+        ERROR  = "ERROR"
 
 
 # ---------------------------------------------------------------------------
@@ -930,7 +958,34 @@ class SynergyEngine:
         Every return path includes a `canon_hint` dict so callers, tests,
         and the audit trail can inspect what the Canon passage contributed
         (C30 — no silent influence).
+
+        Instrumentation layout (Issue #5):
+          - QUERY  fired at plan() entry, before _plan_internal(), so it
+            always fires even when _plan_internal() raises immediately.
+          - OUTPUT fired inside _plan_internal() at every return site.
+          - ERROR  fired in the outer except block, after QUERY.
+          - META   latency_ms recorded in the finally block, always.
         """
+        start_time = time.time()
+
+        # Derive ambient signals here so QUERY can fire before _plan_internal.
+        # _plan_internal re-reads them from context — this is intentionally
+        # redundant to ensure QUERY always emits (C30 audit guarantee).
+        _coherence    = getattr(context, "biometric_coherence", None)
+        _coherence    = _coherence if _coherence is not None else 0.5
+        _affective    = getattr(context, "affective_state",  "unknown").lower()
+        _planetary    = getattr(context, "planetary_label",  "unknown").lower()
+        _session_mode = getattr(context, "session_mode",     "default").lower()
+        _cycle_memory = getattr(context, "cycle_memory",     [])
+        _raw_canon    = getattr(context, "canon_context",    "") or ""
+        _canon_hint   = _analyse_canon_context(_raw_canon)
+
+        # QUERY event — fires unconditionally at plan() entry
+        _emit_plan_query(
+            trace, goal, _coherence, _affective, _planetary,
+            _session_mode, len(_cycle_memory), _canon_hint,
+        )
+
         try:
             return await self._plan_internal(goal, context, trace=trace)
         except Exception as exc:
@@ -945,6 +1000,14 @@ class SynergyEngine:
                     "conflict_detected": False, "conflict_groups": [],
                 },
             }
+        finally:
+            # META event — latency_ms always recorded (success, error, or cancel)
+            if trace is not None:
+                try:
+                    latency_ms = (time.time() - start_time) * 1000
+                    trace.record_meta("latency_ms", latency_ms)
+                except Exception:
+                    pass
 
     async def _plan_internal(
         self,
@@ -956,6 +1019,11 @@ class SynergyEngine:
         Core planning logic.  Called by plan(); exceptions bubble up to
         plan()'s outer except block which catches, traces, and converts
         them to a PLANNING_FAILED result (C30).
+
+        Note: QUERY is emitted by plan() before this method is called,
+        so _plan_internal() skips the redundant QUERY emit that would
+        otherwise duplicate it.  OUTPUT is still emitted here at every
+        return site so the result is always traced.
         """
         # ── 0. TaskGraph complete short-circuit ───────────────────────────
         task_graph = getattr(context, "task_graph", None)
@@ -1000,38 +1068,12 @@ class SynergyEngine:
         cycle_memory: list  = getattr(context, "cycle_memory",     [])
 
         # ── 2. Analyse Canon context (C32 — multi-signal integration) ─────
-        #
-        #   canon_context may be:
-        #     - a plain str (legacy callers)
-        #     - a CanonEntry object (new callers — declared register_signal
-        #       is used directly; UNSPECIFIED falls through to keyword scan)
-        #     - None / "" → hint.present = False, no nudge applied
-        #
-        #   _analyse_canon_context() is a pure function — no I/O, fully
-        #   testable in isolation.  The resulting CanonPlanHint is:
-        #     a) forwarded into the QUERY trace event
-        #     b) used in step 4 to conditionally override the register
-        #     c) embedded verbatim in every result dict (C30 audit trail)
-        #
         raw_canon: Union[str, Any] = getattr(context, "canon_context", "") or ""
         canon_hint: CanonPlanHint  = _analyse_canon_context(raw_canon)
 
-        # ── 3. Emit PLAN_QUERY trace event (Issue #5) ─────────────────────
-        _emit_plan_query(
-            trace, goal, coherence, affective, planetary,
-            session_mode, len(cycle_memory), canon_hint,
-        )
+        # ── 3. (QUERY already emitted by plan() — skipped here) ───────────
 
         # ── 4. Determine register (C32) ───────────────────────────────────
-        #
-        #   Priority (highest → lowest):
-        #     P1  biometric_coherence < 0.4         → minimal  (always wins)
-        #     P2  grief/overwhelm or storm           → reflective
-        #     P3  Canon keyword nudge (present)      → nudge register
-        #         Conflict resolution already applied inside CanonPlanHint;
-        #         the winning register is canon_hint.register_nudge.
-        #     P4  Default                            → executive
-        #
         low_coherence   = coherence < 0.4
         grief_state     = affective in ("grief", "overwhelm", "exhaustion", "distress")
         planetary_storm = planetary in ("storm", "severe")
@@ -1049,7 +1091,6 @@ class SynergyEngine:
                 "preferring reflective over executive actions (C32 P2)"
             )
         elif canon_hint.present and canon_hint.register_nudge is not None:
-            # P3 — Canon context nudges the register
             register = canon_hint.register_nudge
             register_reason = (
                 f"Canon context nudge ({canon_hint.nudge_label}) — "
@@ -1064,7 +1105,6 @@ class SynergyEngine:
                     f"by priority rule (minimal>reflective>executive, C32)"
                 )
         else:
-            # P4 — default executive
             register = "executive"
             register_reason = (
                 f"coherence={coherence:.2f}, affective={affective!r}, "
