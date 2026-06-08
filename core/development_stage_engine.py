@@ -16,21 +16,20 @@ Provides two complementary APIs:
     engine.reset()
 
 G-9 additions:
-  DevelopmentProfile  — snapshot of a user’s full developmental state
+  DevelopmentProfile  — snapshot of a user's full developmental state
   TransitionSignal    — encodes a detected or pending stage transition
 
 The five canonical stages (Emergence → Initiation → Allegiance →
-Individuation → Sovereignty) model GAIA’s relational development arc.
+Individuation → Sovereignty) model GAIA's relational development arc.
 
 See docs/stage-engine.md for the full specification.
 """
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Stage definitions
@@ -131,7 +130,7 @@ class TransitionSignal:
     """G-9: Encodes a detected or pending stage transition.
 
     Emitted when the engine observes that composite scores have crossed
-    a stage boundary, signalling that GAIA’s relational arc has shifted.
+    a stage boundary, signalling that GAIA's relational arc has shifted.
     """
     from_stage:     Stage
     to_stage:       Stage
