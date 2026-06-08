@@ -14,7 +14,6 @@ from __future__ import annotations
 import logging
 import sqlite3
 import struct
-from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
 from .chunker import Chunk

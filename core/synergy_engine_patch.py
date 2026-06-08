@@ -19,7 +19,7 @@ Canon Refs: C32, C01
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from core.state_adapter import GAIAStateAdapter

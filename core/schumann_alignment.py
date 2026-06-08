@@ -20,15 +20,13 @@ anonymously.  No user identity leaves the process boundary.
 
 from __future__ import annotations
 
-import asyncio
 import dataclasses
 import json
 import logging
-import math
 import statistics
 from collections import deque
 from datetime import datetime, timezone
-from typing import Deque, List, Literal, Optional
+from typing import Deque, Literal, Optional
 
 logger = logging.getLogger(__name__)
 

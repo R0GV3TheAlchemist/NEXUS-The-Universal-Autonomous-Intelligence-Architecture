@@ -39,7 +39,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Dict, List, Optional
 
 try:
     import networkx as nx  # type: ignore
@@ -49,7 +49,7 @@ except ImportError as _nx_err:  # pragma: no cover
     ) from _nx_err
 
 if TYPE_CHECKING:
-    from core.trace import GAIATrace, AsyncGAIATrace
+    pass
 
 
 # ---------------------------------------------------------------------------

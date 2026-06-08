@@ -2,11 +2,9 @@
 Tests for DisagreementProtocol — GAIAN pushback and constitutional blocking.
 """
 
-import pytest
 from core.gaian.disagreement_protocol import (
     DisagreementProtocol,
     DisagreementTier,
-    DisagreementCategory,
 )
 
 

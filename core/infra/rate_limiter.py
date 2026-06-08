@@ -34,7 +34,7 @@ import time
 from collections import deque
 from typing import Callable, Deque, Dict, Optional, Tuple
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response

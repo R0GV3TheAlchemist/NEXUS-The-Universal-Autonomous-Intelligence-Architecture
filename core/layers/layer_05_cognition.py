@@ -260,11 +260,14 @@ class CognitionLayer:
         self, word_count, question_count, is_multi_part, domain, context
     ) -> ComplexityLevel:
         score = 0
-        if word_count > 50:    score += 2
-        elif word_count > 20:  score += 1
+        if word_count > 50:
+            score += 2
+        elif word_count > 20:
+            score += 1
         if question_count > 2: score += 2
         elif question_count > 1: score += 1
-        if is_multi_part:      score += 1
+        if is_multi_part:
+            score += 1
         if domain in (KnowledgeDomain.PHILOSOPHICAL, KnowledgeDomain.SPIRITUAL):
             score += 1
         if score >= 5: return ComplexityLevel.DEEP

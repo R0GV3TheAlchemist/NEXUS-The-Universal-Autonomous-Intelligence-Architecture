@@ -224,7 +224,8 @@ def store_turn(
     if not chroma.available:
         return
 
-    import hashlib, time
+    import hashlib
+    import time
     base = f"{session_id}:{gaian_slug}:{time.time()}"
 
     uid_user = hashlib.sha256(f"user:{base}".encode()).hexdigest()[:16]

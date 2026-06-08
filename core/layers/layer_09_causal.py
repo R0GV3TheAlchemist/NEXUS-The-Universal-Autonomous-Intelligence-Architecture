@@ -33,7 +33,6 @@ import time
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from core.kernel import register_layer
 

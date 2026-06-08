@@ -11,7 +11,6 @@ Canon Ref: C22 — Dynamic Forces & Relational Flow Doctrine
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass

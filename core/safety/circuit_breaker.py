@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import random
 from enum import Enum
-from typing import Optional
 
 from .types import CircuitBreakerState, EscalationSignal
 

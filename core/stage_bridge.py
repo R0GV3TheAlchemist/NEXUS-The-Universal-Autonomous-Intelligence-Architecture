@@ -30,7 +30,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from core.affect_inference import AffectInference, AffectState, FeelingState
+from core.affect_inference import AffectState, FeelingState
 from core.stage_engine import StageEngine, StageRecord, get_shadow_mode
 
 

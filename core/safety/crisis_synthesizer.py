@@ -13,7 +13,6 @@ Canon refs: CEth01, C34
 """
 from __future__ import annotations
 
-from datetime import datetime
 from typing import List, Optional
 
 from .crisis_detector import CumulativeCrisisDetector

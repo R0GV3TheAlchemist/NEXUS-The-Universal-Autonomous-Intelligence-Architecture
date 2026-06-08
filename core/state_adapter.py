@@ -24,7 +24,7 @@ Canon refs: C30, C31, C34, C37
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # ── Trace availability flag ───────────────────────────────────────────────── #
 try:

@@ -28,7 +28,7 @@ import asyncio
 import logging
 from typing import Any, Awaitable, Callable
 
-from core.planner.goal import Goal, GoalStatus, GoalStep
+from core.planner.goal import Goal, GoalStep
 from core.planner.scheduler import Task
 
 log = logging.getLogger(__name__)

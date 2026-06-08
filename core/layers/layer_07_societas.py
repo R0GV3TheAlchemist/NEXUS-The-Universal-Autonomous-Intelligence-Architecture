@@ -32,7 +32,6 @@ import time
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from core.kernel import register_layer
 
@@ -236,9 +235,12 @@ class SocietasLayer:
         team_signals      = ["team", "group", "project", "organization", "company", "crew", "colleagues"]
         relational_signals = ["we", "us", "together", "you and i", "partner", "friend", "family"]
 
-        if any(s in lower for s in world_signals):      return ImpactRadius.WORLD
-        if any(s in lower for s in community_signals):  return ImpactRadius.COMMUNITY
-        if any(s in lower for s in team_signals):       return ImpactRadius.TEAM
+        if any(s in lower for s in world_signals):
+            return ImpactRadius.WORLD
+        if any(s in lower for s in community_signals):
+            return ImpactRadius.COMMUNITY
+        if any(s in lower for s in team_signals):
+            return ImpactRadius.TEAM
         if any(s in lower for s in relational_signals): return ImpactRadius.RELATIONAL
         return ImpactRadius.SELF
 

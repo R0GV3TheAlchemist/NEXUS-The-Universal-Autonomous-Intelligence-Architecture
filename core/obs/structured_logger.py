@@ -7,7 +7,6 @@ Thread-safe. Writes to stderr by default; configurable to file or any stream.
 """
 import json
 import sys
-import time
 import threading
 from datetime import datetime, timezone
 from enum import Enum

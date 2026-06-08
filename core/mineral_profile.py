@@ -31,7 +31,7 @@ import time
 import logging
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 
 logger = logging.getLogger("gaia.mineral_profile")
 

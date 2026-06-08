@@ -32,6 +32,8 @@ Environment variables:
 """
 
 from __future__ import annotations
+from fastapi import APIRouter
+from pydantic import BaseModel as _BaseModel
 
 import os
 import logging
@@ -210,9 +212,6 @@ def require_admin(
 # ------------------------------------------------------------------ #
 #  Auth Endpoints (mounted by server.py)                             #
 # ------------------------------------------------------------------ #
-
-from fastapi import APIRouter
-from pydantic import BaseModel as _BaseModel
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 

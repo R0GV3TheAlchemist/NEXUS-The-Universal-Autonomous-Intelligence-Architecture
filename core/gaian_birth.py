@@ -36,12 +36,12 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from core.gaian import create_gaian, GaianMemory, _save_gaian
+from core.gaian import create_gaian, GaianMemory
 from core.gaian.base_forms import get_base_form, get_default_base_form
 from core.gaian.identity_core import IdentityCore
 from core.gaian_runtime import GAIANRuntime, GAIANIdentity
@@ -199,7 +199,7 @@ class BirthRitual:
             try:
                 zodiac = ZodiacEngine.read(params.birth_date)
                 params.base_form = zodiac.base_form_id   # cosmos overrides
-            except ValueError as e:
+            except ValueError:
                 # Malformed date — fall through to manual base_form
                 pass
 

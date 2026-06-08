@@ -23,8 +23,7 @@ Visual Canon (April 2026):
 Canon Ref: C17 (Persistent Memory and Identity Architecture)
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass

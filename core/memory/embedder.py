@@ -156,7 +156,6 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
     def _encode_sync(self, text: str) -> List[float]:
         """Blocking encode — called from a thread via run_in_executor."""
         self._ensure_model()
-        import numpy as np
         vec = self._model.encode(
             text,
             normalize_embeddings=self._normalize,

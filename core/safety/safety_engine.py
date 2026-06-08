@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
 
-from .circuit_breaker import EscalationCircuitBreaker, InterventionMode
+from .circuit_breaker import EscalationCircuitBreaker
 from .crisis_detector import CrisisDetector
 from .crisis_synthesizer import CrisisSynthesizer, CrossSessionCrisisSignal
 from .escalation_detector import ReflectiveEscalationDetector

@@ -41,7 +41,7 @@ import logging
 from typing import AsyncGenerator, Optional
 from dataclasses import dataclass
 
-from core.criticality_monitor import get_monitor, CriticalityState
+from core.criticality_monitor import get_monitor
 from core.noosphere import get_noosphere
 
 logger = logging.getLogger("gaia.streaming")

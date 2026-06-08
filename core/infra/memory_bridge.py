@@ -38,7 +38,6 @@ Canon Ref: C17 (Persistent Memory and Identity Architecture)
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from core.memory.taxonomy import MemoryKind, MemoryTier
 

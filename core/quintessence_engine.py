@@ -42,7 +42,6 @@ Canon Ref: C49 (Quintessence Unification), C48 (Dark Matter Frequency),
 from __future__ import annotations
 
 import logging
-import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum

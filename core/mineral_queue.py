@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 DATA_DIR  = Path(__file__).parent.parent / "data"
 QUEUE_OUT = DATA_DIR / "mineral_queue.json"

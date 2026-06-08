@@ -20,7 +20,7 @@ import sqlite3
 import time
 from typing import Any, Optional
 
-from core.memory.items import MemoryItem, MemoryKind, RetrievedMemory
+from core.memory.items import MemoryItem, MemoryKind
 from core.memory.store_tier import StoreTier
 
 

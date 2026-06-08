@@ -2,8 +2,7 @@
 Tests for MemoryGraph — GAIAN holographic memory.
 """
 
-import pytest
-from core.gaian.memory_graph import MemoryGraph, MemoryTier, EdgeType
+from core.gaian.memory_graph import MemoryGraph
 
 
 def test_remember_and_recall():

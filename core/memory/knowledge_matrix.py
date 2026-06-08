@@ -32,7 +32,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -390,13 +390,11 @@ class KnowledgeMatrixEngine:
 
     @staticmethod
     def _tokenize(text: str):
-        import re
         return list(set(re.findall(r'[a-z0-9]+', text.lower())))
 
     def _score(self, query_tokens, domain) -> float:
         if not domain.keywords:
             return 0.0
-        import re
         domain_tokens = [kw.lower() for kw in domain.keywords]
         extra = self._tokenize(domain.name + " " + domain.branch + " " + " ".join(domain.subfields))
         full_set = set(domain_tokens + extra)

@@ -31,7 +31,6 @@ Canon Ref: C01 (Sovereignty — honest failure disclosure), C30 (No silent failu
 
 from __future__ import annotations
 
-import logging
 import traceback
 from typing import Any
 

@@ -6,7 +6,7 @@ Data contracts for the stage bridge sub-system.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 @dataclass

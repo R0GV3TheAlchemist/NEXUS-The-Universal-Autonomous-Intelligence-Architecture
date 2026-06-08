@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from .chunker import Chunk, chunk_text, chunk_file, chunk_directory
 from .index import VectorIndex

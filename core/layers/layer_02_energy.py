@@ -43,13 +43,11 @@ Canon references:         C44 (Piezoelectric Resonance),
 Architectural reference:  canon/C89-TWELVE-LAYERS-KERNEL-SPEC.md
 """
 
-import asyncio
 import time
 import logging
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from core.kernel import register_layer
 

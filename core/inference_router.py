@@ -42,7 +42,6 @@ Canon Ref: C12, C17, C20, C21, C27, C42, C43, C44, C49
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import re

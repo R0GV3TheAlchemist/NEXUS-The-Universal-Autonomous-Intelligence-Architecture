@@ -54,7 +54,6 @@ Grounded in:
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 from datetime import datetime, timezone
 
 from core.affect_inference import FeelingState, AffectState

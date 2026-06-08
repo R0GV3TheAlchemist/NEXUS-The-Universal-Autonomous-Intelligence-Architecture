@@ -41,11 +41,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import math
 import os
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 log = logging.getLogger("gaia.orchestrator")
 

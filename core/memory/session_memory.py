@@ -16,7 +16,6 @@ Canon Ref: C17 (Persistent Memory and Identity Architecture Spec)
 """
 
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
 

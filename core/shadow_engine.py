@@ -25,9 +25,9 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Literal
 
 from core.affect_inference import FeelingState
 from core.stage_bridge import is_shadow_surface_safe

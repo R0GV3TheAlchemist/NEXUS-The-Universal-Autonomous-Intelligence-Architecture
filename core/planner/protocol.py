@@ -30,7 +30,7 @@ Optional keys:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol, TypedDict, runtime_checkable
+from typing import Any, Protocol, TypedDict, runtime_checkable
 
 
 # ---------------------------------------------------------------------------

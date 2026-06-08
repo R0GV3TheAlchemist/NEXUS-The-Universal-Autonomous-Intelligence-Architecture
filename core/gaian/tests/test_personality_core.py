@@ -2,12 +2,9 @@
 Tests for PersonalityCore — GAIAN soul module.
 """
 
-import pytest
 from core.gaian.personality_core import (
     PersonalityCore,
-    CoreTemperament,
     ToneRegister,
-    ValuesFingerprint,
 )
 
 

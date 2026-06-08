@@ -24,7 +24,6 @@ from typing import Optional
 from core.memory.memory_store import (
     MemoryCategory,
     MemoryEntry,
-    MemoryProvenance,
     MemoryTier,
     ProvenanceSource,
     SessionState,
@@ -419,6 +418,6 @@ class MemoryConsole:
             base += f"It was first recorded when: \"{entry.provenance.origin_context}\". "
 
         if active_response:
-            base += f"I used it in this response because it was relevant to the current context."
+            base += "I used it in this response because it was relevant to the current context."
 
         return base.strip()

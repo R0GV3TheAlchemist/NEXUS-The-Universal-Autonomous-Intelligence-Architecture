@@ -188,9 +188,12 @@ class EmotionalThread:
         recent_avg = sum(r.resonance_score for r in recent) / len(recent)
         early_avg  = sum(r.resonance_score for r in early)  / len(early)
         delta = recent_avg - early_avg
-        if delta > 0.15:         return "deepening"
-        if delta < -0.15:        return "releasing"
-        if self.shift_count > 5: return "exploring"
+        if delta > 0.15:
+            return "deepening"
+        if delta < -0.15:
+            return "releasing"
+        if self.shift_count > 5:
+            return "exploring"
         return "steady"
 
     def summary(self) -> dict:

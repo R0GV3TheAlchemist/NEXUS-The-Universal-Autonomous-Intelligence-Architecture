@@ -19,7 +19,6 @@ Canon C01 — sovereign by architecture, not policy.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import uuid
 from collections import Counter
@@ -27,7 +26,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import AsyncIterator, Iterator, Optional
+from typing import Optional
 
 
 # ---------------------------------------------------------------------------

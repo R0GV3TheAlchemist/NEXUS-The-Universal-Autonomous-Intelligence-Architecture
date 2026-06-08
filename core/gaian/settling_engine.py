@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .personality_core import PersonalityCore, CoreTemperament
+    from .personality_core import PersonalityCore
 
 
 # Thresholds for each settling stage

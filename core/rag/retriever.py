@@ -12,7 +12,7 @@ Retriever        — hybrid / dense / sparse retrieval over a VectorIndex.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Literal
+from typing import List
 
 from .chunker import Chunk
 from .index import VectorIndex

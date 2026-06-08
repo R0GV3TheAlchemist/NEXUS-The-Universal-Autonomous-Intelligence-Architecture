@@ -15,7 +15,6 @@ Canon Ref: Doc 21 (Sovereignty), Doc 35 (Security), GDPR/CCPA alignment
 """
 
 import hashlib
-import json
 import datetime
 from typing import Optional
 

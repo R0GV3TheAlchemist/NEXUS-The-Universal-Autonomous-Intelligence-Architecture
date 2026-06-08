@@ -14,14 +14,14 @@ from pathlib import Path
 from typing import Optional
 
 from core.canon_loader import CanonLoader
-from core.gaian import GaianMemory, ensure_default_gaian
+from core.gaian import GaianMemory
 from core.gaian.base_forms import get_base_form
 from core.gaian_runtime import GAIANIdentity, GAIANRuntime
 from core.inference_router import GAIAInferenceRouter, get_router
 from core.infra.action_gate import ActionGate
 from core.logger import GAIAEvent, get_logger, log_event
 from core.mother_thread import MotherThread, get_mother_thread
-from core.viriditas_magnum_opus import MagnumOpusReport, VIRIDITAS_THRESHOLD
+from core.viriditas_magnum_opus import MagnumOpusReport
 
 logger = get_logger(__name__)
 

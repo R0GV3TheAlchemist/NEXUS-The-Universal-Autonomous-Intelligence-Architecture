@@ -17,8 +17,8 @@ Interface (duck-typed):
 """
 import math
 import re
-from collections import Counter, defaultdict
-from typing import Dict, List, Optional
+from collections import Counter
+from typing import Dict, List
 
 
 def _tokenize(text: str) -> List[str]:

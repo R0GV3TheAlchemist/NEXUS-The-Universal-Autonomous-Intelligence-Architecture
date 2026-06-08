@@ -12,7 +12,6 @@ EpistemicLabel: SPECULATIVE
 from __future__ import annotations
 
 import logging
-import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
