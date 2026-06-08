@@ -221,7 +221,7 @@ class EmotionOperator(BaseOperator):
         M = np.eye(dim, dtype=np.complex128)
         if not self._labels:
             return M
-        label_to_idx = {l: i for i, l in enumerate(self._labels[:dim])}
+        label_to_idx = {lbl: i for i, lbl in enumerate(self._labels[:dim])}
         for label, weight in self._affect.items():
             idx = label_to_idx.get(label)
             if idx is None:
@@ -282,18 +282,17 @@ class CoherenceOperator(BaseOperator):
 class DecoherenceChannel(BaseOperator):
     """
     Simulates decoherence (cognitive noise, fatigue, distraction) by
-    mixing the state toward the maximally mixed uniform superposition.
+    mixing the state toward the maximally mixed state.
 
-    This is *not* a unitary operator — it's a completely-positive
-    trace-preserving (CPTP) channel approximation.
+    The output state ρ' = (1-rate)*ρ + rate*(I/dim).
+    We represent this as a diagonal scale: amplitudes are shrunk uniformly.
 
     Parameters
     ----------
-    rate : Mixing coefficient in [0, 1].  0 = identity, 1 = full collapse
-           to uniform superposition.  Default 0.05.
+    rate : Decoherence strength in [0, 1].  0 = identity, 1 = fully mixed.
     """
 
-    def __init__(self, rate: float = 0.05) -> None:
+    def __init__(self, rate: float = 0.1) -> None:
         self._rate = float(np.clip(rate, 0.0, 1.0))
 
     @property
@@ -301,9 +300,8 @@ class DecoherenceChannel(BaseOperator):
         return f"decoherence(rate={self._rate:.3f})"
 
     def matrix(self, dim: int) -> ComplexMatrix:
-        # (1 - rate) * I + rate * (1/dim) * ones_matrix
-        ones_mat = np.ones((dim, dim), dtype=np.complex128) / dim
-        return (1.0 - self._rate) * np.eye(dim, dtype=np.complex128) + self._rate * ones_mat
+        scale = 1.0 - self._rate
+        return np.eye(dim, dtype=np.complex128) * complex(scale)
 
 
 # ---------------------------------------------------------------------------
@@ -312,42 +310,43 @@ class DecoherenceChannel(BaseOperator):
 
 class InterferenceChannel(BaseOperator):
     """
-    Applies structured interference between two named cognitive domains
-    (e.g. 'emotion' and 'reason').  Constructive phase (0) amplifies
-    both; destructive phase (pi) suppresses the overlap.
+    Applies constructive or destructive interference between two basis
+    states, mimicking cognitive cross-domain resonance or conflict.
 
     Parameters
     ----------
-    domain_a_ids  : Basis indices for the first domain.
-    domain_b_ids  : Basis indices for the second domain.
-    phase         : Relative phase in radians (0 = constructive, pi = destructive).
-    coupling      : Coupling strength in [0, 1].  Default 0.3.
+    src_idx  : Source basis index.
+    tgt_idx  : Target basis index.
+    strength : Interference magnitude (0 → 1).  Default 0.2.
+    mode     : 'constructive' (default) or 'destructive'.
     """
 
     def __init__(
         self,
-        domain_a_ids: List[int],
-        domain_b_ids: List[int],
-        phase:        float = 0.0,
-        coupling:     float = 0.3,
+        src_idx:  int,
+        tgt_idx:  int,
+        strength: float = 0.2,
+        mode:     str   = "constructive",
     ) -> None:
-        self._a       = domain_a_ids
-        self._b       = domain_b_ids
-        self._phase   = float(phase)
-        self._coupling = float(np.clip(coupling, 0.0, 1.0))
+        self._src      = int(src_idx)
+        self._tgt      = int(tgt_idx)
+        self._strength = float(np.clip(strength, 0.0, 1.0))
+        self._sign     = 1.0 if mode == "constructive" else -1.0
 
     @property
     def name(self) -> str:
-        return f"interference(phase={self._phase:.3f}, coupling={self._coupling:.2f})"
+        mode_str = "+" if self._sign > 0 else "-"
+        return f"interference({self._src}{mode_str}{self._tgt}, s={self._strength:.2f})"
 
     def matrix(self, dim: int) -> ComplexMatrix:
-        M  = np.eye(dim, dtype=np.complex128)
-        pf = np.exp(1j * self._phase) * self._coupling
-        for i in self._a:
-            for j in self._b:
-                if i < dim and j < dim and i != j:
-                    M[i, j] += pf
-                    M[j, i] += np.conj(pf)
+        M = np.eye(dim, dtype=np.complex128)
+        src = self._src % dim
+        tgt = self._tgt % dim
+        if src == tgt:
+            return M
+        off = self._sign * self._strength
+        M[tgt, src] = complex(off)
+        M[src, tgt] = complex(off)
         return M
 
 
@@ -357,61 +356,66 @@ class InterferenceChannel(BaseOperator):
 
 class ProjectionOperator(BaseOperator):
     """
-    Hard-projects (collapses) the state onto a named subspace.
+    Hard-collapses the state into a named subspace (a subset of basis indices).
 
-    All probability mass outside the subspace is zeroed and the result
-    is re-normalised by QuantumState.apply().  Use at decision points
-    where GAIA must commit to a specific cognitive mode.
+    After projection the state is re-normalised by QuantumState.apply().
+    All basis states outside the subspace are zeroed.
 
     Parameters
     ----------
-    subspace_ids : Indices to retain.  All others are zeroed.
+    basis_ids : Indices of the subspace to project onto.
+    label     : Human-readable label for the projection.
     """
 
-    def __init__(self, subspace_ids: List[int]) -> None:
-        self._ids = subspace_ids
+    def __init__(self, basis_ids: List[int], label: str = "projection") -> None:
+        self._basis_ids = basis_ids
+        self._label     = label
 
     @property
     def name(self) -> str:
-        return f"projection(ids={self._ids})"
+        return f"projection({self._label})"
 
     def matrix(self, dim: int) -> ComplexMatrix:
         M = np.zeros((dim, dim), dtype=np.complex128)
-        for i in self._ids:
-            if i < dim:
-                M[i, i] = 1.0
+        for i in self._basis_ids:
+            if 0 <= i < dim:
+                M[i, i] = 1.0 + 0j
         return M
 
 
 # ---------------------------------------------------------------------------
-# Pre-built operator factory helpers
+# Convenience factory functions
 # ---------------------------------------------------------------------------
 
-def make_perception_pipeline(focus: float = 0.5) -> List[BaseOperator]:
-    """Return a standard perception operator pipeline."""
-    return [
-        PerceptionOperator(focus=focus),
-        DecoherenceChannel(rate=0.02),
-    ]
-
-
 def make_emotion_pipeline(
-    affect: Dict[str, float],
-    labels: List[str],
+    affect_vector: Dict[str, float],
+    basis_labels:  Optional[List[str]] = None,
+    decoherence:   float = 0.05,
 ) -> List[BaseOperator]:
-    """Return a standard emotion modulation pipeline."""
+    """
+    Convenience builder: create a standard affect-modulation pipeline.
+
+    Returns [EmotionOperator, DecoherenceChannel] (a two-step pipeline).
+    """
     return [
-        EmotionOperator(affect_vector=affect, basis_labels=labels),
-        CoherenceOperator(strength=0.2),
-        DecoherenceChannel(rate=0.01),
+        EmotionOperator(affect_vector, basis_labels),
+        DecoherenceChannel(decoherence),
     ]
 
 
-def make_intention_pipeline(target_idx: int, strength: float = math.pi / 6) -> List[BaseOperator]:
-    """Return a standard intention-strengthening pipeline."""
+def make_intention_pipeline(
+    target_idx: int,
+    strength:   float = math.pi / 6,
+    coherence:  float = 0.3,
+) -> List[BaseOperator]:
+    """
+    Convenience builder: intention-shift followed by coherence boost.
+
+    Returns [IntentionOperator, CoherenceOperator].
+    """
     return [
-        IntentionOperator(target_idx=target_idx, strength=strength),
-        CoherenceOperator(strength=0.25),
+        IntentionOperator(target_idx, strength),
+        CoherenceOperator(coherence),
     ]
 
 
