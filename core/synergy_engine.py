@@ -49,6 +49,11 @@ EventType shim (Issue #5):
   alias core.trace.TraceEventType; if that module is not yet available
   it falls back to a standalone Enum with identical member names.
 
+  All internal emit helpers use this module-level EventType directly
+  rather than re-importing core.trace.TraceEventType at call time.
+  This guarantees trace events are always recorded even when core.trace
+  is not on the Python path (e.g. during isolated unit-test bootstrap).
+
 CanonEntry integration (Issue #253):
   _analyse_canon_context() now accepts either a plain str (legacy path)
   or a CanonEntry object (new path).  When a CanonEntry is supplied:
@@ -88,6 +93,11 @@ if TYPE_CHECKING:
 #   trace.record_output(event_type=EventType.QUERY, ...)
 # At import time we attempt to alias TraceEventType from core.trace;
 # if that module is unavailable we fall back to a standalone Enum.
+#
+# IMPORTANT: all _emit_* helpers below reference this module-level name
+# directly.  Do NOT add "from core.trace import TraceEventType" inside
+# helper bodies — that pattern silently drops events when core.trace is
+# absent during test bootstrap (C30 — no silent failures).
 # ---------------------------------------------------------------------------
 
 try:
@@ -514,13 +524,14 @@ def _classify_stage(
 
 # ---------------------------------------------------------------------------
 # Trace helpers — compute()
+#
+# Use the module-level EventType shim — never re-import core.trace here.
 # ---------------------------------------------------------------------------
 
 def _emit_query(trace: Any, gaian_id: Optional[str], kwargs: dict) -> None:
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output={"call": "SynergyEngine.compute", "gaian_id": gaian_id, "dimensions": {
                 k: kwargs[k] for k in (
@@ -533,7 +544,7 @@ def _emit_query(trace: Any, gaian_id: Optional[str], kwargs: dict) -> None:
                     "settling_phase", "crystallisation_pct",
                 ) if k in kwargs
             }},
-            event_type=TraceEventType.QUERY,
+            event_type=EventType.QUERY,
             canon_refs=_TRACE_CANON_REFS,
         )
     except Exception:
@@ -544,10 +555,9 @@ def _emit_output(trace: Any, reading: "SynergyReading", latency_ms: float) -> No
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output=reading.summary(),
-            event_type=TraceEventType.OUTPUT,
+            event_type=EventType.OUTPUT,
             canon_refs=_TRACE_CANON_REFS,
         )
         trace.record_meta("latency_ms", round(latency_ms, 3))
@@ -559,10 +569,9 @@ def _emit_error(trace: Any, exc: BaseException) -> None:
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output={"error": type(exc).__name__, "detail": str(exc)},
-            event_type=TraceEventType.ERROR,
+            event_type=EventType.ERROR,
             canon_refs=_TRACE_CANON_REFS,
         )
     except Exception:
@@ -571,6 +580,8 @@ def _emit_error(trace: Any, exc: BaseException) -> None:
 
 # ---------------------------------------------------------------------------
 # Trace helpers — plan()  (Issue #5)
+#
+# Use the module-level EventType shim — never re-import core.trace here.
 # ---------------------------------------------------------------------------
 
 def _emit_plan_query(
@@ -583,11 +594,10 @@ def _emit_plan_query(
     cycle_count: int,
     canon_hint: "CanonPlanHint",
 ) -> None:
-    """Emit a QUERY trace event at the entry point of _plan_internal()."""
+    """Emit a QUERY trace event at the entry point of plan()."""
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output={
                 "call":           "SynergyEngine.plan",
@@ -601,7 +611,7 @@ def _emit_plan_query(
                 "canon_refs":     canon_hint.canon_refs,
                 "canon_conflict": canon_hint.conflict_detected,
             },
-            event_type=TraceEventType.QUERY,
+            event_type=EventType.QUERY,
             canon_refs=_PLAN_TRACE_CANON_REFS,
         )
     except Exception:
@@ -618,7 +628,6 @@ def _emit_plan_output(
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output={
                 "action":            result.get("action"),
@@ -630,7 +639,7 @@ def _emit_plan_output(
                 "conflict_detected": canon_hint.conflict_detected,
                 "summary":           result.get("summary"),
             },
-            event_type=TraceEventType.OUTPUT,
+            event_type=EventType.OUTPUT,
             canon_refs=_PLAN_TRACE_CANON_REFS,
         )
     except Exception:
@@ -642,10 +651,9 @@ def _emit_plan_error(trace: Any, exc: BaseException) -> None:
     if trace is None:
         return
     try:
-        from core.trace import TraceEventType
         trace.record_output(
             output={"error": type(exc).__name__, "detail": str(exc)},
-            event_type=TraceEventType.ERROR,
+            event_type=EventType.ERROR,
             canon_refs=_PLAN_TRACE_CANON_REFS,
         )
     except Exception:
