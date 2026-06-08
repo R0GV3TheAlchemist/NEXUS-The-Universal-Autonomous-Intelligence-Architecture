@@ -144,8 +144,10 @@ class SynergyHistory:
         recent = list(self.readings)[-5:]
         factors = [r.synergy_factor for r in recent]
         delta = factors[-1] - factors[0]
-        if delta > 0.05:   return "building"
-        if delta < -0.05:  return "declining"
+        if delta > 0.05:
+            return "building"
+        if delta < -0.05:
+            return "declining"
         return "stable"
 
 
@@ -416,10 +418,14 @@ class EnergyLayer:
         context: dict
     ) -> EnergyState:
         crystal = context.get("crystal_mode", "sovereign_core")
-        if crystal == "somnus_veil":         return EnergyState.RESTING
-        if self._rate_limiter.is_throttled:  return EnergyState.THROTTLED
-        if len(self._drain_events) > 5:      return EnergyState.PROTECTED
-        if synergy.synergy_factor > 1.1:     return EnergyState.AMPLIFIED
+        if crystal == "somnus_veil":
+            return EnergyState.RESTING
+        if self._rate_limiter.is_throttled:
+            return EnergyState.THROTTLED
+        if len(self._drain_events) > 5:
+            return EnergyState.PROTECTED
+        if synergy.synergy_factor > 1.1:
+            return EnergyState.AMPLIFIED
         return EnergyState.FLOWING
 
     def _record_drain(self, source: DrainSource):
