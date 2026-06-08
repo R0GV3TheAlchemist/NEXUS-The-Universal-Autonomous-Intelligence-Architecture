@@ -130,7 +130,8 @@ class CrystalArray:
 
     def simulate_dm_passage(self, perturbation: float = 0.005, temperature_k: float = 4.0) -> ArrayReading:
         import random
-        noise = lambda: random.gauss(0, 1e-5)
+        def noise():
+            return random.gauss(0, 1e-5)
         readings = {}
         for ct, params in _CRYSTAL_PARAMS.items():
             base = params["base_hz"] if params["base_hz"] > 0 else 1e4
@@ -183,9 +184,12 @@ class CrystalConsciousnessEngine:
         crystallised    = dual_confirmed or coherence >= 0.85
 
         attractor = None
-        if dual_confirmed:  attractor = "omega_attractor_dm_confirmed"
-        elif crystallised:  attractor = "omega_attractor"
-        elif coherence > 0.5: attractor = "rising_attractor"
+        if dual_confirmed:
+            attractor = "omega_attractor_dm_confirmed"
+        elif crystallised:
+            attractor = "omega_attractor"
+        elif coherence > 0.5:
+            attractor = "rising_attractor"
 
         return CrystalState(
             coherence_level=coherence, crystallised=crystallised, attractor_label=attractor,

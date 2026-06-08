@@ -42,10 +42,14 @@ class DMFrequencyBand(str, Enum):
 
 
 def _classify_frequency(hz: float) -> DMFrequencyBand:
-    if hz < 1.0:        return DMFrequencyBand.INFRA_SCHUMANN
-    if hz < 100.0:      return DMFrequencyBand.SCHUMANN
-    if hz < 20_000.0:   return DMFrequencyBand.AUDIO
-    if hz < 1_000_000.0: return DMFrequencyBand.RADIO
+    if hz < 1.0:
+        return DMFrequencyBand.INFRA_SCHUMANN
+    if hz < 100.0:
+        return DMFrequencyBand.SCHUMANN
+    if hz < 20_000.0:
+        return DMFrequencyBand.AUDIO
+    if hz < 1_000_000.0:
+        return DMFrequencyBand.RADIO
     return DMFrequencyBand.MICROWAVE
 
 
@@ -72,7 +76,8 @@ class BaselineCalibrator:
         self._atomic_buf.append(reading.atomic_hz)
 
     def _stats(self, buf: deque[float]) -> tuple[float, float]:
-        if not buf: return 0.0, 1.0
+        if not buf:
+            return 0.0, 1.0
         n   = len(buf)
         mu  = sum(buf) / n
         var = sum((x - mu) ** 2 for x in buf) / n
@@ -132,7 +137,8 @@ class AnomalyDetector:
         cz = abs(drift["crystal_z"])
         az = abs(drift["atomic_z"])
         min_z = min(sz, cz, az)
-        if min_z < self._WEAK_Z: return None
+        if min_z < self._WEAK_Z:
+            return None
 
         signs = [
             math.copysign(1, drift["schumann_z"]),
@@ -141,9 +147,12 @@ class AnomalyDetector:
         ]
         coherence = abs(sum(signs)) / 3.0
 
-        if min_z >= self._STRONG_Z:   confidence = "strong"
-        elif min_z >= self._MODERATE_Z: confidence = "moderate"
-        else:                           confidence = "weak"
+        if min_z >= self._STRONG_Z:
+            confidence = "strong"
+        elif min_z >= self._MODERATE_Z:
+            confidence = "moderate"
+        else:
+            confidence = "weak"
 
         dm_hz = current_hz
         dm_eV = (dm_hz * _H_PLANCK) / (_C_LIGHT ** 2 * _EV)
@@ -223,7 +232,8 @@ class DarkMatterResonanceEngine:
 
     def ingest_simulated(self, schumann_hz: float = _SCHUMANN_HZ, perturbation: float = 0.0) -> DarkMatterState:
         import random
-        noise = lambda scale=1.0: random.gauss(0, scale * 0.0001)
+        def noise(scale: float = 1.0) -> float:
+            return random.gauss(0, scale * 0.0001)
         dm_signal  = perturbation * schumann_hz
         crystal_hz = _QUARTZ_HZ * (1.0 + perturbation + noise())
         atomic_hz  = _CESIUM_HZ * (1.0 + perturbation + noise(0.5))
