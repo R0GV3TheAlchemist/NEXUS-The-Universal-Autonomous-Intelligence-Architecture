@@ -28,12 +28,17 @@ Privacy: SynergyEngine is stateless per call; all mutable state lives
 in the caller-owned SynergyState dataclass.
 
 Trace integration (GAIATrace / AsyncGAIATrace):
-  Pass a live trace context via the `trace` kwarg on `compute()`.  Three
-  events are emitted per call:
+  Pass a live trace context via the `trace` kwarg on `compute()` or
+  `plan()`.  compute() emits three events per call:
     QUERY  — call site + dimension arguments
     OUTPUT — SynergyReading summary + synergy_factor
     META   — latency_ms via `record_meta()`
-  Canon refs C32/C42/C04 are forwarded automatically.
+  plan() emits three events per call (Issue #5):
+    QUERY  — goal excerpt, ambient signals, Canon presence
+    OUTPUT — action, tool, register, confidence, goal_complete
+    ERROR  — exception type + detail on unhandled exceptions
+  Canon refs C32/C42/C04 are forwarded on compute events.
+  Canon refs C01/C30/C32 are forwarded on plan events.
   All trace operations are wrapped in try/except so a broken trace
   writer never silences a SynergyEngine error.
 
@@ -44,6 +49,14 @@ CanonEntry integration (Issue #253):
     - The validated ref_id is forwarded into canon_refs.
     - to_context_string() produces the excerpt for the audit rationale.
   All existing callers that pass a plain string are unaffected.
+
+Canon conflict resolution (Issue #4):
+  _analyse_canon_context() now scans ALL keyword groups (no early exit)
+  and applies a priority rule when multiple registers fire:
+    minimal > reflective > executive  (most protective wins, C32).
+  Conflicts are recorded in CanonPlanHint.conflict_detected and
+  CanonPlanHint.conflict_groups, and surfaced in to_rationale_fragment()
+  for full audit-trail transparency (C30).
 """
 
 from __future__ import annotations
@@ -132,11 +145,19 @@ _LOW_SYNERGY_THRESHOLD  = 0.35
 _HIGH_SYNERGY_THRESHOLD = 0.70
 _HISTORY_CAP = 20
 
-_TRACE_CANON_REFS = ["C32", "C42", "C04"]
+_TRACE_CANON_REFS      = ["C32", "C42", "C04"]
+_PLAN_TRACE_CANON_REFS = ["C01", "C30", "C32"]
 
 # ---------------------------------------------------------------------------
 # Canon-keyword → register nudge table  (C32 — multi-signal integration)
+# Priority order used by the conflict resolver: minimal > reflective > executive
 # ---------------------------------------------------------------------------
+_REGISTER_PRIORITY: Dict[str, int] = {
+    "minimal":    3,   # most protective — always wins a conflict
+    "reflective": 2,
+    "executive":  1,
+}
+
 _CANON_REGISTER_KEYWORDS: List[Tuple[str, str, str]] = [
     (r"grief|overwhelm|trauma|loss|distress",   "reflective", "canon:grief-signal"),
     (r"storm|severe|crisis|emergency",           "reflective", "canon:storm-signal"),
@@ -164,23 +185,31 @@ class CanonPlanHint:
 
     Fields
     ------
-    present        : True if non-empty canon_context was supplied.
-    char_count     : Length of the raw canon_context string.
-    excerpt        : First _CANON_EXCERPT_LEN chars (for audit logs).
-    register_nudge : Optional register override suggested by Canon keywords
-                     or the CanonEntry.register_signal declaration.
-    nudge_label    : Short human-readable label for the signal source.
-    canon_refs     : Canon reference IDs found in the context.
-    entry_ref_id   : If a CanonEntry was supplied, its ref_id.  None for
-                     raw strings (legacy path).
+    present           : True if non-empty canon_context was supplied.
+    char_count        : Length of the raw canon_context string.
+    excerpt           : First _CANON_EXCERPT_LEN chars (for audit logs).
+    register_nudge    : Optional register override — the winning register
+                        after conflict resolution, or the sole match.
+    nudge_label       : Short human-readable label for the winning signal.
+    canon_refs        : Canon reference IDs found in the context.
+    entry_ref_id      : If a CanonEntry was supplied, its ref_id.  None
+                        for raw strings (legacy path).
+    conflict_detected : True when >1 distinct register group matched the
+                        canon text.  Always False for CanonEntry fast-path
+                        (declared signal is unambiguous by definition).
+    conflict_groups   : All (register, label) pairs that fired, in
+                        descending priority order.  Empty when
+                        conflict_detected is False.
     """
-    present:        bool
-    char_count:     int
-    excerpt:        str
-    register_nudge: Optional[str] = None
-    nudge_label:    str            = ""
-    canon_refs:     List[str]      = field(default_factory=list)
-    entry_ref_id:   Optional[str]  = None
+    present:           bool
+    char_count:        int
+    excerpt:           str
+    register_nudge:    Optional[str]        = None
+    nudge_label:       str                  = ""
+    canon_refs:        List[str]             = field(default_factory=list)
+    entry_ref_id:      Optional[str]         = None
+    conflict_detected: bool                  = False
+    conflict_groups:   List[Tuple[str, str]] = field(default_factory=list)
 
     def to_rationale_fragment(self) -> str:
         if not self.present:
@@ -194,15 +223,59 @@ class CanonPlanHint:
             f" CanonEntry: {self.entry_ref_id!r}."
             if self.entry_ref_id else ""
         )
+        conflict_s = ""
+        if self.conflict_detected:
+            groups_str = ", ".join(
+                f"{reg}({lbl})" for reg, lbl in self.conflict_groups
+            )
+            conflict_s = (
+                f" CONFLICT: multiple Canon signals fired [{groups_str}]; "
+                f"resolved to {self.register_nudge!r} by priority rule "
+                f"(minimal>reflective>executive, C32)."
+            )
         return (
             f"Canon context: {self.char_count} chars, refs=[{refs_s}]."
-            f"{nudge_s}{entry_s}"
+            f"{nudge_s}{entry_s}{conflict_s}"
         )
 
 
 # ---------------------------------------------------------------------------
 # Canon-context analysis (pure function — independently testable)
 # ---------------------------------------------------------------------------
+
+def _resolve_keyword_conflicts(
+    matches: List[Tuple[str, str]],
+) -> Tuple[Optional[str], str, bool, List[Tuple[str, str]]]:
+    """
+    Given a list of (register, label) matches from the keyword scan,
+    return (winning_register, winning_label, conflict_detected, all_matches).
+
+    Priority rule (C32 — most protective wins):
+        minimal > reflective > executive
+
+    Matches are returned sorted by descending priority so the conflict
+    fragment in to_rationale_fragment() is self-documenting.
+    """
+    if not matches:
+        return None, "", False, []
+
+    # Deduplicate while preserving all distinct labels per register
+    seen_registers: set = set()
+    unique_matches: List[Tuple[str, str]] = []
+    for reg, lbl in matches:
+        unique_matches.append((reg, lbl))
+        seen_registers.add(reg)
+
+    # Sort by descending priority so index 0 is the winner
+    unique_matches.sort(
+        key=lambda x: _REGISTER_PRIORITY.get(x[0], 0),
+        reverse=True,
+    )
+
+    winning_register, winning_label = unique_matches[0]
+    conflict_detected = len(seen_registers) > 1
+    return winning_register, winning_label, conflict_detected, unique_matches
+
 
 def _analyse_canon_context(
     canon_context: Union[str, "CanonEntry", None],
@@ -211,7 +284,7 @@ def _analyse_canon_context(
     Analyse *canon_context* and return a CanonPlanHint.
 
     Accepts EITHER:
-      - A plain str (legacy path — unchanged behaviour)
+      - A plain str (legacy path)
       - A CanonEntry object (new path — uses declared register_signal
         directly; no regex scan needed for unambiguous entries)
       - None / empty string → CanonPlanHint(present=False)
@@ -221,15 +294,19 @@ def _analyse_canon_context(
     CanonEntry fast path
     --------------------
     When a CanonEntry is supplied and its register_signal is not
-    UNSPECIFIED, the declared signal is trusted directly — this is the
-    point of the CanonEntry schema: eliminate ambiguous regex matching.
-    If register_signal IS UNSPECIFIED, the function falls through to
-    keyword scanning on the entry's body text.
+    UNSPECIFIED, the declared signal is trusted directly.  No conflict
+    resolution needed — declared signals are unambiguous by definition.
+    If register_signal IS UNSPECIFIED, falls through to keyword scanning
+    on the entry's body text (conflict resolution applies).
 
-    Legacy string path
-    ------------------
-    Unchanged from before: extract C\\d+ refs, scan keyword groups,
-    first match wins.
+    Legacy string path  (Issue #4 — conflict resolver)
+    -------------------
+    Scans ALL keyword groups (no early exit), collects every match,
+    then applies _resolve_keyword_conflicts():
+      - Single match  → register_nudge = that register, conflict_detected=False.
+      - Multiple matches with same register → conflict_detected=False (agree).
+      - Multiple matches with different registers → conflict_detected=True,
+        winning register determined by priority rule (minimal>reflective>executive).
     """
     # ── CanonEntry path ───────────────────────────────────────────────
     try:
@@ -248,20 +325,34 @@ def _analyse_canon_context(
             if entry.ref_id and re.match(r"^C\d+$", entry.ref_id):
                 canon_refs = sorted(set(canon_refs + [entry.ref_id]))
 
-            # Use declared signal if explicit
+            # Use declared signal if explicit — bypasses conflict scan
             register_nudge: Optional[str] = None
             nudge_label:    str            = ""
             if entry.register_signal != RegisterSignal.UNSPECIFIED:
                 register_nudge = entry.register_signal.value
                 nudge_label    = f"canon-entry:{entry.ref_id}:{register_nudge}"
             else:
-                # Fall through to keyword scan on body
-                lower = body.lower()
-                for pattern, target, label in _CANON_REGISTER_KEYWORDS:
-                    if re.search(pattern, lower):
-                        register_nudge = target
-                        nudge_label    = label
-                        break
+                # Fall through to keyword scan + conflict resolution
+                lower   = body.lower()
+                raw_matches: List[Tuple[str, str]] = [
+                    (target, label)
+                    for pattern, target, label in _CANON_REGISTER_KEYWORDS
+                    if re.search(pattern, lower)
+                ]
+                register_nudge, nudge_label, conflict_det, conflict_grps = (
+                    _resolve_keyword_conflicts(raw_matches)
+                )
+                return CanonPlanHint(
+                    present=True,
+                    char_count=len(context_str),
+                    excerpt=context_str[:_CANON_EXCERPT_LEN],
+                    register_nudge=register_nudge,
+                    nudge_label=nudge_label,
+                    canon_refs=canon_refs,
+                    entry_ref_id=entry.ref_id,
+                    conflict_detected=conflict_det,
+                    conflict_groups=conflict_grps,
+                )
 
             return CanonPlanHint(
                 present=True,
@@ -271,6 +362,8 @@ def _analyse_canon_context(
                 nudge_label=nudge_label,
                 canon_refs=canon_refs,
                 entry_ref_id=entry.ref_id,
+                conflict_detected=False,   # declared signal is unambiguous
+                conflict_groups=[],
             )
     except ImportError:
         pass  # canon_entry module not yet available — fall through to str path
@@ -282,14 +375,16 @@ def _analyse_canon_context(
 
     canon_refs = sorted(set(re.findall(r"\bC\d+\b", stripped)))
 
-    register_nudge = None
-    nudge_label    = ""
+    # Scan ALL groups — collect every match (Issue #4)
     lower = stripped.lower()
-    for pattern, target, label in _CANON_REGISTER_KEYWORDS:
-        if re.search(pattern, lower):
-            register_nudge = target
-            nudge_label    = label
-            break
+    raw_matches: List[Tuple[str, str]] = [
+        (target, label)
+        for pattern, target, label in _CANON_REGISTER_KEYWORDS
+        if re.search(pattern, lower)
+    ]
+    register_nudge, nudge_label, conflict_detected, conflict_groups = (
+        _resolve_keyword_conflicts(raw_matches)
+    )
 
     return CanonPlanHint(
         present=True,
@@ -299,6 +394,8 @@ def _analyse_canon_context(
         nudge_label=nudge_label,
         canon_refs=canon_refs,
         entry_ref_id=None,
+        conflict_detected=conflict_detected,
+        conflict_groups=conflict_groups,
     )
 
 
@@ -403,7 +500,7 @@ def _classify_stage(
 
 
 # ---------------------------------------------------------------------------
-# Trace helpers
+# Trace helpers — compute()
 # ---------------------------------------------------------------------------
 
 def _emit_query(trace: Any, gaian_id: Optional[str], kwargs: dict) -> None:
@@ -454,6 +551,89 @@ def _emit_error(trace: Any, exc: BaseException) -> None:
             output={"error": type(exc).__name__, "detail": str(exc)},
             event_type=TraceEventType.ERROR,
             canon_refs=_TRACE_CANON_REFS,
+        )
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Trace helpers — plan()  (Issue #5)
+# ---------------------------------------------------------------------------
+
+def _emit_plan_query(
+    trace: Any,
+    goal: str,
+    coherence: float,
+    affective: str,
+    planetary: str,
+    session_mode: str,
+    cycle_count: int,
+    canon_hint: "CanonPlanHint",
+) -> None:
+    """Emit a QUERY trace event at the entry point of _plan_internal()."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output={
+                "call":          "SynergyEngine.plan",
+                "goal_excerpt":  goal[:120],
+                "coherence":     round(coherence, 4),
+                "affective":     affective,
+                "planetary":     planetary,
+                "session_mode":  session_mode,
+                "cycle_count":   cycle_count,
+                "canon_present": canon_hint.present,
+                "canon_refs":    canon_hint.canon_refs,
+                "canon_conflict": canon_hint.conflict_detected,
+            },
+            event_type=TraceEventType.QUERY,
+            canon_refs=_PLAN_TRACE_CANON_REFS,
+        )
+    except Exception:
+        pass
+
+
+def _emit_plan_output(
+    trace: Any,
+    result: dict,
+    canon_hint: "CanonPlanHint",
+    register: str,
+) -> None:
+    """Emit an OUTPUT trace event at every return site of _plan_internal()."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output={
+                "action":           result.get("action"),
+                "tool":             result.get("tool"),
+                "register":         register,
+                "confidence":       result.get("confidence"),
+                "goal_complete":    result.get("goal_complete", False),
+                "canon_nudge_label": canon_hint.nudge_label,
+                "conflict_detected": canon_hint.conflict_detected,
+                "summary":          result.get("summary"),
+            },
+            event_type=TraceEventType.OUTPUT,
+            canon_refs=_PLAN_TRACE_CANON_REFS,
+        )
+    except Exception:
+        pass
+
+
+def _emit_plan_error(trace: Any, exc: BaseException) -> None:
+    """Emit an ERROR trace event from plan()'s outer except block."""
+    if trace is None:
+        return
+    try:
+        from core.trace import TraceEventType
+        trace.record_output(
+            output={"error": type(exc).__name__, "detail": str(exc)},
+            event_type=TraceEventType.ERROR,
+            canon_refs=_PLAN_TRACE_CANON_REFS,
         )
     except Exception:
         pass
@@ -531,6 +711,21 @@ def _confidence_from_signals(
     failure_penalty = 0.15 if has_failures else 0.0
     canon_bonus     = 0.05 if canon_present else 0.0
     return max(0.05, min(1.0, base + register_bonus - failure_penalty + canon_bonus))
+
+
+def _serialise_canon_hint(hint: CanonPlanHint) -> dict:
+    """Return a JSON-safe dict of a CanonPlanHint for embedding in plan() results."""
+    return {
+        "present":           hint.present,
+        "char_count":        hint.char_count,
+        "excerpt":           hint.excerpt,
+        "register_nudge":    hint.register_nudge,
+        "nudge_label":       hint.nudge_label,
+        "canon_refs":        hint.canon_refs,
+        "entry_ref_id":      hint.entry_ref_id,
+        "conflict_detected": hint.conflict_detected,
+        "conflict_groups":   hint.conflict_groups,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -711,25 +906,44 @@ class SynergyEngine:
         _emit_output(trace, reading, (time.perf_counter() - t0) * 1000.0)
         return reading, state
 
-    async def plan(self, goal: str, context: "LoopContext") -> dict:
+    async def plan(
+        self,
+        goal: str,
+        context: "LoopContext",
+        trace: Any = None,
+    ) -> dict:
         """
         Given a goal and the current LoopContext, return the next action.
         Signal priority: TaskGraph > biometric depletion > affective/planetary
         > Canon keyword nudge > default executive.
+
+        Pass a live GAIATrace (or AsyncGAIATrace) via `trace` to emit
+        QUERY / OUTPUT / ERROR events (C01, C30, C32).  Omit for silent
+        operation.
+
         See module docstring for full integration details.
         """
         try:
-            return await self._plan_internal(goal, context)
+            return await self._plan_internal(goal, context, trace=trace)
         except Exception as exc:
+            _emit_plan_error(trace, exc)
             return {
                 "action": "PLANNING_FAILED", "tool": None, "args": {},
                 "rationale": f"Planning raised an unhandled exception: {exc!r}",
                 "confidence": 0.0, "summary": "PLANNING_FAILED — see rationale",
                 "goal_complete": False,
-                "canon_hint": {"present": False, "char_count": 0, "excerpt": ""},
+                "canon_hint": {
+                    "present": False, "char_count": 0, "excerpt": "",
+                    "conflict_detected": False, "conflict_groups": [],
+                },
             }
 
-    async def _plan_internal(self, goal: str, context: "LoopContext") -> dict:
+    async def _plan_internal(
+        self,
+        goal: str,
+        context: "LoopContext",
+        trace: Any = None,
+    ) -> dict:
         # ── 0. TaskGraph complete short-circuit ───────────────────────
         task_graph = getattr(context, "task_graph", None)
         if task_graph is not None:
@@ -741,13 +955,22 @@ class SynergyEngine:
                         if hasattr(n, "status")
                     )
                 ):
-                    return {
+                    result = {
                         "action": "goal_complete", "tool": None, "args": {},
                         "rationale": "TaskGraph reports all nodes complete — goal achieved.",
                         "confidence": 1.0, "summary": "Goal complete via TaskGraph.",
                         "goal_complete": True,
-                        "canon_hint": {"present": False, "char_count": 0, "excerpt": ""},
+                        "canon_hint": {
+                            "present": False, "char_count": 0, "excerpt": "",
+                            "conflict_detected": False, "conflict_groups": [],
+                        },
                     }
+                    _emit_plan_output(
+                        trace, result,
+                        CanonPlanHint(present=False, char_count=0, excerpt=""),
+                        register="executive",
+                    )
+                    return result
             except Exception:
                 pass
 
@@ -762,7 +985,13 @@ class SynergyEngine:
         raw_canon = getattr(context, "canon_context", "") or ""
         canon_hint: CanonPlanHint = _analyse_canon_context(raw_canon)
 
-        # ── 3. Determine register ─────────────────────────────────────
+        # ── 3. Emit PLAN_QUERY trace event (Issue #5) ─────────────────
+        _emit_plan_query(
+            trace, goal, coherence, affective, planetary,
+            session_mode, len(cycle_memory), canon_hint,
+        )
+
+        # ── 4. Determine register ─────────────────────────────────────
         low_coherence   = coherence < 0.4
         grief_state     = affective in ("grief", "overwhelm", "exhaustion", "distress")
         planetary_storm = planetary in ("storm", "severe")
@@ -785,6 +1014,14 @@ class SynergyEngine:
                 f"Canon context nudge ({canon_hint.nudge_label}) — "
                 f"register overridden to {register!r}"
             )
+            if canon_hint.conflict_detected:
+                groups_str = ", ".join(
+                    f"{r}({l})" for r, l in canon_hint.conflict_groups
+                )
+                register_reason += (
+                    f"; conflict resolved from [{groups_str}] "
+                    f"by priority rule (minimal>reflective>executive, C32)"
+                )
         else:
             register = "executive"
             register_reason = (
@@ -794,13 +1031,13 @@ class SynergyEngine:
             if canon_hint.present:
                 register_reason += ". Canon context present (no keyword nudge)."
 
-        # ── 4. Failed-action dedup ────────────────────────────────────
+        # ── 5. Failed-action dedup ────────────────────────────────────
         failed_actions: set = set()
         for entry in cycle_memory[-5:]:
             if not entry.get("success", True):
                 failed_actions.add(entry.get("action", ""))
 
-        # ── 5. TaskGraph next pending node ────────────────────────────
+        # ── 6. TaskGraph next pending node ────────────────────────────
         if task_graph is not None:
             try:
                 import networkx as nx
@@ -820,7 +1057,7 @@ class SynergyEngine:
                     args   = {k: task_graph._context.get(k) for k in node.inputs}
                     if action not in failed_actions:
                         confidence = max(0.3, coherence) if register == "minimal" else 0.85
-                        return {
+                        result = {
                             "action": action, "tool": tool, "args": args,
                             "rationale": (
                                 f"TaskGraph selected engine_id={node.engine_id!r} "
@@ -831,26 +1068,20 @@ class SynergyEngine:
                             "confidence": round(confidence, 3),
                             "summary": f"TaskGraph → {node.engine_id}",
                             "goal_complete": False,
-                            "canon_hint": {
-                                "present": canon_hint.present,
-                                "char_count": canon_hint.char_count,
-                                "excerpt": canon_hint.excerpt,
-                                "register_nudge": canon_hint.register_nudge,
-                                "nudge_label": canon_hint.nudge_label,
-                                "canon_refs": canon_hint.canon_refs,
-                                "entry_ref_id": canon_hint.entry_ref_id,
-                            },
+                            "canon_hint": _serialise_canon_hint(canon_hint),
                         }
+                        _emit_plan_output(trace, result, canon_hint, register)
+                        return result
             except Exception:
                 pass
 
-        # ── 6. Goal decomposition ─────────────────────────────────────
+        # ── 7. Goal decomposition ─────────────────────────────────────
         action, tool, args, decomp_note = _decompose_goal(
             goal=goal, register=register, session_mode=session_mode,
             failed_actions=failed_actions, cycle_count=len(cycle_memory),
         )
 
-        # ── 7. Completion heuristic ───────────────────────────────────
+        # ── 8. Completion heuristic ───────────────────────────────────
         goal_complete = False
         if len(cycle_memory) >= 10:
             recent_progress = [c.get("progress", 0.0) for c in cycle_memory[-5:]]
@@ -867,7 +1098,7 @@ class SynergyEngine:
             canon_present=canon_hint.present,
         )
 
-        return {
+        result = {
             "action": action, "tool": tool, "args": args,
             "rationale": (
                 f"Goal decomposition selected action={action!r} tool={tool!r}. "
@@ -878,13 +1109,7 @@ class SynergyEngine:
             "confidence": round(confidence, 3),
             "summary": f"Decomposition → {action}",
             "goal_complete": goal_complete,
-            "canon_hint": {
-                "present": canon_hint.present,
-                "char_count": canon_hint.char_count,
-                "excerpt": canon_hint.excerpt,
-                "register_nudge": canon_hint.register_nudge,
-                "nudge_label": canon_hint.nudge_label,
-                "canon_refs": canon_hint.canon_refs,
-                "entry_ref_id": canon_hint.entry_ref_id,
-            },
+            "canon_hint": _serialise_canon_hint(canon_hint),
         }
+        _emit_plan_output(trace, result, canon_hint, register)
+        return result
