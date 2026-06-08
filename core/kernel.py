@@ -39,11 +39,7 @@ from core.layers.layer_03_geometry import (
     FilterResult,
     AlignmentVerdict,
 )
-from core.sovereign import (
-    HumanElement,
-    CrystalMode,
-    human_element,
-)
+from core.sovereign import human_element
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +91,7 @@ class KernelResult:
 
     @property
     def contributing_layers(self) -> list[int]:
-        return [l.layer_number for l in self.layer_outputs if l.contributed]
+        return [lo.layer_number for lo in self.layer_outputs if lo.contributed]
 
     def to_dict(self) -> dict:
         return {
@@ -148,7 +144,7 @@ def register_layer(layer_number: int, handler: Callable) -> None:
     LAYER_REGISTRY[layer_number]["handler"] = handler
     logger.info(
         f"Layer {layer_number} "
-        f"({LAYER_REGISTRY[layer_number]['name']}) registered. ✦"
+        f"({LAYER_REGISTRY[layer_number]['name']}) registered. ❆"
     )
 
 
@@ -178,7 +174,7 @@ class GAIAKernel:
         self._sovereign = human_element
         logger.info(
             "GAIA Kernel initialized. "
-            "12-layer routing engine ready. ✦"
+            "12-layer routing engine ready. ❆"
         )
 
     def process(self, intention: str, context: dict = None) -> KernelResult:
