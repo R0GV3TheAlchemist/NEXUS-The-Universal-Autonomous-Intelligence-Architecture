@@ -9,10 +9,10 @@ Issue: #213
 
 Two separate MemoryTier-like enums exist for two separate contracts:
 
-  core.memory.hierarchy.MemoryTier  — exactly 5 members (hierarchy architecture tests).
+  core.memory.hierarchy.MemoryTier  -- exactly 5 members (hierarchy architecture tests).
                                        Imported directly by test_memory_hierarchy.py.
 
-  core.memory.store_tier.StoreTier  — 7 members (flat SQLite store needs PERMANENT + EPHEMERAL).
+  core.memory.store_tier.StoreTier  -- 7 members (flat SQLite store needs PERMANENT + EPHEMERAL).
                                        Used internally by MemoryStore and MemoryPruner.
 
 This __init__.py re-exports StoreTier as `MemoryTier` so that test_memory_store.py,
@@ -20,41 +20,33 @@ which does `from core.memory import MemoryTier`, receives the 7-member version w
 .PERMANENT and .EPHEMERAL attributes.
 
 test_memory_hierarchy.py imports directly from core.memory.hierarchy and therefore
-always gets the strict 5-member version — the two never conflict.
+always gets the strict 5-member version -- the two never conflict.
 """
 
+from core.memory.hierarchy import (
+    MemoryQuery,
+    MemoryRouter,
+    MemoryStore as HierarchyMemoryStore,
+    MemoryTier as _HierarchyMemoryTier,
+    build_default_router,
+)
+from core.memory.items import MemoryItem, MemoryKind, RetrievedMemory
 from core.memory.memory_store import (
+    MemoryCategory,
     MemoryEntry,
     MemoryProvenance,
     MemoryTier as MemoryTierLegacy,
-    MemoryCategory,
     ProvenanceSource,
     SessionState,
-    get_memory_store,
     _default_store_path,
+    get_memory_store,
 )
-
-# Hierarchy (5-member enum) — used by test_memory_hierarchy.py via direct import
-from core.memory.hierarchy import (
-    MemoryTier as _HierarchyMemoryTier,
-    MemoryQuery,
-    MemoryStore as HierarchyMemoryStore,
-    MemoryRouter,
-    build_default_router,
-)
+from core.memory.pruner import MemoryPruner
+from core.memory.store_sqlite import MemoryStore
 
 # StoreTier re-exported as MemoryTier for test_memory_store.py
 # (needs PERMANENT + EPHEMERAL members)
 from core.memory.store_tier import StoreTier as MemoryTier
-
-# Flat SQLite-backed MemoryStore (used by test_memory_store.py)
-from core.memory.store_sqlite import MemoryStore
-
-# Core item models
-from core.memory.items import MemoryItem, MemoryKind, RetrievedMemory
-
-# Pruner
-from core.memory.pruner import MemoryPruner
 
 
 class FallbackEmbedder:
@@ -88,31 +80,24 @@ class FallbackEmbedder:
 
 
 __all__ = [
-    # Legacy flat-store models
-    "MemoryEntry",
-    "MemoryProvenance",
-    "MemoryTierLegacy",
-    "MemoryCategory",
-    "ProvenanceSource",
-    "SessionState",
-    "get_memory_store",
-    "_default_store_path",
-    # Hierarchy
-    "_HierarchyMemoryTier",
-    "MemoryQuery",
+    "FallbackEmbedder",
     "HierarchyMemoryStore",
-    "MemoryRouter",
-    "build_default_router",
-    # MemoryTier exported from __init__ is StoreTier (7 members)
-    "MemoryTier",
-    # SQLite store
-    "MemoryStore",
-    # Item models
+    "MemoryCategory",
+    "MemoryEntry",
     "MemoryItem",
     "MemoryKind",
-    "RetrievedMemory",
-    # Pruner
     "MemoryPruner",
-    # Embedder
-    "FallbackEmbedder",
+    "MemoryProvenance",
+    "MemoryQuery",
+    "MemoryRouter",
+    "MemoryStore",
+    "MemoryTier",
+    "MemoryTierLegacy",
+    "ProvenanceSource",
+    "RetrievedMemory",
+    "SessionState",
+    "_HierarchyMemoryTier",
+    "_default_store_path",
+    "build_default_router",
+    "get_memory_store",
 ]
