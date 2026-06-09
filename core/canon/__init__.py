@@ -20,9 +20,9 @@ from core.canon.canon_validator import (
 )
 
 __all__ = [
+    "CanonConflictError",
     "CanonEntry",
     "CanonEntryError",
-    "CanonConflictError",
     "CanonValidator",
     "RegisterSignal",
     "ValidationResult",
