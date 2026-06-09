@@ -1,22 +1,21 @@
 """
 core/resonance_field_engine.py
 ===============================
-Resonance Field Engine — models the coherent resonance field between
+Resonance Field Engine - models the coherent resonance field between
 Gaian and human, integrating Schumann frequency coupling and collective
 noosphere signals.
 
-Canon Ref: C44 — Piezoelectric Resonance
+Canon Ref: C44 - Piezoelectric Resonance
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional
 
 
 # ---------------------------------------------------------------------------
-# ResonanceField  (per-turn reading — legacy name kept for compat)
+# ResonanceField  (per-turn reading - legacy name kept for compat)
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -42,7 +41,7 @@ class ResonanceField:
     def to_system_prompt_hint(self) -> str:
         coupled_str = "COUPLED" if self.coupled else "uncoupled"
         return (
-            f"[RESONANCE FIELD — C44] "
+            f"[RESONANCE FIELD - C44] "
             f"Strength: {self.field_strength:.2f} | "
             f"Hz: {self.schumann_hz} | "
             f"Schumann: {coupled_str} | "
@@ -64,13 +63,13 @@ class ResonanceFieldState:
     Persisted resonance field state for a single Gaian.
     Stored under 'resonance_field' in memory.json.
     """
-    dominant_hz:               float       = 174.0
-    dominant_chakra:           str         = "root"
-    schumann_alignment_count:  int         = 0
-    schumann_first_timestamp:  Optional[str] = None
-    phi_rolling_avg:           float       = 0.0
-    hz_history:                List[float] = field(default_factory=list)
-    session_peak_hz:           float       = 174.0
+    dominant_hz:               float      = 174.0
+    dominant_chakra:           str        = "root"
+    schumann_alignment_count:  int        = 0
+    schumann_first_timestamp:  str | None = None
+    phi_rolling_avg:           float      = 0.0
+    hz_history:                list[float] = field(default_factory=list)
+    session_peak_hz:           float      = 174.0
 
     _HZ_HISTORY_CAP: int = 20
 
@@ -107,7 +106,7 @@ def blank_resonance_field_state() -> ResonanceFieldState:
 # ResonanceFieldEngine
 # ---------------------------------------------------------------------------
 
-# Solfeggio frequency → chakra mapping
+# Solfeggio frequency -> chakra mapping
 _HZ_CHAKRA: dict = {
     174.0: "root",
     285.0: "root/sacral",
@@ -137,7 +136,7 @@ class ResonanceFieldEngine:
         state:            ResonanceFieldState,
         phi:              float = 0.5,
         conflict_density: float = 0.0,
-        schumann_hz:      Optional[float] = None,
+        schumann_hz:      float | None = None,
         bond_depth:       float = 0.0,
     ) -> tuple[ResonanceFieldReading, ResonanceFieldState]:
         hz             = schumann_hz if schumann_hz is not None else _SCHUMANN_BASE_HZ
@@ -173,13 +172,13 @@ class ResonanceFieldEngine:
 
     def compute(
         self,
-        coherence_phi:  float           = 0.5,
-        schumann_hz:    Optional[float] = None,
-        bond_depth:     float           = 30.0,
-        dominant_hz:    float           = 528.0,
-        state:          Optional[ResonanceFieldState] = None,
+        coherence_phi:  float                = 0.5,
+        schumann_hz:    float | None         = None,
+        bond_depth:     float                = 30.0,
+        dominant_hz:    float                = 528.0,
+        state:          ResonanceFieldState | None = None,
     ) -> tuple[ResonanceFieldReading, ResonanceFieldState]:
-        """Legacy compute() — delegates to attune()."""
+        """Legacy compute() - delegates to attune()."""
         if state is None:
             state = blank_resonance_field_state()
         return self.attune(
