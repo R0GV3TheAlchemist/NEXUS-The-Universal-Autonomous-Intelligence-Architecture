@@ -1,12 +1,7 @@
-"""core.safety — GAIA Safety Subsystem."""
+"""GAIA-OS Safety primitives package.
 
-from .safety_engine import SafetyEngine
-from .types import CircuitBreakerState, CrisisSignal, EscalationSignal, SafetyVerdict
-
-__all__ = [
-    "SafetyEngine",
-    "CircuitBreakerState",
-    "CrisisSignal",
-    "EscalationSignal",
-    "SafetyVerdict",
-]
+Modules
+-------
+action_gate        — multi-tier risk gating with human veto and audit trail
+constitution_engine — per-GAIAN constitutional constraint set
+"""
