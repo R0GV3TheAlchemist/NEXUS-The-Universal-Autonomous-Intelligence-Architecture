@@ -85,10 +85,6 @@ def _tokenize(text: str) -> List[str]:
     """
     Tokenise *text* into lowercase alphanumeric tokens.
 
-    Used by core.canon_loader (backward-compat shim) and any other
-    module that needs lightweight BM25-style tokenisation without
-    pulling in a full NLP dependency.
-
     Tokens shorter than 2 characters are discarded to reduce noise.
     """
     return [tok for tok in re.findall(r"[a-z0-9]+", text.lower()) if len(tok) > 1]
@@ -101,11 +97,6 @@ def _term_freq(text: str) -> dict[str, float]:
     Each token's frequency is its count divided by the total number of
     tokens, giving a value in the range (0, 1].  An empty or
     whitespace-only string returns an empty dict.
-
-    Example::
-
-        >>> _term_freq("sovereignty sovereignty canon")
-        {'sovereignty': 0.6666..., 'canon': 0.3333...}
     """
     tokens = _tokenize(text)
     if not tokens:
@@ -123,6 +114,52 @@ def _chunk_text(text: str, max_chars: int = _MAX_CHUNK_CHARS) -> List[str]:
     ``_MIN_CHUNK_CHARS`` are silently dropped to avoid noise.
     """
     return _split_into_chunks(text, max_chars=max_chars)
+
+
+def _best_excerpt(
+    text: str,
+    query_tokens: List[str],
+    window: int = 300,
+) -> str:
+    """
+    Return the best excerpt from *text* for the given *query_tokens*.
+
+    Scans *text* in overlapping windows of *window* characters and returns
+    the window with the highest number of query token hits.  Falls back to
+    the first *window* characters when no tokens match.
+
+    Parameters
+    ----------
+    text:
+        The full chunk or document text to excerpt from.
+    query_tokens:
+        Pre-tokenised query terms (lowercase alphanumeric).
+    window:
+        Character width of the excerpt window.
+
+    Returns
+    -------
+    str
+        Best-matching excerpt, stripped of leading/trailing whitespace.
+    """
+    if not text:
+        return ""
+    if not query_tokens or len(text) <= window:
+        return text[:window].strip()
+
+    token_set = set(query_tokens)
+    best_start = 0
+    best_score = -1
+
+    step = max(1, window // 4)
+    for start in range(0, len(text) - window + 1, step):
+        snippet = text[start : start + window].lower()
+        score = sum(1 for tok in token_set if tok in snippet)
+        if score > best_score:
+            best_score = score
+            best_start = start
+
+    return text[best_start : best_start + window].strip()
 
 
 def _fetch_text(url: str) -> Optional[str]:
@@ -202,10 +239,6 @@ class CanonLoader:
         self._loaded: bool           = False
         self._chunks: List[CanonChunk] = []
 
-    # ------------------------------------------------------------------
-    # Discovery
-    # ------------------------------------------------------------------
-
     def _list_canon_files(self) -> List[dict]:
         url  = _GITHUB_API_TREE.format(ref=self.ref)
         data = _fetch_json(url)
@@ -218,10 +251,6 @@ class CanonLoader:
             and entry["path"].startswith("canon/")
             and entry["path"].endswith(".md")
         ]
-
-    # ------------------------------------------------------------------
-    # Loading
-    # ------------------------------------------------------------------
 
     def _load_file(self, entry: dict) -> Iterator[CanonChunk]:
         path:     str = entry["path"]
@@ -254,10 +283,6 @@ class CanonLoader:
     def load_all(self, force: bool = False) -> List[CanonChunk]:
         """
         Load all Canon chunks.  Cached after first call unless *force=True*.
-
-        Returns
-        -------
-        List[CanonChunk]
         """
         if self._loaded and not force:
             return self._chunks
@@ -287,10 +312,6 @@ class CanonLoader:
     def load(self, force: bool = False) -> List[CanonChunk]:
         """Alias for load_all(). Called by RAGPipeline.ingest_canon()."""
         return self.load_all(force=force)
-
-    # ------------------------------------------------------------------
-    # Convenience
-    # ------------------------------------------------------------------
 
     @property
     def is_loaded(self) -> bool:

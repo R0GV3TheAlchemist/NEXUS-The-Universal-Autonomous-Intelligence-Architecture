@@ -13,6 +13,7 @@ from core.rag.canon_loader import (  # noqa: F401  (re-export)
     _tokenize,
     _term_freq,
     _chunk_text,
+    _best_excerpt,
 )
 
-__all__ = ["CanonLoader", "_tokenize", "_term_freq", "_chunk_text"]
+__all__ = ["CanonLoader", "_tokenize", "_term_freq", "_chunk_text", "_best_excerpt"]

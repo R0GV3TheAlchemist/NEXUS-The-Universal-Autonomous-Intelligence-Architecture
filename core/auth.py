@@ -11,13 +11,13 @@ so that legacy import paths like::
 
 continue to work without changes.
 
+Note: there is no `Auth` class — use the individual functions directly.
 Do NOT add new auth logic here — use core.identity.auth directly.
 
 Canon Ref: C01 (Sovereignty), C15 (Consent)
 """
 
 from core.identity.auth import (  # noqa: F401  (deliberate re-exports)
-    Auth,
     TokenPayload,
     create_access_token,
     verify_token,
@@ -30,7 +30,6 @@ from core.identity.auth import (  # noqa: F401  (deliberate re-exports)
 )
 
 __all__ = [
-    "Auth",
     "TokenPayload",
     "create_access_token",
     "verify_token",
