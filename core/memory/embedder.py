@@ -8,12 +8,12 @@ GAIA uses embeddings to convert text into dense float vectors so that
 
 Backends
 --------
-SentenceTransformerEmbedder — default for offline / sovereign deployments.
-                              Uses sentence-transformers (MiniLM by default).
-                              No Ollama, no API key, ~80 MB download.
-OllamaEmbedder             — uses a locally-running Ollama model.
-OpenAIEmbedder             — uses text-embedding-3-small / ada-002.
-FallbackEmbedder            — deterministic hash-based stub; always works
+SentenceTransformerEmbedder -- default for offline / sovereign deployments.
+                               Uses sentence-transformers (MiniLM by default).
+                               No Ollama, no API key, ~80 MB download.
+OllamaEmbedder             -- uses a locally-running Ollama model.
+OpenAIEmbedder             -- uses text-embedding-3-small / ada-002.
+FallbackEmbedder           -- deterministic hash-based stub; always works
                               offline but produces random vectors (dev/test only).
 
 To add a new backend, subclass EmbeddingProvider and implement ``embed()``.
@@ -25,7 +25,6 @@ import hashlib
 import logging
 import struct
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 import httpx
 
@@ -38,7 +37,7 @@ DEFAULT_DIM = 1536
 
 
 class EmbeddingProvider(ABC):
-    """Abstract base — every embedder must implement ``embed()``."""
+    """Abstract base -- every embedder must implement ``embed()``."""
 
     @property
     @abstractmethod
@@ -47,14 +46,14 @@ class EmbeddingProvider(ABC):
         ...
 
     @abstractmethod
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         """
         Convert *text* into a list of floats of length ``self.dim``.
         Must be safe to call concurrently.
         """
         ...
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Default implementation: embed one-by-one.  Override for batching."""
         results = []
         for t in texts:
@@ -73,9 +72,9 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
     ----------
     model_name   : Any sentence-transformers model name.
                    Recommended defaults:
-                     - ``"all-MiniLM-L6-v2"``   — 384-d, ~80 MB, fast
-                     - ``"all-mpnet-base-v2"``   — 768-d, ~420 MB, accurate
-                     - ``"BAAI/bge-small-en-v1.5"`` — 384-d, ~130 MB, excellent
+                     - ``"all-MiniLM-L6-v2"``   -- 384-d, ~80 MB, fast
+                     - ``"all-mpnet-base-v2"``   -- 768-d, ~420 MB, accurate
+                     - ``"BAAI/bge-small-en-v1.5"`` -- 384-d, ~130 MB, excellent
     dim          : Override output dimension (must match model output).
                    If None, inferred from the model on first load.
     device       : Torch device string ("cpu", "cuda", "mps").
@@ -97,7 +96,7 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
     def __init__(
         self,
         model_name: str = "all-MiniLM-L6-v2",
-        dim:        Optional[int] = None,
+        dim:        int | None = None,
         device:     str = "cpu",
         normalize:  bool = True,
     ) -> None:
@@ -105,7 +104,7 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
         self._device     = device
         self._normalize  = normalize
         self._model      = None   # lazy-loaded
-        self._dim: Optional[int] = dim
+        self._dim: int | None = dim
         # Validate that sentence-transformers is importable at construction
         # time so the error surfaces early (not at first embed() call).
         try:
@@ -138,10 +137,10 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
             probe = self._model.encode("", normalize_embeddings=self._normalize)
             self._dim = int(probe.shape[0])
         log.info(
-            "SentenceTransformerEmbedder: model loaded — dim=%d", self._dim
+            "SentenceTransformerEmbedder: model loaded -- dim=%d", self._dim
         )
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         import asyncio
         import functools
         loop = asyncio.get_event_loop()
@@ -153,8 +152,8 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
         )
         return vec
 
-    def _encode_sync(self, text: str) -> List[float]:
-        """Blocking encode — called from a thread via run_in_executor."""
+    def _encode_sync(self, text: str) -> list[float]:
+        """Blocking encode -- called from a thread via run_in_executor."""
         self._ensure_model()
         vec = self._model.encode(
             text,
@@ -163,7 +162,7 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
         )
         return vec.tolist()
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         import asyncio
         import functools
         loop = asyncio.get_event_loop()
@@ -173,7 +172,7 @@ class SentenceTransformerEmbedder(EmbeddingProvider):
         )
         return vecs
 
-    def _encode_batch_sync(self, texts: List[str]) -> List[List[float]]:
+    def _encode_batch_sync(self, texts: list[str]) -> list[list[float]]:
         self._ensure_model()
         vecs = self._model.encode(
             texts,
@@ -193,7 +192,7 @@ class OllamaEmbedder(EmbeddingProvider):
     model     : Ollama model name, e.g. ``"nomic-embed-text"`` (recommended)
                 or ``"mxbai-embed-large"``.
     base_url  : Ollama HTTP base URL (default ``http://localhost:11434``).
-    dim       : Vector dimension — must match the chosen model.  Defaults
+    dim       : Vector dimension -- must match the chosen model.  Defaults
                 to 768 for nomic-embed-text; override as needed.
     timeout   : Per-request timeout in seconds.
     """
@@ -215,7 +214,7 @@ class OllamaEmbedder(EmbeddingProvider):
     def dim(self) -> int:
         return self._dim
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         url  = f"{self._base_url}/api/embeddings"
         body = {"model": self._model, "prompt": text}
         try:
@@ -230,10 +229,10 @@ class OllamaEmbedder(EmbeddingProvider):
                 )
             return vec[: self._dim]
         except Exception as exc:
-            log.error("OllamaEmbedder.embed failed: %s — falling back to zeros", exc)
+            log.error("OllamaEmbedder.embed failed: %s -- falling back to zeros", exc)
             return [0.0] * self._dim
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         url  = f"{self._base_url}/api/embed"
         body = {"model": self._model, "input": texts}
         try:
@@ -286,10 +285,10 @@ class OpenAIEmbedder(EmbeddingProvider):
     def dim(self) -> int:
         return self._dim
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         return (await self.embed_batch([text]))[0]
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         url  = f"{self._base_url}/embeddings"
         body: dict = {"model": self._model, "input": texts}
         if self._dim != self._MODEL_DIMS.get(self._model, self._dim):
@@ -309,7 +308,7 @@ class OpenAIEmbedder(EmbeddingProvider):
 
 class FallbackEmbedder(EmbeddingProvider):
     """
-    Deterministic *hash-based* embedder — for local dev / unit tests only.
+    Deterministic *hash-based* embedder -- for local dev / unit tests only.
 
     Vectors are derived from SHA-256 of the input, so they are stable
     across runs but carry no semantic meaning.  Do NOT use in production.
@@ -322,7 +321,7 @@ class FallbackEmbedder(EmbeddingProvider):
     def dim(self) -> int:
         return self._dim
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         digest = hashlib.sha256(text.encode()).digest()  # 32 bytes
         raw    = digest * (self._dim // 32 + 1)
         ints   = list(struct.unpack(f"{self._dim}b", raw[: self._dim]))
