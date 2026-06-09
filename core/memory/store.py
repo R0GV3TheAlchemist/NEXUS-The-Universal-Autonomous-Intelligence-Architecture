@@ -7,9 +7,9 @@ Architecture
 ------------
 Two tables live in a single SQLite file (WAL mode):
 
-  memory_items      — canonical row with all metadata (text, kind, tier …)
-  vec_memory_items  — sqlite-vec ``vec0`` virtual table storing embeddings,
-                      keyed by the same rowid as memory_items.
+  memory_items      -- canonical row with all metadata (text, kind, tier ...)
+  vec_memory_items  -- sqlite-vec ``vec0`` virtual table storing embeddings,
+                       keyed by the same rowid as memory_items.
 
 A ``remember()`` call inserts into both tables atomically.
 A ``retrieve()`` call embeds the query, runs a k-NN search on the vec0
@@ -24,7 +24,7 @@ The sqlite-vec extension is loaded at connection time via:
     import sqlite_vec; conn.load_extension(sqlite_vec.find())
 If sqlite_vec is not installed, the store falls back to a pure-text
 (no vector search) mode that still persists memories but cannot do
-semantic retrieval — a warning is emitted at startup.
+semantic retrieval -- a warning is emitted at startup.
 """
 
 from __future__ import annotations
@@ -36,14 +36,14 @@ import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 from .embedder import EmbeddingProvider, FallbackEmbedder
 from .taxonomy import MemoryItem, MemoryKind, MemoryTier
 
 log = logging.getLogger(__name__)
 
-# Default path — resolves to  <repo-root>/data/gaia_memory.db
+# Default path -- resolves to  <repo-root>/data/gaia_memory.db
 _DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "gaia_memory.db"
 
 # Capacity before the pruner is auto-triggered
@@ -55,7 +55,7 @@ class RetrievedMemory:
     """A memory item returned by ``MemoryStore.retrieve()``."""
 
     item:  MemoryItem
-    score: float   # higher is more relevant (0.0 – 1.0 scale after normalisation)
+    score: float   # higher is more relevant (0.0 - 1.0 scale after normalisation)
 
 
 class MemoryStore:
@@ -66,7 +66,7 @@ class MemoryStore:
     ----------
     db_path   : Path to the SQLite file.  Created on first use.
     embedder  : EmbeddingProvider instance.  Defaults to FallbackEmbedder
-                (hash-based, no semantic meaning — swap in OllamaEmbedder
+                (hash-based, no semantic meaning -- swap in OllamaEmbedder
                 or OpenAIEmbedder for real deployments).
     capacity  : Soft upper-bound on total rows per user before the pruner
                 is triggered automatically.  Default 100 000.
@@ -75,7 +75,7 @@ class MemoryStore:
     def __init__(
         self,
         db_path:  Path | str               = _DEFAULT_DB_PATH,
-        embedder: Optional[EmbeddingProvider] = None,
+        embedder: EmbeddingProvider | None  = None,
         capacity: int                       = _DEFAULT_CAPACITY,
     ) -> None:
         self._db_path  = Path(db_path)
@@ -104,7 +104,7 @@ class MemoryStore:
             sqlite_vec.load(conn)
             conn.enable_load_extension(False)
             self._vec_ok = True
-            log.info("sqlite-vec loaded successfully — semantic search enabled.")
+            log.info("sqlite-vec loaded successfully -- semantic search enabled.")
         except Exception as exc:
             log.warning(
                 "sqlite-vec not available (%s). "
@@ -173,10 +173,10 @@ class MemoryStore:
         kind:        MemoryKind = MemoryKind.MESSAGE,
         tier:        MemoryTier = MemoryTier.SHORT_TERM,
         importance:  float      = 0.5,
-        session_id:  Optional[str] = None,
-        topic_tag:   Optional[str] = None,
-        ttl_seconds: Optional[int] = None,
-        metadata:    Optional[Dict] = None,
+        session_id:  str | None = None,
+        topic_tag:   str | None = None,
+        ttl_seconds: int | None = None,
+        metadata:    dict | None = None,
     ) -> int:
         """
         Persist a memory item and its embedding.
@@ -185,7 +185,7 @@ class MemoryStore:
         """
         now = int(time.time())
         metadata_json = json.dumps(metadata) if metadata else None
-        # Ensure role is never None — the column has NOT NULL DEFAULT 'user'
+        # Ensure role is never None -- the column has NOT NULL DEFAULT 'user'
         safe_role = role if role is not None else "user"
         cur = self._conn.execute(
             """
@@ -230,13 +230,13 @@ class MemoryStore:
         kind:        MemoryKind = MemoryKind.MESSAGE,
         tier:        MemoryTier = MemoryTier.SHORT_TERM,
         importance:  float      = 0.5,
-        session_id:  Optional[str] = None,
-        topic_tag:   Optional[str] = None,
-        ttl_seconds: Optional[int] = None,
-        metadata:    Optional[Dict] = None,
+        session_id:  str | None = None,
+        topic_tag:   str | None = None,
+        ttl_seconds: int | None = None,
+        metadata:    dict | None = None,
     ) -> int:
         """
-        Synchronous wrapper around ``remember()`` — safe to call from
+        Synchronous wrapper around ``remember()`` -- safe to call from
         non-async code (e.g. GAIANRuntime.process()).
         """
         try:
@@ -276,7 +276,7 @@ class MemoryStore:
             )
 
     async def remember_item(self, item: MemoryItem) -> int:
-        """Convenience wrapper — persist a fully-constructed MemoryItem."""
+        """Convenience wrapper -- persist a fully-constructed MemoryItem."""
         return await self.remember(
             user_id=item.user_id,
             text=item.text,
@@ -296,17 +296,17 @@ class MemoryStore:
 
     async def retrieve(
         self,
-        user_id:         str,
-        query:           str,
-        top_k:           int               = 20,
-        kinds:           Optional[List[MemoryKind]] = None,
-        tiers:           Optional[List[MemoryTier]] = None,
-        topic_tag:       Optional[str]     = None,
-        since_ts:        Optional[int]     = None,
-        importance_floor: float            = 0.0,
-        importance_weight: float           = 0.2,
-        recency_weight:   float            = 0.1,
-    ) -> List[RetrievedMemory]:
+        user_id:          str,
+        query:            str,
+        top_k:            int                          = 20,
+        kinds:            list[MemoryKind] | None      = None,
+        tiers:            list[MemoryTier] | None      = None,
+        topic_tag:        str | None                  = None,
+        since_ts:         int | None                  = None,
+        importance_floor: float                       = 0.0,
+        importance_weight: float                      = 0.2,
+        recency_weight:   float                       = 0.1,
+    ) -> list[RetrievedMemory]:
         """
         Retrieve the top-k most relevant memories for *query*.
 
@@ -317,7 +317,7 @@ class MemoryStore:
                     + importance_weight * importance
                     + recency_weight   * recency_factor
 
-        where recency_factor decays from 1→0 over 30 days.
+        where recency_factor decays from 1->0 over 30 days.
 
         Falls back to recency + importance ordering when vectors are
         unavailable.
@@ -360,9 +360,9 @@ class MemoryStore:
         query:           str,
         top_k:           int = 20,
         **kwargs,
-    ) -> List[MemoryItem]:
+    ) -> list[MemoryItem]:
         """
-        Synchronous wrapper around ``retrieve()`` — returns a plain list of
+        Synchronous wrapper around ``retrieve()`` -- returns a plain list of
         MemoryItem objects (not RetrievedMemory wrappers) for convenience.
         Safe to call from non-async code.
         """
@@ -375,7 +375,7 @@ class MemoryStore:
                         asyncio.run,
                         self.retrieve(user_id=user_id, query=query, top_k=top_k, **kwargs),
                     )
-                    results: List[RetrievedMemory] = fut.result()
+                    results: list[RetrievedMemory] = fut.result()
             else:
                 results = loop.run_until_complete(
                     self.retrieve(user_id=user_id, query=query, top_k=top_k, **kwargs)
@@ -394,7 +394,7 @@ class MemoryStore:
         params:            list,
         importance_weight: float,
         recency_weight:    float,
-    ) -> List[RetrievedMemory]:
+    ) -> list[RetrievedMemory]:
         import struct
         vec = await self._embedder.embed(query)
         blob = struct.pack(f"{len(vec)}f", *vec)
@@ -415,7 +415,7 @@ class MemoryStore:
               AND {where}
             ORDER BY v.distance ASC
         """
-        rows = self._conn.execute(sql, [blob, candidates] + params).fetchall()
+        rows = self._conn.execute(sql, [blob, candidates, *params]).fetchall()
 
         now = int(time.time())
         results = []
@@ -453,8 +453,8 @@ class MemoryStore:
         top_k:  int,
         where:  str,
         params: list,
-    ) -> List[RetrievedMemory]:
-        """No-vector fallback: rank by importance × recency."""
+    ) -> list[RetrievedMemory]:
+        """No-vector fallback: rank by importance x recency."""
         sql = f"""
             SELECT *,
                    (importance * 0.7 + (created_at / CAST(strftime('%s','now') AS REAL)) * 0.3)
@@ -464,7 +464,7 @@ class MemoryStore:
             ORDER BY score DESC
             LIMIT ?
         """
-        rows = self._conn.execute(sql, params + [top_k]).fetchall()
+        rows = self._conn.execute(sql, [*params, top_k]).fetchall()
         results = []
         for row in rows:
             item = MemoryItem(
@@ -532,7 +532,7 @@ class MemoryStore:
     # Stats / counts
     # ------------------------------------------------------------------
 
-    def count(self, user_id: Optional[str] = None) -> int:
+    def count(self, user_id: str | None = None) -> int:
         """Return the number of non-deleted memory items for *user_id* (or all users)."""
         if user_id:
             row = self._conn.execute(
@@ -545,7 +545,7 @@ class MemoryStore:
             ).fetchone()
         return int(row[0])
 
-    def stats(self, user_id: Optional[str] = None) -> dict:
+    def stats(self, user_id: str | None = None) -> dict:
         """Return a dict with row counts, broken down by kind."""
         if user_id:
             rows = self._conn.execute(
