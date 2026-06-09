@@ -386,7 +386,7 @@ class AkashicLayer:
 akashic_layer = AkashicLayer()
 
 
-def inscribe(intention: str, context: dict = None) -> AkashicEntry:
+def inscribe(intention: str, context: dict | None = None) -> AkashicEntry:
     """Write a moment into the living record."""
     return akashic_layer._inscribe(intention, context or {})
 

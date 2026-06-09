@@ -196,10 +196,10 @@ class CausalLayer:
         self._initialize()
 
     def _initialize(self):
-        logger.info("Layer 09 — Causal — Citrine rising. ✦")
+        logger.info("Layer 09 — Causal — Citrine rising. ❖")
         self._initialized = True
         register_layer(self.LAYER_NUMBER, self.handle)
-        logger.info("Layer 09 registered with kernel. ✦")
+        logger.info("Layer 09 registered with kernel. ❖")
 
     def handle(self, intention: str, context: dict) -> dict:
         reading = self._read(intention, context)
@@ -329,6 +329,6 @@ causal_layer = CausalLayer()
 
 
 def get_causal_reading(
-    intention: str, context: dict = None
+    intention: str, context: dict | None = None
 ) -> CausalReading:
     return causal_layer._read(intention, context or {})

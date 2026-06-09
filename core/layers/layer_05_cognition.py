@@ -170,10 +170,10 @@ class CognitionLayer:
         self._initialize()
 
     def _initialize(self):
-        logger.info("Layer 05 — Cognition — Lapis Lazuli opening. ✦")
+        logger.info("Layer 05 — Cognition — Lapis Lazuli opening. ❖")
         self._initialized = True
         register_layer(self.LAYER_NUMBER, self.handle)
-        logger.info("Layer 05 registered with kernel. ✦")
+        logger.info("Layer 05 registered with kernel. ❖")
 
     def handle(self, intention: str, context: dict) -> dict:
         reading = self._analyze(intention, context)
@@ -330,6 +330,6 @@ cognition_layer = CognitionLayer()
 
 
 def get_cognitive_reading(
-    intention: str, context: dict = None
+    intention: str, context: dict | None = None
 ) -> CognitiveReading:
     return cognition_layer._analyze(intention, context or {})
