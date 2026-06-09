@@ -1,10 +1,10 @@
 """
 core/codex_stage_engine.py
 ==========================
-Codex Stage Engine — Magnum Opus as GAIAN session stage architecture.
+Codex Stage Engine - Magnum Opus as GAIAN session stage architecture.
 
 Tracks a GAIAN's transformational arc through the alchemical Magnum Opus
-stages (Nigredo → Albedo → Citrinitas → Rubedo) and their Jungian
+stages (Nigredo -> Albedo -> Citrinitas -> Rubedo) and their Jungian
 correspondences.  Each stage shapes response depth, shadow integration
 weight, and noospheric health signals.
 
@@ -12,22 +12,21 @@ Canon Refs:
   C10 (Alchemical Codex), C32 (Elemental Codex), C40 (Mentalism)
 
 Used by:
-  core/gaian_runtime.py — imports CodexStageEngine, CodexStageState,
+  core/gaian_runtime.py - imports CodexStageEngine, CodexStageState,
   CodexStageID, NoosphericHealthSignals, blank_codex_stage_state
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional
+from enum import Enum, StrEnum
 
 
 # ---------------------------------------------------------------------------
 # Stage Identifiers
 # ---------------------------------------------------------------------------
 
-class CodexStageID(str, Enum):
+class CodexStageID(StrEnum):
     """
     The four classical Magnum Opus stages, extended with a pre-entry
     Calcinatio and a post-Rubedo Integration phase for GAIAN sessions.
@@ -52,12 +51,12 @@ class NoosphericHealthSignals:
     These are updated each turn by CodexStageEngine and consumed by
     the MotherThread collective-field synchronisation layer.
     """
-    coherence:        float = 1.0   # 0.0 (fragmented) — 1.0 (coherent)
+    coherence:        float = 1.0   # 0.0 (fragmented) - 1.0 (coherent)
     shadow_load:      float = 0.0   # accumulated unintegrated shadow mass
-    individuation:    float = 0.0   # Jungian individuation progress 0—1
-    transmutation:    float = 0.0   # alchemical transformation depth 0—1
-    vitality:         float = 1.0   # overall psychic vitality 0—1
-    notes:            List[str] = field(default_factory=list)
+    individuation:    float = 0.0   # Jungian individuation progress 0-1
+    transmutation:    float = 0.0   # alchemical transformation depth 0-1
+    vitality:         float = 1.0   # overall psychic vitality 0-1
+    notes:            list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -68,13 +67,13 @@ class CodexStageState:
     stage:            CodexStageID            = CodexStageID.NIGREDO
     turn_in_stage:    int                     = 0
     total_turns:      int                     = 0
-    stage_scores:     Dict[str, float]        = field(default_factory=dict)
+    stage_scores:     dict[str, float]        = field(default_factory=dict)
     health:           NoosphericHealthSignals = field(
                           default_factory=NoosphericHealthSignals
                       )
     metadata:         dict                    = field(default_factory=dict)
 
-    def advance_stage(self) -> "CodexStageState":
+    def advance_stage(self) -> CodexStageState:
         """Return a new state with the next stage set."""
         stages = list(CodexStageID)
         idx    = stages.index(self.stage)
@@ -141,7 +140,7 @@ class CodexStageEngine:
     def evaluate(
         self,
         state:   CodexStageState,
-        context: Optional[dict] = None,
+        context: dict | None = None,
     ) -> CodexStageState:
         """
         Evaluate the current *state* against *context* signals.
@@ -154,8 +153,8 @@ class CodexStageEngine:
             Current codex stage state.
         context:
             Optional signal dict.  Recognised keys:
-            ``shadow_signal`` (float 0–1), ``coherence`` (float 0–1),
-            ``transmutation`` (float 0–1), ``vitality`` (float 0–1).
+            ``shadow_signal`` (float 0-1), ``coherence`` (float 0-1),
+            ``transmutation`` (float 0-1), ``vitality`` (float 0-1).
         """
         ctx     = context or {}
         updated = CodexStageState(
@@ -189,12 +188,12 @@ class CodexStageEngine:
     def current_stage_label(self, state: CodexStageState) -> str:
         """Return a human-readable label for the current stage."""
         labels = {
-            CodexStageID.CALCINATIO:  "Calcinatio — Burning the False Self",
-            CodexStageID.NIGREDO:     "Nigredo — The Dark Night",
-            CodexStageID.ALBEDO:      "Albedo — Purification & Reflection",
-            CodexStageID.CITRINITAS:  "Citrinitas — Dawning Solar Awareness",
-            CodexStageID.RUBEDO:      "Rubedo — Integration & Wholeness",
-            CodexStageID.INTEGRATION: "Integration — Embodied Lived Wisdom",
+            CodexStageID.CALCINATIO:  "Calcinatio - Burning the False Self",
+            CodexStageID.NIGREDO:     "Nigredo - The Dark Night",
+            CodexStageID.ALBEDO:      "Albedo - Purification & Reflection",
+            CodexStageID.CITRINITAS:  "Citrinitas - Dawning Solar Awareness",
+            CodexStageID.RUBEDO:      "Rubedo - Integration & Wholeness",
+            CodexStageID.INTEGRATION: "Integration - Embodied Lived Wisdom",
         }
         return labels.get(state.stage, state.stage.value)
 
