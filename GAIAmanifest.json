@@ -6,9 +6,19 @@
   "migrated_from": "https://github.com/R0GV3TheAlchemist/GAIA",
   "migration_date": "2026-04-15",
   "release_date": "2026-04-23",
+  "local_model_stack": {
+    "chat_model":   "qwen3.5:9b",
+    "agent_model":  "glm-5.1",
+    "vision_model": "qwen3.5:9b",
+    "long_horizon_threshold_minutes": 30,
+    "routing": "task-type-aware — see core/llm_router.py TaskType enum",
+    "updated": "2026-06-09",
+    "issue": "#113"
+  },
   "components": {
     "core_engine": {
       "server": "core/server.py",
+      "llm_router": "core/llm_router.py",
       "inference_router": "core/inference_router.py",
       "mother_thread": "core/mother_thread.py",
       "noosphere": "core/noosphere.py",
