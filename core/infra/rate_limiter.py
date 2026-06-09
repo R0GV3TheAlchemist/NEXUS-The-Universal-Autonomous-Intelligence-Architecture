@@ -221,7 +221,7 @@ def rate_limit(
         key = f"{scope}:user:{user_id}" if user_id else f"{scope}:ip:{_client_ip(request)}"
         cid = correlation_id_ctx.get("-")
 
-        allowed, remaining, retry_after = _sliding_window_check(
+        allowed, _remaining, retry_after = _sliding_window_check(
             key, max_requests, window_seconds
         )
 
