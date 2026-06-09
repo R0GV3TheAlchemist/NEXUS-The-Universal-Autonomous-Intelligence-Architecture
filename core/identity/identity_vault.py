@@ -23,8 +23,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import json
-import os
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -222,7 +220,7 @@ class IdentityVault:
     # ------------------------------------------------------------------
 
     def sign(self, message: bytes) -> bytes:
-        """Sign `message` with the vault’s Ed25519 private key."""
+        """Sign `message` with the vault's Ed25519 private key."""
         if _CRYPTO_AVAILABLE:
             from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
             priv = Ed25519PrivateKey.from_private_bytes(self.keypair.private_key_bytes)

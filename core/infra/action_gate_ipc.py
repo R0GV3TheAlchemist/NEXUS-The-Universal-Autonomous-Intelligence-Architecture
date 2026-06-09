@@ -106,7 +106,7 @@ async def _ipc_confirm_callback(
     try:
         await asyncio.wait_for(resolve_event.wait(), timeout=float(timeout))
         return result_holder[0]
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.warning(
             "[ActionGate IPC] request %s timed out — applying default (%s)",
             request_id, default,

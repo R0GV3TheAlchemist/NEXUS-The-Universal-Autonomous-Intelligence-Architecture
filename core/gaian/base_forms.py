@@ -312,7 +312,7 @@ def get_default_base_form() -> BaseForm:
     for f in BASE_FORMS.values():
         if f.is_default:
             return f
-    return list(BASE_FORMS.values())[0]
+    return next(iter(BASE_FORMS.values()))
 
 
 def get_visual_dna() -> dict:

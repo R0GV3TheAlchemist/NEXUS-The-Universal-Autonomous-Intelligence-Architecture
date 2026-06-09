@@ -1,4 +1,4 @@
-"""SomnusEngine — GAIA’s dream / offline consolidation cycle.
+"""SomnusEngine — GAIA's dream / offline consolidation cycle.
 
 Purpose
 -------
@@ -42,7 +42,7 @@ class SomnusContext:
     semantic_memory: list[dict[str, Any]]   # Existing semantic memory
     apothecary_signals: dict[str, float]    # deficiency_name → score [0.0, 1.0]
     recent_canon_refs: list[str]            # Canon refs active in recent turns
-    declared_values: list[str]              # Human sovereign’s declared values
+    declared_values: list[str]              # Human sovereign's declared values
     idle_turns: int = 0                     # How many turns have passed idle
     trigger: str = 'idle'                   # 'idle' | 'scheduled' | 'manual'
 
@@ -74,7 +74,7 @@ class SomnusResult:
     def to_reflection_report(self) -> str:
         """Human-readable reflection report for optional sharing."""
         lines = [
-            f"# GAIA Dream Cycle Report",
+            "# GAIA Dream Cycle Report",
             f"Session : {self.session_id}",
             f"Cycle ID: {self.cycle_id}",
             f"Duration: {self.duration_ms:.1f} ms",
