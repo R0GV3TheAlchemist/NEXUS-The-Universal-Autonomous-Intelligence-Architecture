@@ -1,6 +1,8 @@
-name: Auto-fix Ruff Lint
+name: Auto-fix Ruff Lint & Format
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -8,27 +10,38 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Use a PAT or the default GITHUB_TOKEN; fetch full history so push works
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install ruff
-        run: pip install ruff
+        run: pip install "ruff>=0.4.0"
 
-      - name: Run ruff --fix
-        run: |
-          ruff check core/ api/ gaia/ --fix --unsafe-fixes || true
-          ruff check core/ api/ gaia/ --select E741 --fix || true
+      # ── 1. Fix all auto-fixable lint violations (safe + unsafe) ──────────────
+      - name: ruff check --fix (safe)
+        run: ruff check core/ api/ gaia/ --fix || true
 
-      - name: Commit fixes
+      - name: ruff check --fix --unsafe-fixes (UP042/UP045/UP037/RUF/I001 etc.)
+        run: ruff check core/ api/ gaia/ --fix --unsafe-fixes || true
+
+      # ── 2. Format (E501 line-length, whitespace, trailing commas, etc.) ──────
+      - name: ruff format
+        run: ruff format core/ api/ gaia/ || true
+
+      # ── 3. Commit & push if anything changed ─────────────────────────────────
+      - name: Commit & push fixes
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "fix(lint): auto-fix all ruff violations via ruff --fix"
-
-      - name: Push
-        run: git push
+          git diff --cached --quiet \
+            && echo "✅ Nothing to fix — repo is already clean." \
+            || git commit -m "fix(lint): auto-fix all ruff violations (UP/I/E/RUF/F) + ruff format"
+          git diff --cached --quiet || git push
