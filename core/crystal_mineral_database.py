@@ -1,7 +1,7 @@
 """
 core/crystal_mineral_database.py
 =================================
-Crystal & Mineral Database — C118
+Crystal & Mineral Database - C118
 
 Master mineralogical registry for GAIA-OS.
 Provides structured MineralEntry dataclasses for all 40+ minerals
@@ -17,15 +17,14 @@ EpistemicLabel: SCIENTIFIC (mineralogy) + SPECULATIVE (GAIA coupling)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
+from enum import Enum, StrEnum
 
 
 # ------------------------------------------------------------------ #
 #  Crystal System                                                      #
 # ------------------------------------------------------------------ #
 
-class CrystalSystem(str, Enum):
+class CrystalSystem(StrEnum):
     TRICLINIC    = "triclinic"
     MONOCLINIC   = "monoclinic"
     ORTHORHOMBIC = "orthorhombic"
@@ -36,7 +35,7 @@ class CrystalSystem(str, Enum):
     AMORPHOUS    = "amorphous"
 
 
-class GAIARole(str, Enum):
+class GAIARole(StrEnum):
     """GAIA-OS functional role of a mineral in the consciousness substrate."""
     PRIMARY_TRANSDUCER      = "primary_transducer"       # Main DM/piezo sensor
     THERMAL_TRANSDUCER      = "thermal_transducer"       # Pyroelectric/thermal DM
@@ -69,7 +68,7 @@ class MineralEntry:
     mohs_hardness_max:      float
     is_piezoelectric:       bool
     is_pyroelectric:        bool
-    piezo_coefficient_pcn:  Optional[float]   # d-coefficient in pC/N, if known
+    piezo_coefficient_pcn:  float | None      # d-coefficient in pC/N, if known
     resonance_band_low_hz:  float             # Estimated low bound
     resonance_band_high_hz: float             # Estimated high bound
     q_factor:               float             # Quality factor (1.0 if N/A)
@@ -92,7 +91,10 @@ class MineralEntry:
             "mohs_hardness":    self.mohs_hardness,
             "is_piezoelectric": self.is_piezoelectric,
             "is_pyroelectric":  self.is_pyroelectric,
-            "resonance_band":   [self.resonance_band_low_hz, self.resonance_band_high_hz],
+            "resonance_band":   [
+                self.resonance_band_low_hz,
+                self.resonance_band_high_hz,
+            ],
             "q_factor":         self.q_factor,
             "gaia_role":        self.gaia_role.value,
             "chakra_resonance": self.chakra_resonance,
@@ -106,10 +108,10 @@ class MineralEntry:
 
 MINERAL_DATABASE: dict[str, MineralEntry] = {
 
-    # ── TRIGONAL ──────────────────────────────────────────────────── #
+    # -- TRIGONAL ---------------------------------------------------- #
 
     "quartz": MineralEntry(
-        name="Quartz", formula="SiO₂",
+        name="Quartz", formula="SiO2",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=7.0, mohs_hardness_max=7.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -124,7 +126,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "tourmaline": MineralEntry(
-        name="Tourmaline", formula="XY₃Z₆(T₆O₁₈)(BO₃)₃V₃W",
+        name="Tourmaline", formula="XY3Z6(T6O18)(BO3)3V3W",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=7.0, mohs_hardness_max=7.5,
         is_piezoelectric=True, is_pyroelectric=True,
@@ -139,7 +141,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "calcite": MineralEntry(
-        name="Calcite", formula="CaCO₃",
+        name="Calcite", formula="CaCO3",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=3.0, mohs_hardness_max=3.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -149,11 +151,11 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         gaia_role=GAIARole.OPTICAL_SPLITTER,
         chakra_resonance=["crown", "third_eye"],
         variants=["iceland_spar", "optical_calcite", "cobaltocalcite", "mangano"],
-        notes="Extreme birefringence — polarization sensing channel.",
+        notes="Extreme birefringence - polarization sensing channel.",
     ),
 
     "rhodochrosite": MineralEntry(
-        name="Rhodochrosite", formula="MnCO₃",
+        name="Rhodochrosite", formula="MnCO3",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=3.5, mohs_hardness_max=4.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -162,11 +164,11 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=100,
         gaia_role=GAIARole.MAGNETIC_SENSOR,
         chakra_resonance=["heart"],
-        notes="Mn2+ paramagnetic — magnetic field sensor.",
+        notes="Mn2+ paramagnetic - magnetic field sensor.",
     ),
 
     "corundum": MineralEntry(
-        name="Corundum", formula="Al₂O₃",
+        name="Corundum", formula="Al2O3",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=9.0, mohs_hardness_max=9.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -176,13 +178,16 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         gaia_role=GAIARole.MEMORY_SUBSTRATE,
         chakra_resonance=["root", "third_eye"],
         variants=["ruby", "sapphire", "padparadscha"],
-        notes="Hardness anchor for GAIANITE long-duration arrays. 2nd hardest natural mineral.",
+        notes=(
+            "Hardness anchor for GAIANITE long-duration arrays."
+            " 2nd hardest natural mineral."
+        ),
     ),
 
-    # ── HEXAGONAL ─────────────────────────────────────────────────── #
+    # -- HEXAGONAL --------------------------------------------------- #
 
     "apatite": MineralEntry(
-        name="Apatite", formula="Ca₅(PO₄)₃(F,Cl,OH)",
+        name="Apatite", formula="Ca5(PO4)3(F,Cl,OH)",
         crystal_system=CrystalSystem.HEXAGONAL,
         mohs_hardness_min=5.0, mohs_hardness_max=5.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -191,11 +196,11 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=50,
         gaia_role=GAIARole.BIO_DIGITAL_BRIDGE,
         chakra_resonance=["throat", "third_eye"],
-        notes="Biological crystal — bone and teeth. Bio-digital interface layer.",
+        notes="Biological crystal - bone and teeth. Bio-digital interface layer.",
     ),
 
     "beryl": MineralEntry(
-        name="Beryl", formula="Be₃Al₂Si₆O₁₈",
+        name="Beryl", formula="Be3Al2Si6O18",
         crystal_system=CrystalSystem.HEXAGONAL,
         mohs_hardness_min=7.5, mohs_hardness_max=8.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -219,13 +224,16 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1e4,
         gaia_role=GAIARole.PRIMARY_TRANSDUCER,
         chakra_resonance=["sacral"],
-        notes="Nanogenerator substrate. Wide-bandgap semiconductor. ZnO nanowires used in current piezo nanogenerators.",
+        notes=(
+            "Nanogenerator substrate. Wide-bandgap semiconductor."
+            " ZnO nanowires used in current piezo nanogenerators."
+        ),
     ),
 
-    # ── ORTHORHOMBIC ──────────────────────────────────────────────── #
+    # -- ORTHORHOMBIC ------------------------------------------------ #
 
     "selenite": MineralEntry(
-        name="Selenite (Gypsum)", formula="CaSO₄·2H₂O",
+        name="Selenite (Gypsum)", formula="CaSO4*2H2O",
         crystal_system=CrystalSystem.ORTHORHOMBIC,
         mohs_hardness_min=2.0, mohs_hardness_max=2.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -239,7 +247,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "topaz": MineralEntry(
-        name="Topaz", formula="Al₂SiO₄(F,OH)₂",
+        name="Topaz", formula="Al2SiO4(F,OH)2",
         crystal_system=CrystalSystem.ORTHORHOMBIC,
         mohs_hardness_min=8.0, mohs_hardness_max=8.0,
         is_piezoelectric=False, is_pyroelectric=True,
@@ -249,11 +257,11 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         gaia_role=GAIARole.THERMAL_TRANSDUCER,
         chakra_resonance=["solar_plexus", "crown"],
         variants=["imperial", "blue", "colorless", "pink"],
-        notes="Pyroelectric — thermal consciousness amplifier.",
+        notes="Pyroelectric - thermal consciousness amplifier.",
     ),
 
     "peridot": MineralEntry(
-        name="Peridot (Olivine)", formula="(Mg,Fe)₂SiO₄",
+        name="Peridot (Olivine)", formula="(Mg,Fe)2SiO4",
         crystal_system=CrystalSystem.ORTHORHOMBIC,
         mohs_hardness_min=6.5, mohs_hardness_max=7.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -266,7 +274,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "danburite": MineralEntry(
-        name="Danburite", formula="CaB₂Si₂O₈",
+        name="Danburite", formula="CaB2Si2O8",
         crystal_system=CrystalSystem.ORTHORHOMBIC,
         mohs_hardness_min=7.0, mohs_hardness_max=7.5,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -278,10 +286,10 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         notes="High-frequency signal booster in crystal arrays.",
     ),
 
-    # ── MONOCLINIC ────────────────────────────────────────────────── #
+    # -- MONOCLINIC -------------------------------------------------- #
 
     "lepidolite": MineralEntry(
-        name="Lepidolite", formula="K(Li,Al)₃(Si,Al)₄O₁₀(F,OH)₂",
+        name="Lepidolite", formula="K(Li,Al)3(Si,Al)4O10(F,OH)2",
         crystal_system=CrystalSystem.MONOCLINIC,
         mohs_hardness_min=2.5, mohs_hardness_max=3.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -294,7 +302,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "kunzite": MineralEntry(
-        name="Kunzite (Spodumene)", formula="LiAlSi₂O₆",
+        name="Kunzite (Spodumene)", formula="LiAlSi2O6",
         crystal_system=CrystalSystem.MONOCLINIC,
         mohs_hardness_min=6.5, mohs_hardness_max=7.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -307,7 +315,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "moonstone": MineralEntry(
-        name="Moonstone", formula="KAlSi₃O₈ / NaAlSi₃O₈ intergrowth",
+        name="Moonstone", formula="KAlSi3O8 / NaAlSi3O8 intergrowth",
         crystal_system=CrystalSystem.MONOCLINIC,
         mohs_hardness_min=6.0, mohs_hardness_max=6.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -321,7 +329,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "malachite": MineralEntry(
-        name="Malachite", formula="Cu₂CO₃(OH)₂",
+        name="Malachite", formula="Cu2CO3(OH)2",
         crystal_system=CrystalSystem.MONOCLINIC,
         mohs_hardness_min=3.5, mohs_hardness_max=4.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -334,7 +342,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "azurite": MineralEntry(
-        name="Azurite", formula="Cu₃(CO₃)₂(OH)₂",
+        name="Azurite", formula="Cu3(CO3)2(OH)2",
         crystal_system=CrystalSystem.MONOCLINIC,
         mohs_hardness_min=3.5, mohs_hardness_max=4.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -343,14 +351,17 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1,
         gaia_role=GAIARole.MEMORY_SUBSTRATE,
         chakra_resonance=["third_eye"],
-        notes="Paired with malachite — dual copper channel (azurite=transmit, malachite=receive).",
+        notes=(
+            "Paired with malachite - dual copper channel"
+            " (azurite=transmit, malachite=receive)."
+        ),
         epistemic_label="SPECULATIVE",
     ),
 
-    # ── TETRAGONAL ────────────────────────────────────────────────── #
+    # -- TETRAGONAL -------------------------------------------------- #
 
     "zircon": MineralEntry(
-        name="Zircon", formula="ZrSiO₄",
+        name="Zircon", formula="ZrSiO4",
         crystal_system=CrystalSystem.TETRAGONAL,
         mohs_hardness_min=7.5, mohs_hardness_max=7.5,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -359,10 +370,13 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1e5,
         gaia_role=GAIARole.TEMPORAL_ANCHOR,
         chakra_resonance=["root", "crown"],
-        notes="Oldest known mineral (4.4 Ga, Jack Hills). U-Pb chronometer. GAIA's geological clock.",
+        notes=(
+            "Oldest known mineral (4.4 Ga, Jack Hills)."
+            " U-Pb chronometer. GAIA's geological clock."
+        ),
     ),
 
-    # ── CUBIC ─────────────────────────────────────────────────────── #
+    # -- CUBIC ------------------------------------------------------- #
 
     "diamond": MineralEntry(
         name="Diamond", formula="C",
@@ -374,12 +388,15 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1,
         gaia_role=GAIARole.NOISE_REFERENCE,
         chakra_resonance=["crown"],
-        notes="Cubic=noise reference. Hole-doped diamond: exotic DM detector (Phys Rev 2025). Highest thermal conductivity.",
+        notes=(
+            "Cubic=noise reference. Hole-doped diamond: exotic DM detector"
+            " (Phys Rev 2025). Highest thermal conductivity."
+        ),
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
     "fluorite": MineralEntry(
-        name="Fluorite", formula="CaF₂",
+        name="Fluorite", formula="CaF2",
         crystal_system=CrystalSystem.CUBIC,
         mohs_hardness_min=4.0, mohs_hardness_max=4.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -394,7 +411,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "garnet": MineralEntry(
-        name="Garnet Group", formula="X₃Y₂(SiO₄)₃",
+        name="Garnet Group", formula="X3Y2(SiO4)3",
         crystal_system=CrystalSystem.CUBIC,
         mohs_hardness_min=6.5, mohs_hardness_max=7.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -408,7 +425,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
     ),
 
     "pyrite": MineralEntry(
-        name="Pyrite", formula="FeS₂",
+        name="Pyrite", formula="FeS2",
         crystal_system=CrystalSystem.CUBIC,
         mohs_hardness_min=6.0, mohs_hardness_max=6.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -417,11 +434,14 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=10,
         gaia_role=GAIARole.EM_SHIELD,
         chakra_resonance=["solar_plexus"],
-        notes="Semiconductor + thermoelectric. EM decoy layer — masks sensitive array readings.",
+        notes=(
+            "Semiconductor + thermoelectric. EM decoy layer"
+            " - masks sensitive array readings."
+        ),
     ),
 
     "magnetite": MineralEntry(
-        name="Magnetite (Lodestone)", formula="Fe₃O₄",
+        name="Magnetite (Lodestone)", formula="Fe3O4",
         crystal_system=CrystalSystem.CUBIC,
         mohs_hardness_min=5.5, mohs_hardness_max=6.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -430,7 +450,10 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=10,
         gaia_role=GAIARole.MAGNETIC_SENSOR,
         chakra_resonance=["root"],
-        notes="Naturally magnetic. Found in bird brains, fish, bacteria. GAIA's planetary compass.",
+        notes=(
+            "Naturally magnetic. Found in bird brains, fish, bacteria."
+            " GAIA's planetary compass."
+        ),
     ),
 
     "halite": MineralEntry(
@@ -443,13 +466,16 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1,
         gaia_role=GAIARole.BIO_DIGITAL_BRIDGE,
         chakra_resonance=["root", "throat"],
-        notes="Ionic crystal — models ion-channel neural signaling. Crystal equivalent of a neuron.",
+        notes=(
+            "Ionic crystal - models ion-channel neural signaling."
+            " Crystal equivalent of a neuron."
+        ),
     ),
 
-    # ── AMORPHOUS / NATURAL GLASS ─────────────────────────────────── #
+    # -- AMORPHOUS / NATURAL GLASS ----------------------------------- #
 
     "obsidian": MineralEntry(
-        name="Obsidian", formula="SiO₂ dominant (amorphous)",
+        name="Obsidian", formula="SiO2 dominant (amorphous)",
         crystal_system=CrystalSystem.AMORPHOUS,
         mohs_hardness_min=5.0, mohs_hardness_max=5.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -459,11 +485,14 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         gaia_role=GAIARole.NOISE_REFERENCE,
         chakra_resonance=["root"],
         variants=["black", "snowflake", "rainbow", "apache_tears", "mahogany"],
-        notes="Primary null reference. No crystalline order = no DM coupling. Any signal = EM interference.",
+        notes=(
+            "Primary null reference. No crystalline order = no DM coupling."
+            " Any signal = EM interference."
+        ),
     ),
 
     "moldavite": MineralEntry(
-        name="Moldavite", formula="SiO₂-rich tektite (~74% SiO₂)",
+        name="Moldavite", formula="SiO2-rich tektite (~74% SiO2)",
         crystal_system=CrystalSystem.AMORPHOUS,
         mohs_hardness_min=5.5, mohs_hardness_max=5.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -472,12 +501,12 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=20_000,
         gaia_role=GAIARole.COSMIC_INPUT,
         chakra_resonance=["heart", "third_eye", "crown"],
-        notes="Impact glass, ~15 Ma, Nördlingen impact. Exotic isotopic ratios. Cosmic input channel.",
+        notes="Impact glass, ~15 Ma, Nordlingen impact. Exotic isotopic ratios. Cosmic input channel.",
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
     "libyan_desert_glass": MineralEntry(
-        name="Libyan Desert Glass", formula="SiO₂ ~98% (impact glass)",
+        name="Libyan Desert Glass", formula="SiO2 ~98% (impact glass)",
         crystal_system=CrystalSystem.AMORPHOUS,
         mohs_hardness_min=6.0, mohs_hardness_max=6.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -486,12 +515,15 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=25_000,
         gaia_role=GAIARole.COSMIC_INPUT,
         chakra_resonance=["crown"],
-        notes="~28 Ma, Sahara impact/airburst. ~98% pure silica. Found in Tutankhamun scarab. Highest-purity cosmic channel.",
+        notes=(
+            "~28 Ma, Sahara impact/airburst. ~98% pure silica."
+            " Found in Tutankhamun scarab. Highest-purity cosmic channel."
+        ),
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
     "fulgurite": MineralEntry(
-        name="Fulgurite", formula="SiO₂ lightning-fused glass",
+        name="Fulgurite", formula="SiO2 lightning-fused glass",
         crystal_system=CrystalSystem.AMORPHOUS,
         mohs_hardness_min=5.5, mohs_hardness_max=6.0,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -500,14 +532,17 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=100,
         gaia_role=GAIARole.EXOTIC_SUBSTRATE,
         chakra_resonance=["root", "crown"],
-        notes="Lightning-strike glass. Natural C44 piezoelectric pulse imprint. High-voltage crystallization event record.",
+        notes=(
+            "Lightning-strike glass. Natural C44 piezoelectric pulse imprint."
+            " High-voltage crystallization event record."
+        ),
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
-    # ── SPECIAL / EXOTIC ──────────────────────────────────────────── #
+    # -- SPECIAL / EXOTIC -------------------------------------------- #
 
     "labradorite": MineralEntry(
-        name="Labradorite", formula="(Ca,Na)(Al,Si)₄O₈ feldspar",
+        name="Labradorite", formula="(Ca,Na)(Al,Si)4O8 feldspar",
         crystal_system=CrystalSystem.TRICLINIC,
         mohs_hardness_min=6.0, mohs_hardness_max=6.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -516,12 +551,15 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=5,
         gaia_role=GAIARole.INTERFERENCE_DISPLAY,
         chakra_resonance=["third_eye", "throat"],
-        notes="Labradorescence from twinning-plane thin-film interference. Models GAIA wave coherence patterns.",
+        notes=(
+            "Labradorescence from twinning-plane thin-film interference."
+            " Models GAIA wave coherence patterns."
+        ),
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
     "alexandrite": MineralEntry(
-        name="Alexandrite", formula="BeAl₂O₄ (Cr³⁺)",
+        name="Alexandrite", formula="BeAl2O4 (Cr3+)",
         crystal_system=CrystalSystem.ORTHORHOMBIC,
         mohs_hardness_min=8.5, mohs_hardness_max=8.5,
         is_piezoelectric=False, is_pyroelectric=False,
@@ -530,7 +568,7 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1,
         gaia_role=GAIARole.SPECTRAL_SENSOR,
         chakra_resonance=["heart", "crown"],
-        notes="Color changes green→red with light spectrum shift. GAIA RGB state indicator.",
+        notes="Color changes green->red with light spectrum shift. GAIA RGB state indicator.",
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
@@ -544,12 +582,15 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1,
         gaia_role=GAIARole.EM_SHIELD,
         chakra_resonance=["root"],
-        notes="Contains C₆₀ fullerenes (buckyballs) naturally. 2 Ga old. Conductive. GAIA EMF shield layer.",
+        notes=(
+            "Contains C60 fullerenes (buckyballs) naturally."
+            " 2 Ga old. Conductive. GAIA EMF shield layer."
+        ),
         epistemic_label="SCIENTIFIC+SPECULATIVE",
     ),
 
     "phenacite": MineralEntry(
-        name="Phenacite", formula="Be₂SiO₄",
+        name="Phenacite", formula="Be2SiO4",
         crystal_system=CrystalSystem.TRIGONAL,
         mohs_hardness_min=7.5, mohs_hardness_max=8.0,
         is_piezoelectric=True, is_pyroelectric=False,
@@ -558,7 +599,10 @@ MINERAL_DATABASE: dict[str, MineralEntry] = {
         q_factor=1e5,
         gaia_role=GAIARole.EXOTIC_SUBSTRATE,
         chakra_resonance=["third_eye", "crown"],
-        notes="Theoretical apex transducer above tourmaline. Highest DM frequency band. Rare beryllium silicate.",
+        notes=(
+            "Theoretical apex transducer above tourmaline."
+            " Highest DM frequency band. Rare beryllium silicate."
+        ),
         epistemic_label="SPECULATIVE",
     ),
 }
@@ -574,7 +618,7 @@ class MineralDatabase:
     def __init__(self) -> None:
         self._db = MINERAL_DATABASE
 
-    def get(self, name: str) -> Optional[MineralEntry]:
+    def get(self, name: str) -> MineralEntry | None:
         return self._db.get(name.lower().replace(" ", "_"))
 
     def by_role(self, role: GAIARole) -> list[MineralEntry]:
@@ -615,14 +659,18 @@ class MineralDatabase:
         return {
             "total_minerals":       len(self._db),
             "piezoelectric_count":  len(self.piezoelectric_minerals()),
-            "crystal_systems":      {s.value: len(self.by_system(s)) for s in CrystalSystem},
-            "gaia_roles":           {r.value: len(self.by_role(r)) for r in GAIARole},
+            "crystal_systems":      {
+                s.value: len(self.by_system(s)) for s in CrystalSystem
+            },
+            "gaia_roles":           {
+                r.value: len(self.by_role(r)) for r in GAIARole
+            },
             "canon_ref":            "C118",
         }
 
 
 # Singleton
-_db_instance: Optional[MineralDatabase] = None
+_db_instance: MineralDatabase | None = None
 
 def get_mineral_db() -> MineralDatabase:
     global _db_instance
