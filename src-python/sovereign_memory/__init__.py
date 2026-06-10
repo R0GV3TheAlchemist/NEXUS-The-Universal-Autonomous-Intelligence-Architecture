@@ -1,10 +1,32 @@
 """GAIA-OS Sovereign Memory System
 
 Issue #66 | Pillar III: Societas
+Issue #281 | Distributed State Store — StorageBackend mirror
 
 The Sovereign Memory System is the foundation for all continuity in GAIA-OS.
 All data is local-first, encrypted at rest (AES-256-GCM), and never transmitted
 without explicit cryptographic consent.
+
+Encryption architecture (unchanged from Issue #66)
+---------------------------------------------------
+Master Key (MK) lives exclusively in the OS keychain (macOS Keychain,
+Windows Credential Manager, or Linux Secret Service).  Per-domain Data
+Encryption Keys (DEKs) are derived from the MK via HKDF-SHA256.  Every
+row is encrypted with AES-256-GCM with authenticated additional data (AAD)
+binding the ciphertext to its table and row id.  Plaintext never leaves
+this module; only ciphertext is ever written to disk or mirrored.
+
+StorageBackend mirror (Issue #281)
+-----------------------------------
+A secondary StorageBackend (default: SQLite singleton from core.storage)
+mirrors each encrypted record so the persistence layer is pluggable and
+swappable for Phase 2 planetary backends (CockroachDB, ScyllaDB).  The
+local SQLite DB + crypto layer is always primary.  Mirror failures are
+non-fatal and never block callers.
+
+Key format for mirror:  memory:<principal_id>:<type>:<record_id>
+  e.g.  memory:user-001:episodic:a3f8...
+        memory:user-001:semantic:b7c2...
 
 Vector search is powered by sqlite-vec (sqlite extension) and degrades
 gracefully to time-ordered recall when the extension is unavailable.
@@ -34,13 +56,16 @@ Usage::
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
 import sqlite3
+import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Any, Literal, Optional, Sequence
 
 from .crypto import (
     MasterKeyManager,
@@ -60,17 +85,23 @@ from .types import (
 )
 from . import vec_search
 
-# Exported so tests/conftest.py can patch 'sovereign_memory.SentenceTransformer'
-# via unittest.mock.patch without AttributeError.
 try:
     from sentence_transformers import SentenceTransformer
-except ImportError:  # sentence-transformers not installed (e.g. lightweight CI)
+except ImportError:
     SentenceTransformer = None  # type: ignore[assignment,misc]
+
+try:
+    from core.storage import get_backend as _get_storage_backend
+    _STORAGE_AVAILABLE = True
+except ImportError:
+    _STORAGE_AVAILABLE = False
+    _get_storage_backend = None  # type: ignore[assignment]
+
+logger = logging.getLogger("gaia.sovereign_memory")
 
 __all__ = [
     "SovereignMemory",
     "SentenceTransformer",
-    # Type re-exports — imported above, surfaced here for downstream consumers
     "AffectSnapshot",
     "BiometricSample",
     "LegacyArtifact",
@@ -82,12 +113,15 @@ __all__ = [
 
 _SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
-# Embedding dimension for the configured model
 _EMBED_DIM_MAP = {
     "local": vec_search._DIM_MINILM,
     "openai": vec_search._DIM_OPENAI,
     "nomic": vec_search._DIM_NOMIC,
 }
+
+# Backend key prefix for all sovereign memory mirror entries
+# Format: memory:<principal_id>:<type>:<record_id>
+_BACKEND_KEY_PREFIX = "memory"
 
 
 def _embed_dim() -> int:
@@ -103,26 +137,109 @@ def _new_id() -> str:
     return str(uuid.uuid4())
 
 
+def _backend_key(principal_id: str, memory_type: str, record_id: str) -> str:
+    """
+    Build the backend mirror key for a memory record.
+    Format: memory:<principal_id>:<type>:<record_id>
+
+    Enables prefix scans:
+      memory:user-001:           → all memories for user-001
+      memory:user-001:episodic:  → only episodic memories
+    """
+    return f"{_BACKEND_KEY_PREFIX}:{principal_id}:{memory_type}:{record_id}"
+
+
+def _mirror_to_backend(
+    backend: Any,
+    key: str,
+    value: bytes,
+    ttl: Optional[int] = None,
+) -> None:
+    """
+    Fire-and-forget mirror write to the StorageBackend.
+    Runs in a daemon thread so it never blocks the caller.
+    Failures are logged as warnings but never propagated.
+    """
+    def _run() -> None:
+        try:
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(backend.put(key, value, ttl=ttl))
+            loop.close()
+        except Exception as exc:
+            logger.warning(
+                f"[SovereignMemory] ⚠ Backend mirror write failed (non-fatal): "
+                f"key={key!r} err={exc}"
+            )
+    t = threading.Thread(target=_run, daemon=True, name="memory-mirror")
+    t.start()
+
+
 class SovereignMemory:
     """
     Primary interface to GAIA-OS encrypted local memory.
 
     All public methods accept and return plain Python types / dataclasses.
     Encryption / decryption is handled internally — callers never touch raw keys.
+    Plaintext never leaves this class; only ciphertext is mirrored to the backend.
+
     Vector search is provided by sqlite-vec and degrades gracefully to
     time-ordered retrieval when the extension is unavailable.
+
+    Parameters
+    ----------
+    db_path          : Path to the local SQLite database (primary store).
+    passphrase       : Optional Gaian passphrase for MK derivation.  If
+                       omitted, the OS keychain is used.
+    storage_backend  : Optional StorageBackend for secondary mirror writes.
+                       Defaults to get_backend() (SQLite singleton) when
+                       core.storage is available.  Pass None to disable.
+    gaian_id         : Identifier used in log messages.  Does not affect
+                       backend key format (principal_id is used there).
+    backend_ttl      : TTL in seconds for backend mirror entries.  None =
+                       no expiry.  The local SQLite DB is unaffected.
     """
 
     def __init__(
         self,
-        db_path: str = "~/.local/share/GAIA-OS/memory.db",
-        passphrase: str | None = None,
+        db_path:         str            = "~/.local/share/GAIA-OS/memory.db",
+        passphrase:      str | None     = None,
+        storage_backend: Any            = ...,   # ... sentinel = use default
+        gaian_id:        str            = "unknown",
+        backend_ttl:     Optional[int]  = None,
     ) -> None:
-        self._db_path = os.path.expanduser(db_path)
+        self._db_path    = os.path.expanduser(db_path)
         self._passphrase = passphrase
+        self._gaian_id   = gaian_id
+        self._backend_ttl = backend_ttl
         self._conn: sqlite3.Connection | None = None
         self._mk: bytes | None = None
         self._dek_cache: dict[str, bytes] = {}
+
+        # ── StorageBackend setup ──────────────────────────────────────────
+        # Three cases (same sentinel pattern as AuditStore):
+        #   storage_backend=...  (sentinel) → use module default (SQLite)
+        #   storage_backend=None            → mirroring disabled
+        #   storage_backend=<instance>      → use the supplied backend
+        if storage_backend is ...:
+            if _STORAGE_AVAILABLE and _get_storage_backend is not None:
+                try:
+                    self._backend: Optional[Any] = _get_storage_backend()
+                except Exception as exc:
+                    logger.warning(
+                        f"[SovereignMemory] Could not initialise default backend: {exc}. "
+                        "Mirroring disabled."
+                    )
+                    self._backend = None
+            else:
+                self._backend = None
+        else:
+            self._backend = storage_backend
+
+        if self._backend is not None:
+            logger.debug(
+                f"[SovereignMemory] Backend mirror: {self._backend!r} "
+                f"(gaian_id={gaian_id!r})"
+            )
 
     # ─────────────────────────────────────────
     # LIFECYCLE
@@ -136,13 +253,28 @@ class SovereignMemory:
         self._mk = MasterKeyManager.load_or_create(self._passphrase)
         self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
-        # Try to load sqlite-vec extension before applying schema
-        # (schema migration v2 creates the vec0 tables)
         vec_search.try_load_sqlite_vec(self._conn)
         self._apply_schema()
         self._ensure_active_keys()
-        # Ensure vec0 tables exist for the configured embedding dimension
         vec_search.ensure_vec_tables(self._conn, _embed_dim())
+
+        # Non-blocking backend health check on startup
+        if self._backend is not None:
+            def _ping() -> None:
+                try:
+                    loop = asyncio.new_event_loop()
+                    ok = loop.run_until_complete(self._backend.ping())
+                    loop.close()
+                    if not ok:
+                        logger.warning(
+                            "[SovereignMemory] Backend ping returned False — "
+                            "mirror writes will fail silently."
+                        )
+                    else:
+                        logger.debug("[SovereignMemory] Backend ping OK.")
+                except Exception as exc:
+                    logger.warning(f"[SovereignMemory] Backend ping failed: {exc}")
+            threading.Thread(target=_ping, daemon=True, name="memory-backend-ping").start()
 
     def close(self) -> None:
         """Commit, close DB, wipe MK from memory."""
@@ -197,8 +329,24 @@ class SovereignMemory:
         )
         self._conn.commit()
 
-        # Store embedding async-style (fire and forget — doesn't block caller)
         vec_search.store_episodic_embedding(self._conn, cur.lastrowid, content)
+
+        # Mirror encrypted ciphertext to backend — plaintext never leaves this scope
+        if self._backend is not None:
+            mirror_payload = json.dumps({
+                "id":           episode_id,
+                "principal_id": principal_id,
+                "type":         type,
+                "created_at":   now,
+                "key_id":       key_id,
+                "tags":         list(tags or []),
+                # Ciphertext only — nonce prepended for self-contained decryption
+                "cipher_b64":   cipher.hex(),
+                "nonce_b64":    nonce.hex(),
+                "aad_b64":      aad_bytes.hex() if aad_bytes else None,
+            }, separators=(",", ":")).encode("utf-8")
+            bkey = _backend_key(principal_id, "episodic", episode_id)
+            _mirror_to_backend(self._backend, bkey, mirror_payload, self._backend_ttl)
 
         return episode_id
 
@@ -277,8 +425,25 @@ class SovereignMemory:
         )
         self._conn.commit()
 
-        # Store embedding
         vec_search.store_semantic_embedding(self._conn, cur.lastrowid, pattern)
+
+        # Mirror encrypted ciphertext to backend
+        if self._backend is not None:
+            mirror_payload = json.dumps({
+                "id":                   pattern_id,
+                "principal_id":         principal_id,
+                "type":                 "semantic",
+                "confidence":           confidence,
+                "first_observed_at":    now,
+                "key_id":               key_id,
+                "tags":                 list(tags or []),
+                "supporting_episode_ids": list(episode_ids),
+                "cipher_b64":           cipher.hex(),
+                "nonce_b64":            nonce.hex(),
+                "aad_b64":              aad_bytes.hex() if aad_bytes else None,
+            }, separators=(",", ":")).encode("utf-8")
+            bkey = _backend_key(principal_id, "semantic", pattern_id)
+            _mirror_to_backend(self._backend, bkey, mirror_payload, self._backend_ttl)
 
         return pattern_id
 
@@ -298,7 +463,6 @@ class SovereignMemory:
         Degrades gracefully to time-ordered recall if sqlite-vec is unavailable.
         """
         self._assert_open()
-
         if vec_search.is_vec_available():
             return self._search_vec(principal_id, query, limit, memory_types)
         return self._search_fallback(principal_id, query, limit, memory_types)
@@ -310,22 +474,17 @@ class SovereignMemory:
         limit: int,
         memory_types: Sequence[str],
     ) -> list[MemoryRecord]:
-        """Vector-powered search path."""
-        hits: list[tuple[str, float, str]] = []  # (id, score, table)
-
+        hits: list[tuple[str, float, str]] = []
         if "episodic" in memory_types:
             for ep_id, score in vec_search.search_episodic_vec(
                 self._conn, principal_id, query, limit
             ):
                 hits.append((ep_id, score, "episodic"))
-
         if "semantic" in memory_types:
             for pat_id, score in vec_search.search_semantic_vec(
                 self._conn, principal_id, query, limit // 2
             ):
                 hits.append((pat_id, score, "semantic"))
-
-        # Global re-rank and de-dup
         hits.sort(key=lambda x: x[1], reverse=True)
         seen: set[str] = set()
         out: list[MemoryRecord] = []
@@ -358,7 +517,6 @@ class SovereignMemory:
         limit: int,
         memory_types: Sequence[str],
     ) -> list[MemoryRecord]:
-        """Time-ordered fallback when sqlite-vec is unavailable."""
         results: list[MemoryRecord] = []
         if "episodic" in memory_types:
             rows = self._conn.execute(
@@ -392,7 +550,6 @@ class SovereignMemory:
 
     # ─────────────────────────────────────────
     # CONVENIENCE: remember + recall
-    # (thin wrappers used by the frontend API)
     # ─────────────────────────────────────────
 
     def remember(
@@ -403,10 +560,6 @@ class SovereignMemory:
         type: str = "conversation",
         tags: Sequence[str] | None = None,
     ) -> str:
-        """
-        Convenience wrapper: store a single turn of conversation as an episodic memory.
-        Returns the episode_id.
-        """
         return self.store_episode(
             principal_id=principal_id,
             content=f"[{role}] {text}",
@@ -420,10 +573,6 @@ class SovereignMemory:
         query: str,
         limit: int = 10,
     ) -> list[MemoryRecord]:
-        """
-        Convenience wrapper: retrieve the most semantically relevant memories
-        for the given query. Used to build GAIA's context window.
-        """
         return self.search_memory(principal_id, query, limit=limit)
 
     # ─────────────────────────────────────────
@@ -431,7 +580,7 @@ class SovereignMemory:
     # ─────────────────────────────────────────
 
     def prune_vectors(self) -> int:
-        """Remove orphaned vector rows. Returns count removed. Call periodically."""
+        """Remove orphaned vector rows. Returns count removed."""
         self._assert_open()
         return vec_search.prune_orphaned_vectors(self._conn)
 
@@ -447,7 +596,6 @@ class SovereignMemory:
         source: str,
         timestamp: int | None = None,
     ) -> int:
-        """Append a single biometric sample. Returns the new row id."""
         self._assert_open()
         ts = timestamp or _now_ms()
         cur = self._conn.execute(
@@ -461,7 +609,6 @@ class SovereignMemory:
         return cur.lastrowid
 
     def store_affect_snapshot(self, snapshot: AffectSnapshot) -> None:
-        """Persist all biometric rows from an AffectSnapshot in one transaction."""
         self._assert_open()
         rows = snapshot.to_biometric_rows()
         self._conn.executemany(
@@ -480,7 +627,6 @@ class SovereignMemory:
         days: int,
         now: int | None = None,
     ) -> list[BiometricSample]:
-        """Return samples for the given signal over the last N days."""
         self._assert_open()
         cutoff = (now or _now_ms()) - days * 86_400_000
         rows = self._conn.execute(
@@ -502,7 +648,6 @@ class SovereignMemory:
         self,
         principal_id: str,
     ) -> list[StageTransitionRecord]:
-        """Return full stage arc history, oldest first."""
         self._assert_open()
         rows = self._conn.execute(
             """
@@ -541,7 +686,6 @@ class SovereignMemory:
         export_formats: Sequence[str] = ("markdown", "json"),
         key_id: str = "legacy-v1",
     ) -> str:
-        """Encrypt and store a legacy artifact. Returns the artifact id."""
         self._assert_open()
         artifact_id = _new_id()
         now = _now_ms()
@@ -580,7 +724,6 @@ class SovereignMemory:
         principal_id: str,
         format: Literal["markdown", "json"] = "markdown",
     ) -> str:
-        """Decrypt and export all legacy artifacts for a principal."""
         self._assert_open()
         rows = self._conn.execute(
             """
@@ -590,22 +733,19 @@ class SovereignMemory:
             """,
             (principal_id,),
         ).fetchall()
-
         artifacts = []
         for row in rows:
             dek = self._get_dek(row["key_id"])
             title = decrypt(dek, row["title_cipher"], row["title_nonce"], row["title_aad"])
             content = decrypt(dek, row["content_cipher"], row["content_nonce"], row["content_aad"])
             artifacts.append({
-                "title": title,
-                "content": content,
+                "title":      title,
+                "content":    content,
                 "created_at": row["created_at"],
-                "stage": row["stage_at_creation"],
+                "stage":      row["stage_at_creation"],
             })
-
         if format == "json":
             return json.dumps(artifacts, indent=2, ensure_ascii=False)
-
         lines = ["# GAIA-OS Legacy Archive\n"]
         for a in artifacts:
             lines.append(f"## {a['title']}")
@@ -619,14 +759,12 @@ class SovereignMemory:
     # ─────────────────────────────────────────
 
     def soft_delete_episode(self, principal_id: str, episode_id: str) -> None:
-        """Mark an episode deleted (soft delete). Ciphertext remains until key rotation."""
         self._assert_open()
         self._conn.execute(
             "UPDATE episodic_memory SET deleted_at=? WHERE id=? AND principal_id=?",
             (_now_ms(), episode_id, principal_id),
         )
         self._conn.commit()
-        # Prune its vector immediately
         self.prune_vectors()
 
     def crypto_erase_key(self, key_id: str) -> None:
@@ -642,6 +780,23 @@ class SovereignMemory:
         )
         self._conn.commit()
         self._dek_cache.pop(key_id, None)
+
+    # ─────────────────────────────────────────
+    # DISTRIBUTED BACKEND API
+    # ─────────────────────────────────────────
+
+    async def backend_ping(self) -> bool:
+        """
+        Health-check the StorageBackend.
+        Returns True if reachable, False if unavailable or not configured.
+        Used by the mesh server health endpoint.
+        """
+        if self._backend is None:
+            return False
+        try:
+            return await self._backend.ping()
+        except Exception:
+            return False
 
     # ─────────────────────────────────────────
     # INTERNAL HELPERS
@@ -662,7 +817,6 @@ class SovereignMemory:
         self._conn.commit()
 
     def _ensure_active_keys(self) -> None:
-        """Create default active DEK entries if they don't exist yet."""
         now = _now_ms()
         default_keys = ["episodic-v1", "semantic-v1", "legacy-v1"]
         for key_id in default_keys:
