@@ -211,6 +211,6 @@ async def alignment_status() -> AlignmentStatusOut:
     return AlignmentStatusOut(
         emitter_ready=True,
         last_state=AlignmentStateOut.from_state(last) if last else None,
-        hrv_sample_count=emitter._hrv.sample_count,    # noqa: SLF001
-        schumann_sample_count=emitter._schumann.sample_count,  # noqa: SLF001
+        hrv_sample_count=emitter._hrv.sample_count,
+        schumann_sample_count=emitter._schumann.sample_count,
     )
