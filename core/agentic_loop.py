@@ -189,17 +189,22 @@ class _LegacyActionGate:
 
 _STUB_COMPLETE_AFTER = 3
 
+# B006 fix: use a closure-based counter instead of a mutable default argument.
+# The previous `_counter: list = [0]` was shared state across all calls,
+# which is a Python footgun — the list is created once at function definition
+# time and mutated across every invocation.
+_stub_counter = [0]
+
 
 def _default_stub_planner(
     state: AgentState,
     *,
     canon_context: str = "",
-    _counter: list = [0],  # noqa: B006
 ) -> dict:
     """Minimal planner for tests: returns complete=True after 3 calls."""
-    _counter[0] += 1
-    if _counter[0] >= _STUB_COMPLETE_AFTER:
-        _counter[0] = 0
+    _stub_counter[0] += 1
+    if _stub_counter[0] >= _STUB_COMPLETE_AFTER:
+        _stub_counter[0] = 0
         return {"complete": True}
     return {"tool": "noop", "args": {}}
 
@@ -421,7 +426,7 @@ class AgenticLoop:
         if self._rag is not None:
             try:
                 canon_context = self._rag.retrieve(state.summary())
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 _sl_warning(f"rag.retrieve failed — {exc}")
         return self._planner(state, canon_context=canon_context)
 
