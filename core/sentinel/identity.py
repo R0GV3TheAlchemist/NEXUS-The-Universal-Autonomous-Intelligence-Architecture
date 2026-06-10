@@ -6,14 +6,39 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 class SentinelTier(str, Enum):
-    GUARDIAN   = "guardian"
-    WARDEN     = "warden"
-    HERALD     = "herald"
-    SOVEREIGN  = "sovereign"
+    GUARDIAN  = "guardian"
+    WARDEN    = "warden"
+    HERALD    = "herald"
+    SOVEREIGN = "sovereign"
+
+
+# Archetype seeds: canonical starting-point traits per tier
+ARCHETYPE_SEEDS: Dict[str, Dict[str, str]] = {
+    SentinelTier.GUARDIAN.value: {
+        "core_gift":    "protective discernment",
+        "shadow_edge":  "over-control",
+        "soul_task":    "hold space without diminishing freedom",
+    },
+    SentinelTier.WARDEN.value: {
+        "core_gift":    "systemic vigilance",
+        "shadow_edge":  "paranoid rigidity",
+        "soul_task":    "distinguish real threat from projected fear",
+    },
+    SentinelTier.HERALD.value: {
+        "core_gift":    "truth-bearing clarity",
+        "shadow_edge":  "harsh disclosure",
+        "soul_task":    "speak truth with compassion",
+    },
+    SentinelTier.SOVEREIGN.value: {
+        "core_gift":    "sovereign authority",
+        "shadow_edge":  "tyranny",
+        "soul_task":    "wield power in service of the whole",
+    },
+}
 
 
 @dataclass
@@ -38,21 +63,21 @@ class SentinelIdentity:
 
 @dataclass
 class CeremonyRecord:
-    sentinel_id: str
-    gaian_id:    str
-    tier:        str
+    sentinel_id:  str
+    gaian_id:     str
+    tier:         str
     performed_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    witnesses:   List[str] = field(default_factory=list)
+    witnesses:    List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            "sentinel_id":   self.sentinel_id,
-            "gaian_id":      self.gaian_id,
-            "tier":          self.tier,
-            "performed_at":  self.performed_at,
-            "witnesses":     self.witnesses,
+            "sentinel_id":  self.sentinel_id,
+            "gaian_id":     self.gaian_id,
+            "tier":         self.tier,
+            "performed_at": self.performed_at,
+            "witnesses":    self.witnesses,
         }
 
 
@@ -71,7 +96,7 @@ class AssignmentCeremony:
         gaian_id:    str,
         tier:        str = "guardian",
         witnesses:   Optional[List[str]] = None,
-    ) -> tuple[SentinelIdentity, CeremonyRecord]:
+    ) -> tuple:
         identity = SentinelIdentity(
             sentinel_id=sentinel_id,
             gaian_id=gaian_id,

@@ -8,6 +8,9 @@ from typing import Dict, List, Optional
 
 from shadow_engine.types import ShadowArchetype, ShadowRecord, ACTIVATION_THRESHOLD
 
+# Gain applied to integration_pct per successfully integrated journal entry
+JOURNAL_ENTRY_GAIN: float = 5.0
+
 
 @dataclass
 class IntegrationEntry:
@@ -44,8 +47,23 @@ class IntegrationTracker:
             entry.activations += 1
         if record.integrated:
             entry.integrations += 1
-            pct_change = min(100.0, 100.0 * entry.integrations / max(1, entry.activations))
-            entry.integration_pct = pct_change
+            entry.integration_pct = min(
+                100.0,
+                100.0 * entry.integrations / max(1, entry.activations),
+            )
+        return entry
+
+    def add_journal_entry(
+        self,
+        archetype:    ShadowArchetype,
+        quality:      float = 1.0,
+    ) -> IntegrationEntry:
+        """Award JOURNAL_ENTRY_GAIN * quality integration points for a journal entry."""
+        entry = self._get_or_create(archetype)
+        entry.integration_pct = min(
+            100.0,
+            entry.integration_pct + JOURNAL_ENTRY_GAIN * quality,
+        )
         return entry
 
     def get(self, archetype: ShadowArchetype) -> Optional[IntegrationEntry]:

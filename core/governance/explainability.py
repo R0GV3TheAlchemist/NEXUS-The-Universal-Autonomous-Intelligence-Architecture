@@ -10,10 +10,10 @@ from typing import List, Optional
 @dataclass
 class CanonCitation:
     """A reference to a specific canon document / section."""
-    canon_id:   str
-    section:    str = ""
-    excerpt:    str = ""
-    weight:     float = 1.0
+    canon_id: str
+    section:  str   = ""
+    excerpt:  str   = ""
+    weight:   float = 1.0
 
     def to_dict(self) -> dict:
         return {
@@ -28,7 +28,7 @@ class CanonCitation:
 class ExplainabilityRecord:
     decision:   str
     citations:  List[CanonCitation] = field(default_factory=list)
-    rationale:  str = ""
+    rationale:  str   = ""
     confidence: float = 1.0
 
     def add_citation(self, citation: CanonCitation) -> None:
@@ -53,7 +53,7 @@ class ExplainabilityEngine:
         self,
         decision:   str,
         citations:  Optional[List[CanonCitation]] = None,
-        rationale:  str = "",
+        rationale:  str   = "",
         confidence: float = 1.0,
     ) -> ExplainabilityRecord:
         record = ExplainabilityRecord(
@@ -67,3 +67,7 @@ class ExplainabilityEngine:
 
     def history(self) -> List[ExplainabilityRecord]:
         return list(self._records)
+
+
+# Alias used by tests that import DecisionExplainer
+DecisionExplainer = ExplainabilityEngine

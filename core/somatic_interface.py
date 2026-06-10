@@ -4,7 +4,7 @@ Somatic Interface — bridges physiological signals into GAIA state.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -36,9 +36,9 @@ class SomaticIntelligenceEngine:
 
     def read(
         self,
-        hrv:      float = 0.5,
-        breath:   float = 0.5,
-        tension:  float = 0.0,
+        hrv:       float = 0.5,
+        breath:    float = 0.5,
+        tension:   float = 0.0,
         grounding: float = 0.5,
     ) -> SomaticReading:
         coherence = max(0.0, min(1.0,
@@ -62,3 +62,13 @@ class SomaticIntelligenceEngine:
 
     def history(self) -> List[SomaticReading]:
         return list(self._history)
+
+
+_engine: Optional[SomaticIntelligenceEngine] = None
+
+
+def get_somatic_engine() -> SomaticIntelligenceEngine:
+    global _engine
+    if _engine is None:
+        _engine = SomaticIntelligenceEngine()
+    return _engine

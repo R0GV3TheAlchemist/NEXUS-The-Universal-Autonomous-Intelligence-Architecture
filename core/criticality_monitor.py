@@ -1,6 +1,6 @@
 """
 core/criticality_monitor.py
-Criticality Monitor — tracks system-level criticality signals.
+Criticality Monitor — tracks system-level criticality / critical-dynamics signals.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -10,9 +10,9 @@ from typing import List, Optional
 
 
 class CriticalityLevel(str, Enum):
-    NOMINAL  = "nominal"
-    ELEVATED = "elevated"
-    CRITICAL = "critical"
+    NOMINAL   = "nominal"
+    ELEVATED  = "elevated"
+    CRITICAL  = "critical"
     EMERGENCY = "emergency"
 
 
@@ -78,6 +78,9 @@ class CriticalityMonitor:
     def history(self) -> List[CriticalityReport]:
         return list(self._history)
 
+
+# Alias used by tests that import CriticalDynamicsMonitor
+CriticalDynamicsMonitor = CriticalityMonitor
 
 # Module-level singleton
 _monitor: Optional[CriticalityMonitor] = None

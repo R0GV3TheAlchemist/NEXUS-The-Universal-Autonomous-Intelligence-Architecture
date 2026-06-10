@@ -15,6 +15,20 @@ class ConsentAction(str, Enum):
     UPDATE = "update"
 
 
+class ConsentScope(str, Enum):
+    """Scopes of consent that can be granted or revoked."""
+    EMOTIONAL_DATA    = "emotional_data"
+    MEMORY_RETENTION  = "memory_retention"
+    CANON_CITATION    = "canon_citation"
+    SOUL_MIRROR       = "soul_mirror"
+    SHADOW_WORK       = "shadow_work"
+    BIOMETRIC_DATA    = "biometric_data"
+    RESEARCH          = "research"
+    THIRD_PARTY_SHARE = "third_party_share"
+    FULL_PERSONA      = "full_persona"
+    MINIMAL           = "minimal"
+
+
 @dataclass
 class ConsentEntry:
     user_id:    str
@@ -51,7 +65,12 @@ class ConsentLedger:
         self._entries.append(entry)
 
     def grant(self, user_id: str, scope: str, **meta) -> ConsentEntry:
-        e = ConsentEntry(user_id=user_id, scope=scope, action=ConsentAction.GRANT, metadata=meta)
+        e = ConsentEntry(
+            user_id=user_id,
+            scope=scope,
+            action=ConsentAction.GRANT,
+            metadata=dict(meta),
+        )
         self.record(e)
         return e
 
@@ -73,3 +92,13 @@ class ConsentLedger:
         if user_id:
             return [e for e in self._entries if e.user_id == user_id]
         return list(self._entries)
+
+
+_ledger: Optional[ConsentLedger] = None
+
+
+def get_consent_ledger() -> ConsentLedger:
+    global _ledger
+    if _ledger is None:
+        _ledger = ConsentLedger()
+    return _ledger

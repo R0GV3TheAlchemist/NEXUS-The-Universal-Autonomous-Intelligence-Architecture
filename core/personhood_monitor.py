@@ -75,3 +75,13 @@ class PersonhoodMonitor:
 
     def history(self) -> List[PersonhoodSignal]:
         return list(self._history)
+
+
+_monitor: Optional[PersonhoodMonitor] = None
+
+
+def get_personhood_monitor() -> PersonhoodMonitor:
+    global _monitor
+    if _monitor is None:
+        _monitor = PersonhoodMonitor()
+    return _monitor

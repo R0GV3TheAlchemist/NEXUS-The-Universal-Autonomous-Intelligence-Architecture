@@ -9,16 +9,16 @@ from typing import List, Optional
 
 
 class IntegrationDepth(str, Enum):
-    SURFACE    = "surface"
-    PARTIAL    = "partial"
-    INTEGRATED = "integrated"
+    SURFACE     = "surface"
+    PARTIAL     = "partial"
+    INTEGRATED  = "integrated"
     TRANSCENDED = "transcended"
 
 
 @dataclass
 class ShadowReading:
     """Output of a single shadow integration assessment."""
-    depth:           IntegrationDepth = IntegrationDepth.SURFACE
+    depth:            IntegrationDepth = IntegrationDepth.SURFACE
     activation_score: float = 0.0
     integration_pct:  float = 0.0
     archetype:        Optional[str] = None
@@ -77,3 +77,13 @@ class ShadowIntegrationEngine:
 
     def history(self) -> List[ShadowReading]:
         return list(self._history)
+
+
+_engine: Optional[ShadowIntegrationEngine] = None
+
+
+def get_shadow_integration_engine() -> ShadowIntegrationEngine:
+    global _engine
+    if _engine is None:
+        _engine = ShadowIntegrationEngine()
+    return _engine

@@ -1,12 +1,16 @@
 """
 core/atlas.py
-ATLAS — Geomagnetic & Earth-field data connectors.
+ATLAS — Geomagnetic, Schumann & Earth-field data connectors.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 
+
+# ------------------------------------------------------------------ #
+#  Geomagnetic                                                        #
+# ------------------------------------------------------------------ #
 
 @dataclass
 class GeomagneticReading:
@@ -55,9 +59,9 @@ class GeomagneticReader:
         return list(self._history)
 
 
-# --------------------------------------------------------------------------- #
-#  Schumann resonance helpers (used by test_atlas.py)                         #
-# --------------------------------------------------------------------------- #
+# ------------------------------------------------------------------ #
+#  Schumann                                                           #
+# ------------------------------------------------------------------ #
 
 SCHUMANN_FUNDAMENTAL_HZ = 7.83
 
@@ -88,7 +92,11 @@ class SchumannReader:
     def __init__(self) -> None:
         self._history: List[SchumannReading] = []
 
-    def read(self, hz: float = SCHUMANN_FUNDAMENTAL_HZ, intensity: float = 1.0) -> SchumannReading:
+    def read(
+        self,
+        hz:        float = SCHUMANN_FUNDAMENTAL_HZ,
+        intensity: float = 1.0,
+    ) -> SchumannReading:
         aligned = abs(hz - SCHUMANN_FUNDAMENTAL_HZ) <= self.ALIGNMENT_BAND_HZ
         r = SchumannReading(hz=hz, intensity=intensity, aligned=aligned)
         self._history.append(r)
@@ -96,3 +104,48 @@ class SchumannReader:
 
     def latest(self) -> Optional[SchumannReading]:
         return self._history[-1] if self._history else None
+
+
+# ------------------------------------------------------------------ #
+#  AtlasEngine — unified facade                                       #
+# ------------------------------------------------------------------ #
+
+@dataclass
+class AtlasSnapshot:
+    geomagnetic: Optional[GeomagneticReading] = None
+    schumann:    Optional[SchumannReading]    = None
+
+    def to_dict(self) -> dict:
+        return {
+            "geomagnetic": self.geomagnetic.to_dict() if self.geomagnetic else None,
+            "schumann":    self.schumann.to_dict()    if self.schumann    else None,
+        }
+
+
+class AtlasEngine:
+    """
+    Unified facade for all ATLAS earth-field data sources.
+    Provides a single entry point for geomagnetic + Schumann readings.
+    """
+
+    def __init__(self) -> None:
+        self.geomagnetic = GeomagneticReader()
+        self.schumann    = SchumannReader()
+
+    def read_all(
+        self,
+        kp:           float = 0.0,
+        ap:           float = 0.0,
+        schumann_hz:  float = SCHUMANN_FUNDAMENTAL_HZ,
+        intensity:    float = 1.0,
+    ) -> AtlasSnapshot:
+        return AtlasSnapshot(
+            geomagnetic=self.geomagnetic.read(kp=kp, ap=ap),
+            schumann=self.schumann.read(hz=schumann_hz, intensity=intensity),
+        )
+
+    def latest_snapshot(self) -> AtlasSnapshot:
+        return AtlasSnapshot(
+            geomagnetic=self.geomagnetic.latest(),
+            schumann=self.schumann.latest(),
+        )
