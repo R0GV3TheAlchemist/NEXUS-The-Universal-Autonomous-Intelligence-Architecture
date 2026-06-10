@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────────────────────────────────────
+      # ── 1. Checkout ───────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Python setup ────────────────────────────────────────────────────────────────────────────────
+      # ── 2. Python setup ───────────────────────────────────────────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
 
-      # ── 3. Cache HuggingFace models ──────────────────────────────────────────────────────────────────────────────
+      # ── 3. Cache HuggingFace models ───────────────────────────────────────
       - name: Cache HuggingFace models
         uses: actions/cache@v4
         with:
@@ -36,7 +36,7 @@ jobs:
           restore-keys: |
             huggingface-all-minilm-
 
-      # ── 4. Install dependencies ────────────────────────────────────────────────────────────────────────────
+      # ── 4. Install dependencies ───────────────────────────────────────────
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -44,7 +44,7 @@ jobs:
           pip install -e ".[dev]"
           pip install pytest-cov pytest-mock mypy bandit[toml]
 
-      # ── 5. Pre-download embedding model ──────────────────────────────────────────────────────────────────────
+      # ── 5. Pre-download embedding model ───────────────────────────────────
       - name: Pre-download HuggingFace embedding model
         run: |
           python -c "
@@ -63,17 +63,20 @@ jobs:
           TRANSFORMERS_OFFLINE: "0"
           SENTENCE_TRANSFORMERS_HOME: ~/.cache/huggingface/sentence_transformers
 
-      # ── 5.5 Ruff lint ─────────────────────────────────────────────────────────────────────────────
-      # Hard gate — ruff violations now FAIL the build.
+      # ── 5.5 Ruff lint ─────────────────────────────────────────────────────
+      # Hard gate — any ruff violation FAILS the build.
       # Config: pyproject.toml [tool.ruff] (stable rules only, no preview).
-      # If this fails locally: run `ruff check core/ api/ gaia/` to see violations.
+      # NOTE: --output-format=github intentionally REMOVED. That flag emits
+      # ::notice:: annotations for every finding even on a passing run,
+      # flooding the Actions UI with yellow warnings that look like errors.
+      # Plain text output: green = green, red = red, no ghost annotations.
       - name: Lint with ruff
         run: |
           echo '🔍  Running ruff lint...'
-          ruff check core/ api/ gaia/ --output-format=github
+          ruff check core/ api/ gaia/
           echo '✅  Ruff passed'
 
-      # ── 5.6 mypy type checking ─────────────────────────────────────────────────────────────────────────────────
+      # ── 5.6 mypy type checking ────────────────────────────────────────────
       - name: Type check with mypy
         run: |
           echo '🔍  Running mypy type check...'
@@ -83,11 +86,11 @@ jobs:
             --pretty \
             --python-version 3.11 \
             || true
-          echo '✅  mypy complete (see annotations above for type errors)'
+          echo '✅  mypy complete (see log above for type errors)'
         env:
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src-python
 
-      # ── 5.7 bandit SAST security scan ────────────────────────────────────────────────────────────────────────────
+      # ── 5.7 bandit SAST security scan ─────────────────────────────────────
       - name: Security scan with bandit
         run: |
           echo '🔐  Running bandit SAST scan...'
@@ -97,9 +100,9 @@ jobs:
             --format txt \
             --exclude src-python/tests \
             || true
-          echo '✅  Bandit scan complete (review findings above)'
+          echo '✅  Bandit scan complete (review log above)'
 
-      # ── 5.8 Manifest validation ─────────────────────────────────────────────────────────────────────────────────
+      # ── 5.8 Manifest validation ───────────────────────────────────────────
       - name: Validate CANON_MANIFEST.json
         run: |
           python - <<'PYEOF'
@@ -161,7 +164,7 @@ jobs:
               print(f"✅  CANON_MANIFEST.json valid — {len(documents)} documents")
           PYEOF
 
-      # ── 6. Syntax check ─────────────────────────────────────────────────────────────────────────────────────────────
+      # ── 6. Syntax check ───────────────────────────────────────────────────
       - name: Syntax check (py_compile)
         run: |
           python -m compileall -q core/ 2>&1 | tee /tmp/compile.log
@@ -171,7 +174,7 @@ jobs:
           fi
           echo '✅  All core/ files compile cleanly'
 
-      # ── 7. Pytest ─────────────────────────────────────────────────────────────────────────────────────────────────────
+      # ── 7. Pytest ─────────────────────────────────────────────────────────
       - name: Run pytest
         run: |
           python -m pytest tests/ \
