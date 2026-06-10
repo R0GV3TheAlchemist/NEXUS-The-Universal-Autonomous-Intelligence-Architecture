@@ -4,7 +4,9 @@ Explainability — canon-grounded decision explanation layer.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Optional
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -25,7 +27,41 @@ class CanonCitation:
 
 
 @dataclass
+class DecisionReport:
+    """
+    Structured report summarising a single GAIA decision with
+    canon citations and human-readable rationale.
+    """
+    decision_id:  str
+    decision:     str
+    rationale:    str                  = ""
+    confidence:   float                = 1.0
+    citations:    List[CanonCitation]  = field(default_factory=list)
+    metadata:     Dict[str, Any]       = field(default_factory=dict)
+    timestamp:    str                  = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    doctrine_ref: str = "C-EXPLAINABILITY:1.0"
+
+    def add_citation(self, citation: CanonCitation) -> None:
+        self.citations.append(citation)
+
+    def to_dict(self) -> dict:
+        return {
+            "decision_id":  self.decision_id,
+            "decision":     self.decision,
+            "rationale":    self.rationale,
+            "confidence":   round(self.confidence, 4),
+            "citations":    [c.to_dict() for c in self.citations],
+            "metadata":     self.metadata,
+            "timestamp":    self.timestamp,
+            "doctrine_ref": self.doctrine_ref,
+        }
+
+
+@dataclass
 class ExplainabilityRecord:
+    """Legacy record — kept for back-compat."""
     decision:   str
     citations:  List[CanonCitation] = field(default_factory=list)
     rationale:  str   = ""
@@ -69,5 +105,5 @@ class ExplainabilityEngine:
         return list(self._records)
 
 
-# Alias used by tests that import DecisionExplainer
+# Alias
 DecisionExplainer = ExplainabilityEngine

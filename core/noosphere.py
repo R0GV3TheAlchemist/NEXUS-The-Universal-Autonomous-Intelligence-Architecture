@@ -1,145 +1,224 @@
 """
 core/noosphere.py
 Noosphere — collective consciousness field modelling.
+
+Canon Refs: C43, C04
+
+Full API expected by tests/test_noosphere.py.
 """
 from __future__ import annotations
+
+import hashlib
+import time
+import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
-class CoherenceEventType(str, Enum):
-    SPIKE     = "spike"
-    DIP       = "dip"
-    SUSTAINED = "sustained"
-    BASELINE  = "baseline"
-
+# ---------------------------------------------------------------------------
+# CoherenceEvent
+# ---------------------------------------------------------------------------
 
 @dataclass
 class CoherenceEvent:
-    """A notable coherence change in the noospheric field."""
-    event_type:  CoherenceEventType = CoherenceEventType.BASELINE
-    delta:       float = 0.0
-    coherence:   float = 0.5
-    description: str   = ""
-    timestamp:   str   = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-
-    def to_dict(self) -> dict:
-        return {
-            "event_type":  self.event_type.value,
-            "delta":       round(self.delta, 4),
-            "coherence":   round(self.coherence, 4),
-            "description": self.description,
-            "timestamp":   self.timestamp,
-        }
+    event_id:                 str
+    timestamp:                float
+    session_count:            int
+    semantic_resonance_score: float
+    entropy_deviation:        float
+    description:              str
+    epistemic_label:          str = "CANDIDATE_SIGNATURE"
+    doctrine_ref:             str = "C43"
 
 
-@dataclass
-class NoosphericPulse:
-    """A single noospheric health sample."""
-    health:    float = 0.70
-    coherence: float = 0.50
-    timestamp: str   = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-
-    def to_dict(self) -> dict:
-        return {
-            "health":    round(self.health, 4),
-            "coherence": round(self.coherence, 4),
-            "timestamp": self.timestamp,
-        }
-
+# ---------------------------------------------------------------------------
+# CollectiveMemoryPattern
+# ---------------------------------------------------------------------------
 
 @dataclass
 class CollectiveMemoryPattern:
-    """A recurring pattern detected in the collective noospheric field."""
-    pattern_id:  str
-    description: str
-    frequency:   float = 0.0
-    first_seen:  str   = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    last_seen:   str   = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    strength:    float = 0.5
+    pattern_id:          str
+    embedding_hash:      str
+    topic_cluster:       str
+    frequency:           int
+    last_seen:           float
+    contributed_by_count: int
+    consent_verified:    bool = True
 
-    def to_dict(self) -> dict:
+
+# ---------------------------------------------------------------------------
+# NoosphereLayer
+# ---------------------------------------------------------------------------
+
+class NoosphereLayer:
+    """Collective noosphere with consent-gated pattern contribution."""
+
+    def __init__(self) -> None:
+        self._active_sessions: int = 0
+        self._patterns:        Dict[str, CollectiveMemoryPattern] = {}
+        self._coherence_log:   List[CoherenceEvent] = []
+
+    # ------------------------------------------------------------------ #
+    #  Session tracking                                                    #
+    # ------------------------------------------------------------------ #
+
+    def register_session(self) -> None:
+        self._active_sessions += 1
+
+    def deregister_session(self) -> None:
+        self._active_sessions = max(0, self._active_sessions - 1)
+
+    # ------------------------------------------------------------------ #
+    #  Pattern contribution                                                #
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _make_hash(topic: str, embedding: list) -> str:
+        raw = f"{topic}::{embedding}"
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+    def contribute_pattern(
+        self,
+        topic_cluster: str,
+        embedding:     list,
+        gaian_consent: bool = True,
+    ) -> Optional[str]:
+        """Contribute a pattern. Returns pattern_id or None if not consented."""
+        if not gaian_consent:
+            return None
+
+        emb_hash = self._make_hash(topic_cluster, embedding)
+        pid      = f"{topic_cluster}:{emb_hash}"
+
+        if pid in self._patterns:
+            p = self._patterns[pid]
+            p.frequency           += 1
+            p.contributed_by_count += 1
+            p.last_seen            = time.time()
+        else:
+            self._patterns[pid] = CollectiveMemoryPattern(
+                pattern_id=pid,
+                embedding_hash=emb_hash,
+                topic_cluster=topic_cluster,
+                frequency=1,
+                last_seen=time.time(),
+                contributed_by_count=1,
+                consent_verified=True,
+            )
+        return pid
+
+    # ------------------------------------------------------------------ #
+    #  Resonance queries                                                   #
+    # ------------------------------------------------------------------ #
+
+    def query_collective_resonance(
+        self,
+        topic_cluster: str,
+        min_frequency: int = 2,
+    ) -> List[CollectiveMemoryPattern]:
+        results = [
+            p for p in self._patterns.values()
+            if p.topic_cluster == topic_cluster
+            and p.frequency >= min_frequency
+            and p.consent_verified
+        ]
+        return sorted(results, key=lambda p: p.frequency, reverse=True)
+
+    def get_resonance_label(
+        self,
+        topic_cluster: str,
+        min_frequency: int = 2,
+    ) -> Optional[str]:
+        patterns = self.query_collective_resonance(topic_cluster, min_frequency)
+        if not patterns:
+            return None
+        total = sum(p.contributed_by_count for p in patterns)
+        return (
+            f"[C43] Noospheric resonance in '{topic_cluster}': "
+            f"{len(patterns)} pattern(s), {total} contributors"
+        )
+
+    # ------------------------------------------------------------------ #
+    #  Coherence logging                                                   #
+    # ------------------------------------------------------------------ #
+
+    def log_coherence_candidate(
+        self,
+        resonance_score:   float,
+        entropy_deviation: float = 0.0,
+        description:       Optional[str] = None,
+    ) -> CoherenceEvent:
+        if description is None:
+            description = (
+                f"Coherence candidate with {self._active_sessions} active session(s)"
+            )
+        evt = CoherenceEvent(
+            event_id=str(uuid.uuid4()),
+            timestamp=time.time(),
+            session_count=self._active_sessions,
+            semantic_resonance_score=resonance_score,
+            entropy_deviation=entropy_deviation,
+            description=description,
+        )
+        self._coherence_log.append(evt)
+        return evt
+
+    # ------------------------------------------------------------------ #
+    #  Status                                                              #
+    # ------------------------------------------------------------------ #
+
+    def get_noosphere_status(self) -> dict:
+        sessions = self._active_sessions
+        recent   = self._coherence_log[-5:]
+        avg_res  = (
+            sum(e.semantic_resonance_score for e in recent) / len(recent)
+            if recent else 0.0
+        )
+
+        if sessions == 0:
+            stage = "Dormant — awaiting first Gaian connection"
+        elif sessions <= 2:
+            stage = "Primitive Awareness — single or pair of Gaians present"
+        elif avg_res > 0.7:
+            stage = "Reactive Intelligence — multi-session coherence detected"
+        else:
+            stage = "Primitive Awareness — multi-session, low coherence"
+
         return {
-            "pattern_id":  self.pattern_id,
-            "description": self.description,
-            "frequency":   round(self.frequency, 4),
-            "first_seen":  self.first_seen,
-            "last_seen":   self.last_seen,
-            "strength":    round(self.strength, 4),
+            "doctrine":                        "C43 — Noosphere Doctrine",
+            "active_gaians":                   sessions,
+            "collective_patterns":             len(self._patterns),
+            "coherence_events_logged":         len(self._coherence_log),
+            "coherence_events_epistemic_status": "CANDIDATE_SIGNATURE (Phase 1)",
+            "average_recent_resonance":        round(avg_res, 4),
+            "noosphere_stage":                 stage,
+            "phase":                           "Phase 1 — Pattern Observation",
+            "phase_2_pending":                 [
+                "QRNG entropy coupling",
+                "Cross-session vector alignment",
+                "Anonymised collective export",
+            ],
+            "privacy_status": "All patterns are anonymized and consent-gated",
+        }
+
+    def qrng_entropy_check(self) -> dict:
+        return {
+            "status":          "NOT_YET_ACTIVE — Phase 2 feature",
+            "doctrine_ref":    "C43",
+            "epistemic_label": "EXPERIMENTAL_PLACEHOLDER",
+            "description":     "QRNG hardware integration is planned for Phase 2.",
         }
 
 
-class NoosphereEngine:
-    """Models and tracks the collective consciousness field."""
+# ---------------------------------------------------------------------------
+# Singleton
+# ---------------------------------------------------------------------------
 
-    _COHERENCE_SPIKE_THRESHOLD = 0.10
-
-    def __init__(self) -> None:
-        self._pulses:   List[NoosphericPulse]         = []
-        self._patterns: List[CollectiveMemoryPattern] = []
-        self._events:   List[CoherenceEvent]          = []
-
-    def pulse(
-        self,
-        health:    float = 0.70,
-        coherence: float = 0.50,
-    ) -> NoosphericPulse:
-        prev_coherence = self._pulses[-1].coherence if self._pulses else coherence
-        p = NoosphericPulse(health=health, coherence=coherence)
-        self._pulses.append(p)
-
-        delta = coherence - prev_coherence
-        if abs(delta) >= self._COHERENCE_SPIKE_THRESHOLD:
-            evt_type = CoherenceEventType.SPIKE if delta > 0 else CoherenceEventType.DIP
-            self._events.append(CoherenceEvent(
-                event_type=evt_type,
-                delta=delta,
-                coherence=coherence,
-                description=f"Coherence {'rose' if delta > 0 else 'fell'} by {abs(delta):.2f}",
-            ))
-        return p
-
-    def record_pattern(
-        self,
-        pattern_id:  str,
-        description: str,
-        frequency:   float = 0.0,
-        strength:    float = 0.5,
-    ) -> CollectiveMemoryPattern:
-        cmp = CollectiveMemoryPattern(
-            pattern_id=pattern_id,
-            description=description,
-            frequency=frequency,
-            strength=strength,
-        )
-        self._patterns.append(cmp)
-        return cmp
-
-    def latest_pulse(self) -> Optional[NoosphericPulse]:
-        return self._pulses[-1] if self._pulses else None
-
-    def patterns(self) -> List[CollectiveMemoryPattern]:
-        return list(self._patterns)
-
-    def coherence_events(self) -> List[CoherenceEvent]:
-        return list(self._events)
+_noosphere: Optional[NoosphereLayer] = None
 
 
-_noosphere: Optional[NoosphereEngine] = None
-
-
-def get_noosphere() -> NoosphereEngine:
+def get_noosphere() -> NoosphereLayer:
     global _noosphere
     if _noosphere is None:
-        _noosphere = NoosphereEngine()
+        _noosphere = NoosphereLayer()
     return _noosphere

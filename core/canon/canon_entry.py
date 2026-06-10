@@ -1,102 +1,161 @@
 """
+core/canon/canon_entry.py
 Canon Entry — atomic unit of knowledge within the GAIA Canon system.
 
 Provides:
   - CanonEntry       : main dataclass
   - CanonEntryError  : exception class
-  - RegisterSignal   : enum for registration lifecycle signals
+  - RegisterSignal   : semantic register signal enum
 """
 from __future__ import annotations
 
-import uuid
+import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 
 class RegisterSignal(str, Enum):
-    """Lifecycle signal for canon entry registration."""
-
-    PENDING = "pending"
-    REGISTERED = "registered"
-    UPDATED = "updated"
-    DEPRECATED = "deprecated"
-    REJECTED = "rejected"
+    """Semantic register signal for a canon entry."""
+    EXECUTIVE   = "executive"
+    REFLECTIVE  = "reflective"
+    MINIMAL     = "minimal"
+    UNSPECIFIED = "unspecified"
 
 
 class CanonEntryError(Exception):
-    """Raised when a CanonEntry operation fails."""
+    """Raised when a CanonEntry validation operation fails."""
+
+
+# Keyword groups used to detect register conflicts
+_REGISTER_KEYWORDS: Dict[str, List[str]] = {
+    "executive":  ["build", "create", "research", "design", "execute",
+                   "develop", "implement", "integrate", "deploy", "launch",
+                   "produce", "construct", "engineer", "code", "analyze",
+                   "explore", "investigate"],
+    "reflective": ["reflect", "contemplate", "meditate", "journal",
+                   "inquire", "feel", "sense", "introspect", "wonder",
+                   "ponder", "question", "examine", "review"],
+    "minimal":    ["rest", "sleep", "pause", "restore", "relax",
+                   "breathe", "recover", "slow", "quiet", "stillness",
+                   "wait", "cease"],
+}
+
+_CANON_REF_RE = re.compile(r"\bC[0-9]{2,}\b")
+_ISO8601_RE   = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$"
+)
 
 
 @dataclass
 class CanonEntry:
     """An atomic knowledge record in the GAIA Canon."""
 
-    entry_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    title: str = ""
-    body: str = ""
-    tags: List[str] = field(default_factory=list)
-    source: str = ""
-    signal: RegisterSignal = RegisterSignal.PENDING
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = None
-    version: int = 1
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    ref_id:          str
+    author:          str
+    timestamp:       str
+    version:         str
+    body:            str
+    register_signal: RegisterSignal = RegisterSignal.UNSPECIFIED
+    tags:            List[str]      = field(default_factory=list)
+    metadata:        Dict[str, Any] = field(default_factory=dict)
 
     # ------------------------------------------------------------------ #
-    #  Helpers                                                             #
+    #  Validation                                                          #
     # ------------------------------------------------------------------ #
 
-    def register(self) -> None:
-        if self.signal not in (RegisterSignal.PENDING, RegisterSignal.REJECTED):
+    def validate(self) -> "CanonEntry":
+        """Validate and return self. Raises CanonEntryError on failure."""
+        if not self.ref_id:
+            raise CanonEntryError("ref_id must not be blank")
+        if " " in self.ref_id or "\t" in self.ref_id:
             raise CanonEntryError(
-                f"Cannot register entry in state {self.signal!r}"
+                "ref_id must not contain whitespace — use hyphens or underscores"
             )
-        self.signal = RegisterSignal.REGISTERED
-        self.updated_at = datetime.now(timezone.utc)
+        if not self.author:
+            raise CanonEntryError("author must not be blank")
+        if not _ISO8601_RE.match(self.timestamp):
+            raise CanonEntryError(
+                "timestamp must be a valid ISO-8601 datetime string "
+                "(e.g. 2026-06-08T12:00:00Z)"
+            )
+        if not self.version:
+            raise CanonEntryError("version must not be blank")
+        if not self.body or not self.body.strip():
+            raise CanonEntryError("body must not be blank")
+        if len(self.body.strip()) < 10:
+            raise CanonEntryError(
+                "body is too short — must be at least 10 non-whitespace characters"
+            )
 
-    def update(self, **kwargs: Any) -> None:
-        for key, value in kwargs.items():
-            if not hasattr(self, key):
-                raise CanonEntryError(f"CanonEntry has no field {key!r}")
-            setattr(self, key, value)
-        self.version += 1
-        self.updated_at = datetime.now(timezone.utc)
-        self.signal = RegisterSignal.UPDATED
+        # Keyword-register conflict check (skip for UNSPECIFIED)
+        if self.register_signal != RegisterSignal.UNSPECIFIED:
+            self._check_register_conflict()
 
-    def deprecate(self) -> None:
-        self.signal = RegisterSignal.DEPRECATED
-        self.updated_at = datetime.now(timezone.utc)
+        return self
+
+    def _check_register_conflict(self) -> None:
+        body_lower = self.body.lower()
+        declared   = self.register_signal.value
+
+        # Find which group the body's dominant keywords belong to
+        scores: Dict[str, int] = {g: 0 for g in _REGISTER_KEYWORDS}
+        for group, keywords in _REGISTER_KEYWORDS.items():
+            for kw in keywords:
+                if kw in body_lower:
+                    scores[group] += 1
+
+        dominant_group = max(scores, key=lambda g: scores[g])
+        if scores[dominant_group] == 0:
+            return  # no detectable group — no conflict
+
+        if dominant_group != declared:
+            raise CanonEntryError(
+                f"Values-alignment conflict: body signals '{dominant_group}' "
+                f"but declared register_signal is '{declared}'"
+            )
+
+    # ------------------------------------------------------------------ #
+    #  Serialisation                                                       #
+    # ------------------------------------------------------------------ #
 
     def to_dict(self) -> dict:
         return {
-            "entry_id": self.entry_id,
-            "title": self.title,
-            "body": self.body,
-            "tags": self.tags,
-            "source": self.source,
-            "signal": self.signal.value,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "version": self.version,
-            "metadata": self.metadata,
+            "ref_id":          self.ref_id,
+            "author":          self.author,
+            "timestamp":       self.timestamp,
+            "version":         self.version,
+            "body":            self.body,
+            "register_signal": self.register_signal.value,
+            "tags":            self.tags,
+            "metadata":        self.metadata,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "CanonEntry":
-        signal_raw = data.get("signal", RegisterSignal.PENDING.value)
+        raw_signal = data.get("register_signal", RegisterSignal.UNSPECIFIED.value)
         try:
-            signal = RegisterSignal(signal_raw)
+            signal = RegisterSignal(raw_signal)
         except ValueError:
-            signal = RegisterSignal.PENDING
+            signal = RegisterSignal.UNSPECIFIED
         return cls(
-            entry_id=data.get("entry_id", str(uuid.uuid4())),
-            title=data.get("title", ""),
+            ref_id=data.get("ref_id", ""),
+            author=data.get("author", ""),
+            timestamp=data.get("timestamp", ""),
+            version=data.get("version", ""),
             body=data.get("body", ""),
+            register_signal=signal,
             tags=data.get("tags", []),
-            source=data.get("source", ""),
-            signal=signal,
-            version=data.get("version", 1),
             metadata=data.get("metadata", {}),
         )
+
+    # ------------------------------------------------------------------ #
+    #  Context helpers                                                     #
+    # ------------------------------------------------------------------ #
+
+    def to_context_string(self) -> str:
+        return f"[Canon:{self.ref_id}] {self.body}"
+
+    def embedded_canon_refs(self) -> List[str]:
+        """Return all Canon ref-IDs (e.g. C01, C32) embedded in the body."""
+        return _CANON_REF_RE.findall(self.body)

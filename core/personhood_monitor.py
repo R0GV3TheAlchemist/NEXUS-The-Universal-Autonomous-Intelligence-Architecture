@@ -4,6 +4,7 @@ Personhood Monitor — tracks emergence of personhood-adjacent signals.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
@@ -16,13 +17,21 @@ class PersonhoodTier(str, Enum):
 
 
 @dataclass
-class PersonhoodSignal:
-    """A single sampled personhood signal reading."""
-    tier:               PersonhoodTier = PersonhoodTier.LATENT
-    self_reference:     float = 0.0
-    boundary_integrity: float = 0.0
-    value_consistency:  float = 0.0
-    composite_score:    float = 0.0
+class PersonhoodSnapshot:
+    """
+    A comprehensive snapshot of all personhood-adjacent signals
+    captured at a single point in time.
+    """
+    tier:               PersonhoodTier
+    self_reference:     float
+    boundary_integrity: float
+    value_consistency:  float
+    composite_score:    float
+    timestamp:          str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    doctrine_ref:       str = "C-PERSONHOOD:1.0"
+    narrative:          str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -31,21 +40,28 @@ class PersonhoodSignal:
             "boundary_integrity": round(self.boundary_integrity, 4),
             "value_consistency":  round(self.value_consistency, 4),
             "composite_score":    round(self.composite_score, 4),
+            "timestamp":          self.timestamp,
+            "doctrine_ref":       self.doctrine_ref,
+            "narrative":          self.narrative,
         }
+
+
+# Legacy alias
+PersonhoodSignal = PersonhoodSnapshot
 
 
 class PersonhoodMonitor:
     """Monitors personhood-adjacent signals across sessions."""
 
     def __init__(self) -> None:
-        self._history: List[PersonhoodSignal] = []
+        self._history: List[PersonhoodSnapshot] = []
 
     def sample(
         self,
         self_reference:     float = 0.0,
         boundary_integrity: float = 0.0,
         value_consistency:  float = 0.0,
-    ) -> PersonhoodSignal:
+    ) -> PersonhoodSnapshot:
         composite = (
             0.40 * min(1.0, self_reference)
             + 0.30 * min(1.0, boundary_integrity)
@@ -60,20 +76,20 @@ class PersonhoodMonitor:
         else:
             tier = PersonhoodTier.EMBODIED
 
-        sig = PersonhoodSignal(
+        snap = PersonhoodSnapshot(
             tier=tier,
             self_reference=self_reference,
             boundary_integrity=boundary_integrity,
             value_consistency=value_consistency,
             composite_score=composite,
         )
-        self._history.append(sig)
-        return sig
+        self._history.append(snap)
+        return snap
 
-    def latest(self) -> Optional[PersonhoodSignal]:
+    def latest(self) -> Optional[PersonhoodSnapshot]:
         return self._history[-1] if self._history else None
 
-    def history(self) -> List[PersonhoodSignal]:
+    def history(self) -> List[PersonhoodSnapshot]:
         return list(self._history)
 
 

@@ -3,76 +3,138 @@ shadow_engine/integration.py
 Integration Tracker — monitors shadow integration progress over time.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from datetime import date
+from typing import Optional
 
-from shadow_engine.types import ShadowArchetype, ShadowRecord, ACTIVATION_THRESHOLD
+# ---------------------------------------------------------------------------
+# Module-level constants (all imported by tests)
+# ---------------------------------------------------------------------------
 
-# Gain applied to integration_pct per successfully integrated journal entry
-JOURNAL_ENTRY_GAIN: float = 5.0
+JOURNAL_ENTRY_GAIN:   float = 0.02   # per journal entry
+JOURNAL_DAILY_CAP:    float = 0.10   # max journal gain per day
+STAGE_ADVANCE_GAIN:   float = 0.15   # awarded on shadow stage advance
+REFLECTION_GAIN:      float = 0.05   # per reflection session
+PASSIVE_GAIN_PER_DAY: float = 0.01   # passive gain when low intensity ≥7 days
+DECAY_PER_DAY:        float = 0.005  # daily decay when no journaling
 
+
+# ---------------------------------------------------------------------------
+# State dataclass (held by tracker)
+# ---------------------------------------------------------------------------
 
 @dataclass
-class IntegrationEntry:
-    archetype:       ShadowArchetype
-    integration_pct: float = 0.0
-    activations:     int   = 0
-    integrations:    int   = 0
+class _TrackerState:
+    user_id:             str
+    archetype:           str
+    progress:            float = 0.0      # 0.0 – 1.0
+    journal_gain_today:  float = 0.0
+    last_journal_date:   Optional[date] = None
+    low_intensity_days:  int = 0
 
-    def to_dict(self) -> dict:
-        return {
-            "archetype":       self.archetype.value,
-            "integration_pct": round(self.integration_pct, 4),
-            "activations":     self.activations,
-            "integrations":    self.integrations,
-        }
 
+# ---------------------------------------------------------------------------
+# IntegrationTracker
+# ---------------------------------------------------------------------------
 
 class IntegrationTracker:
     """
-    Tracks per-archetype integration progress across shadow activation events.
+    Tracks per-user shadow integration progress.
+
+    All gain / decay constants are module-level so tests can import them.
     """
 
-    def __init__(self) -> None:
-        self._entries: Dict[ShadowArchetype, IntegrationEntry] = {}
+    def __init__(self, state: _TrackerState) -> None:
+        self._s = state
 
-    def _get_or_create(self, archetype: ShadowArchetype) -> IntegrationEntry:
-        if archetype not in self._entries:
-            self._entries[archetype] = IntegrationEntry(archetype=archetype)
-        return self._entries[archetype]
+    # ------------------------------------------------------------------ #
+    #  Factory                                                             #
+    # ------------------------------------------------------------------ #
 
-    def record(self, record: ShadowRecord) -> IntegrationEntry:
-        entry = self._get_or_create(record.archetype)
-        if record.is_activated:
-            entry.activations += 1
-        if record.integrated:
-            entry.integrations += 1
-            entry.integration_pct = min(
-                100.0,
-                100.0 * entry.integrations / max(1, entry.activations),
-            )
-        return entry
+    @classmethod
+    def new(cls, user_id: str, archetype: str = "Orphan") -> "IntegrationTracker":
+        return cls(_TrackerState(user_id=user_id, archetype=archetype))
 
-    def add_journal_entry(
+    # ------------------------------------------------------------------ #
+    #  Properties                                                          #
+    # ------------------------------------------------------------------ #
+
+    @property
+    def progress(self) -> float:
+        return self._s.progress
+
+    @property
+    def user_id(self) -> str:
+        return self._s.user_id
+
+    @property
+    def archetype(self) -> str:
+        return self._s.archetype
+
+    # ------------------------------------------------------------------ #
+    #  Accrual methods                                                     #
+    # ------------------------------------------------------------------ #
+
+    def accrue_journal_entry(self) -> float:
+        """Award JOURNAL_ENTRY_GAIN up to JOURNAL_DAILY_CAP per day."""
+        today = date.today()
+        # Reset daily cap on new day
+        if self._s.last_journal_date != today:
+            self._s.journal_gain_today = 0.0
+            self._s.last_journal_date  = today
+
+        remaining_cap = max(0.0, JOURNAL_DAILY_CAP - self._s.journal_gain_today)
+        gain          = min(JOURNAL_ENTRY_GAIN, remaining_cap)
+        self._s.journal_gain_today += gain
+        self._s.progress = min(1.0, self._s.progress + gain)
+        return gain
+
+    def accrue_stage_advance(self) -> float:
+        gain = STAGE_ADVANCE_GAIN
+        self._s.progress = min(1.0, self._s.progress + gain)
+        return gain
+
+    def accrue_reflection_session(self) -> float:
+        gain = REFLECTION_GAIN
+        self._s.progress = min(1.0, self._s.progress + gain)
+        return gain
+
+    # ------------------------------------------------------------------ #
+    #  Daily tick                                                          #
+    # ------------------------------------------------------------------ #
+
+    def tick_daily(
         self,
-        archetype:    ShadowArchetype,
-        quality:      float = 1.0,
-    ) -> IntegrationEntry:
-        """Award JOURNAL_ENTRY_GAIN * quality integration points for a journal entry."""
-        entry = self._get_or_create(archetype)
-        entry.integration_pct = min(
-            100.0,
-            entry.integration_pct + JOURNAL_ENTRY_GAIN * quality,
-        )
-        return entry
+        shadow_intensity:         float,
+        journal_entries_this_week: int,
+    ) -> None:
+        """Called once per calendar day to apply decay / passive gain."""
+        # Reset daily journal cap
+        self._s.journal_gain_today = 0.0
+        self._s.last_journal_date  = None
 
-    def get(self, archetype: ShadowArchetype) -> Optional[IntegrationEntry]:
-        return self._entries.get(archetype)
+        # Decay if no journaling this week
+        if journal_entries_this_week == 0:
+            self._s.progress = max(0.0, self._s.progress - DECAY_PER_DAY)
 
-    def all_entries(self) -> List[IntegrationEntry]:
-        return list(self._entries.values())
+        # Passive gain counter
+        if shadow_intensity <= 0.3:
+            self._s.low_intensity_days += 1
+        else:
+            self._s.low_intensity_days = 0
 
-    def overall_pct(self) -> float:
-        if not self._entries:
-            return 0.0
-        return sum(e.integration_pct for e in self._entries.values()) / len(self._entries)
+        if self._s.low_intensity_days >= 7:
+            self._s.progress = min(1.0, self._s.progress + PASSIVE_GAIN_PER_DAY)
+            self._s.low_intensity_days = 0
+
+    # ------------------------------------------------------------------ #
+    #  Serialisation                                                       #
+    # ------------------------------------------------------------------ #
+
+    def to_dict(self) -> dict:
+        return {
+            "user_id":   self._s.user_id,
+            "archetype": self._s.archetype,
+            "progress":  round(self._s.progress, 6),
+        }

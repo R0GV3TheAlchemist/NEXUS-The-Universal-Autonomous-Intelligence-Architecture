@@ -3,9 +3,10 @@ core/shadow_integration.py
 Shadow Integration — soul-mirror shadow work integration layer.
 """
 from __future__ import annotations
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 class IntegrationDepth(str, Enum):
@@ -15,22 +16,51 @@ class IntegrationDepth(str, Enum):
     TRANSCENDED = "transcended"
 
 
+class ShadowPattern(str, Enum):
+    """Archetypal shadow patterns detectable in language."""
+    PROJECTION         = "projection"
+    DENIAL             = "denial"
+    SCAPEGOATING       = "scapegoating"
+    DEFLECTION         = "deflection"
+    IDEALISATION       = "idealisation"
+    SUPPRESSION        = "suppression"
+    SPLITTING          = "splitting"
+    REACTION_FORMATION = "reaction_formation"
+
+
+# Simple keyword rules for each pattern
+_PATTERN_SIGNALS: Dict[ShadowPattern, List[str]] = {
+    ShadowPattern.PROJECTION:         ["everyone", "they always", "people are", "nobody"],
+    ShadowPattern.DENIAL:             ["never angry", "never sad", "i don't feel", "i never"],
+    ShadowPattern.SCAPEGOATING:       ["it's their fault", "blame", "caused by them"],
+    ShadowPattern.DEFLECTION:         ["but what about", "let's change", "off topic"],
+    ShadowPattern.IDEALISATION:       ["perfect", "flawless", "can do no wrong"],
+    ShadowPattern.SUPPRESSION:        ["ignore it", "push through", "doesn't matter"],
+    ShadowPattern.SPLITTING:          ["always", "never", "completely", "totally"],
+    ShadowPattern.REACTION_FORMATION: ["hate", "despise", "can't stand"],
+}
+
+
 @dataclass
 class ShadowReading:
     """Output of a single shadow integration assessment."""
-    depth:            IntegrationDepth = IntegrationDepth.SURFACE
-    activation_score: float = 0.0
-    integration_pct:  float = 0.0
-    archetype:        Optional[str] = None
-    directive:        str = ""
+    depth:             IntegrationDepth = IntegrationDepth.SURFACE
+    activation_score:  float = 0.0
+    integration_score: float = 0.0
+    integration_pct:   float = 0.0
+    archetype:         Optional[str] = None
+    directive:         str = ""
+    patterns:          List[ShadowPattern] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            "depth":            self.depth.value,
-            "activation_score": round(self.activation_score, 4),
-            "integration_pct":  round(self.integration_pct, 4),
-            "archetype":        self.archetype,
-            "directive":        self.directive,
+            "depth":             self.depth.value,
+            "activation_score":  round(self.activation_score, 4),
+            "integration_score": round(self.integration_score, 4),
+            "integration_pct":   round(self.integration_pct, 4),
+            "archetype":         self.archetype,
+            "directive":         self.directive,
+            "patterns":          [p.value for p in self.patterns],
         }
 
     def summary(self) -> dict:
@@ -50,12 +80,24 @@ class ShadowIntegrationEngine:
     def __init__(self) -> None:
         self._history: List[ShadowReading] = []
 
-    def assess(
-        self,
-        activation_score: float = 0.0,
-        integration_pct:  float = 0.0,
-        archetype:        Optional[str] = None,
-    ) -> ShadowReading:
+    def detect(self, context: dict) -> ShadowReading:
+        """Detect shadow patterns from a context dict with optional 'turn_text'."""
+        text = context.get("turn_text") or ""
+        if text is None:
+            text = ""
+        text_lower = str(text).lower()
+
+        detected: List[ShadowPattern] = []
+        for pattern, signals in _PATTERN_SIGNALS.items():
+            for sig in signals:
+                if sig in text_lower:
+                    detected.append(pattern)
+                    break
+
+        activation_score = min(1.0, len(detected) * 0.2)
+        integration_pct  = max(0.0, 100.0 - activation_score * 100.0)
+        integration_score = integration_pct / 100.0
+
         if integration_pct < 25.0:
             depth = IntegrationDepth.SURFACE
         elif integration_pct < 50.0:
@@ -68,12 +110,22 @@ class ShadowIntegrationEngine:
         reading = ShadowReading(
             depth=depth,
             activation_score=activation_score,
+            integration_score=integration_score,
             integration_pct=integration_pct,
-            archetype=archetype,
             directive=self._DIRECTIVES[depth],
+            patterns=detected,
         )
         self._history.append(reading)
         return reading
+
+    # Legacy method
+    def assess(
+        self,
+        activation_score: float = 0.0,
+        integration_pct:  float = 0.0,
+        archetype:        Optional[str] = None,
+    ) -> ShadowReading:
+        return self.detect({"turn_text": archetype or ""})
 
     def history(self) -> List[ShadowReading]:
         return list(self._history)
