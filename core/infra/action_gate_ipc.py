@@ -28,7 +28,7 @@ import httpx
 
 log = logging.getLogger(__name__)
 
-# ── State ────────────────────────────────────────────────────────────────────
+# ── State ──────────────────────────────────────────────────────────────────────
 
 _ipc_bridge_ready: bool = False   # set True when Rust calls /internal/ipc-ready
 _IPC_BRIDGE_URL   = "http://127.0.0.1:8009/emit"
@@ -42,7 +42,7 @@ def mark_ipc_bridge_ready() -> None:
     log.info("[ActionGate IPC] Axum bridge ready — using native Tauri emit path.")
 
 
-# ── Core emit ────────────────────────────────────────────────────────────────
+# ── Core emit ────────────────────────────────────────────────────────────────────
 
 async def _emit_ipc(event: str, payload: dict[str, Any]) -> None:
     """Emit an event to the Tauri WebView.
@@ -64,18 +64,18 @@ async def _emit_ipc(event: str, payload: dict[str, Any]) -> None:
                     "[ActionGate IPC] bridge returned %s — falling back to log-bridge",
                     resp.status_code,
                 )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning(
                 "[ActionGate IPC] bridge POST failed (%s) — falling back to log-bridge",
                 exc,
             )
 
-    # ── Log-bridge fallback (dev / pre-bridge) ────────────────────────────
+    # ── Log-bridge fallback (dev / pre-bridge) ───────────────────────────────────────
     import json
     log.warning("[TAURI_IPC] %s %s", event, json.dumps(payload))
 
 
-# ── Confirm callback (wired into ActionGate at startup) ───────────────────────
+# ── Confirm callback (wired into ActionGate at startup) ─────────────────────────────
 
 async def _ipc_confirm_callback(
     request_id: str,

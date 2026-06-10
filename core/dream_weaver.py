@@ -352,7 +352,7 @@ class DreamJournal:
                 raw["captured_at"] = datetime.fromisoformat(str(raw["captured_at"]))
                 entry = DreamEntry(**raw)
                 self._entries[entry.entry_id] = entry
-            except Exception:  # noqa: BLE001 — malformed file: skip silently, log later
+            except Exception:  # malformed file: skip silently, log later
                 pass
 
 
