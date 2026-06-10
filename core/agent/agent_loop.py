@@ -38,7 +38,7 @@ from core.agent.agent_models import (
 
 try:
     from core.agent.action_gate import ActionGate, ActionRiskLevel
-except Exception:  # noqa: BLE001
+except Exception:
     ActionGate = None           # type: ignore[assignment,misc]
     ActionRiskLevel = None      # type: ignore[assignment,misc]
 
@@ -134,7 +134,7 @@ class AgentLoop:
             if self.on_observation:
                 try:
                     self.on_observation(observation)
-                except Exception as cb_err:  # noqa: BLE001
+                except Exception as cb_err:
                     logger.warning("[AgentLoop] on_observation callback error: %s", cb_err)
 
             # --- Halt? ---
@@ -154,16 +154,15 @@ class AgentLoop:
                         observation.next_step,
                     )
                     step_index += 1
+            elif action.status == ActionStatus.SUCCESS and planned.on_success:
+                # Normal advance — on_success branch
+                target = plan.get_step(planned.on_success)
+                step_index = plan.steps.index(target) if target else step_index + 1
+            elif action.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and planned.on_failure:
+                target = plan.get_step(planned.on_failure)
+                step_index = plan.steps.index(target) if target else step_index + 1
             else:
-                # Normal advance
-                if action.status == ActionStatus.SUCCESS and planned.on_success:
-                    target = plan.get_step(planned.on_success)
-                    step_index = plan.steps.index(target) if target else step_index + 1
-                elif action.status in (ActionStatus.FAILURE, ActionStatus.SKIPPED) and planned.on_failure:
-                    target = plan.get_step(planned.on_failure)
-                    step_index = plan.steps.index(target) if target else step_index + 1
-                else:
-                    step_index += 1
+                step_index += 1
 
         if not self.state.is_terminal() and self.state.status != LoopStatus.PAUSED:
             self._complete()
@@ -239,7 +238,7 @@ class AgentLoop:
             if planned.risk_level and ActionRiskLevel is not None:
                 try:
                     risk_level = ActionRiskLevel(planned.risk_level)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     risk_level = None
             receipt = self.action_gate.request_approval(
                 tool_name=planned.name,
@@ -259,7 +258,7 @@ class AgentLoop:
         try:
             result = planned.handler(**planned.args)
             action.complete(result)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             action.fail(str(exc))
             logger.error(
                 "[AgentLoop] step '%s' FAILED: %s", planned.name, exc
