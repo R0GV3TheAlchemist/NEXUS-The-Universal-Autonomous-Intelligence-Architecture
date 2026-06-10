@@ -1,0 +1,38 @@
+{
+  // GAIA-OS — Recommended VS Code / Cursor extensions.
+  // VS Code will prompt new contributors to install these on first open.
+  "recommendations": [
+    // ── Python ──────────────────────────────────────────────────────────────
+    "charliermarsh.ruff",           // Ruff linter + formatter (essential)
+    "ms-python.python",             // Python language support
+    "ms-python.vscode-pylance",     // Pylance type inference
+    "ms-python.mypy-type-checker",  // mypy integration
+
+    // ── Rust (src-tauri) ─────────────────────────────────────────────────────
+    "rust-lang.rust-analyzer",      // Rust language server
+    "tauri-apps.tauri-vscode",      // Tauri project support
+
+    // ── Web / TypeScript (gaia-tt, UI) ───────────────────────────────────────
+    "esbenp.prettier-vscode",       // Prettier formatter for TS/JS
+    "dbaeumer.vscode-eslint",       // ESLint for TypeScript
+
+    // ── Config / Data formats ────────────────────────────────────────────────
+    "redhat.vscode-yaml",           // YAML language support + validation
+    "tamasfe.even-better-toml",     // TOML support (pyproject.toml, Cargo.toml)
+
+    // ── Git / GitHub ─────────────────────────────────────────────────────────
+    "eamodio.gitlens",              // Git history, blame, and exploration
+    "github.vscode-pull-request-github", // GitHub PR and issue management
+
+    // ── Markdown / Canon ─────────────────────────────────────────────────────
+    "yzhang.markdown-all-in-one",   // Markdown editing + preview
+    "davidanson.vscode-markdownlint", // Markdown lint (canon doc quality)
+
+    // ── Docker / Kubernetes ──────────────────────────────────────────────────
+    "ms-azuretools.vscode-docker",  // Dockerfile + compose support
+
+    // ── General productivity ─────────────────────────────────────────────────
+    "streetsidesoftware.code-spell-checker", // Spell check in canon + comments
+    "gruntfuggly.todo-tree"         // Surfaces TODO/FIXME/HACK markers
+  ]
+}

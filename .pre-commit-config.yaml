@@ -8,20 +8,62 @@
 # To run manually across all files:
 #   pre-commit run --all-files
 #
+# To auto-fix everything in one pass:
+#   pre-commit run --all-files --hook-stage manual
+#
 # This mirrors the exact Ruff command used in CI (.github/workflows/)
 # so a green pre-commit == a green CI lint step.
+#
 # Canon Ref: C30 (No silent failures)
+# Updated: 2026-06-10 — bumped to ruff v0.12.7 (latest stable)
 
 repos:
+  # ── Python: Ruff lint + format ──────────────────────────────────────────────
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Pin to match pyproject.toml minimum: ruff>=0.5.0
-    rev: v0.5.0
+    # Pinned to latest stable (June 2026). Update with:
+    #   pre-commit autoupdate --repo https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.7
     hooks:
-      # 1. Lint — catches F401, E701, I, UP, RUF, W violations
-      #    --fix applies safe auto-fixes (unused imports, import ordering)
-      #    Review the diff after --fix runs before committing.
+      # 1. Lint — catches F, E, W, I, UP, B, SIM, RUF, PL, S violations
+      #    --fix applies safe auto-fixes (import ordering, unused vars, etc.)
+      #    --unsafe-fixes enables broader fixes (e.g. RUF013 implicit Optional)
+      #    --exit-non-zero-on-fix aborts commit if fixes were applied so you can
+      #    review the diff before committing. Re-stage and commit again to proceed.
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args:
+          - --fix
+          - --unsafe-fixes
+          - --exit-non-zero-on-fix
 
-      # 2. Format — enforces consistent code formatting (Ruff's black-compatible formatter)
+      # 2. Format — enforces consistent code formatting (black-compatible)
+      #    Runs after lint so formatting never fights with lint fixes.
       - id: ruff-format
+
+  # ── General file hygiene ────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Remove trailing whitespace (catches canon docs, markdown, YAML)
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensure every file ends with a newline (POSIX standard)
+      - id: end-of-file-fixer
+
+      # Catch broken YAML files before they fail CI silently
+      - id: check-yaml
+        args: [--unsafe]   # allows custom YAML tags (e.g. in docker-compose)
+
+      # Catch broken TOML (pyproject.toml syntax errors)
+      - id: check-toml
+
+      # Prevent committing large files accidentally
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+
+      # Detect private keys / secrets accidentally staged
+      - id: detect-private-key
+
+      # Prevent committing directly to main/master
+      - id: no-commit-to-branch
+        args: [--branch=main]
