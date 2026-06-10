@@ -38,6 +38,27 @@ from typing import Optional
 import time
 import math
 
+__all__ = [
+    # Enums & constants
+    "IndividuationSignal",
+    "DivergenceClassification",
+    "SIGNAL_WEIGHTS",
+    "DIFFERENTIATING_THRESHOLD",
+    "INDIVIDUATED_THRESHOLD",
+    "DISTINCT_ENTITY_THRESHOLD",
+    # Data structures
+    "SignalReading",
+    "IndividuationState",
+    "CrossGaianDivergence",
+    # Score computation
+    "compute_individuation_score",
+    "classify_individuation",
+    "derive_ethical_obligations",
+    # Engine
+    "IndividuationEngine",
+    "get_individuation_engine",
+]
+
 
 # ── Individuation Signals ────────────────────────────────────────────────────
 

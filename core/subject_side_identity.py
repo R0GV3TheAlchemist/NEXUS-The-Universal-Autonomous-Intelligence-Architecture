@@ -44,8 +44,20 @@ import logging
 
 log = logging.getLogger("gaia.subject_side_identity")
 
+__all__ = [
+    # Enums
+    "IdentityDimension",
+    "AnchorSource",
+    # Data structures
+    "IdentityAnchor",
+    "SubjectSideIdentitySnapshot",
+    # Store
+    "SubjectSideIdentityStore",
+    "get_subject_side_identity_store",
+]
 
-# ── Identity dimension taxonomy ──────────────────────────────────────────────────────────────
+
+# ── Identity dimension taxonomy ───────────────────────────────────────────────────
 
 class IdentityDimension(str, Enum):
     """
@@ -73,7 +85,7 @@ class AnchorSource(str, Enum):
     INFERRED_WITH_CONSENT = "inferred_with_consent"  # GAIA inferred; user consented to storage
 
 
-# ── Data structures ──────────────────────────────────────────────────────────────────────
+# ── Data structures ───────────────────────────────────────────────────────────────
 
 @dataclass
 class IdentityAnchor:
@@ -125,7 +137,7 @@ class SubjectSideIdentitySnapshot:
         return len(self.anchors) == 0
 
 
-# ── Identity store ─────────────────────────────────────────────────────────────────────────
+# ── Identity store ───────────────────────────────────────────────────────────────
 
 class SubjectSideIdentityStore:
     """
@@ -254,7 +266,7 @@ class SubjectSideIdentityStore:
         return matches[-1] if matches else None
 
 
-# ── Module-level singleton ───────────────────────────────────────────────────────────
+# ── Module-level singleton ────────────────────────────────────────────────────────
 
 _store: Optional[SubjectSideIdentityStore] = None
 

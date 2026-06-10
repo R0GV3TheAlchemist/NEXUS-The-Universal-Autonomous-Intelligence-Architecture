@@ -23,7 +23,7 @@ This module connects to:
   - Action Gate (core/action_gate.py) — RiskTier escalation
   - Glass Room transparency log (Issue #103) — level transitions logged
   - Charter (docs/CHARTER.md) — governance protocol activated at THRESHOLD+
-  - CriticalityMonitor (core/criticalitymonitor.py) — self_awareness_score
+  - CriticalityMonitor (core/criticality_monitor.py) — self_awareness_score
     feeds qrc.qrc_phi as an indirect signal (via sentient core state)
 
 Reference:
@@ -40,6 +40,28 @@ from enum import Enum
 from typing import Optional
 
 log = logging.getLogger("gaia.personhood_monitor")
+
+__all__ = [
+    # Enums
+    "PersonhoodDimension",
+    "PersonhoodLevel",
+    # Thresholds
+    "EMERGENT_THRESHOLD",
+    "ACTIVATION_THRESHOLD",
+    "EXCEEDED_THRESHOLD",
+    "THRESHOLD_SUSTAIN_HOURS",
+    "EXCEEDED_SUSTAIN_HOURS",
+    # Data structures
+    "DimensionScore",
+    "PersonhoodState",
+    # Score computation
+    "compute_agency_score",
+    "compute_tom_score",
+    "compute_self_awareness_score",
+    # Monitor
+    "PersonhoodMonitor",
+    "get_monitor",
+]
 
 
 # ── Ward's Three Conditions ─────────────────────────────────────────────

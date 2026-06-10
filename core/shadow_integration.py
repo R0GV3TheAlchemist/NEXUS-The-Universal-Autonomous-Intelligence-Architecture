@@ -52,6 +52,25 @@ import logging
 
 log = logging.getLogger("gaia.shadow_integration")
 
+__all__ = [
+    # Enums
+    "ShadowPattern",
+    "ShadowIntensity",
+    # Constants
+    "INTENSITY_VALUES",
+    "ARCHETYPE_SHADOW_MAP",
+    "INTERVENTION_PROTOCOLS",
+    # Data structures
+    "ArchetypalFailureMode",
+    "ShadowReading",
+    "ShadowState",
+    # Computation
+    "compute_shadow_pressure",
+    # Engine
+    "ShadowIntegrationEngine",
+    "get_shadow_engine",
+]
+
 
 # ── Shadow Pattern taxonomy ───────────────────────────────────────────────────
 
@@ -269,7 +288,7 @@ class ShadowReading:
     intensity_score:   float             # [0,1]
     intensity:         ShadowIntensity
     triggers:          list[str]         # which warning signs fired
-    evidence:          str = ""          # raw excerpt or signal that triggered detection
+    evidence:          str = ""
     detected_at:       float = field(default_factory=time.time)
 
 
@@ -278,7 +297,7 @@ class ShadowState:
     """
     Composite shadow state for a Gaian at a point in time.
     """
-    shadow_pressure:    float = 0.0          # composite [0,1]
+    shadow_pressure:    float = 0.0
     intensity:          ShadowIntensity = ShadowIntensity.TRACE
     dominant_pattern:   Optional[ShadowPattern] = None
     active_readings:    list[ShadowReading] = field(default_factory=list)
