@@ -125,8 +125,10 @@ ignore = [
 
   # ── Type annotation modernisation (UP) ──────────────────────────────
   # Entire codebase uses Python 3.9-era typing. Cosmetic, not bugs.
+  "UP003",  # type() for raising exceptions — cosmetic
   "UP006",  # List/Dict/Tuple → list/dict/tuple
   "UP007",  # Optional[X]/Union[X,Y] → X|None / X|Y
+  "UP015",  # unnecessary open() mode argument — cosmetic
   "UP017",  # timezone.utc → datetime.UTC  (hundreds of instances)
   "UP035",  # typing imports deprecated in 3.9+
   "UP037",  # quoted type annotations
@@ -139,12 +141,13 @@ ignore = [
   "ANN201", "ANN202", "ANN204", "ANN205", "ANN206",
 
   # ── Naming ──────────────────────────────────────────────────────────
-  # N806: uppercase variable in function — physics/cache constants (KEY, UTC)
-  # are intentionally uppercase for readability in API handlers.
+  # N806: uppercase variable in function — physics/cache constants intentional
+  # N818: exception names — domain names like ConstitutionViolation intentional
   "N806",
+  "N818",
 
   # ── Bugbear ─────────────────────────────────────────────────────────
-  "B008",   # Depends() in default args — standard FastAPI dependency injection pattern
+  "B008",   # Depends() in default args — standard FastAPI dependency injection
   "B904",   # raise X inside except without `from` — suppressed during active dev
   "B905",   # zip() without strict= — too noisy during rapid iteration
 
@@ -154,27 +157,32 @@ ignore = [
 
   # ── Security ────────────────────────────────────────────────────────
   "S101",   # assert — soul-layer runtime guards use assert intentionally
+  "S104",   # bind to all interfaces — intentional in CLI serve command
   "S110",   # try/except/pass — suppressed globally; matches SIM105 intent
   "S311",   # random — field modelling, not cryptography
 
   # ── Ruff-native ─────────────────────────────────────────────────────
   "RUF001", # ambiguous unicode in strings (EN DASH) — intentional in UX copy
   "RUF002", # ambiguous unicode in docstrings — intentional in documentation
+  "RUF003", # ambiguous unicode in comments — intentional in physics/UX code
   "RUF012", # mutable class-var annotation — intentional in engine state containers
+  "RUF013", # implicit Optional (e.g. x: str = None) — suppress until typing migration
   "RUF021", # ambiguous and/or chaining — explicit form preferred in soul-layer logic
+  "RUF022", # __all__ not sorted — section comments make ordering intentional
   "RUF059", # unpacked variable unused — too noisy in router pattern matching
 
   # ── Pylint: import placement ─────────────────────────────────────────
   # PLC0415: import inside function — used for lazy/conditional loading
-  # (e.g. re, uuid, math imported inside validators to avoid circular deps)
   "PLC0415",
 
   # ── Pylint complexity ────────────────────────────────────────────────
+  "PLR0911", # too many return statements — soul-layer waterfall functions
   "PLR0912", # too many branches
   "PLR0913", # too many arguments
   "PLR0915", # too many statements
   "PLR2004", # magic value comparison — physics/resonance constants are fine
   "PLW0603", # global statement — used in singleton engine patterns
+  "PLW2901", # for-loop variable overwrite — intentional strip/rstrip patterns
 ]
 
 [tool.ruff.lint.per-file-ignores]
