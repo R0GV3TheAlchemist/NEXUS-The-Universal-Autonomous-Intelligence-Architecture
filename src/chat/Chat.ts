@@ -1,4 +1,4 @@
-// GAIA Chat — v0.6.0
+// GAIA Chat — v0.7.0
 // SSE event order:
 //   citation     → T1 canon cards (gold border)
 //   web_result   → T2–T5 web cards (tier-coloured border)
@@ -13,6 +13,12 @@
 //   POST-DONE memoryRemember() → store GAIA response (fire-and-forget)
 //             affectAnalyze()  → VAD vector; notable valence shown in footer
 //             stageEvaluate()  → Magnum Opus tick; stage advance shown in chat
+//
+// SSE resumption (v0.7.0):
+//   Every SSE 'id:' line is stored as _lastEventId.
+//   On reconnect the Last-Event-ID header is sent so the server can
+//   replay from the last acked event (heartbeat already live server-side).
+//   Exponential back-off: 500 ms → 8 s, max 5 retries.
 //
 // Canon Ref: C20 (Source Triage), C21 (Interface & Shell Grammar)
 
@@ -45,18 +51,22 @@ let _gaianSlug:        string                = 'gaia';
 let _sessionId:        string                = _makeSessionId();
 let _enginePanel:      EngineStatePanel | null = null;
 
+// ─── SSE resumption state ─────────────────────────────────────────────────
+let _lastEventId:  string = '';
+let _retryCount:   number = 0;
+const MAX_RETRIES           = 5;
+const BASE_BACKOFF_MS       = 500;
+
 // ─── Soul Mirror state ────────────────────────────────────────────────────────
 let _userId:       string = _resolveUserId();
-let _turnIndex:    number = 0;        // monotonic per session; fed to stageEvaluate
-let _lastUserText: string = '';       // held between sendMessage and 'done' event
+let _turnIndex:    number = 0;
+let _lastUserText: string = '';
 
 function _resolveUserId(): string {
-  // Prefer explicit user id stored during onboarding; fall back to session id.
-  // In a future iteration this will be replaced by a proper Tauri store read.
   try {
     return sessionStorage.getItem('gaia_user_id') ?? _sessionId;
   } catch {
-    return _sessionId;   // sessionStorage unavailable in some sandboxed contexts
+    return _sessionId;
   }
 }
 
@@ -70,6 +80,10 @@ function _makeSessionId(): string {
   let id = sessionStorage.getItem(key);
   if (!id) { id = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; sessionStorage.setItem(key, id); }
   return id;
+}
+
+function _backoffMs(attempt: number): number {
+  return Math.min(BASE_BACKOFF_MS * 2 ** attempt, 8_000);
 }
 
 export function mountChat(
@@ -168,13 +182,15 @@ function bindEvents(root: HTMLElement): void {
   stopBtn.addEventListener('click',  () => {
     _abortController?.abort();
     _isStreaming = false;
+    _retryCount  = 0;
     setStreamingUI(root, false);
     appendSystemMessage(root, 'Stream stopped by user.');
   });
 
   clearBtn.addEventListener('click', () => {
-    _messages  = [];
-    _turnIndex = 0;
+    _messages    = [];
+    _turnIndex   = 0;
+    _lastEventId = '';
     root.querySelector('#chat-messages')!.innerHTML = '';
     appendSystemMessage(root, 'Conversation cleared.');
   });
@@ -194,8 +210,8 @@ async function sendMessage(root: HTMLElement, text: string): Promise<void> {
   input.value = '';
   input.style.height = 'auto';
 
-  // Hold for post-done affect analysis
   _lastUserText = text;
+  _retryCount   = 0;      // fresh send — reset retry counter
 
   const userMsg: ChatMessage = {
     id: makeId(), role: 'user', text,
@@ -216,7 +232,6 @@ async function sendMessage(root: HTMLElement, text: string): Promise<void> {
   _abortController = new AbortController();
 
   // ── Soul Mirror: PRE-SEND ─────────────────────────────────────────────────
-  // 1. Store user turn immediately (fire-and-forget — never blocks the UI)
   memoryRemember({
     user_id:    _userId,
     text,
@@ -225,9 +240,8 @@ async function sendMessage(root: HTMLElement, text: string): Promise<void> {
     tier:       'short_term',
     importance: 0.6,
     session_id: _sessionId,
-  }).catch(() => { /* silent — sidecar may not be ready on first launch */ });
+  }).catch(() => {});
 
-  // 2. Recall top-5 relevant memories to inject as context
   let memoryContext: Array<{ text: string; kind: string; score: number }> = [];
   try {
     const hits: MemoryHit[] = await memoryRecall({
@@ -237,66 +251,112 @@ async function sendMessage(root: HTMLElement, text: string): Promise<void> {
       importance_floor:  0.3,
     });
     memoryContext = hits.map(h => ({ text: h.text, kind: h.kind, score: h.score }));
-  } catch {
-    // If memory recall fails, continue without context — degraded but functional
-  }
+  } catch { /* degraded but functional */ }
   // ─────────────────────────────────────────────────────────────────────────
 
-  try {
-    const response = await fetch(`${API_BASE}/query/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query:             text,
-        session_id:        _sessionId,
-        gaian_slug:        _gaianSlug,
-        max_canon_refs:    4,
-        enable_web_search: _webSearchEnabled,
-        memory_context:    memoryContext,   // ← Soul Mirror injection
-      }),
-      signal: _abortController.signal,
-    });
-
-    if (!response.ok || !response.body) throw new Error(`Server ${response.status}`);
-
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer    = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      let eventType = '';
-      for (const line of lines) {
-        if      (line.startsWith('event: ')) { eventType = line.slice(7).trim(); }
-        else if (line.startsWith('data: ') && eventType) {
-          handleSSEEvent(root, msgEl, gaiaMsg, eventType, line.slice(6).trim());
-          eventType = '';
-        }
-      }
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') return;
-    showBackendError(msgEl, err instanceof Error ? err.message : String(err));
-  } finally {
-    gaiaMsg.streaming = false;
-    _isStreaming = false;
-    setStreamingUI(root, false);
-    finalizeMessage(msgEl, gaiaMsg);
-  }
+  await _streamWithResumption(root, msgEl, gaiaMsg, text, memoryContext);
 }
 
+/**
+ * Core SSE streaming loop with Last-Event-ID resumption + exponential back-off.
+ *
+ * On any network failure (excluding user abort) we wait _backoffMs(retryCount),
+ * then retry the same request with the Last-Event-ID header so the server can
+ * replay from the last acked event.  We give up after MAX_RETRIES attempts.
+ */
+async function _streamWithResumption(
+  root:          HTMLElement,
+  msgEl:         HTMLElement,
+  gaiaMsg:       ChatMessage,
+  text:          string,
+  memoryContext: Array<{ text: string; kind: string; score: number }>,
+): Promise<void> {
+  while (_retryCount <= MAX_RETRIES) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (_lastEventId) headers['Last-Event-ID'] = _lastEventId;
+
+    try {
+      const response = await fetch(`${API_BASE}/query/stream`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query:             text,
+          session_id:        _sessionId,
+          gaian_slug:        _gaianSlug,
+          max_canon_refs:    4,
+          enable_web_search: _webSearchEnabled,
+          memory_context:    memoryContext,
+        }),
+        signal: _abortController!.signal,
+      });
+
+      if (!response.ok || !response.body) throw new Error(`Server ${response.status}`);
+
+      // ── Success: reset retry counter, stream tokens ──────────────────
+      _retryCount = 0;
+
+      const reader  = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer    = '';
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if      (line.startsWith('id: '))    { _lastEventId = line.slice(4).trim(); }
+          else if (line.startsWith('event: ')) { eventType    = line.slice(7).trim(); }
+          else if (line.startsWith('data: ') && eventType) {
+            const isDone = handleSSEEvent(root, msgEl, gaiaMsg, eventType, line.slice(6).trim());
+            eventType = '';
+            if (isDone) break outer;
+          }
+        }
+      }
+
+      // Clean exit — no retry needed
+      break;
+
+    } catch (err: unknown) {
+      // User abort — never retry
+      if (err instanceof Error && err.name === 'AbortError') return;
+
+      _retryCount++;
+      if (_retryCount > MAX_RETRIES) {
+        showBackendError(msgEl, err instanceof Error ? err.message : String(err));
+        break;
+      }
+
+      const delay = _backoffMs(_retryCount - 1);
+      appendSystemMessage(
+        root,
+        `⟳ Connection lost — retrying in ${delay / 1000}s (attempt ${_retryCount}/${MAX_RETRIES})…`,
+      );
+      await new Promise(res => setTimeout(res, delay));
+    }
+  }
+
+  gaiaMsg.streaming = false;
+  _isStreaming = false;
+  setStreamingUI(root, false);
+  finalizeMessage(msgEl, gaiaMsg);
+}
+
+/**
+ * Handle a single SSE event.  Returns true when the 'done' event is received
+ * so the caller can break out of the read loop.
+ */
 function handleSSEEvent(
-  root: HTMLElement,
-  msgEl: HTMLElement,
-  msg: ChatMessage,
-  event: string,
-  data: string,
-): void {
+  root:    HTMLElement,
+  msgEl:   HTMLElement,
+  msg:     ChatMessage,
+  event:   string,
+  data:    string,
+): boolean {
   try {
     const payload = JSON.parse(data);
     switch (event) {
@@ -333,31 +393,23 @@ function handleSSEEvent(
         renderDoneMeta(msgEl, payload);
         updateCanonBadge(root, payload.canon_status);
 
-        // ── Soul Mirror: POST-DONE ──────────────────────────────────────────
-        // Fire all three operations in parallel; none can block the UI
         _turnIndex++;
         _runPostTurnSoulMirror(root, msgEl, msg.text, payload).catch(() => {});
-        // ───────────────────────────────────────────────────────────────────
-        break;
+        return true;   // ← signal caller to exit the read loop
     }
   } catch { }
+  return false;
 }
 
-/**
- * Post-turn Soul Mirror pipeline.
- * Runs fully non-blocking via Promise.allSettled.
- * UI side-effects are applied only when results carry notable signal.
- */
 async function _runPostTurnSoulMirror(
-  root:       HTMLElement,
-  msgEl:      HTMLElement,
-  gaiaText:   string,
+  root:         HTMLElement,
+  msgEl:        HTMLElement,
+  gaiaText:     string,
   _donePayload: Record<string, unknown>,
 ): Promise<void> {
   const turn = _turnIndex;
 
   const [rememberResult, affectResult, stageResult] = await Promise.allSettled([
-    // 1. Persist GAIA's response
     memoryRemember({
       user_id:    _userId,
       text:       gaiaText,
@@ -367,31 +419,24 @@ async function _runPostTurnSoulMirror(
       importance: 0.7,
       session_id: _sessionId,
     }),
-
-    // 2. Affect inference on the user's last message
     affectAnalyze({
       user_id:    _userId,
       text:       _lastUserText,
       session_id: _sessionId,
     }),
-
-    // 3. Magnum Opus stage tick
     stageEvaluate({
       user_id:      _userId,
       session_turn: turn,
     }),
   ]);
 
-  // ── Affect UI ──────────────────────────────────────────────────────────────
   if (affectResult.status === 'fulfilled') {
     const affect = affectResult.value as AffectVector;
-    // Only surface affect if it carries notable signal (avoid noise)
     if (affect.valence < -0.3 || affect.valence > 0.4) {
       appendAffectBadge(msgEl, affect);
     }
   }
 
-  // ── Stage advance UI ───────────────────────────────────────────────────────
   if (stageResult.status === 'fulfilled') {
     const stage = stageResult.value as StageResult;
     if (stage.advanced) {
@@ -402,18 +447,16 @@ async function _runPostTurnSoulMirror(
     }
   }
 
-  // Silence unused-variable warning; stored for future telemetry
   void rememberResult;
 }
 
-/** Append a small affect badge to the message metadata footer. */
 function appendAffectBadge(msgEl: HTMLElement, affect: AffectVector): void {
   const meta = msgEl.querySelector<HTMLElement>('[id^="meta-"]');
   if (!meta) return;
-  const sign   = affect.valence > 0 ? '+' : '';
-  const pct    = Math.round(Math.abs(affect.valence) * 100);
-  const cls    = affect.valence > 0 ? 'affect-positive' : 'affect-negative';
-  const badge  = document.createElement('span');
+  const sign  = affect.valence > 0 ? '+' : '';
+  const pct   = Math.round(Math.abs(affect.valence) * 100);
+  const cls   = affect.valence > 0 ? 'affect-positive' : 'affect-negative';
+  const badge = document.createElement('span');
   badge.className   = `affect-badge ${cls}`;
   badge.textContent = ` · ${affect.primary} ${sign}${pct}%`;
   badge.title       = `Valence ${sign}${affect.valence.toFixed(2)} · Arousal ${affect.arousal.toFixed(2)}`;
@@ -489,7 +532,10 @@ function renderSuggestions(root: HTMLElement, msgEl: HTMLElement, items: string[
     `<button class="suggestion-chip">${escHtml(s)}</button>`
   ).join('');
   sr.querySelectorAll<HTMLButtonElement>('.suggestion-chip').forEach(btn => {
-    btn.addEventListener('click', () => sendMessage(root, btn.textContent ?? ''));
+    btn.addEventListener('click', () => sendMessage(
+      btn.closest('.gaia-chat') as HTMLElement ?? document.body,
+      btn.textContent ?? ''
+    ));
   });
 }
 

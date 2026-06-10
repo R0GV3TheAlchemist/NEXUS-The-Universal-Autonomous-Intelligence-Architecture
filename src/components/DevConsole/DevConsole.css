@@ -1,0 +1,260 @@
+/**
+ * DevConsole.css
+ * GAIA Dev Console — glass-panel styling
+ * Aligned with C19 Color Doctrine + existing Chat.css design language
+ */
+
+/* ── Shell ──────────────────────────────────────────────────────────── */
+.dc {
+  position:       relative;
+  width:          260px;
+  background:     rgba(10, 16, 26, 0.82);
+  border:         1px solid rgba(26, 107, 58, 0.35);
+  border-radius:  10px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family:    'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size:      11px;
+  color:          #d1d5db;
+  box-shadow:     0 4px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(26,107,58,0.12);
+  overflow:       hidden;
+  transition:     width 0.2s ease, box-shadow 0.2s ease;
+  z-index:        50;
+}
+
+.dc--closed {
+  width: 140px;
+}
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.dc__header {
+  display:         flex;
+  align-items:     center;
+  gap:             6px;
+  width:           100%;
+  padding:         7px 10px;
+  background:      transparent;
+  border:          none;
+  cursor:          pointer;
+  color:           #e5e7eb;
+  font-size:       11px;
+  font-weight:     600;
+  letter-spacing:  0.04em;
+  text-transform:  uppercase;
+}
+
+.dc__header:hover {
+  background: rgba(26, 107, 58, 0.12);
+}
+
+.dc__title {
+  flex: 1;
+  text-align: left;
+}
+
+.dc__badge {
+  font-size:    9px;
+  padding:      1px 5px;
+  border-radius: 4px;
+  font-weight:  700;
+  letter-spacing: 0.05em;
+}
+
+.dc__badge--live {
+  background: rgba(34, 197, 94, 0.18);
+  color:      #4ade80;
+  border:     1px solid rgba(34, 197, 94, 0.3);
+}
+
+.dc__badge--offline {
+  background: rgba(107, 114, 128, 0.18);
+  color:      #9ca3af;
+  border:     1px solid rgba(107, 114, 128, 0.3);
+}
+
+.dc__lastseen {
+  font-size: 9px;
+  color:     #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc__chevron {
+  font-size: 10px;
+  color:     #6b7280;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────── */
+.dc__body {
+  padding:    0 10px 10px;
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26,107,58,0.3) transparent;
+}
+
+.dc__body::-webkit-scrollbar       { width: 4px; }
+.dc__body::-webkit-scrollbar-track { background: transparent; }
+.dc__body::-webkit-scrollbar-thumb { background: rgba(26,107,58,0.35); border-radius: 2px; }
+
+.dc__offline-msg {
+  margin:       8px 0;
+  padding:      8px;
+  border-radius: 6px;
+  background:   rgba(107, 114, 128, 0.12);
+  color:        #9ca3af;
+  font-size:    10px;
+  line-height:  1.5;
+}
+
+.dc__offline-msg code {
+  display:     block;
+  margin-top:  4px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size:   9px;
+  color:       #d1d5db;
+}
+
+/* ── Section ───────────────────────────────────────────────────────── */
+.dc__section {
+  margin-top:    10px;
+  border-top:    1px solid rgba(26, 107, 58, 0.15);
+  padding-top:   6px;
+}
+
+.dc__section-title {
+  font-size:      9px;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          #4ade80;
+  margin-bottom:  5px;
+  opacity:        0.7;
+}
+
+/* ── Row ────────────────────────────────────────────────────────────── */
+.dc-row {
+  display:       flex;
+  flex-direction: column;
+  margin-bottom: 5px;
+}
+
+.dc-row__label {
+  font-size:      9px;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color:          #6b7280;
+  margin-bottom:  1px;
+}
+
+.dc-row__value {
+  display:     flex;
+  align-items: center;
+  flex-wrap:   wrap;
+  gap:         4px;
+  font-size:   11px;
+  color:       #e5e7eb;
+  line-height: 1.3;
+}
+
+.dc-row__sub {
+  display:   block;
+  width:     100%;
+  font-size: 9px;
+  color:     #6b7280;
+  margin-top: 1px;
+}
+
+/* ── Bar ────────────────────────────────────────────────────────────── */
+.dc-bar {
+  width:        100%;
+  height:       3px;
+  border-radius: 2px;
+  background:   rgba(255,255,255,0.06);
+  overflow:     hidden;
+  margin-top:   2px;
+}
+
+.dc-bar__fill {
+  height:        100%;
+  border-radius: 2px;
+  transition:    width 0.4s ease;
+}
+
+/* ── Pills & badges ─────────────────────────────────────────────────── */
+.dc__badge-pill {
+  display:      inline-block;
+  padding:      1px 6px;
+  border-radius: 4px;
+  font-size:    9px;
+  font-weight:  600;
+  background:   color-mix(in srgb, var(--pill-color, #6b7280) 18%, transparent);
+  border:       1px solid color-mix(in srgb, var(--pill-color, #6b7280) 40%, transparent);
+  color:        var(--pill-color, #9ca3af);
+  text-transform: capitalize;
+}
+
+.dc__element-pill {
+  display:      inline-block;
+  padding:      1px 7px;
+  border-radius: 4px;
+  font-size:    10px;
+  font-weight:  700;
+  background:   color-mix(in srgb, var(--pill-color, #6b7280) 15%, transparent);
+  border:       1px solid color-mix(in srgb, var(--pill-color, #6b7280) 35%, transparent);
+  color:        var(--pill-color, #9ca3af);
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+}
+
+/* ── Settling states ───────────────────────────────────────────────── */
+.dc__settling { font-size: 10px; text-transform: capitalize; }
+.dc__settling--fluid         { color: #3b82f6; }
+.dc__settling--crystallising { color: #f59e0b; }
+.dc__settling--set           { color: #22c55e; }
+
+/* ── Scalars / mono / muted ─────────────────────────────────────────── */
+.dc__scalar   { font-variant-numeric: tabular-nums; }
+.dc__mono     { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 10px; }
+.dc__muted    { color: #6b7280; font-size: 10px; }
+
+/* ── Status dots ─────────────────────────────────────────────────────── */
+.dc__status              { font-size: 10px; }
+.dc__status--online      { color: #4ade80; }
+.dc__status--offline     { color: #6b7280; }
+
+/* ── Sovereign badge ─────────────────────────────────────────────────── */
+.dc__sovereign {
+  margin-top:   12px;
+  padding:      7px 8px;
+  border-radius: 6px;
+  background:   rgba(26, 107, 58, 0.1);
+  border:       1px solid rgba(26, 107, 58, 0.25);
+  display:      flex;
+  flex-direction: column;
+  gap:          2px;
+}
+
+.dc__sovereign-badge {
+  font-size:   10px;
+  font-weight: 700;
+  color:       #4ade80;
+  letter-spacing: 0.04em;
+}
+
+.dc__sovereign-sub {
+  font-size: 9px;
+  color:     #6b7280;
+}
+
+/* ── Responsive: icon-only pill on very narrow viewports ─────────────── */
+@media (max-width: 480px) {
+  .dc {
+    width: 100% !important;
+    border-radius: 0;
+  }
+
+  .dc--closed {
+    width: 100% !important;
+  }
+}
