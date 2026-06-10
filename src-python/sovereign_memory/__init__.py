@@ -34,8 +34,8 @@ Usage::
 
 from __future__ import annotations
 
-import os
 import json
+import os
 import sqlite3
 import time
 import uuid
@@ -67,7 +67,18 @@ try:
 except ImportError:  # sentence-transformers not installed (e.g. lightweight CI)
     SentenceTransformer = None  # type: ignore[assignment,misc]
 
-__all__ = ["SovereignMemory", "SentenceTransformer"]
+__all__ = [
+    "SovereignMemory",
+    "SentenceTransformer",
+    # Type re-exports — imported above, surfaced here for downstream consumers
+    "AffectSnapshot",
+    "BiometricSample",
+    "LegacyArtifact",
+    "MarkerScores",
+    "MemoryRecord",
+    "StageRecord",
+    "StageTransitionRecord",
+]
 
 _SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 

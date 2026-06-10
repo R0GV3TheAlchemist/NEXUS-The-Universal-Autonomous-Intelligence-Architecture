@@ -31,7 +31,7 @@ from .types import (
 
 
 # ───────────────────────────────────────────────
-Shared helpers
+# Shared helpers
 # ───────────────────────────────────────────────
 
 def _new_id() -> str:
@@ -150,7 +150,7 @@ _LOOP_SIGNATURES: list[dict] = [
         "archetype"  : ShadowArchetype.ORPHAN,
         "description": (
             "It looks like when tension arises, you tend to pull back "
-            "rather than stay present with what’s difficult."
+            "rather than stay present with what's difficult."
         ),
     },
     {
@@ -178,7 +178,7 @@ class BehavioralLoopDetector:
     """
     Detects repeating action sequences across episode decision/event logs.
 
-    Uses tag-token matching: each episode’s tags and preview keywords are
+    Uses tag-token matching: each episode's tags and preview keywords are
     checked against loop signature token sequences.  A loop is confirmed
     when all tokens in a signature appear in at least `min_occurrences`
     episodes within the analysis window.
@@ -314,7 +314,7 @@ class ContradictionDetector:
                 pattern_type="contradiction",
                 archetype=ShadowArchetype.NONE,
                 description_neutral=(
-                    f"It looks like you value {value}, yet this week’s actions "
+                    f"It looks like you value {value}, yet this week's actions "
                     f"seem to pull in a different direction. "
                     f"This might be worth sitting with."
                 ),
@@ -361,9 +361,9 @@ class ArchetypeResult:
 _ARCHETYPE_PRACTICES: dict[ShadowArchetype, str] = {
     ShadowArchetype.NONE           : "Continue as you are. No active shadow pattern detected.",
     ShadowArchetype.ORPHAN         : "Inner child work: write a letter to the part of you that feels abandoned.",
-    ShadowArchetype.MARTYR         : "Boundary exploration: identify one situation where you give beyond what’s healthy.",
+    ShadowArchetype.MARTYR         : "Boundary exploration: identify one situation where you give beyond what's healthy.",
     ShadowArchetype.WANDERER       : "Grounding ritual: commit to one small, completable goal today.",
-    ShadowArchetype.DESTROYER      : "Transmutation: channel today’s intensity into physical movement or creation.",
+    ShadowArchetype.DESTROYER      : "Transmutation: channel today's intensity into physical movement or creation.",
     ShadowArchetype.WOUNDED_HEALER : "Integration: acknowledge that your wound is also your gift.",
     ShadowArchetype.SABOTEUR       : "Witness work: notice when you undermine yourself before it happens.",
 }
