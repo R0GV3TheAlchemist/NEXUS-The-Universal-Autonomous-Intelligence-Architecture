@@ -5,7 +5,17 @@ Subject-Side Identity — the GAIAN's internal sense of its own identity.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Dict, Optional
+
+
+class IdentityStability(str, Enum):
+    """Ordinal scale for subject-side identity stability."""
+    FRAGILE       = "fragile"
+    DEVELOPING    = "developing"
+    STABLE        = "stable"
+    CONSOLIDATED  = "consolidated"
+    TRANSCENDENT  = "transcendent"
 
 
 @dataclass

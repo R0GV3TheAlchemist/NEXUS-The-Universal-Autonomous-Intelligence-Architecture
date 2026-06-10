@@ -58,31 +58,31 @@ _CALMING = {SomaticSignal.GROUNDING, SomaticSignal.CALM}
 
 # Channel → coherence weight (how calming each channel is at value=1.0)
 _CHANNEL_COHERENCE_WEIGHT: Dict[SomaticChannel, float] = {
-    SomaticChannel.HEART:           0.35,
-    SomaticChannel.HRV:             0.35,
-    SomaticChannel.BREATH:          0.25,
-    SomaticChannel.GROUNDING:       0.25,
-    SomaticChannel.TENSION:        -0.15,
-    SomaticChannel.SKIN_CONDUCTION:-0.10,
-    SomaticChannel.TEMPERATURE:     0.05,
+    SomaticChannel.HEART:            0.35,
+    SomaticChannel.HRV:              0.35,
+    SomaticChannel.BREATH:           0.25,
+    SomaticChannel.GROUNDING:        0.25,
+    SomaticChannel.TENSION:         -0.15,
+    SomaticChannel.SKIN_CONDUCTION: -0.10,
+    SomaticChannel.TEMPERATURE:      0.05,
 }
 
 
 @dataclass
 class SomaticReading:
     """Result of a somatic intelligence scan."""
-    signals:    List[SomaticSignal] = field(default_factory=list)
-    activation: float = 0.0
-    coherence:  float = 0.5   # used by SoulLayer transpersonal driver
+    signals:    List[SomaticSignal]       = field(default_factory=list)
+    activation: float                     = 0.0
+    coherence:  float                     = 0.5   # used by SoulLayer transpersonal driver
     # legacy fields kept for back-compat
-    heart_rate_variability: float = 0.5
-    breath_depth:           float = 0.5
-    tension_index:          float = 0.0
-    grounding_score:        float = 0.5
-    somatic_coherence:      float = 0.5
-    # channel-based reading fields
-    channel:    Optional[str] = None
-    value:      float = 0.0
+    heart_rate_variability: float         = 0.5
+    breath_depth:           float         = 0.5
+    tension_index:          float         = 0.0
+    grounding_score:        float         = 0.5
+    somatic_coherence:      float         = 0.5
+    # channel-based reading fields — channel is SomaticChannel enum
+    channel:    Optional[SomaticChannel]  = None
+    value:      float                     = 0.0
 
     def to_dict(self) -> dict:
         return {
@@ -94,6 +94,7 @@ class SomaticReading:
             "tension_index":          round(self.tension_index, 4),
             "grounding_score":        round(self.grounding_score, 4),
             "somatic_coherence":      round(self.somatic_coherence, 4),
+            "channel":                self.channel.value if self.channel else None,
         }
 
 
@@ -122,13 +123,13 @@ class SomaticIntelligenceEngine:
         if isinstance(context_or_channel, SomaticChannel):
             channel = context_or_channel
             weight  = _CHANNEL_COHERENCE_WEIGHT.get(channel, 0.0)
-            coherence = max(0.0, min(1.0, 0.5 + weight * value))
-            activation = max(0.0, min(1.0, -weight * value)) if weight < 0 else 0.0
+            coherence   = max(0.0, min(1.0, 0.5 + weight * value))
+            activation  = max(0.0, min(1.0, -weight * value)) if weight < 0 else 0.0
             reading = SomaticReading(
                 signals=[],
                 activation=activation,
                 coherence=coherence,
-                channel=channel.value,
+                channel=channel,          # SomaticChannel enum, not string
                 value=value,
                 somatic_coherence=coherence,
             )
