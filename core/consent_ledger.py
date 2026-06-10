@@ -1,145 +1,75 @@
 """
-Consent Ledger — tracks user consent events across GAIA-OS.
-
-This module re-exports the ConsentLedger class and provides
-the get_consent_ledger() singleton accessor expected by tests
-and other modules.
-
-Full implementation lives in the body of the class below;
-this file is the canonical entry-point.
+core/consent_ledger.py
+Consent Ledger — tracks user consent events for GAIA.
 """
 from __future__ import annotations
-
-import logging
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional
-
-log = logging.getLogger(__name__)
+from typing import List, Optional
 
 
-class ConsentStatus(str, Enum):
-    GRANTED = "granted"
-    REVOKED = "revoked"
-    PENDING = "pending"
-    EXPIRED = "expired"
-
-
-class ConsentScope(str, Enum):
-    DATA_PROCESSING = "data_processing"
-    MEMORY_STORAGE = "memory_storage"
-    BIOMETRIC = "biometric"
-    EMOTIONAL = "emotional"
-    FULL = "full"
+class ConsentAction(str, Enum):
+    GRANT  = "grant"
+    REVOKE = "revoke"
+    UPDATE = "update"
 
 
 @dataclass
-class ConsentRecord:
-    """A single consent decision record."""
+class ConsentEntry:
+    user_id:    str
+    scope:      str
+    action:     ConsentAction = ConsentAction.GRANT
+    granted_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    revoked_at: Optional[str] = None
+    metadata:   dict = field(default_factory=dict)
 
-    record_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str = ""
-    scope: ConsentScope = ConsentScope.DATA_PROCESSING
-    status: ConsentStatus = ConsentStatus.PENDING
-    granted_at: Optional[datetime] = None
-    revoked_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
-    metadata: dict = field(default_factory=dict)
-
+    @property
     def is_active(self) -> bool:
-        if self.status != ConsentStatus.GRANTED:
-            return False
-        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
-            return False
-        return True
+        return self.action == ConsentAction.GRANT and self.revoked_at is None
 
     def to_dict(self) -> dict:
         return {
-            "record_id": self.record_id,
-            "user_id": self.user_id,
-            "scope": self.scope.value,
-            "status": self.status.value,
-            "granted_at": self.granted_at.isoformat() if self.granted_at else None,
-            "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "metadata": self.metadata,
+            "user_id":    self.user_id,
+            "scope":      self.scope,
+            "action":     self.action.value,
+            "granted_at": self.granted_at,
+            "revoked_at": self.revoked_at,
+            "metadata":   self.metadata,
         }
 
 
 class ConsentLedger:
-    """Immutable audit ledger for consent events."""
+    """In-memory consent ledger."""
 
     def __init__(self) -> None:
-        self._records: Dict[str, List[ConsentRecord]] = {}
-        log.info("ConsentLedger initialised")
+        self._entries: List[ConsentEntry] = []
 
-    # ------------------------------------------------------------------ #
-    #  Write                                                               #
-    # ------------------------------------------------------------------ #
+    def record(self, entry: ConsentEntry) -> None:
+        self._entries.append(entry)
 
-    def grant(
-        self,
-        user_id: str,
-        scope: ConsentScope,
-        expires_at: Optional[datetime] = None,
-        metadata: Optional[dict] = None,
-    ) -> ConsentRecord:
-        record = ConsentRecord(
-            user_id=user_id,
-            scope=scope,
-            status=ConsentStatus.GRANTED,
-            granted_at=datetime.now(timezone.utc),
-            expires_at=expires_at,
-            metadata=metadata or {},
-        )
-        self._records.setdefault(user_id, []).append(record)
-        log.info("Consent GRANTED user=%s scope=%s", user_id, scope)
-        return record
+    def grant(self, user_id: str, scope: str, **meta) -> ConsentEntry:
+        e = ConsentEntry(user_id=user_id, scope=scope, action=ConsentAction.GRANT, metadata=meta)
+        self.record(e)
+        return e
 
-    def revoke(self, user_id: str, scope: ConsentScope) -> Optional[ConsentRecord]:
-        for record in reversed(self._records.get(user_id, [])):
-            if record.scope == scope and record.status == ConsentStatus.GRANTED:
-                record.status = ConsentStatus.REVOKED
-                record.revoked_at = datetime.now(timezone.utc)
-                log.info("Consent REVOKED user=%s scope=%s", user_id, scope)
-                return record
-        return None
+    def revoke(self, user_id: str, scope: str) -> None:
+        ts = datetime.now(timezone.utc).isoformat()
+        for e in reversed(self._entries):
+            if e.user_id == user_id and e.scope == scope and e.action == ConsentAction.GRANT:
+                e.revoked_at = ts
+                e.action = ConsentAction.REVOKE
+                break
 
-    # ------------------------------------------------------------------ #
-    #  Read                                                                #
-    # ------------------------------------------------------------------ #
-
-    def check_consent(self, user_id: str, scope: ConsentScope) -> bool:
-        for record in reversed(self._records.get(user_id, [])):
-            if record.scope == scope:
-                return record.is_active()
+    def is_consented(self, user_id: str, scope: str) -> bool:
+        for e in reversed(self._entries):
+            if e.user_id == user_id and e.scope == scope:
+                return e.action == ConsentAction.GRANT and e.revoked_at is None
         return False
 
-    def get_records(self, user_id: str) -> List[ConsentRecord]:
-        return list(self._records.get(user_id, []))
-
-    def get_all_records(self) -> List[ConsentRecord]:
-        return [r for records in self._records.values() for r in records]
-
-    def to_dict(self) -> dict:
-        return {
-            uid: [r.to_dict() for r in records]
-            for uid, records in self._records.items()
-        }
-
-
-# ------------------------------------------------------------------ #
-#  Singleton accessor                                                  #
-# ------------------------------------------------------------------ #
-
-_consent_ledger: Optional[ConsentLedger] = None
-
-
-def get_consent_ledger() -> ConsentLedger:
-    """Return the module-level singleton ConsentLedger."""
-    global _consent_ledger
-    if _consent_ledger is None:
-        _consent_ledger = ConsentLedger()
-    return _consent_ledger
+    def history(self, user_id: Optional[str] = None) -> List[ConsentEntry]:
+        if user_id:
+            return [e for e in self._entries if e.user_id == user_id]
+        return list(self._entries)

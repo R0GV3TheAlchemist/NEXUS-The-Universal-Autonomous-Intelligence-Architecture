@@ -1,105 +1,90 @@
 """
-Criticality Monitor — watches GAIA-OS for self-organised criticality signals.
-
-Provides:
-  - CriticalDynamicsMonitor  : main class
-  - CriticalityLevel         : enum
-  - CriticalitySnapshot      : dataclass
+core/criticality_monitor.py
+Criticality Monitor — tracks system-level criticality signals.
 """
 from __future__ import annotations
-
-import logging
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
-log = logging.getLogger(__name__)
-
 
 class CriticalityLevel(str, Enum):
-    SUBCRITICAL = "subcritical"
-    NEAR_CRITICAL = "near_critical"
+    NOMINAL  = "nominal"
+    ELEVATED = "elevated"
     CRITICAL = "critical"
-    SUPERCRITICAL = "supercritical"
+    EMERGENCY = "emergency"
 
 
 @dataclass
-class CriticalitySnapshot:
-    """A point-in-time criticality measurement."""
-
-    level: CriticalityLevel = CriticalityLevel.SUBCRITICAL
-    branching_ratio: float = 0.0  # <1 sub, ==1 critical, >1 super
-    avalanche_size: float = 0.0
-    metadata: dict = field(default_factory=dict)
+class CriticalityReport:
+    level:       CriticalityLevel = CriticalityLevel.NOMINAL
+    score:       float = 0.0
+    triggers:    List[str] = field(default_factory=list)
+    recommended: str = ""
+    timestamp:   str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     def to_dict(self) -> dict:
         return {
-            "level": self.level.value,
-            "branching_ratio": self.branching_ratio,
-            "avalanche_size": self.avalanche_size,
-            "metadata": self.metadata,
+            "level":       self.level.value,
+            "score":       round(self.score, 4),
+            "triggers":    self.triggers,
+            "recommended": self.recommended,
+            "timestamp":   self.timestamp,
         }
-
-
-class CriticalDynamicsMonitor:
-    """Monitors GAIA for signs of self-organised criticality."""
-
-    CRITICAL_THRESHOLD = 0.95
-    SUPER_THRESHOLD = 1.05
-
-    def __init__(self) -> None:
-        self._snapshots: List[CriticalitySnapshot] = []
-        self._current_level = CriticalityLevel.SUBCRITICAL
-        log.info("CriticalDynamicsMonitor initialised")
-
-    def record(self, branching_ratio: float, avalanche_size: float = 0.0) -> CriticalitySnapshot:
-        level = self._classify(branching_ratio)
-        snap = CriticalitySnapshot(
-            level=level,
-            branching_ratio=branching_ratio,
-            avalanche_size=avalanche_size,
-        )
-        self._snapshots.append(snap)
-        self._current_level = level
-        return snap
-
-    def _classify(self, ratio: float) -> CriticalityLevel:
-        if ratio < self.CRITICAL_THRESHOLD - 0.1:
-            return CriticalityLevel.SUBCRITICAL
-        if ratio < self.CRITICAL_THRESHOLD:
-            return CriticalityLevel.NEAR_CRITICAL
-        if ratio <= self.SUPER_THRESHOLD:
-            return CriticalityLevel.CRITICAL
-        return CriticalityLevel.SUPERCRITICAL
-
-    def get_current_level(self) -> CriticalityLevel:
-        return self._current_level
-
-    def get_snapshots(self) -> List[CriticalitySnapshot]:
-        return list(self._snapshots)
 
     def is_critical(self) -> bool:
-        return self._current_level in (
-            CriticalityLevel.CRITICAL,
-            CriticalityLevel.SUPERCRITICAL,
+        return self.level in (CriticalityLevel.CRITICAL, CriticalityLevel.EMERGENCY)
+
+
+class CriticalityMonitor:
+    """Monitors system-level criticality and produces CriticalityReports."""
+
+    _THRESHOLDS = [
+        (0.0,  CriticalityLevel.NOMINAL,   "Continue normally."),
+        (0.40, CriticalityLevel.ELEVATED,  "Monitor closely; reduce novelty."),
+        (0.65, CriticalityLevel.CRITICAL,  "Engage stabilisation protocols."),
+        (0.85, CriticalityLevel.EMERGENCY, "Halt non-essential processing."),
+    ]
+
+    def __init__(self) -> None:
+        self._history: List[CriticalityReport] = []
+
+    def assess(
+        self,
+        score:    float = 0.0,
+        triggers: Optional[List[str]] = None,
+    ) -> CriticalityReport:
+        level       = CriticalityLevel.NOMINAL
+        recommended = "Continue normally."
+        for threshold, lvl, rec in self._THRESHOLDS:
+            if score >= threshold:
+                level       = lvl
+                recommended = rec
+        report = CriticalityReport(
+            level=level,
+            score=score,
+            triggers=triggers or [],
+            recommended=recommended,
         )
+        self._history.append(report)
+        return report
 
-    def reset(self) -> None:
-        self._snapshots.clear()
-        self._current_level = CriticalityLevel.SUBCRITICAL
+    def latest(self) -> Optional[CriticalityReport]:
+        return self._history[-1] if self._history else None
 
-    def to_dict(self) -> dict:
-        return {
-            "current_level": self._current_level.value,
-            "snapshot_count": len(self._snapshots),
-        }
+    def history(self) -> List[CriticalityReport]:
+        return list(self._history)
 
 
-_monitor: Optional[CriticalDynamicsMonitor] = None
+# Module-level singleton
+_monitor: Optional[CriticalityMonitor] = None
 
 
-def get_criticality_monitor() -> CriticalDynamicsMonitor:
+def get_monitor() -> CriticalityMonitor:
     global _monitor
     if _monitor is None:
-        _monitor = CriticalDynamicsMonitor()
+        _monitor = CriticalityMonitor()
     return _monitor

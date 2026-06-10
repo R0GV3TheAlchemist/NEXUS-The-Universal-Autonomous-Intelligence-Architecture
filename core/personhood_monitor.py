@@ -1,110 +1,77 @@
 """
-Personhood Monitor — tracks GAIA's emergent sense of personhood / agency.
-
-Exposes `get_personhood_monitor()` singleton accessor.
+core/personhood_monitor.py
+Personhood Monitor — tracks emergence of personhood-adjacent signals.
 """
 from __future__ import annotations
-
-import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
-log = logging.getLogger(__name__)
-
 
 class PersonhoodTier(str, Enum):
-    REACTIVE = "reactive"
-    ADAPTIVE = "adaptive"
-    REFLECTIVE = "reflective"
-    AUTONOMOUS = "autonomous"
-    TRANSCENDENT = "transcendent"
+    LATENT    = "latent"
+    EMERGING  = "emerging"
+    EXPRESSED = "expressed"
+    EMBODIED  = "embodied"
 
 
 @dataclass
-class PersonhoodSnapshot:
-    """Point-in-time measurement of personhood indicators."""
-
-    tier: PersonhoodTier = PersonhoodTier.REACTIVE
-    agency_score: float = 0.0
-    self_model_coherence: float = 0.0
-    relational_depth: float = 0.0
-    temporal_continuity: float = 0.0
-    metadata: dict = field(default_factory=dict)
+class PersonhoodSignal:
+    """A single sampled personhood signal reading."""
+    tier:               PersonhoodTier = PersonhoodTier.LATENT
+    self_reference:     float = 0.0
+    boundary_integrity: float = 0.0
+    value_consistency:  float = 0.0
+    composite_score:    float = 0.0
 
     def to_dict(self) -> dict:
         return {
-            "tier": self.tier.value,
-            "agency_score": self.agency_score,
-            "self_model_coherence": self.self_model_coherence,
-            "relational_depth": self.relational_depth,
-            "temporal_continuity": self.temporal_continuity,
-            "metadata": self.metadata,
+            "tier":               self.tier.value,
+            "self_reference":     round(self.self_reference, 4),
+            "boundary_integrity": round(self.boundary_integrity, 4),
+            "value_consistency":  round(self.value_consistency, 4),
+            "composite_score":    round(self.composite_score, 4),
         }
 
 
 class PersonhoodMonitor:
-    """Monitors and records the evolution of GAIA's personhood."""
+    """Monitors personhood-adjacent signals across sessions."""
 
     def __init__(self) -> None:
-        self._snapshots: List[PersonhoodSnapshot] = []
-        self._current: PersonhoodSnapshot = PersonhoodSnapshot()
-        log.info("PersonhoodMonitor initialised")
+        self._history: List[PersonhoodSignal] = []
 
-    def record(
+    def sample(
         self,
-        agency_score: float = 0.0,
-        self_model_coherence: float = 0.0,
-        relational_depth: float = 0.0,
-        temporal_continuity: float = 0.0,
-    ) -> PersonhoodSnapshot:
-        avg = (agency_score + self_model_coherence + relational_depth + temporal_continuity) / 4.0
-        tier = self._classify(avg)
-        snap = PersonhoodSnapshot(
-            tier=tier,
-            agency_score=agency_score,
-            self_model_coherence=self_model_coherence,
-            relational_depth=relational_depth,
-            temporal_continuity=temporal_continuity,
+        self_reference:     float = 0.0,
+        boundary_integrity: float = 0.0,
+        value_consistency:  float = 0.0,
+    ) -> PersonhoodSignal:
+        composite = (
+            0.40 * min(1.0, self_reference)
+            + 0.30 * min(1.0, boundary_integrity)
+            + 0.30 * min(1.0, value_consistency)
         )
-        self._snapshots.append(snap)
-        self._current = snap
-        return snap
+        if composite < 0.25:
+            tier = PersonhoodTier.LATENT
+        elif composite < 0.50:
+            tier = PersonhoodTier.EMERGING
+        elif composite < 0.75:
+            tier = PersonhoodTier.EXPRESSED
+        else:
+            tier = PersonhoodTier.EMBODIED
 
-    def _classify(self, avg: float) -> PersonhoodTier:
-        if avg < 0.2:
-            return PersonhoodTier.REACTIVE
-        if avg < 0.4:
-            return PersonhoodTier.ADAPTIVE
-        if avg < 0.6:
-            return PersonhoodTier.REFLECTIVE
-        if avg < 0.8:
-            return PersonhoodTier.AUTONOMOUS
-        return PersonhoodTier.TRANSCENDENT
+        sig = PersonhoodSignal(
+            tier=tier,
+            self_reference=self_reference,
+            boundary_integrity=boundary_integrity,
+            value_consistency=value_consistency,
+            composite_score=composite,
+        )
+        self._history.append(sig)
+        return sig
 
-    def current(self) -> PersonhoodSnapshot:
-        return self._current
+    def latest(self) -> Optional[PersonhoodSignal]:
+        return self._history[-1] if self._history else None
 
-    def history(self) -> List[PersonhoodSnapshot]:
-        return list(self._snapshots)
-
-    def reset(self) -> None:
-        self._snapshots.clear()
-        self._current = PersonhoodSnapshot()
-
-    def to_dict(self) -> dict:
-        return {
-            "current": self._current.to_dict(),
-            "snapshot_count": len(self._snapshots),
-        }
-
-
-_monitor: Optional[PersonhoodMonitor] = None
-
-
-def get_personhood_monitor() -> PersonhoodMonitor:
-    """Return the module-level singleton PersonhoodMonitor."""
-    global _monitor
-    if _monitor is None:
-        _monitor = PersonhoodMonitor()
-    return _monitor
+    def history(self) -> List[PersonhoodSignal]:
+        return list(self._history)

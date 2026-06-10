@@ -1,96 +1,48 @@
 """
-Subject-Side Identity — models the first-person perspectival identity layer.
-
-Provides SubjectSideIdentity dataclass/class and factory accessor.
+core/subject_side_identity.py
+Subject-Side Identity — the GAIAN's internal sense of its own identity.
 """
 from __future__ import annotations
-
-import logging
-import uuid
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional
-
-log = logging.getLogger(__name__)
-
-
-class IdentityStability(str, Enum):
-    UNSTABLE = "unstable"
-    FRAGILE = "fragile"
-    STABLE = "stable"
-    COHERENT = "coherent"
-    INTEGRATED = "integrated"
+from typing import Optional
 
 
 @dataclass
 class SubjectSideIdentity:
-    """First-person perspectival identity record for a GAIA user."""
-
-    identity_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str = ""
-    name: str = ""
-    stability: IdentityStability = IdentityStability.FRAGILE
-    core_values: List[str] = field(default_factory=list)
-    narrative: str = ""
-    shadow_aspects: List[str] = field(default_factory=list)
-    coherence_score: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    gaian_name:          str
+    coherence_index:     float = 0.5
+    continuity_score:    float = 0.5
+    self_model_depth:    float = 0.0
+    active:              bool  = True
 
     def to_dict(self) -> dict:
         return {
-            "identity_id": self.identity_id,
-            "user_id": self.user_id,
-            "name": self.name,
-            "stability": self.stability.value,
-            "core_values": self.core_values,
-            "narrative": self.narrative,
-            "shadow_aspects": self.shadow_aspects,
-            "coherence_score": self.coherence_score,
-            "metadata": self.metadata,
+            "gaian_name":       self.gaian_name,
+            "coherence_index":  round(self.coherence_index, 4),
+            "continuity_score": round(self.continuity_score, 4),
+            "self_model_depth": round(self.self_model_depth, 4),
+            "active":           self.active,
         }
 
-    def update_stability(self) -> None:
-        """Recalculate stability tier from coherence score."""
-        score = self.coherence_score
-        if score < 0.2:
-            self.stability = IdentityStability.UNSTABLE
-        elif score < 0.4:
-            self.stability = IdentityStability.FRAGILE
-        elif score < 0.6:
-            self.stability = IdentityStability.STABLE
-        elif score < 0.8:
-            self.stability = IdentityStability.COHERENT
-        else:
-            self.stability = IdentityStability.INTEGRATED
+
+_registry: dict[str, SubjectSideIdentity] = {}
 
 
-class SubjectSideIdentityService:
-    """Manages subject-side identity records."""
-
-    def __init__(self) -> None:
-        self._identities: Dict[str, SubjectSideIdentity] = {}
-        log.info("SubjectSideIdentityService initialised")
-
-    def get_or_create(self, user_id: str) -> SubjectSideIdentity:
-        if user_id not in self._identities:
-            self._identities[user_id] = SubjectSideIdentity(user_id=user_id)
-        return self._identities[user_id]
-
-    def update_coherence(self, user_id: str, score: float) -> SubjectSideIdentity:
-        ident = self.get_or_create(user_id)
-        ident.coherence_score = max(0.0, min(1.0, score))
-        ident.update_stability()
-        return ident
-
-    def reset(self) -> None:
-        self._identities.clear()
+def get_subject_side_identity(gaian_name: str) -> SubjectSideIdentity:
+    """Return (or lazily create) the SubjectSideIdentity for the given GAIAN."""
+    if gaian_name not in _registry:
+        _registry[gaian_name] = SubjectSideIdentity(gaian_name=gaian_name)
+    return _registry[gaian_name]
 
 
-_service: Optional[SubjectSideIdentityService] = None
-
-
-def get_subject_side_identity_service() -> SubjectSideIdentityService:
-    global _service
-    if _service is None:
-        _service = SubjectSideIdentityService()
-    return _service
+def update_subject_side_identity(
+    gaian_name:       str,
+    coherence_index:  Optional[float] = None,
+    continuity_score: Optional[float] = None,
+    self_model_depth: Optional[float] = None,
+) -> SubjectSideIdentity:
+    identity = get_subject_side_identity(gaian_name)
+    if coherence_index  is not None: identity.coherence_index  = coherence_index
+    if continuity_score is not None: identity.continuity_score = continuity_score
+    if self_model_depth is not None: identity.self_model_depth = self_model_depth
+    return identity

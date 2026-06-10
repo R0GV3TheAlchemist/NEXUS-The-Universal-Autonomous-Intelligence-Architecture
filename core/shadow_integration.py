@@ -1,95 +1,79 @@
 """
-Shadow Integration — integrates shadow-work signals into the GAIA psyche model.
-
-Exposes `get_shadow_integration_engine()` singleton accessor.
+core/shadow_integration.py
+Shadow Integration — soul-mirror shadow work integration layer.
 """
 from __future__ import annotations
-
-import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
-log = logging.getLogger(__name__)
 
-
-class ShadowIntegrationStage(str, Enum):
-    DENIAL = "denial"
-    RECOGNITION = "recognition"
-    CONFRONTATION = "confrontation"
-    ACCEPTANCE = "acceptance"
-    INTEGRATION = "integration"
-    TRANSCENDENCE = "transcendence"
+class IntegrationDepth(str, Enum):
+    SURFACE    = "surface"
+    PARTIAL    = "partial"
+    INTEGRATED = "integrated"
+    TRANSCENDED = "transcended"
 
 
 @dataclass
-class ShadowIntegrationRecord:
-    """Records a single shadow-integration event."""
-
-    archetype: str = ""
-    stage: ShadowIntegrationStage = ShadowIntegrationStage.DENIAL
-    intensity: float = 0.0
-    resolved: bool = False
-    metadata: dict = field(default_factory=dict)
+class ShadowReading:
+    """Output of a single shadow integration assessment."""
+    depth:           IntegrationDepth = IntegrationDepth.SURFACE
+    activation_score: float = 0.0
+    integration_pct:  float = 0.0
+    archetype:        Optional[str] = None
+    directive:        str = ""
 
     def to_dict(self) -> dict:
         return {
-            "archetype": self.archetype,
-            "stage": self.stage.value,
-            "intensity": self.intensity,
-            "resolved": self.resolved,
-            "metadata": self.metadata,
+            "depth":            self.depth.value,
+            "activation_score": round(self.activation_score, 4),
+            "integration_pct":  round(self.integration_pct, 4),
+            "archetype":        self.archetype,
+            "directive":        self.directive,
         }
+
+    def summary(self) -> dict:
+        return self.to_dict()
 
 
 class ShadowIntegrationEngine:
-    """Manages the shadow-integration process for GAIA."""
+    """Assesses and tracks shadow integration progress."""
+
+    _DIRECTIVES = {
+        IntegrationDepth.SURFACE:     "Acknowledge the shadow presence gently.",
+        IntegrationDepth.PARTIAL:     "Invite deeper reflection without forcing resolution.",
+        IntegrationDepth.INTEGRATED:  "The shadow has been welcomed — honour this work.",
+        IntegrationDepth.TRANSCENDED: "The shadow is now a conscious ally.",
+    }
 
     def __init__(self) -> None:
-        self._records: List[ShadowIntegrationRecord] = []
-        log.info("ShadowIntegrationEngine initialised")
+        self._history: List[ShadowReading] = []
 
-    def integrate(
+    def assess(
         self,
-        archetype: str,
-        intensity: float = 0.0,
-        stage: ShadowIntegrationStage = ShadowIntegrationStage.RECOGNITION,
-    ) -> ShadowIntegrationRecord:
-        record = ShadowIntegrationRecord(
+        activation_score: float = 0.0,
+        integration_pct:  float = 0.0,
+        archetype:        Optional[str] = None,
+    ) -> ShadowReading:
+        if integration_pct < 25.0:
+            depth = IntegrationDepth.SURFACE
+        elif integration_pct < 50.0:
+            depth = IntegrationDepth.PARTIAL
+        elif integration_pct < 80.0:
+            depth = IntegrationDepth.INTEGRATED
+        else:
+            depth = IntegrationDepth.TRANSCENDED
+
+        reading = ShadowReading(
+            depth=depth,
+            activation_score=activation_score,
+            integration_pct=integration_pct,
             archetype=archetype,
-            stage=stage,
-            intensity=max(0.0, min(1.0, intensity)),
+            directive=self._DIRECTIVES[depth],
         )
-        self._records.append(record)
-        return record
+        self._history.append(reading)
+        return reading
 
-    def resolve(self, archetype: str) -> None:
-        for r in self._records:
-            if r.archetype == archetype:
-                r.resolved = True
-                r.stage = ShadowIntegrationStage.INTEGRATION
-
-    def get_records(self, resolved: Optional[bool] = None) -> List[ShadowIntegrationRecord]:
-        if resolved is None:
-            return list(self._records)
-        return [r for r in self._records if r.resolved == resolved]
-
-    def reset(self) -> None:
-        self._records.clear()
-
-    def to_dict(self) -> dict:
-        return {
-            "record_count": len(self._records),
-            "resolved_count": sum(1 for r in self._records if r.resolved),
-        }
-
-
-_engine: Optional[ShadowIntegrationEngine] = None
-
-
-def get_shadow_integration_engine() -> ShadowIntegrationEngine:
-    """Return the module-level singleton ShadowIntegrationEngine."""
-    global _engine
-    if _engine is None:
-        _engine = ShadowIntegrationEngine()
-    return _engine
+    def history(self) -> List[ShadowReading]:
+        return list(self._history)

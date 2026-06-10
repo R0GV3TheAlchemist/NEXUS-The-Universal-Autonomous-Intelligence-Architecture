@@ -1,77 +1,64 @@
 """
-Somatic Interface — body-signal awareness layer for GAIA.
-
-Provides SomaticReading dataclass and SomaticInterface engine.
+core/somatic_interface.py
+Somatic Interface — bridges physiological signals into GAIA state.
 """
 from __future__ import annotations
-
-import logging
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional
-
-log = logging.getLogger(__name__)
-
-
-class SomaticChannel(str, Enum):
-    BREATH = "breath"
-    HEART = "heart"
-    SKIN = "skin"
-    MUSCLE = "muscle"
-    NEURAL = "neural"
+from typing import Dict, List, Optional
 
 
 @dataclass
 class SomaticReading:
-    """A single somatic sensor reading."""
-
-    channel: SomaticChannel = SomaticChannel.HEART
-    value: float = 0.0
-    unit: str = "normalised"
-    coherence: float = 0.5
-    tags: List[str] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
+    heart_rate_variability: float = 0.5
+    breath_depth:           float = 0.5
+    tension_index:          float = 0.0
+    grounding_score:        float = 0.5
+    somatic_coherence:      float = 0.5
 
     def to_dict(self) -> dict:
         return {
-            "channel": self.channel.value,
-            "value": self.value,
-            "unit": self.unit,
-            "coherence": self.coherence,
-            "tags": self.tags,
-            "metadata": self.metadata,
+            "heart_rate_variability": round(self.heart_rate_variability, 4),
+            "breath_depth":           round(self.breath_depth, 4),
+            "tension_index":          round(self.tension_index, 4),
+            "grounding_score":        round(self.grounding_score, 4),
+            "somatic_coherence":      round(self.somatic_coherence, 4),
         }
 
 
-class SomaticInterface:
-    """Manages somatic channel readings."""
+class SomaticIntelligenceEngine:
+    """
+    Translates raw somatic signals into a coherent SomaticReading
+    that can be injected into the GAIA engine pipeline.
+    """
 
     def __init__(self) -> None:
-        self._readings: List[SomaticReading] = []
-        log.info("SomaticInterface initialised")
+        self._history: List[SomaticReading] = []
 
-    def read(self, channel: SomaticChannel, value: float) -> SomaticReading:
-        reading = SomaticReading(channel=channel, value=max(0.0, min(1.0, value)))
-        self._readings.append(reading)
+    def read(
+        self,
+        hrv:      float = 0.5,
+        breath:   float = 0.5,
+        tension:  float = 0.0,
+        grounding: float = 0.5,
+    ) -> SomaticReading:
+        coherence = max(0.0, min(1.0,
+            0.35 * hrv
+            + 0.25 * breath
+            + 0.25 * grounding
+            - 0.15 * tension
+        ))
+        reading = SomaticReading(
+            heart_rate_variability=hrv,
+            breath_depth=breath,
+            tension_index=tension,
+            grounding_score=grounding,
+            somatic_coherence=coherence,
+        )
+        self._history.append(reading)
         return reading
 
-    def get_readings(self, channel: Optional[SomaticChannel] = None) -> List[SomaticReading]:
-        if channel is None:
-            return list(self._readings)
-        return [r for r in self._readings if r.channel == channel]
+    def latest(self) -> Optional[SomaticReading]:
+        return self._history[-1] if self._history else None
 
-    def reset(self) -> None:
-        self._readings.clear()
-
-    def to_dict(self) -> dict:
-        return {"reading_count": len(self._readings)}
-
-
-_interface: Optional[SomaticInterface] = None
-
-
-def get_somatic_interface() -> SomaticInterface:
-    global _interface
-    if _interface is None:
-        _interface = SomaticInterface()
-    return _interface
+    def history(self) -> List[SomaticReading]:
+        return list(self._history)

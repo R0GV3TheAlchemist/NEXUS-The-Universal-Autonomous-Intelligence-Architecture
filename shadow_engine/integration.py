@@ -1,73 +1,60 @@
 """
-shadow_engine.integration — integrates shadow detections into the psyche model.
-
-Provides:
-  - ShadowIntegrationPipeline : high-level integration pipeline
+shadow_engine/integration.py
+Integration Tracker — monitors shadow integration progress over time.
 """
 from __future__ import annotations
-
-import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from shadow_engine.archetypes import ArchetypeDetectionResult, ShadowArchetype
-
-log = logging.getLogger(__name__)
+from shadow_engine.types import ShadowArchetype, ShadowRecord, ACTIVATION_THRESHOLD
 
 
 @dataclass
-class IntegrationRecord:
-    """Records the outcome of a single integration step."""
-
-    archetype: ShadowArchetype = ShadowArchetype.THE_SHADOW
-    depth: float = 0.0
-    resolved: bool = False
-    metadata: dict = field(default_factory=dict)
+class IntegrationEntry:
+    archetype:       ShadowArchetype
+    integration_pct: float = 0.0
+    activations:     int   = 0
+    integrations:    int   = 0
 
     def to_dict(self) -> dict:
         return {
-            "archetype": self.archetype.value,
-            "depth": self.depth,
-            "resolved": self.resolved,
-            "metadata": self.metadata,
+            "archetype":       self.archetype.value,
+            "integration_pct": round(self.integration_pct, 4),
+            "activations":     self.activations,
+            "integrations":    self.integrations,
         }
 
 
-class ShadowIntegrationPipeline:
-    """Integrates archetype detections into the shadow-integration model."""
+class IntegrationTracker:
+    """
+    Tracks per-archetype integration progress across shadow activation events.
+    """
 
     def __init__(self) -> None:
-        self._records: List[IntegrationRecord] = []
-        log.info("ShadowIntegrationPipeline initialised")
+        self._entries: Dict[ShadowArchetype, IntegrationEntry] = {}
 
-    def integrate(self, detection: ArchetypeDetectionResult) -> IntegrationRecord:
-        depth = detection.confidence * 0.8
-        record = IntegrationRecord(
-            archetype=detection.primary,
-            depth=depth,
-            resolved=depth > 0.5,
-        )
-        self._records.append(record)
-        return record
+    def _get_or_create(self, archetype: ShadowArchetype) -> IntegrationEntry:
+        if archetype not in self._entries:
+            self._entries[archetype] = IntegrationEntry(archetype=archetype)
+        return self._entries[archetype]
 
-    def get_records(self) -> List[IntegrationRecord]:
-        return list(self._records)
+    def record(self, record: ShadowRecord) -> IntegrationEntry:
+        entry = self._get_or_create(record.archetype)
+        if record.is_activated:
+            entry.activations += 1
+        if record.integrated:
+            entry.integrations += 1
+            pct_change = min(100.0, 100.0 * entry.integrations / max(1, entry.activations))
+            entry.integration_pct = pct_change
+        return entry
 
-    def reset(self) -> None:
-        self._records.clear()
+    def get(self, archetype: ShadowArchetype) -> Optional[IntegrationEntry]:
+        return self._entries.get(archetype)
 
-    def to_dict(self) -> dict:
-        return {
-            "record_count": len(self._records),
-            "resolved_count": sum(1 for r in self._records if r.resolved),
-        }
+    def all_entries(self) -> List[IntegrationEntry]:
+        return list(self._entries.values())
 
-
-_pipeline: Optional[ShadowIntegrationPipeline] = None
-
-
-def get_shadow_integration_pipeline() -> ShadowIntegrationPipeline:
-    global _pipeline
-    if _pipeline is None:
-        _pipeline = ShadowIntegrationPipeline()
-    return _pipeline
+    def overall_pct(self) -> float:
+        if not self._entries:
+            return 0.0
+        return sum(e.integration_pct for e in self._entries.values()) / len(self._entries)

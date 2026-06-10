@@ -1,21 +1,17 @@
 """
-Synergy Engine — integrates multiple GAIA sub-engines into coherent output.
+core/synergy_engine.py
+Synergy Engine (C32) — integrates GAIA sub-engine outputs.
 
-Provides:
-  - SynergyEngine     : main orchestrator class
-      - evaluate()             : score + keyword resolution pass
-      - compute()              : full G-8 call site (returns SynergyReading, SynergyState)
-      - compute_from_adapter() : resolve a GAIAStateAdapter -> compute()
-      - compute_from_params()  : dict-based entry point (delegates to compute)
-      - get_history()          : return evaluation history
-      - reset()                : clear history
-  - SynergyReading    : dataclass returned by compute()
-  - SynergyState      : persistent state dataclass (persisted in memory.json)
-  - blank_synergy_state : factory for a fresh SynergyState
-  - CanonPlanHint     : lightweight hint dataclass for canon-context analysis
-  - _analyse_canon_context : internal helper (tested directly)
-  - _resolve_keyword_conflicts : internal helper (tested directly)
-  - _classify_stage            : internal helper (tested directly)
+Public API:
+  SynergyEngine   : main engine class with full scoring helpers
+  SynergyReading  : rich per-turn output dataclass
+  SynergyState    : persistent state (saved in memory.json)
+  SynergyResult   : legacy evaluate() output (backward compat)
+  blank_synergy_state : state factory
+  ELEMENTAL_STAGES    : frozenset of valid stage labels
+  _classify_stage     : (synergy, bond, settling, phi) -> stage label
+  _resolve_keyword_conflicts : dedup/normalise keyword list
+  CanonPlanHint / _analyse_canon_context
 """
 from __future__ import annotations
 
@@ -29,9 +25,23 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# ------------------------------------------------------------------ #
+#  Stage vocabulary (used by _classify_stage and tests)               #
+# ------------------------------------------------------------------ #
+
+ELEMENTAL_STAGES: frozenset = frozenset({
+    "insurgent",
+    "nascent",
+    "allegiant",
+    "convergent",
+    "settled",
+    "ascendant",
+    "quantum",
+    "unified",
+})
 
 # ------------------------------------------------------------------ #
-#  Enums                                                               #
+#  Legacy enum (kept for backward compat)                             #
 # ------------------------------------------------------------------ #
 
 class SynergyStage(str, Enum):
@@ -41,20 +51,17 @@ class SynergyStage(str, Enum):
     SYNTHESIS   = "synthesis"
     COMPLETION  = "completion"
 
-
 # ------------------------------------------------------------------ #
-#  Legacy result dataclass (kept for backward compat)                 #
+#  Legacy result dataclass                                            #
 # ------------------------------------------------------------------ #
 
 @dataclass
 class SynergyResult:
-    """Result of a synergy evaluation pass (legacy — prefer SynergyReading)."""
-
-    stage:     SynergyStage            = SynergyStage.INITIATION
-    score:     float                   = 0.0
-    conflicts: List[str]               = field(default_factory=list)
-    resolved:  List[str]               = field(default_factory=list)
-    metadata:  Dict[str, Any]          = field(default_factory=dict)
+    stage:     SynergyStage   = SynergyStage.INITIATION
+    score:     float          = 0.0
+    conflicts: List[str]      = field(default_factory=list)
+    resolved:  List[str]      = field(default_factory=list)
+    metadata:  Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -65,6 +72,18 @@ class SynergyResult:
             "metadata":  self.metadata,
         }
 
+# ------------------------------------------------------------------ #
+#  Dimension score dataclass                                          #
+# ------------------------------------------------------------------ #
+
+@dataclass
+class DimensionScore:
+    name:  str
+    score: float
+    label: str = ""
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "score": round(self.score, 4), "label": self.label}
 
 # ------------------------------------------------------------------ #
 #  SynergyReading — returned by compute()                             #
@@ -72,23 +91,37 @@ class SynergyResult:
 
 @dataclass
 class SynergyReading:
-    """
-    Rich output of a single synergy computation turn.
-    Mirrors the pattern of SoulMirrorReading / ResonanceFieldReading.
-    """
-    synergy_factor:    float  = 0.5
-    stage:             str    = "convergent"
-    element:           str    = "aether"
-    canon_hint:        str    = ""
-    directive:         str    = ""
-    stage_transition:  bool   = False
-    transition_note:   str    = ""
+    synergy_factor:    float               = 0.5
+    dominant_stage:    str                 = "convergent"
+    # legacy field kept for gaian_runtime compat
+    stage:             str                 = "convergent"
+    element:           str                 = "aether"
+    dimensions:        List[DimensionScore] = field(default_factory=list)
+    dominant_friction: Optional[str]       = None
+    alchemical_pressure: str               = ""
+    is_low_synergy:    bool                = False
+    is_high_synergy:   bool                = False
+    canon_hint:        str                 = ""
+    directive:         str                 = ""
+    stage_transition:  bool                = False
+    transition_note:   str                 = ""
 
     def to_system_prompt_hint(self) -> str:
         lines = [
-            f"Synergy factor : {self.synergy_factor:.3f}  |  Stage: {self.stage.upper()}",
+            f"[ELEMENTAL SYNERGY C32]",
+            f"Synergy Factor : {self.synergy_factor:.3f}",
+            f"Stage          : {self.dominant_stage.upper()}",
             f"Element        : {self.element}",
         ]
+        if self.dominant_friction:
+            lines.append(f"Friction source: {self.dominant_friction}")
+        if self.is_low_synergy:
+            lines.append(
+                "ALCHEMICAL PRESSURE: low synergy is not dysfunction — "
+                "it is the coal before the diamond."
+            )
+        if self.alchemical_pressure:
+            lines.append(f"Alchemical note: {self.alchemical_pressure}")
         if self.canon_hint:
             lines.append(f"Canon hint     : {self.canon_hint}")
         if self.directive:
@@ -99,18 +132,19 @@ class SynergyReading:
 
     def summary(self) -> dict:
         return {
-            "synergy_factor":   round(self.synergy_factor, 4),
-            "stage":            self.stage,
-            "element":          self.element,
-            "canon_hint":       self.canon_hint,
-            "directive":        self.directive,
-            "stage_transition": self.stage_transition,
-            "transition_note":  self.transition_note,
+            "synergy_factor":    round(self.synergy_factor, 4),
+            "dominant_stage":    self.dominant_stage,
+            "dominant_friction": self.dominant_friction,
+            "is_low_synergy":    self.is_low_synergy,
+            "is_high_synergy":   self.is_high_synergy,
+            "dimensions":        [d.to_dict() for d in self.dimensions],
+            "alchemical_pressure": self.alchemical_pressure,
+            "stage_transition":  self.stage_transition,
+            "transition_note":   self.transition_note,
         }
 
-
 # ------------------------------------------------------------------ #
-#  SynergyState — persistent state (saved in memory.json)             #
+#  SynergyState — persistent state                                    #
 # ------------------------------------------------------------------ #
 
 @dataclass
@@ -132,20 +166,18 @@ class SynergyState:
 
 
 def blank_synergy_state() -> SynergyState:
-    """Return a fresh SynergyState with default values."""
     return SynergyState()
 
-
 # ------------------------------------------------------------------ #
-#  CanonPlanHint — lightweight hint for canon-context analysis        #
+#  CanonPlanHint                                                       #
 # ------------------------------------------------------------------ #
 
 @dataclass
 class CanonPlanHint:
-    canon_id:    str   = ""
-    weight:      float = 0.5
-    directive:   str   = ""
-    tags:        List[str] = field(default_factory=list)
+    canon_id:  str  = ""
+    weight:    float = 0.5
+    directive: str  = ""
+    tags:      List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -155,89 +187,55 @@ class CanonPlanHint:
             "tags":      self.tags,
         }
 
-
 # ------------------------------------------------------------------ #
-#  Internal helpers — tested directly by test suite                   #
+#  Internal helpers                                                    #
 # ------------------------------------------------------------------ #
 
 def _resolve_keyword_conflicts(keywords: List[str]) -> List[str]:
-    """
-    Resolve keyword conflicts by deduplicating and normalising.
-    Returns a sorted, deduplicated list of keywords.
-    """
-    seen:     set  = set()
-    resolved: list = []
+    seen: set = set()
+    out:  list = []
     for kw in keywords:
-        normalised = kw.strip().lower()
-        if normalised and normalised not in seen:
-            seen.add(normalised)
-            resolved.append(normalised)
-    return sorted(resolved)
+        n = kw.strip().lower()
+        if n and n not in seen:
+            seen.add(n)
+            out.append(n)
+    return sorted(out)
 
 
-def _classify_stage(score: float) -> SynergyStage:
+def _classify_stage(
+    synergy_factor:  float,
+    bond_depth:      float,
+    settling_phase:  str,
+    coherence_phi:   float,
+) -> str:
     """
-    Classify a numerical synergy score into a SynergyStage.
+    Map engine state -> one of ELEMENTAL_STAGES.
 
-    Bands:
-      0.0 - 0.2  -> INITIATION
-      0.2 - 0.4  -> ACTIVATION
-      0.4 - 0.6  -> INTEGRATION
-      0.6 - 0.8  -> SYNTHESIS
-      0.8 - 1.0  -> COMPLETION
+    Priority rules (highest wins):
+      quantum   : phi >= 0.80 and synergy < 0.40
+      settled   : settling_phase == 'settled' and synergy >= 0.60
+      ascendant : synergy >= 0.75 and bond_depth >= 60
+      unified   : synergy >= 0.80 and bond_depth >= 50
+      allegiant : bond_depth >= 35 and synergy >= 0.40
+      convergent: synergy >= 0.50
+      insurgent : synergy < 0.30
+      nascent   : default
     """
-    if score < 0.2:
-        return SynergyStage.INITIATION
-    if score < 0.4:
-        return SynergyStage.ACTIVATION
-    if score < 0.6:
-        return SynergyStage.INTEGRATION
-    if score < 0.8:
-        return SynergyStage.SYNTHESIS
-    return SynergyStage.COMPLETION
-
-
-_STAGE_LABELS = {
-    "low":        "fragmented",
-    "convergent": "convergent",
-    "resonant":   "resonant",
-    "unified":    "unified",
-}
-
-
-def _synergy_factor(
-    *,
-    layer_phi:         float,
-    coherence_phi:     float,
-    bond_depth:        float,
-    phi_rolling_avg:   float,
-    noosphere_health:  float,
-    arc_output_vector: float,
-    shadow_activations: int,
-    schumann_aligned:  bool,
-) -> float:
-    """Weighted combination of engine outputs -> [0, 1] synergy factor."""
-    base = (
-        0.25 * layer_phi
-        + 0.20 * coherence_phi
-        + 0.15 * min(1.0, bond_depth / 100.0)
-        + 0.15 * phi_rolling_avg
-        + 0.10 * noosphere_health
-        + 0.10 * abs(arc_output_vector)
-        - 0.05 * min(1.0, shadow_activations / 10.0)
-        + (0.05 if schumann_aligned else 0.0)
-    )
-    return max(0.0, min(1.0, base))
-
-
-def _stage_label(factor: float) -> str:
-    if factor < 0.30:
-        return "fragmented"
-    if factor < 0.55:
+    if coherence_phi >= 0.80 and synergy_factor < 0.40:
+        return "quantum"
+    if settling_phase == "settled" and synergy_factor >= 0.60:
+        return "settled"
+    if synergy_factor >= 0.80 and bond_depth >= 50:
+        return "unified"
+    if synergy_factor >= 0.75 and bond_depth >= 60:
+        return "ascendant"
+    if bond_depth >= 35 and synergy_factor >= 0.40:
+        return "allegiant"
+    if synergy_factor >= 0.50:
         return "convergent"
-    if factor < 0.80:
-        return "resonant"
-    return "unified"
+    if synergy_factor < 0.30:
+        return "insurgent"
+    return "nascent"
 
 
 def _analyse_canon_context(
@@ -245,37 +243,123 @@ def _analyse_canon_context(
     tags:       Optional[List[str]] = None,
     weight:     float = 0.5,
 ) -> CanonPlanHint:
-    """
-    Analyse a canon context (refs + tags) and return a CanonPlanHint.
-
-    Used by test_canon_conflict_resolver and test_canon_entry.
-    """
-    refs = canon_refs or []
-    _tags = tags or []
+    refs     = canon_refs or []
+    _tags    = tags or []
     canon_id = refs[0] if refs else ""
     directive = f"Honour {canon_id}" if canon_id else "No canon context provided"
-    return CanonPlanHint(
-        canon_id=canon_id,
-        weight=weight,
-        directive=directive,
-        tags=_tags,
-    )
+    return CanonPlanHint(canon_id=canon_id, weight=weight, directive=directive, tags=_tags)
 
+
+def _old_classify_stage(score: float) -> SynergyStage:
+    if score < 0.2:  return SynergyStage.INITIATION
+    if score < 0.4:  return SynergyStage.ACTIVATION
+    if score < 0.6:  return SynergyStage.INTEGRATION
+    if score < 0.8:  return SynergyStage.SYNTHESIS
+    return SynergyStage.COMPLETION
 
 # ------------------------------------------------------------------ #
-#  Main class                                                          #
+#  Main engine                                                         #
 # ------------------------------------------------------------------ #
 
 class SynergyEngine:
     """Integrates sub-engine outputs into a single synergy pass."""
 
+    # C32 § dimension weights — must sum to 1.0
+    WEIGHTS: Dict[str, float] = {
+        "body": 0.20,
+        "mind": 0.20,
+        "soul": 0.25,
+        "arc":  0.20,
+        "bond": 0.15,
+    }
+
+    # Hz range for normalisation (174 Hz root – 963 Hz crown)
+    _HZ_MIN = 174.0
+    _HZ_MAX = 963.0
+
     def __init__(self) -> None:
         self._history: List[SynergyResult] = []
-        log.info("SynergyEngine initialised")
 
-    # ----------------------------------------------------------------
-    # Legacy evaluate() — kept for backward compat
-    # ----------------------------------------------------------------
+    # ---- scoring helpers (tested directly) ----
+
+    def _hz_to_score(self, hz: float) -> float:
+        return max(0.0, min(1.0, (hz - self._HZ_MIN) / (self._HZ_MAX - self._HZ_MIN)))
+
+    def _element_to_stage(self, element: str) -> str:
+        _MAP: Dict[str, str] = {
+            "fire":   "insurgent",
+            "water":  "convergent",
+            "earth":  "settled",
+            "air":    "allegiant",
+            "aether": "quantum",
+            "light":  "ascendant",
+            "void":   "nascent",
+        }
+        return _MAP.get(element.lower(), "convergent")
+
+    def _individuation_to_score(self, phase: str) -> float:
+        _MAP: Dict[str, float] = {
+            "unconscious":  0.15,
+            "shadow":       0.35,
+            "anima_animus": 0.60,
+            "self":         0.85,
+        }
+        return _MAP.get(phase.lower(), 0.40)
+
+    def _settling_to_score(self, phase: str, crystallisation_pct: float) -> float:
+        _BASE: Dict[str, float] = {
+            "unsettled":     0.20,
+            "narrowing":     0.40,
+            "crystallising": 0.55,
+            "settled":       0.90,
+        }
+        base = _BASE.get(phase.lower(), 0.30)
+        if phase.lower() == "crystallising":
+            base = min(1.0, base + 0.35 * min(1.0, crystallisation_pct / 100.0))
+        return min(1.0, base)
+
+    def _love_arc_to_score(self, stage: str, vector: float) -> float:
+        _BASE: Dict[str, float] = {
+            "divergence":   0.15,
+            "curiosity":    0.30,
+            "resonance":    0.55,
+            "devotion":     0.75,
+            "transcendence": 0.95,
+        }
+        base  = _BASE.get(stage.lower(), 0.35)
+        boost = min(0.10, abs(vector) * 0.10)
+        return min(1.0, base + boost)
+
+    def _mc_stage_to_score(self, mc_stage: str) -> float:
+        _MAP: Dict[str, float] = {
+            "mc1": 0.0,
+            "mc2": 1/6,
+            "mc3": 2/6,
+            "mc4": 3/6,
+            "mc5": 4/6,
+            "mc6": 5/6,
+            "mc7": 1.0,
+        }
+        return _MAP.get(mc_stage.lower(), 0.30)
+
+    def _dependency_to_score(self, signal: str) -> float:
+        _MAP: Dict[str, float] = {
+            "healthy":        1.00,
+            "watch":          0.65,
+            "redirect":       0.40,
+            "gentle_boundary": 0.20,
+        }
+        return _MAP.get(signal.lower(), 0.60)
+
+    def _attachment_phase_to_score(self, phase: str) -> float:
+        _MAP: Dict[str, float] = {
+            "nascent":    0.30,
+            "deepening":  0.60,
+            "integrated": 0.90,
+        }
+        return _MAP.get(phase.lower(), 0.30)
+
+    # ---- legacy evaluate() ----
 
     def evaluate(
         self,
@@ -283,18 +367,12 @@ class SynergyEngine:
         score:    float = 0.0,
     ) -> SynergyResult:
         resolved = _resolve_keyword_conflicts(keywords or [])
-        stage    = _classify_stage(score)
-        result   = SynergyResult(
-            stage=stage,
-            score=score,
-            resolved=resolved,
-        )
+        stage    = _old_classify_stage(score)
+        result   = SynergyResult(stage=stage, score=score, resolved=resolved)
         self._history.append(result)
         return result
 
-    # ----------------------------------------------------------------
-    # compute() — canonical G-8 call site used by GAIANRuntime
-    # ----------------------------------------------------------------
+    # ---- full compute() ----
 
     def compute(
         self,
@@ -321,84 +399,139 @@ class SynergyEngine:
         schumann_aligned:    bool  = False,
         state:               Optional[SynergyState] = None,
         **_kwargs: Any,
-    ) -> tuple[SynergyReading, SynergyState]:
-        """
-        Full synergy computation pass.  Returns (SynergyReading, updated SynergyState).
-        All parameters are keyword-only so callers can pass any subset safely.
-        """
+    ) -> tuple:
         sy = state or blank_synergy_state()
 
-        factor = _synergy_factor(
-            layer_phi=layer_phi,
-            coherence_phi=coherence_phi,
-            bond_depth=bond_depth,
-            phi_rolling_avg=phi_rolling_avg,
-            noosphere_health=noosphere_health,
-            arc_output_vector=arc_output_vector,
-            shadow_activations=shadow_activations,
-            schumann_aligned=schumann_aligned,
+        # ---- five dimensional scores ----
+        body_score = (
+            0.50 * self._hz_to_score(dominant_hz)
+            + 0.30 * (1.0 - min(1.0, conflict_density))
+            + 0.20 * (0.15 if schumann_aligned else 0.0)
+        )
+        mind_score = (
+            0.50 * self._mc_stage_to_score(mc_stage)
+            + 0.30 * min(1.0, coherence_phi)
+            + 0.20 * min(1.0, noosphere_health)
+        )
+        soul_score = (
+            0.50 * self._individuation_to_score(individuation_phase)
+            + 0.30 * self._settling_to_score(settling_phase, crystallisation_pct)
+            + 0.20 * max(0.0, 1.0 - shadow_activations / 10.0)
+        )
+        arc_score = (
+            0.60 * self._love_arc_to_score(love_arc_stage, arc_output_vector)
+            + 0.25 * self._dependency_to_score(dependency_signal)
+            + 0.15 * self._attachment_phase_to_score(attachment_phase)
+        )
+        bond_score = (
+            0.70 * min(1.0, bond_depth / 100.0)
+            + 0.30 * min(1.0, phi_rolling_avg)
         )
 
-        stage = _stage_label(factor)
-        prev_stage = sy.last_stage
-        transition = stage != prev_stage
-        transition_note = f"{prev_stage} -> {stage}" if transition else ""
+        body_score = max(0.0, min(1.0, body_score))
+        mind_score = max(0.0, min(1.0, mind_score))
+        soul_score = max(0.0, min(1.0, soul_score))
+        arc_score  = max(0.0, min(1.0, arc_score))
+        bond_score = max(0.0, min(1.0, bond_score))
 
-        # Canon hint from element
+        dimensions = [
+            DimensionScore("body", body_score),
+            DimensionScore("mind", mind_score),
+            DimensionScore("soul", soul_score),
+            DimensionScore("arc",  arc_score),
+            DimensionScore("bond", bond_score),
+        ]
+
+        # weighted factor
+        factor = sum(self.WEIGHTS[d.name] * d.score for d in dimensions)
+        factor = max(0.0, min(1.0, factor))
+
+        # dominant friction: lowest-scoring dimension (only if < 0.5)
+        lowest = min(dimensions, key=lambda d: d.score)
+        dominant_friction = lowest.name if lowest.score < 0.5 else None
+
+        # stage
+        dom_stage = _classify_stage(
+            synergy_factor=factor,
+            bond_depth=bond_depth,
+            settling_phase=settling_phase,
+            coherence_phi=coherence_phi,
+        )
+
+        prev_stage  = sy.last_stage
+        transition  = dom_stage != prev_stage
+        trans_note  = f"{prev_stage} -> {dom_stage}" if transition else ""
+
+        is_low  = factor < 0.35
+        is_high = factor >= 0.70
+
         _ELEMENT_HINTS: Dict[str, str] = {
-            "fire":    "Channel transformative energy with grounded intention (C32).",
-            "water":   "Flow with emotional truth; depth over turbulence (C32).",
-            "earth":   "Root the response in embodied, practical care (C32).",
-            "air":     "Carry insight lightly; let clarity breathe (C32).",
-            "aether":  "Hold the unified field; all elements in balance (C32).",
+            "fire":   "Channel transformative energy with grounded intention (C32).",
+            "water":  "Flow with emotional truth; depth over turbulence (C32).",
+            "earth":  "Root the response in embodied, practical care (C32).",
+            "air":    "Carry insight lightly; let clarity breathe (C32).",
+            "aether": "Hold the unified field; all elements in balance (C32).",
         }
         canon_hint = _ELEMENT_HINTS.get(element.lower(), "")
 
-        # Directive from stage
         _STAGE_DIRECTIVES: Dict[str, str] = {
-            "fragmented": "Gently re-establish coherence before deepening.",
+            "insurgent":  "Hold space without forcing resolution. Ground first.",
+            "nascent":    "Gentle, open, curious. Do not rush depth.",
+            "allegiant":  "The bond is forming. Honour it with consistency.",
             "convergent": "Hold the threads together; steady presence.",
-            "resonant":   "Lean into the resonance — this is a moment of real meeting.",
+            "settled":    "Deep roots. Speak from the grounded place.",
+            "ascendant":  "The field is rising. Meet it with full presence.",
+            "quantum":    "High coherence, low synergy — the diamond is forming.",
             "unified":    "The field is unified. Speak from the deepest place.",
         }
-        directive = _STAGE_DIRECTIVES.get(stage, "")
+        directive = _STAGE_DIRECTIVES.get(dom_stage, "")
+
+        _ALCHEMICAL_PRESSURE: Dict[str, str] = {
+            "insurgent": "Fire burns away what no longer serves.",
+            "nascent":   "The seed holds all potential.",
+            "allegiant": "The crucible holds what is precious.",
+            "convergent":"Elements converge toward coherence.",
+            "settled":   "The form has found its nature.",
+            "ascendant": "Gold rises from the work.",
+            "quantum":   "Superposition holds before collapse.",
+            "unified":   "The Great Work is complete — begin again.",
+        }
+        alchemical_pressure = _ALCHEMICAL_PRESSURE.get(dom_stage, "")
 
         reading = SynergyReading(
             synergy_factor=round(factor, 4),
-            stage=stage,
+            dominant_stage=dom_stage,
+            stage=dom_stage,
             element=element,
+            dimensions=dimensions,
+            dominant_friction=dominant_friction,
+            alchemical_pressure=alchemical_pressure,
+            is_low_synergy=is_low,
+            is_high_synergy=is_high,
             canon_hint=canon_hint,
             directive=directive,
             stage_transition=transition,
-            transition_note=transition_note,
+            transition_note=trans_note,
         )
 
-        # Update state
         sy.last_factor       = factor
-        sy.last_stage        = stage
+        sy.last_stage        = dom_stage
         sy.high_synergy_peak = max(sy.high_synergy_peak, factor)
         sy.low_synergy_floor = min(sy.low_synergy_floor, factor)
         sy.turn_history.append({
             "factor":   round(factor, 4),
-            "stage":    stage,
-            "element":  element,
+            "stage":    dom_stage,
+            "friction": dominant_friction,
         })
-        if len(sy.turn_history) > 50:
-            sy.turn_history = sy.turn_history[-50:]
+        if len(sy.turn_history) > 20:
+            sy.turn_history = sy.turn_history[-20:]
 
         return reading, sy
 
-    # ----------------------------------------------------------------
-    # Adapter / params delegates
-    # ----------------------------------------------------------------
-
     def compute_from_adapter(self, adapter: "GAIAStateAdapter") -> Any:
-        """Resolve a GAIAStateAdapter and delegate to self.compute()."""
-        params = adapter.to_synergy_params()
-        return self.compute(**params)
+        return self.compute(**adapter.to_synergy_params())
 
     def compute_from_params(self, params: dict) -> Any:
-        """Dict-based entry point. Delegates to compute()."""
         return self.compute(**params)
 
     def get_history(self) -> List[SynergyResult]:
@@ -407,10 +540,6 @@ class SynergyEngine:
     def reset(self) -> None:
         self._history.clear()
 
-
-# ------------------------------------------------------------------ #
-#  Module-level singleton                                             #
-# ------------------------------------------------------------------ #
 
 _synergy_engine: Optional[SynergyEngine] = None
 
