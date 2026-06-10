@@ -7,6 +7,7 @@ Canon Ref: C42 — Edge-of-Chaos Processing Doctrine
 from __future__ import annotations
 
 import math
+import time as _time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
@@ -51,9 +52,6 @@ class CriticalityReport:
 # CriticalDynamicsMonitor
 # ---------------------------------------------------------------------------
 
-import time as _time
-
-
 class CriticalDynamicsMonitor:
     """Monitors system criticality via spectral, entropy and Lyapunov proxies."""
 
@@ -68,18 +66,12 @@ class CriticalDynamicsMonitor:
         self._history: List[CriticalityReport] = []
         self._active:  bool = True
 
-    # ------------------------------------------------------------------ #
-    #  Internal computation helpers                                        #
-    # ------------------------------------------------------------------ #
-
     def _compute_spectral_proxy(self, probs: Optional[List[float]]) -> float:
         if not probs or len(probs) < 2:
             return self.SPECTRAL_TARGET
         n   = len(probs)
         avg = sum(probs) / n
         variance = sum((p - avg) ** 2 for p in probs) / n
-        # More variance (spread) → above target (more chaotic)
-        # Less variance (peaked) → below target (more ordered)
         raw = self.SPECTRAL_TARGET + (variance - 1.0 / n) * n
         return float(max(0.1, min(2.0, raw)))
 
@@ -133,10 +125,6 @@ class CriticalDynamicsMonitor:
         if state == CriticalityState.CHAOTIC:
             return "Apply stabilization temperature reduction to restore order boundary."
         return "Collect more data before issuing a corrective action."
-
-    # ------------------------------------------------------------------ #
-    #  Public API                                                          #
-    # ------------------------------------------------------------------ #
 
     def assess(
         self,

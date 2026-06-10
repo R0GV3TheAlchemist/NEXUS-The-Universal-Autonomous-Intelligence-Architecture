@@ -7,7 +7,6 @@ Full API expected by tests/test_atlas.py.
 from __future__ import annotations
 
 import math
-import random
 import time
 from collections import deque
 from dataclasses import dataclass, field
@@ -15,7 +14,7 @@ from enum import Enum
 from typing import Deque, Dict, List, Optional
 
 try:
-    import requests as requests  # noqa: F401
+    import requests  # noqa: F401
     _REQUESTS_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _REQUESTS_AVAILABLE = False
@@ -73,18 +72,12 @@ class SchumannReader:
     """Models Schumann resonance readings."""
 
     def read(self, kp_index: float = 0.0) -> tuple[float, float]:
-        """
-        Return (hz, amplitude) for given Kp index.
-        Hz stays within ±1 of SCHUMANN_FUNDAMENTAL.
-        Amplitude decreases under geomagnetic storm.
-        """
         hz = SCHUMANN_FUNDAMENTAL + math.sin(kp_index * 0.1) * 0.3
         hz = max(6.5, min(9.0, hz))
         amplitude = max(0.0, min(1.0, 1.0 - kp_index * 0.08))
         return hz, amplitude
 
     def get_harmonics(self, hz: float) -> List[float]:
-        """Return 5 harmonics ascending from hz."""
         return [hz * (i + 1) for i in range(5)]
 
     def get_dominant_mode(self, hz: float) -> SchumannMode:
@@ -99,8 +92,6 @@ class SchumannReader:
 # ---------------------------------------------------------------------------
 
 class GeomagneticReader:
-    """Provides geomagnetic field readings."""
-
     _DEFAULT_KP: float = 2.0
     _DEFAULT_BZ: float = 0.0
 
@@ -208,10 +199,10 @@ try:
     from core.viriditas_magnum_opus import SCHUMANN_HARMONICS as _VMO_HARMONICS
 except ImportError:
     _VMO_HARMONICS: Dict[str, float] = {
-        "nigredo":   7.83,
-        "albedo":    14.3,
-        "citrinitas": 20.8,
-        "rubedo":    27.3,
+        "nigredo":      7.83,
+        "albedo":       14.3,
+        "citrinitas":   20.8,
+        "rubedo":       27.3,
         "quintessence": 31.32,
     }
 
@@ -221,7 +212,7 @@ _CARRIER_VALUES = list(_VMO_HARMONICS.values())
 class AtlasEngine:
     """Unified ATLAS engine — produces EarthPulse readings."""
 
-    _MAX_HISTORY = 288  # 24 h × 5-min intervals
+    _MAX_HISTORY = 288
 
     def __init__(self) -> None:
         self._schumann  = SchumannReader()
@@ -237,15 +228,9 @@ class AtlasEngine:
         hz, amp = self._schumann.read(kp_index=kp)
         harmonics = self._schumann.get_harmonics(hz)
         mode = self._schumann.get_dominant_mode(hz)
-
-        # Coherence baseline — decreases with storm intensity
         coherence = max(0.0, min(1.0, 0.8 - kp * 0.05))
-
-        # Pick viriditas carrier from VMO harmonics
         carrier = _CARRIER_VALUES[len(self._history) % len(_CARRIER_VALUES)]
-
         status = AtlasStatus.MODELED if not _REQUESTS_AVAILABLE else AtlasStatus.LIVE
-
         pulse = EarthPulse(
             timestamp=time.time(),
             schumann_hz=hz,
@@ -264,7 +249,6 @@ class AtlasEngine:
         self._current = pulse
 
     def pulse(self) -> EarthPulse:
-        """Return the most recent EarthPulse (same object until refresh)."""
         if self._current is None:
             self._refresh()
         return self._current  # type: ignore[return-value]
