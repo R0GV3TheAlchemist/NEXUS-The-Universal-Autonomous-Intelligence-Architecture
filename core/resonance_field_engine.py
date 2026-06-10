@@ -79,8 +79,7 @@ class ResonanceFieldState:
         if len(self.hz_history) > self._HZ_HISTORY_CAP:
             self.hz_history = self.hz_history[-self._HZ_HISTORY_CAP:]
         self.dominant_hz = hz
-        if hz > self.session_peak_hz:
-            self.session_peak_hz = hz
+        self.session_peak_hz = max(self.session_peak_hz, hz)  # PLR1730
 
     def record_schumann_coupling(self) -> None:
         self.schumann_alignment_count += 1
