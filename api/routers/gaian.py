@@ -34,7 +34,7 @@ log = logging.getLogger("gaia.api.gaian")
 router = APIRouter(tags=["Gaian"])
 
 
-# ── Runtime registry ────────────────────────────────────────────────────────────────────
+# ── Runtime registry ──────────────────────────────────────────────────────────────────────────────────
 
 _runtimes: dict[str, GAIANRuntime] = {}
 
@@ -51,7 +51,7 @@ def _get_runtime(gaian_name: str, memory_dir: str = "./gaians") -> GAIANRuntime:
     return _runtimes[key]
 
 
-# ── Memory context injection helper ──────────────────────────────────────────────
+# ── Memory context injection helper ───────────────────────────────────────────────
 
 def _inject_memory(system_prompt: str, memory_context: Optional[str]) -> str:
     """
@@ -74,7 +74,7 @@ def _inject_memory(system_prompt: str, memory_context: Optional[str]) -> str:
     return f"{system_prompt}\n\n{memory_context.strip()}"
 
 
-# ── Pydantic models ───────────────────────────────────────────────────────────────────
+# ── Pydantic models ─────────────────────────────────────────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
     """Legacy model (POST /api/gaian/chat)."""
@@ -110,7 +110,7 @@ class ChatResponse(BaseModel):
     state_snapshot: dict
 
 
-# ── PRIMARY ENDPOINT: /api/gaians/{slug}/chat  (GaiaChat.tsx → here) ──────────
+# ── PRIMARY ENDPOINT: /api/gaians/{slug}/chat  (GaiaChat.tsx → here) ────────
 
 @router.post(
     "/gaians/{slug}/chat",
@@ -146,7 +146,7 @@ async def gaians_slug_chat(slug: str, req: ChatRequestV2) -> StreamingResponse:
     runtime = _get_runtime(slug)
     t0 = time.perf_counter()
 
-    # ─ Step 1: run all soul engines ─────────────────────────────────────────────
+    # ─ Step 1: run all soul engines ─────────────────────────────────────────────────────
     try:
         result = runtime.process(req.message)
     except Exception as exc:
@@ -162,7 +162,7 @@ async def gaians_slug_chat(slug: str, req: ChatRequestV2) -> StreamingResponse:
     if mem_hit_count:
         log.debug("[gaians/%s] Injected %d memory items into system prompt", slug, mem_hit_count)
 
-    # ─ Step 3: stream tokens via SSE ─────────────────────────────────────────
+    # ─ Step 3: stream tokens via SSE ───────────────────────────────────────────
     async def _event_stream():
         full_text: list[str] = []
         try:
@@ -182,7 +182,7 @@ async def gaians_slug_chat(slug: str, req: ChatRequestV2) -> StreamingResponse:
 
         # Persist exchange count
         runtime.attachment.total_exchanges += 1
-        runtime._persist()  # noqa: SLF001
+        runtime._persist()
 
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         snap       = result.state_snapshot
@@ -207,7 +207,7 @@ async def gaians_slug_chat(slug: str, req: ChatRequestV2) -> StreamingResponse:
     )
 
 
-# ── LEGACY: /api/gaian/chat (blocking JSON) ───────────────────────────────────
+# ── LEGACY: /api/gaian/chat (blocking JSON) ──────────────────────────────────
 
 @router.post(
     "/gaian/chat",
@@ -246,7 +246,7 @@ async def gaian_chat(req: ChatRequest) -> ChatResponse:
         )
 
     runtime.attachment.total_exchanges += 1
-    runtime._persist()  # noqa: SLF001
+    runtime._persist()
 
     return ChatResponse(
         reply=llm_result.text,
@@ -259,7 +259,7 @@ async def gaian_chat(req: ChatRequest) -> ChatResponse:
     )
 
 
-# ── LEGACY: /api/gaian/chat/stream (old SSE format) ─────────────────────────
+# ── LEGACY: /api/gaian/chat/stream (old SSE format) ───────────────────────
 
 @router.post(
     "/gaian/chat/stream",
@@ -291,7 +291,7 @@ async def gaian_chat_stream(req: ChatRequest) -> StreamingResponse:
             return
 
         runtime.attachment.total_exchanges += 1
-        runtime._persist()  # noqa: SLF001
+        runtime._persist()
 
         state_json = _json.dumps(result.state_snapshot, ensure_ascii=False)
         yield f"event: state\ndata: {state_json}\n\n"
@@ -307,7 +307,7 @@ async def gaian_chat_stream(req: ChatRequest) -> StreamingResponse:
     )
 
 
-# ── Status ──────────────────────────────────────────────────────────────────────────
+# ── Status ──────────────────────────────────────────────────────────────────────────────────
 
 @router.get(
     "/gaian/status",

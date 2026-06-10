@@ -13,7 +13,7 @@ and the GAIA Canon individuation framework.
 See also: C00 Foundational Cosmology — growth_arc_engine naming.
 """
 
-from core.viriditas_magnum_opus import *  # noqa: F401, F403
-from core.viriditas_magnum_opus import ViriditasMagnumOpus as GrowthArcEngine  # noqa: F401
+from core.viriditas_magnum_opus import *  # noqa: F403
+from core.viriditas_magnum_opus import ViriditasMagnumOpus as GrowthArcEngine
 
 __all__ = ["GrowthArcEngine"]

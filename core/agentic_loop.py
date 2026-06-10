@@ -189,17 +189,22 @@ class _LegacyActionGate:
 
 _STUB_COMPLETE_AFTER = 3
 
+# B006 fix: use a closure-based counter instead of a mutable default argument.
+# The previous `_counter: list = [0]` was shared state across all calls,
+# which is a Python footgun — the list is created once at function definition
+# time and mutated across every invocation.
+_stub_counter = [0]
+
 
 def _default_stub_planner(
     state: AgentState,
     *,
     canon_context: str = "",
-    _counter: list = [0],  # noqa: B006
 ) -> dict:
     """Minimal planner for tests: returns complete=True after 3 calls."""
-    _counter[0] += 1
-    if _counter[0] >= _STUB_COMPLETE_AFTER:
-        _counter[0] = 0
+    _stub_counter[0] += 1
+    if _stub_counter[0] >= _STUB_COMPLETE_AFTER:
+        _stub_counter[0] = 0
         return {"complete": True}
     return {"tool": "noop", "args": {}}
 
@@ -503,7 +508,7 @@ class AgenticLoop:
                             ),
                             policy_record_id=result_eval.record_id,
                         )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 # Trust gate import/config error — fail safe
                 self._log_error(
                     f"trust_gate.error [{tool_name}]: {exc}",
@@ -544,7 +549,7 @@ class AgenticLoop:
                 registry_version=registry_version,
                 permission_scope=permission_scope,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self._tel_record(f"tool.{tool_name}", time.monotonic() - t0, error=True)
             return ActionResult(
                 tool=tool_name, output=None, success=False, error=str(exc),
@@ -591,7 +596,7 @@ class AgenticLoop:
                 f"canon.ingest.{'warm' if warm else 'cold'}_start_complete",
                 meta={"session_id": session_id, **report},
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self._log_error(f"canon.ingest.failed — {exc}",
                 meta={"session_id": session_id, "error": str(exc)})
 
@@ -752,7 +757,7 @@ class AgenticLoop:
                     state.error = f"max_iterations ({self._max_iterations}) reached"
                     halt = HaltCondition.MAX_ITERATIONS
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             state.error = str(exc)
             halt = HaltCondition.ERROR
             self._log_error(f"agentic_loop.session.error — {exc}",

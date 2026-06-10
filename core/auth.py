@@ -17,7 +17,7 @@ Do NOT add new auth logic here — use core.identity.auth directly.
 Canon Ref: C01 (Sovereignty), C15 (Consent)
 """
 
-from core.identity.auth import (  # noqa: F401  (deliberate re-exports)
+from core.identity.auth import (  # noqa: F403  (deliberate re-exports)
     TokenPayload,
     create_access_token,
     verify_token,

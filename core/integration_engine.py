@@ -11,7 +11,7 @@ all twelve core modules into a coherent, contextually appropriate output.
 See also: C00 Foundational Cosmology — integration_engine naming.
 """
 
-from core.synergy_engine import *  # noqa: F401, F403
-from core.synergy_engine import SynergyEngine as IntegrationEngine  # noqa: F401
+from core.synergy_engine import *  # noqa: F403
+from core.synergy_engine import SynergyEngine as IntegrationEngine
 
 __all__ = ["IntegrationEngine"]

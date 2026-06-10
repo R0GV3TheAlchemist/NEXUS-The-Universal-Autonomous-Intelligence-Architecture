@@ -30,7 +30,7 @@ from pydantic import BaseModel, field_validator
 
 log = logging.getLogger("gaia.auth")
 
-# ── Config ──────────────────────────────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────────────────────────────────────
 
 _ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DB_PATH = os.path.join(_ROOT, "data", "users.db")
@@ -41,16 +41,18 @@ _SECRET_KEY_FILE = os.path.join(_ROOT, "data", ".jwt_secret")
 def _get_secret_key() -> str:
     os.makedirs(os.path.dirname(_SECRET_KEY_FILE), exist_ok=True)
     if os.path.exists(_SECRET_KEY_FILE):
-        return open(_SECRET_KEY_FILE).read().strip()
+        with open(_SECRET_KEY_FILE) as f:
+            return f.read().strip()
     key = secrets.token_hex(32)
-    open(_SECRET_KEY_FILE, "w").write(key)
+    with open(_SECRET_KEY_FILE, "w") as f:
+        f.write(key)
     return key
 
 SECRET_KEY    = os.environ.get("GAIA_JWT_SECRET") or _get_secret_key()
 ALGORITHM     = "HS256"
 TOKEN_EXPIRY  = timedelta(days=7)
 
-# ── DB ──────────────────────────────────────────────────────────────────────────────
+# ── DB ──────────────────────────────────────────────────────────────────────────────────
 
 def _init_db():
     os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
@@ -78,7 +80,7 @@ def _db():
     finally:
         conn.close()
 
-# ── Schemas ────────────────────────────────────────────────────────────────────────
+# ── Schemas ──────────────────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     email:    str
@@ -121,7 +123,7 @@ class UserInfo(BaseModel):
     role:       str
     created_at: str
 
-# ── JWT helpers ─────────────────────────────────────────────────────────────────────
+# ── JWT helpers ─────────────────────────────────────────────────────────────────────────────
 
 def _create_token(user_id: str, username: str, role: str) -> str:
     expire = datetime.now(timezone.utc) + TOKEN_EXPIRY
@@ -143,7 +145,7 @@ def _decode_token(token: str) -> dict:
         ) from e
 
 
-# ── Auth dependency ────────────────────────────────────────────────────────────────────
+# ── Auth dependency ─────────────────────────────────────────────────────────────────────────────────
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -157,7 +159,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(_bearer
     return _decode_token(credentials.credentials)
 
 
-# ── Router ────────────────────────────────────────────────────────────────────────────
+# ── Router ───────────────────────────────────────────────────────────────────────────────────
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

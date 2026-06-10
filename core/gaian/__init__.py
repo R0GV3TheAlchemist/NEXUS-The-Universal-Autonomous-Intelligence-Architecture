@@ -77,7 +77,7 @@ def list_gaians() -> list[dict]:
                 "last_active": data.get("last_active", 0),
                 "created_at": data.get("created_at", 0),
             })
-        except Exception:
+        except Exception:  # S112 — malformed file: skip and continue scanning
             continue
     return gaians
 
@@ -131,7 +131,7 @@ def load_gaian(slug: str) -> Optional["GaianMemory"]:
         data.setdefault("avatar_style", "digital_earth")
         valid_fields = GaianMemory.__dataclass_fields__.keys()
         return GaianMemory(**{k: v for k, v in data.items() if k in valid_fields})
-    except Exception:
+    except Exception:  # S112 — corrupt memory.json: return None, caller handles absence
         return None
 
 

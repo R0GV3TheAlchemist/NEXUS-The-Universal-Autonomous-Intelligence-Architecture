@@ -204,6 +204,24 @@ ignore = [
 # ── API layer: re-exports + conditional imports are intentional ──────────────
 "api/**/*.py" = ["F401"]
 
+# ── Core compatibility shim files (wildcard re-export bridges) ───────────────
+# These files intentionally use `from x import *` to re-export entire modules
+# under legacy names. F401/F403 are correct here and must not be removed.
+"core/rate_limiter.py"     = ["F401", "F403"]
+"core/memory_store.py"     = ["F401", "F403"]
+"core/server_state.py"     = ["F401", "F403"]
+"core/server_models.py"    = ["F401", "F403"]
+"core/memory_chroma.py"    = ["F401", "F403"]
+"core/session_memory.py"   = ["F401", "F403"]
+"core/primary_thread.py"   = ["F401", "F403"]
+"core/integration_engine.py" = ["F401", "F403"]
+"core/growth_arc_engine.py"  = ["F401", "F403"]
+"core/somatic_profile_engine.py" = ["F401", "F403"]
+"core/coherence_field_engine.py" = ["F401", "F403"]
+"core/collective_signal_layer.py" = ["F401", "F403"]
+"core/phase_state_monitor.py"   = ["F401", "F403"]
+"core/system_health_engine.py"  = ["F401", "F403"]
+
 # ── Core modules with conditional/guarded imports ───────────────────────────
 "core/codex_stage_engine.py"        = ["F401"]
 "core/crystal_mineral_database.py"  = ["F401"]
