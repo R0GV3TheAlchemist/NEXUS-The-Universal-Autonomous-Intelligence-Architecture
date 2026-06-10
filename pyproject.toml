@@ -74,7 +74,9 @@ line-length = 100
 target-version = "py311"
 
 # First-party source roots — resolves `from core.xxx import ...` correctly.
-src = [".", "core", "src-python"]
+# gaia/ added 2026-06-10: was missing, causing F821/import-classification
+# errors when ruff linted gaia/ files that import from core or gaia itself.
+src = [".", "core", "src-python", "gaia"]
 
 # Dirs never linted (generated, vendored, notebooks, migrations)
 extend-exclude = [
