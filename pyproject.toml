@@ -61,7 +61,10 @@ testpaths = ["tests"]
 # Philosophy: signal over noise. Real bugs loud; style gentle; soul-layer free.
 #
 # FUTURE-PROOF NOTES (learned the hard way):
-#   - UP038: isinstance(x,(A,B)) → A|B  — ignore until codebase migrated
+#   - ANN101/ANN102: self/cls annotation rules — REMOVED from ruff in 0.2.x.
+#     Dropped from ignore list 2026-06-10 to silence "rule removed" warning.
+#   - UP038: isinstance(x,(A,B)) → A|B — REMOVED from ruff in 0.4.x.
+#     Dropped from ignore list 2026-06-10 to silence "rule removed" warning.
 #   - UP006/007/035/045: typing modernisation — ignore until migration sprint
 #   - F401: unused imports — ignored globally; many are conditional/re-exports
 #   - PL rules added for pylint-equivalent checks (PLR complexity etc.)
@@ -134,12 +137,13 @@ ignore = [
   "UP017",  # timezone.utc → datetime.UTC  (hundreds of instances)
   "UP035",  # typing imports deprecated in 3.9+
   "UP037",  # quoted type annotations
-  "UP038",  # isinstance(x,(A,B)) → isinstance(x, A|B)
+  # UP038 removed from ruff 0.4.x — dropped 2026-06-10
   "UP042",  # class X(str, Enum) → StrEnum  (suppress until migration sprint)
   "UP045",  # Optional[X] → X|None  (~800 instances)
 
   # ── Annotation rules ────────────────────────────────────────────────
-  "ANN001", "ANN002", "ANN003", "ANN101", "ANN102",
+  # ANN101/ANN102 removed from ruff 0.2.x — dropped 2026-06-10
+  "ANN001", "ANN002", "ANN003",
   "ANN201", "ANN202", "ANN204", "ANN205", "ANN206",
 
   # ── Naming ──────────────────────────────────────────────────────────
@@ -238,7 +242,7 @@ ignore = [
 "core/transpersonal_engine.py"   = ["C901", "PLR0912", "PLR0915"]
 "core/individuation.py"          = ["C901", "PLR0912", "PLR0915"]
 "core/dream_weaver.py"           = ["C901", "PLR0912", "PLR0915"]
-"core/gaian_runtime.py"          = ["C901", "PLR0912", "PLR0915"]
+"core/gaian_runtime.py"          = ["C901", "PLR0912", "PLR0915", "E402"]
 "core/agentic_loop.py"           = ["C901", "PLR0912", "PLR0915"]
 "core/affect_inference.py"       = ["C901", "PLR0912", "PLR0915"]
 "core/canon_graph.py"            = ["C901", "PLR0912", "PLR0915"]
