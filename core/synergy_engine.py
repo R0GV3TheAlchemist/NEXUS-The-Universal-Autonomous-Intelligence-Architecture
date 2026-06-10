@@ -3,6 +3,11 @@ Synergy Engine — integrates multiple GAIA sub-engines into coherent output.
 
 Provides:
   - SynergyEngine : main orchestrator class
+      - evaluate()             : score + keyword resolution pass
+      - compute_from_adapter() : resolve a GAIAStateAdapter → compute()
+      - compute_from_params()  : canonical G-8 call site (dict-based)
+      - get_history()          : return evaluation history
+      - reset()                : clear history
   - _resolve_keyword_conflicts : internal helper (tested directly)
   - _classify_stage            : internal helper (tested directly)
 """
@@ -11,7 +16,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from core.state_adapter import GAIAStateAdapter
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +118,29 @@ class SynergyEngine:
         )
         self._history.append(result)
         return result
+
+    def compute_from_adapter(self, adapter: "GAIAStateAdapter") -> Any:
+        """Resolve a GAIAStateAdapter and delegate to self.compute().
+
+        Args:
+            adapter: A GAIAStateAdapter (or AsyncGAIAStateAdapter) instance
+                     wrapping the GaianRecord for this computation.
+
+        Returns:
+            Whatever self.compute() returns (typically a tuple of
+            (SynergyReading, new_state)).
+        """
+        params = adapter.to_synergy_params()
+        return self.compute(**params)  # type: ignore[attr-defined]
+
+    def compute_from_params(self, params: dict) -> Any:
+        """Canonical G-8 call site — dict-based entry point.
+
+        Prefer this over bare compute() for all new call sites.
+        The bare compute() signature is considered deprecated for
+        external callers.
+        """
+        return self.compute(**params)  # type: ignore[attr-defined]
 
     def get_history(self) -> List[SynergyResult]:
         return list(self._history)
