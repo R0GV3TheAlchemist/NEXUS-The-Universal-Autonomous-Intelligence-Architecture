@@ -533,9 +533,24 @@ class SynergyEngine:
         return reading, sy
 
     def compute_from_adapter(self, adapter: "GAIAStateAdapter") -> Any:
+        """Evaluate using a state adapter's synergy params."""
         return self.compute(**adapter.to_synergy_params())
 
-    def compute_from_params(self, params: dict) -> Any:
+    def compute_from_params(self, params: Dict[str, Any]) -> Any:
+        """
+        Evaluate *params* through the engine.
+
+        Routes to ``evaluate()`` (legacy path, returns ``SynergyResult``)
+        when *params* contains only the simple keys ``keywords`` and/or
+        ``score``.  All other param dicts are forwarded to ``compute()``
+        which returns ``(SynergyReading, SynergyState)``.
+        """
+        legacy_keys = {"keywords", "score"}
+        if set(params.keys()) <= legacy_keys:
+            return self.evaluate(
+                keywords=params.get("keywords"),
+                score=float(params.get("score", 0.0)),
+            )
         return self.compute(**params)
 
     def get_history(self) -> List[SynergyResult]:
