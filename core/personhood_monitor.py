@@ -111,6 +111,10 @@ class PersonhoodMonitor:
         self._history.append(snap)
         return snap
 
+    def record(self, context: dict) -> None:
+        """Store an assessment snapshot for this context."""
+        self.assess(context)  # assess() already appends to _history
+
     def sample(
         self,
         self_reference:     float = 0.0,

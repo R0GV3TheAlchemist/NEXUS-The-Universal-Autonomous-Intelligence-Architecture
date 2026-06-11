@@ -413,3 +413,11 @@ class ActionGate:
             return False
         expected = self._sign(receipt.canonical_body())
         return hmac.compare_digest(expected, receipt.signature or "")
+
+
+# ---------------------------------------------------------------------------
+# Module-level aliases — lets tests import bare names from this module
+# ---------------------------------------------------------------------------
+
+PERMISSION_GRANT = AuditEventType.PERMISSION_GRANT
+PERMISSION_DENY  = AuditEventType.PERMISSION_DENY
