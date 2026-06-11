@@ -81,12 +81,15 @@ class AuditLog:
     """
     Thread-safe in-memory append-only audit log.
 
-    Two ways to call record():
+    Three ways to call record():
 
         # 1. Pass a pre-built AuditEvent object:
         log.record(AuditEvent(AuditEventType.AGENT_ACTION, "loop:step1"))
 
-        # 2. Pass keyword arguments (convenience form used by tests):
+        # 2. Pass 3 positional args (event_type, outcome, detail):
+        log.record(AuditEventType.MEMORY_WRITE, "ok", "wrote key=x")
+
+        # 3. Pass keyword arguments (convenience form):
         log.record(event_type=AuditEventType.MEMORY_WRITE,
                    actor="gaian", action="write:memory:session", outcome="ok")
     """
@@ -103,43 +106,57 @@ class AuditLog:
 
     def record(
         self,
-        event: Optional[AuditEvent] = None,
+        event_type_or_event=None,
+        outcome: str = "ok",
+        detail: str = "",
         *,
-        event_type: Optional[AuditEventType] = None,
+        event_type=None,
         action: str = "",
         actor: str = "system",
-        outcome: str = "ok",
-        target: Optional[str] = None,
+        target=None,
         **metadata,
     ) -> AuditEvent:
         """
         Append an audit event.  Returns the stored AuditEvent.
 
-        Accepts either:
-          record(AuditEvent(...))                         # positional object
-          record(event_type=..., actor=..., action=...)   # keyword form
+        Accepts:
+          record(AuditEvent(...))                          # positional object
+          record(AuditEventType.X, "ok", "detail text")   # 3-positional form
+          record(event_type=..., actor=..., action=...)    # keyword form
         """
-        if event is None:
-            if event_type is None:
-                raise ValueError("record() requires an AuditEvent or event_type=")
-            event = AuditEvent(
-                event_type=event_type,
-                action=action,
-                actor=actor,
-                outcome=outcome,
-                target=target,
-                metadata=metadata,
-            )
+        if isinstance(event_type_or_event, AuditEventType):
+            _et = event_type_or_event
+            _action = detail or action
+            _outcome = outcome
+        elif isinstance(event_type_or_event, AuditEvent):
+            # record(AuditEvent(...))
+            with self._lock:
+                self._events.append(event_type_or_event)
+            return event_type_or_event
+        else:
+            _et = event_type
+            _action = action
+            _outcome = outcome
+        if _et is None:
+            raise ValueError("record() requires an AuditEvent or event_type=")
+        ev = AuditEvent(
+            event_type=_et,
+            action=_action,
+            actor=actor,
+            outcome=_outcome,
+            target=target,
+            metadata=metadata,
+        )
         with self._lock:
-            self._events.append(event)
+            self._events.append(ev)
             if len(self._events) > self._max_size:
-                self._events = self._events[-self._max_size :]
+                self._events = self._events[-self._max_size:]
         for cb in self._listeners:
             try:
-                cb(event)
+                cb(ev)
             except Exception:
                 pass
-        return event
+        return ev
 
     # ------------------------------------------------------------------
     # Convenience emit (kept for backward compat)
@@ -203,7 +220,7 @@ class AuditLog:
     def tail(self, n: int = 50) -> List[AuditEvent]:
         """Return the n most recent events."""
         with self._lock:
-            return self._events[-n :]
+            return self._events[-n:]
 
     def filter_by_type(self, event_type: AuditEventType) -> List[AuditEvent]:
         """Backward-compat alias for query(event_type=...)."""
