@@ -2,36 +2,41 @@
 shadow_engine/archetypes.py
 7-archetype scoring matrix.
 
-All scoring methods receive a flat ShadowInputs dict so they stay
+All scoring methods receive a ShadowInputs dataclass so they stay
 pure functions — easy to unit-test without any I/O.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
-from typing      import TypedDict
+from dataclasses import dataclass, field
+from typing      import Optional
 
 
-class ShadowInputs(TypedDict, total=False):
-    """Flat dict assembled by ShadowEngine from Affect + Stage streams."""
+@dataclass
+class ShadowInputs:
+    """Inputs assembled by ShadowEngine from Affect + Stage streams."""
     # --- Affect stream ---
-    dominant_emotion:  str        # joy | sadness | anger | fear | disgust | surprise | neutral
-    valence_trend:     float      # -1.0 – 1.0
-    mood_momentum:     float      # -1.0 – 1.0
-    volatility:        float      # 0.0 – 1.0  (pstdev, clamped)
-    is_volatile:       bool
-    arc_stability:     float      # 0.0 – 1.0
-    low_energy_flag:   bool
-    arousal:           float      # 0.0 – 1.0  (mean arousal from PAD)
+    dominant_emotion:  str   = "neutral"  # joy | sadness | anger | fear | disgust | surprise | neutral
+    valence_trend:     float = 0.0        # -1.0 – 1.0
+    mood_momentum:     float = 0.0        # -1.0 – 1.0
+    volatility:        float = 0.0        # 0.0 – 1.0  (pstdev, clamped)
+    is_volatile:       bool  = False
+    arc_stability:     float = 0.5        # 0.0 – 1.0
+    low_energy_flag:   bool  = False
+    arousal:           float = 0.5        # 0.0 – 1.0  (mean arousal from PAD)
 
     # --- Stage stream ---
-    decision_entropy:        float   # 0 – 100
-    hrv_coherence:           float   # 0 – 100
-    journaling_depth:        float   # 0 – 100
-    focus_session_length:    float   # 0 – 100
-    goal_completion_rate:    float   # 0 – 100
-    emotional_arc_stability: float   # 0 – 100
-    days_in_stage:           int
-    regression_active:       bool
+    decision_entropy:        float = 50.0   # 0 – 100
+    hrv_coherence:           float = 50.0   # 0 – 100
+    journaling_depth:        float = 50.0   # 0 – 100
+    focus_session_length:    float = 50.0   # 0 – 100
+    goal_completion_rate:    float = 50.0   # 0 – 100
+    emotional_arc_stability: float = 50.0   # 0 – 100
+    days_in_stage:           int   = 0
+    regression_active:       bool  = False
+
+    def get(self, key: str, default=None):
+        """Dict-style .get() for backward compat with any code using ShadowInputs as a dict."""
+        return getattr(self, key, default)
 
 
 ARCHETYPE_NAMES: list[str] = [
@@ -45,13 +50,13 @@ ARCHETYPE_NAMES: list[str] = [
 ]
 
 ARCHETYPE_METADATA: dict[str, dict] = {
-    "Orphan":    {"core_wound": "Abandonment",          "keywords": ["alone", "abandoned", "helpless", "nobody", "lost"]},
-    "Wanderer":  {"core_wound": "Alienation",           "keywords": ["directionless", "searching", "drifting", "uncertain", "identity"]},
-    "Warrior":   {"core_wound": "Aggression",           "keywords": ["fight", "battle", "angry", "control", "force"]},
-    "Caregiver": {"core_wound": "Martyrdom",            "keywords": ["sacrifice", "others", "giving", "tired", "needed"]},
-    "Seeker":    {"core_wound": "Restlessness",         "keywords": ["curious", "explore", "next", "bored", "restless"]},
-    "Destroyer": {"core_wound": "Compulsive disruption","keywords": ["destroy", "burn", "chaos", "collapse", "fear"]},
-    "Creator":   {"core_wound": "Perfectionism",        "keywords": ["perfect", "create", "unfinished", "paralysed", "idea"]},
+    "Orphan":    {"core_wound": "Abandonment",           "keywords": ["alone", "abandoned", "helpless", "nobody", "lost"]},
+    "Wanderer":  {"core_wound": "Alienation",            "keywords": ["directionless", "searching", "drifting", "uncertain", "identity"]},
+    "Warrior":   {"core_wound": "Aggression",            "keywords": ["fight", "battle", "angry", "control", "force"]},
+    "Caregiver": {"core_wound": "Martyrdom",             "keywords": ["sacrifice", "others", "giving", "tired", "needed"]},
+    "Seeker":    {"core_wound": "Restlessness",          "keywords": ["curious", "explore", "next", "bored", "restless"]},
+    "Destroyer": {"core_wound": "Compulsive disruption", "keywords": ["destroy", "burn", "chaos", "collapse", "fear"]},
+    "Creator":   {"core_wound": "Perfectionism",         "keywords": ["perfect", "create", "unfinished", "paralysed", "idea"]},
 }
 
 
