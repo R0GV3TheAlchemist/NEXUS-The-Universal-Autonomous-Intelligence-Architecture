@@ -2,51 +2,46 @@
 shadow_engine.intensity — computes shadow intensity modifiers.
 
 Provides:
-  - compute_shadow_intensity    : computes raw intensity from signals
-  - compute_intensity_modifier  : returns a [0, 2] modifier based on intensity
+  - compute_intensity_modifier   : day-based ramp → [0.6, 1.0]
+  - compute_shadow_intensity     : score × day modifier → [0.0, 1.0]
 """
 from __future__ import annotations
 
-import math
-from typing import List, Optional
+INTENSITY_FLOOR: float = 0.6
+INTENSITY_RAMP_DAYS: int = 14
 
 
-def compute_shadow_intensity(
-    base_intensity: float,
-    signals: Optional[List[float]] = None,
-    context_weight: float = 1.0,
-) -> float:
+def compute_intensity_modifier(days: int) -> float:
     """
-    Compute shadow intensity from a base value and optional signal list.
+    Return a multiplicative day-trust modifier in [INTENSITY_FLOOR, 1.0].
+
+    The modifier ramps linearly from INTENSITY_FLOOR at day 0 to 1.0 at
+    day INTENSITY_RAMP_DAYS, then stays at 1.0 thereafter.
 
     Args:
-        base_intensity: Raw intensity in [0, 1].
-        signals:        Additional intensity signals (each in [0, 1]).
-        context_weight: Scaling factor for the context contribution.
+        days: Number of days the shadow pattern has been active (>= 0).
 
     Returns:
-        Normalised intensity in [0, 1].
+        A float in [0.6, 1.0].
     """
-    if not signals:
-        return max(0.0, min(1.0, base_intensity))
-
-    signal_mean = sum(signals) / len(signals)
-    combined = base_intensity * 0.6 + signal_mean * 0.4 * context_weight
-    return max(0.0, min(1.0, combined))
+    clamped = min(days, INTENSITY_RAMP_DAYS)
+    ramp = clamped / INTENSITY_RAMP_DAYS  # 0.0 → 1.0 over 14 days
+    modifier = INTENSITY_FLOOR + (1.0 - INTENSITY_FLOOR) * ramp
+    return round(modifier, 10)
 
 
-def compute_intensity_modifier(
-    intensity: float,
-    amplification: float = 1.0,
-) -> float:
+def compute_shadow_intensity(score: float, days: int) -> float:
     """
-    Convert a [0, 1] intensity value into a multiplicative modifier.
+    Compute shadow intensity from an archetype score and a day count.
 
-    A modifier of 1.0 means neutral; >1.0 amplifies; <1.0 dampens.
+    Formula: intensity = score × compute_intensity_modifier(days)
 
-    Formula: modifier = 1 + sin(intensity * π/2) * amplification
+    Args:
+        score: Archetype score in [0, 1].
+        days:  Number of days the shadow has been active.
 
-    Returns a value in [1.0, 1.0 + amplification].
+    Returns:
+        Normalised intensity in [0.0, 1.0].
     """
-    modifier = 1.0 + math.sin(intensity * math.pi / 2) * amplification
-    return max(0.0, modifier)
+    raw = max(0.0, min(1.0, score)) * compute_intensity_modifier(days)
+    return max(0.0, min(1.0, raw))
