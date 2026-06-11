@@ -1,4 +1,5 @@
-"""Test suite for DecisionExplainer — issue #251.
+"""
+Test suite for DecisionExplainer — issue #251.
 
 Covers:
 - Decision report generation from synthetic trace records
@@ -231,7 +232,7 @@ class TestDashboard:
 
     def test_dashboard_limit(self, explainer, audit_dir):
         records = [
-            _make_record(f"t-{i}", f"sess-{i}", correlation_id=f"sess-{i}")
+            _make_record(f"t-{i}", f"sess-{i}")
             for i in range(20)
         ]
         _write_traces(audit_dir, records)

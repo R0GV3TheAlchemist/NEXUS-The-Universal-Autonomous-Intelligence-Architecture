@@ -244,7 +244,7 @@ def _blank_memory(name: str) -> dict:
                            "coherence_phi_history": [], "revision_lineage": [],
                            "sm_violation_flag": False, "sm_violations": [],
                            "stage_regression_count": 0, "total_exchanges": 0},
-        "codex_stage":    {"codex_stage": 0,
+        "codex_stage":    {"codex_stage": "nigredo",
                            "stage_entry_timestamp": datetime.now(timezone.utc).isoformat(),
                            "exchanges_in_stage": 0, "noosphere_health": 0.70,
                            "stage_history": [], "target_reached": False,
@@ -1261,7 +1261,7 @@ class GAIANRuntime:
     def _deserialise_codex_stage(self) -> CodexStageState:
         d = self._memory.get("codex_stage", {})
         cs = blank_codex_stage_state()
-        cs.codex_stage = CodexStageID(d.get("codex_stage", 0))
+        cs.codex_stage = CodexStageID(d.get("codex_stage", "nigredo"))
         cs.stage_entry_timestamp = d.get("stage_entry_timestamp", cs.stage_entry_timestamp)
         cs.exchanges_in_stage = d.get("exchanges_in_stage", 0)
         cs.noosphere_health = d.get("noosphere_health", 0.70)
