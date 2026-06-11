@@ -18,6 +18,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { listen }            from '@tauri-apps/api/event';
 import { GaiaChat }          from '../chat/GaiaChat';
 import { SovereignGuard }    from '../shared/SovereignGuard';
 import { ActionGateDialog }  from '../shared/ActionGateDialog';
@@ -391,8 +392,8 @@ const ShellMain: React.FC<{
   const [showEmrys,     setShowEmrys]     = useState(false);
   const { tier: alignmentTier } = useAlignmentTheme();
 
-  // Pull current GAIAN stage for EmrysPanel context — if the store exposes it.
-  // graceful: if the store doesn't have currentStage yet, pass undefined.
+  // Pull current GAIAN stage for EmrysPanel context.
+  // Graceful: passes undefined if currentStage isn't in the store yet.
   const currentStage = useOnboardingStore(
     s => (s as Record<string, unknown>).currentStage as string | undefined
   );
@@ -403,15 +404,23 @@ const ShellMain: React.FC<{
       .catch(() => setBackendOnline(false));
   }, []);
 
-  // Listen for navigate_main({ section: 'emrys' }) dispatched by AmbientOrb
-  // via the gaia:navigate custom event that Shell.ts emits on Tauri invoke.
+  // Listen for 'gaia:navigate' Tauri events emitted by AmbientOrb.openMain().
+  //
+  // AmbientOrb calls mainWindow.emit('gaia:navigate', { section }) which dispatches
+  // a Tauri event on this webview — NOT a DOM CustomEvent. We must use Tauri's
+  // listen() API here, not window.addEventListener.
+  //
+  // In browser-only dev mode (no Tauri runtime), listen() may throw; the error
+  // is caught silently so the button trigger still works fine.
+  //
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ section: string }>).detail;
-      if (detail?.section === 'emrys') setShowEmrys(true);
-    };
-    window.addEventListener('gaia:navigate', handler);
-    return () => window.removeEventListener('gaia:navigate', handler);
+    let unlisten: (() => void) | undefined;
+    listen<{ section: string }>('gaia:navigate', (e) => {
+      if (e.payload.section === 'emrys') setShowEmrys(true);
+    })
+      .then(fn => { unlisten = fn; })
+      .catch(() => { /* non-Tauri environment — button trigger still works */ });
+    return () => { unlisten?.(); };
   }, []);
 
   const activeItem = NAV.find(n => n.id === activeId) ?? NAV[4]; // default: Ask GAIA
@@ -468,7 +477,7 @@ const ShellMain: React.FC<{
 
           {/* ── Emrys L2 button ──────────────────────────────────── */}
           <button
-            className={`gs__emrys-btn${ showEmrys ? ' gs__emrys-btn--active' : ''}`}
+            className={`gs__emrys-btn${showEmrys ? ' gs__emrys-btn--active' : ''}`}
             onClick={() => setShowEmrys(v => !v)}
             aria-label="Open Emrys L2 vibronic bridge panel"
             aria-pressed={showEmrys}
