@@ -4,19 +4,24 @@
  * Transparent 120x120 orb, draggable, click to expand, right-click context menu.
  *
  * Long-press (500 ms) → opens Emrys L2 panel in the main window.
- * The long-press is drag-safe: any pointer movement > 6 px cancels the timer.
+ * Drag-safe: pointer movement > 6 px cancels the timer.
+ *
+ * IPC pattern (no Rust command needed):
+ *   openMain(section) shows + focuses the main WebviewWindow, then calls
+ *   mainWindow.emit('gaia:navigate', { section }).
+ *   GaiaShell.tsx listens via listen('gaia:navigate', ...) from @tauri-apps/api/event.
  */
 
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { PhysicalPosition } from '@tauri-apps/api/dpi';
-import { invoke } from '@tauri-apps/api/core';
-import { Menu, MenuItem } from '@tauri-apps/api/menu';
+import { getCurrentWindow }             from '@tauri-apps/api/window';
+import { WebviewWindow }                from '@tauri-apps/api/webviewWindow';
+import { PhysicalPosition }             from '@tauri-apps/api/dpi';
+import { invoke }                       from '@tauri-apps/api/core';
+import { Menu, MenuItem }               from '@tauri-apps/api/menu';
 import { writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 
-const POSITION_FILE        = 'GAIA/ambient-position.json';
-const LONG_PRESS_MS        = 500;   // ms to hold before Emrys fires
-const LONG_PRESS_MOVE_PX   = 6;     // px of movement that cancels the long-press
+const POSITION_FILE      = 'GAIA/ambient-position.json';
+const LONG_PRESS_MS      = 500;  // ms hold threshold
+const LONG_PRESS_MOVE_PX = 6;   // px movement that cancels
 
 export class AmbientOrb {
   private window: ReturnType<typeof getCurrentWindow>;
@@ -24,9 +29,9 @@ export class AmbientOrb {
   private orbEl: HTMLElement | null = null;
 
   // Long-press state
-  private _lpTimer:    ReturnType<typeof setTimeout> | null = null;
-  private _lpStartX:   number = 0;
-  private _lpStartY:   number = 0;
+  private _lpTimer:  ReturnType<typeof setTimeout> | null = null;
+  private _lpStartX  = 0;
+  private _lpStartY  = 0;
 
   constructor() {
     this.window = getCurrentWindow();
@@ -64,7 +69,7 @@ export class AmbientOrb {
 
   private async savePosition(): Promise<void> {
     try {
-      const pos = await this.window.outerPosition();
+      const pos  = await this.window.outerPosition();
       const data = JSON.stringify({ x: pos.x, y: pos.y });
       await writeTextFile(POSITION_FILE, data, { baseDir: BaseDirectory.LocalData });
     } catch (err) {
@@ -80,11 +85,11 @@ export class AmbientOrb {
         await this.window.setPosition(new PhysicalPosition(x, y));
       }
     } catch {
-      // No saved position — default placement is fine
+      // No saved position — default placement fine
     }
   }
 
-  // ── Click — expand to main window ───────────────────────────────────────
+  // ── Click — expand to main window ─────────────────────────────────────────
 
   private bindClick(): void {
     if (!this.orbEl) return;
@@ -101,18 +106,7 @@ export class AmbientOrb {
     });
   }
 
-  // ── Long-press — open Emrys L2 panel (500 ms, drag-safe) ─────────────────
-  //
-  // Implementation:
-  //   pointerdown  → start 500 ms timer, record start position
-  //   pointermove  → if movement > LONG_PRESS_MOVE_PX, cancel timer
-  //   pointerup    → cancel timer (didn't hold long enough)
-  //   timer fires  → navigate main window to section 'emrys'
-  //
-  // Visual feedback:
-  //   orb gets .ambient-orb--pressing while timer is running.
-  //   Class is removed on cancel or fire.
-  //
+  // ── Long-press — 500 ms hold, drag-safe ──────────────────────────────────────
 
   private bindLongPress(): void {
     if (!this.orbEl) return;
@@ -136,7 +130,6 @@ export class AmbientOrb {
       this._lpTimer = setTimeout(() => {
         this._lpTimer = null;
         el.classList.remove('ambient-orb--pressing');
-        // Fire — open Emrys L2 in the main window
         this.openMain('emrys').catch(console.error);
       }, LONG_PRESS_MS);
     });
@@ -152,7 +145,7 @@ export class AmbientOrb {
     el.addEventListener('pointercancel', cancelLP);
   }
 
-  // ── Right-click context menu ─────────────────────────────────────────────
+  // ── Right-click context menu ───────────────────────────────────────────────
 
   private async bindContextMenu(): Promise<void> {
     if (!this.orbEl) return;
@@ -173,12 +166,23 @@ export class AmbientOrb {
     });
   }
 
+  // ── openMain ────────────────────────────────────────────────────────────────
+  //
+  // Show + focus the main window, then emit 'gaia:navigate' directly on it.
+  // No Rust command handler required. GaiaShell.tsx uses:
+  //
+  //   import { listen } from '@tauri-apps/api/event';
+  //   listen<{ section: string }>('gaia:navigate', e => {
+  //     if (e.payload.section === 'emrys') setShowEmrys(true);
+  //   });
+  //
+
   private async openMain(section: string): Promise<void> {
     try {
       const mainWindow = new WebviewWindow('main');
       await mainWindow.show();
       await mainWindow.setFocus();
-      await invoke('navigate_main', { section });
+      await mainWindow.emit('gaia:navigate', { section });
     } catch (err) {
       console.error('[AmbientOrb] openMain failed:', err);
     }
