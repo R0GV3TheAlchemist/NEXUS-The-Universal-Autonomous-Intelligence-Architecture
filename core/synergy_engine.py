@@ -10,15 +10,16 @@ Public API:
   blank_synergy_state : state factory
   ELEMENTAL_STAGES    : frozenset of valid stage labels
   _classify_stage     : (synergy, bond, settling, phi) -> stage label
-  _resolve_keyword_conflicts : dedup/normalise keyword list
+  _resolve_keyword_conflicts : (List[Tuple[str,str]]) -> (reg, lbl, conflict, groups)
   CanonPlanHint / _analyse_canon_context
 """
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from core.state_adapter import GAIAStateAdapter
@@ -174,32 +175,294 @@ def blank_synergy_state() -> SynergyState:
 
 @dataclass
 class CanonPlanHint:
-    canon_id:  str  = ""
-    weight:    float = 0.5
-    directive: str  = ""
-    tags:      List[str] = field(default_factory=list)
+    """
+    Result of _analyse_canon_context().
+
+    Fields
+    ------
+    present          : True when meaningful canon text was found.
+    register_nudge   : Winning register ("minimal" | "reflective" | "executive" | None).
+    canon_refs       : C-reference codes extracted from the body (e.g. ["C30", "C32"]).
+    conflict_detected: True when keywords from multiple registers were found.
+    conflict_groups  : Sorted list of (register, label) pairs, winner first.
+    char_count       : Length of the raw text/body that was analysed.
+    nudge_label      : Machine-readable source label for the nudge.
+    entry_ref_id     : ref_id of the CanonEntry if one was passed, else None.
+    """
+    present:           bool              = False
+    register_nudge:    Optional[str]     = None
+    canon_refs:        List[str]         = field(default_factory=list)
+    conflict_detected: bool              = False
+    conflict_groups:   List[Tuple[str, str]] = field(default_factory=list)
+    char_count:        int               = 0
+    nudge_label:       str               = ""
+    entry_ref_id:      Optional[str]     = None
+
+    # --- legacy fields kept for backward compat with SynergyReading ---
+    canon_id:  str        = ""
+    weight:    float      = 0.5
+    directive: str        = ""
+    tags:      List[str]  = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            "canon_id":  self.canon_id,
-            "weight":    self.weight,
-            "directive": self.directive,
-            "tags":      self.tags,
+            "present":           self.present,
+            "register_nudge":    self.register_nudge,
+            "canon_refs":        self.canon_refs,
+            "conflict_detected": self.conflict_detected,
+            "conflict_groups":   self.conflict_groups,
+            "char_count":        self.char_count,
+            "nudge_label":       self.nudge_label,
+            "entry_ref_id":      self.entry_ref_id,
+            # legacy
+            "canon_id":          self.canon_id,
+            "weight":            self.weight,
+            "directive":         self.directive,
+            "tags":              self.tags,
         }
+
+    def to_rationale_fragment(self) -> str:
+        """
+        Human-readable audit fragment surfacing the nudge decision.
+
+        • Not present  → "Canon context: none (0 chars)"
+        • No conflict  → "Canon context: register=<nudge> [<label>] (N chars)"
+        • Conflict     → "Canon context: CONFLICT resolved → <nudge>
+                          Priority: minimal>reflective>executive (C32)
+                          Groups: ... (N chars)"
+        """
+        if not self.present:
+            return f"Canon context: none ({self.char_count} chars)"
+
+        if not self.conflict_detected:
+            lbl = self.nudge_label or ""
+            return (
+                f"Canon context: register={self.register_nudge} [{lbl}] "
+                f"({self.char_count} chars)"
+            )
+
+        groups_str = ", ".join(f"{r}:{l}" for r, l in self.conflict_groups)
+        return (
+            f"Canon context: CONFLICT resolved → {self.register_nudge} "
+            f"| Priority: minimal>reflective>executive (C32) "
+            f"| Groups: [{groups_str}] "
+            f"({self.char_count} chars)"
+        )
+
 
 # ------------------------------------------------------------------ #
 #  Internal helpers                                                    #
 # ------------------------------------------------------------------ #
 
-def _resolve_keyword_conflicts(keywords: List[str]) -> List[str]:
-    seen: set = set()
-    out:  list = []
-    for kw in keywords:
-        n = kw.strip().lower()
-        if n and n not in seen:
-            seen.add(n)
-            out.append(n)
-    return sorted(out)
+# Register priority: lower index = higher priority (most protective wins)
+_REGISTER_PRIORITY: List[str] = ["minimal", "reflective", "executive"]
+
+# Keyword → register mapping (C32 doctrine)
+_KEYWORD_REGISTER_MAP: Dict[str, str] = {
+    # minimal (rest / pause)
+    "rest":        "minimal",
+    "pause":       "minimal",
+    "sleep":       "minimal",
+    "silence":     "minimal",
+    "quiet":       "minimal",
+    "minimal":     "minimal",
+    "crisis":      "minimal",
+    "overwhelm":   "minimal",
+    "overwhelmed": "minimal",
+    # reflective (grief / integration)
+    "grief":       "reflective",
+    "grieve":      "reflective",
+    "storm":       "reflective",
+    "integration": "reflective",
+    "integrate":   "reflective",
+    "reflect":     "reflective",
+    "reflective":  "reflective",
+    "process":     "reflective",
+    # executive (build / create / research)
+    "build":       "executive",
+    "create":      "executive",
+    "write":       "executive",
+    "research":    "executive",
+    "explore":     "executive",
+    "develop":     "executive",
+    "implement":   "executive",
+    "feature":     "executive",
+    "directive":   "executive",
+    "documentation": "executive",
+}
+
+# Regex for C-reference extraction (e.g. C30, C32, C01)
+_CANON_REF_RE = re.compile(r"\bC\d{1,4}\b")
+
+
+def _resolve_keyword_conflicts(
+    matches: List[Tuple[str, str]],
+) -> Tuple[Optional[str], str, bool, List[Tuple[str, str]]]:
+    """
+    Resolve a list of (register, label) keyword match tuples.
+
+    Returns
+    -------
+    (winning_register, winning_label, conflict_detected, sorted_groups)
+
+    • winning_register : None when matches is empty.
+    • conflict_detected: True when >1 distinct register appears.
+    • sorted_groups    : unique (register, first_label) pairs sorted by
+                         _REGISTER_PRIORITY (winner first).
+    """
+    if not matches:
+        return None, "", False, []
+
+    # Collect unique registers preserving first-seen label per register
+    seen: Dict[str, str] = {}
+    for reg, lbl in matches:
+        reg_n = reg.strip().lower()
+        if reg_n not in seen:
+            seen[reg_n] = lbl
+
+    distinct_registers = list(seen.keys())
+    conflict = len(distinct_registers) > 1
+
+    # Sort by priority (lower index = higher priority)
+    def _rank(r: str) -> int:
+        try:
+            return _REGISTER_PRIORITY.index(r)
+        except ValueError:
+            return len(_REGISTER_PRIORITY)
+
+    sorted_groups = sorted(seen.items(), key=lambda kv: _rank(kv[0]))
+
+    winning_reg = sorted_groups[0][0]
+    winning_lbl = sorted_groups[0][1]
+
+    return winning_reg, winning_lbl, conflict, sorted_groups
+
+
+def _extract_canon_refs(text: str) -> List[str]:
+    """Extract all C-reference codes from *text* (e.g. ['C30', 'C32'])."""
+    return sorted(set(_CANON_REF_RE.findall(text)))
+
+
+def _keyword_scan(text: str) -> List[Tuple[str, str]]:
+    """
+    Scan *text* for register keywords.
+
+    Returns a list of (register, label) tuples, one per unique
+    keyword hit (label = "keyword:<word>").
+    """
+    words = re.findall(r"[a-z]+", text.lower())
+    matches: List[Tuple[str, str]] = []
+    seen_words: set = set()
+    for w in words:
+        if w in _KEYWORD_REGISTER_MAP and w not in seen_words:
+            seen_words.add(w)
+            matches.append((_KEYWORD_REGISTER_MAP[w], f"keyword:{w}"))
+    return matches
+
+
+def _analyse_canon_context(context: Any) -> CanonPlanHint:
+    """
+    Analyse *context* and return a CanonPlanHint.
+
+    Accepted input types
+    --------------------
+    None / "" / whitespace  → present=False hint
+    str                     → keyword scan + conflict resolution (legacy path)
+    CanonEntry              → fast-path when register_signal is explicit;
+                              falls through to keyword scan for UNSPECIFIED.
+    """
+    # ------------------------------------------------------------------
+    # 1. Detect CanonEntry (avoid hard import — duck-type on .ref_id)
+    # ------------------------------------------------------------------
+    entry_ref_id: Optional[str] = None
+    body: Optional[str] = None
+    declared_register: Optional[str] = None
+
+    is_entry = (
+        context is not None
+        and not isinstance(context, str)
+        and hasattr(context, "ref_id")
+        and hasattr(context, "body")
+        and hasattr(context, "register_signal")
+    )
+
+    if is_entry:
+        entry_ref_id = context.ref_id
+        body = context.body or ""
+        # Determine whether the signal is explicitly declared
+        sig = context.register_signal
+        sig_value = sig.value if hasattr(sig, "value") else str(sig)
+        if sig_value != "unspecified":
+            declared_register = sig_value.lower()
+    else:
+        body = context if isinstance(context, str) else None
+
+    # ------------------------------------------------------------------
+    # 2. Early-out: no text
+    # ------------------------------------------------------------------
+    if not body or not body.strip():
+        return CanonPlanHint(
+            present=False,
+            char_count=0,
+            entry_ref_id=entry_ref_id,
+        )
+
+    char_count = len(body)
+    canon_refs = _extract_canon_refs(body)
+
+    # ------------------------------------------------------------------
+    # 3. CanonEntry fast-path: declared signal is authoritative
+    # ------------------------------------------------------------------
+    if declared_register is not None:
+        nudge_label = f"canon-entry:{entry_ref_id}:{declared_register}"
+        return CanonPlanHint(
+            present=True,
+            register_nudge=declared_register,
+            canon_refs=canon_refs,
+            conflict_detected=False,
+            conflict_groups=[(declared_register, nudge_label)],
+            char_count=char_count,
+            nudge_label=nudge_label,
+            entry_ref_id=entry_ref_id,
+            # legacy
+            canon_id=entry_ref_id or "",
+            directive=f"Honour {entry_ref_id}" if entry_ref_id else "",
+        )
+
+    # ------------------------------------------------------------------
+    # 4. Keyword scan (plain string OR CanonEntry with UNSPECIFIED signal)
+    # ------------------------------------------------------------------
+    kw_matches = _keyword_scan(body)
+
+    if not kw_matches:
+        # Text found but no register keywords — present but no nudge
+        return CanonPlanHint(
+            present=True,
+            register_nudge=None,
+            canon_refs=canon_refs,
+            conflict_detected=False,
+            conflict_groups=[],
+            char_count=char_count,
+            nudge_label="",
+            entry_ref_id=entry_ref_id,
+            canon_id=entry_ref_id or "",
+        )
+
+    winning_reg, winning_lbl, conflict, groups = _resolve_keyword_conflicts(kw_matches)
+
+    return CanonPlanHint(
+        present=True,
+        register_nudge=winning_reg,
+        canon_refs=canon_refs,
+        conflict_detected=conflict,
+        conflict_groups=groups,
+        char_count=char_count,
+        nudge_label=winning_lbl,
+        entry_ref_id=entry_ref_id,
+        # legacy
+        canon_id=entry_ref_id or "",
+        directive=f"Register: {winning_reg}" if winning_reg else "",
+    )
 
 
 def _classify_stage(
@@ -236,18 +499,6 @@ def _classify_stage(
     if synergy_factor < 0.30:
         return "insurgent"
     return "nascent"
-
-
-def _analyse_canon_context(
-    canon_refs: Optional[List[str]] = None,
-    tags:       Optional[List[str]] = None,
-    weight:     float = 0.5,
-) -> CanonPlanHint:
-    refs     = canon_refs or []
-    _tags    = tags or []
-    canon_id = refs[0] if refs else ""
-    directive = f"Honour {canon_id}" if canon_id else "No canon context provided"
-    return CanonPlanHint(canon_id=canon_id, weight=weight, directive=directive, tags=_tags)
 
 
 def _old_classify_stage(score: float) -> SynergyStage:
@@ -370,9 +621,17 @@ class SynergyEngine:
         keywords: Optional[List[str]] = None,
         score:    float = 0.0,
     ) -> SynergyResult:
-        resolved = _resolve_keyword_conflicts(keywords or [])
-        stage    = _old_classify_stage(score)
-        result   = SynergyResult(stage=stage, score=score, resolved=resolved)
+        # legacy path: keywords is a flat list of strings
+        kw_pairs = [(kw.strip().lower(), f"keyword:{kw.strip().lower()}")
+                    for kw in (keywords or []) if kw.strip()]
+        _seen: set = set()
+        deduped: List[str] = []
+        for kw, _ in kw_pairs:
+            if kw not in _seen:
+                _seen.add(kw)
+                deduped.append(kw)
+        stage  = _old_classify_stage(score)
+        result = SynergyResult(stage=stage, score=score, resolved=sorted(deduped))
         self._history.append(result)
         return result
 
