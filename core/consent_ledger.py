@@ -71,10 +71,18 @@ class ConsentEntry:
 
 
 class ConsentLedger:
-    """In-memory consent ledger."""
+    """In-memory consent ledger.
+
+    Tests treat this as an append-only log that can be cleared via
+    ``get_consent_ledger().records.clear()`` in test setup, so we
+    expose a ``records`` attribute that points at the underlying
+    internal list.
+    """
 
     def __init__(self) -> None:
         self._entries: List[ConsentEntry] = []
+        # Public alias used in tests and for simple introspection
+        self.records: List[ConsentEntry] = self._entries
 
     def record(self, entry: ConsentEntry) -> None:
         self._entries.append(entry)
