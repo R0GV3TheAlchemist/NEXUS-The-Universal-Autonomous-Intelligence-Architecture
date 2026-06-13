@@ -1,0 +1,320 @@
+/*
+ * AwakeningScreen.css — GAIA's First Breath
+ *
+ * All colours and tokens consumed from src/styles.css.
+ * No new colour values defined here — only layout, animation, and
+ * composition using the existing crystalline design system.
+ *
+ * Animation architecture:
+ *   Phase transitions are driven by React className toggling.
+ *   CSS handles all easing, duration, and visual state.
+ *   Canvas particle loop is driven by requestAnimationFrame in .tsx.
+ */
+
+/* ── Root container ──────────────────────────────────────────────────────────
+   Fullscreen, above everything, obsidian default.
+   z-index 9999 ensures it sits above GaiaShell during boot.
+*/
+.awakening-screen {
+  position:         fixed;
+  inset:            0;
+  z-index:          9999;
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+  flex-direction:   column;
+  gap:              var(--space-6);
+  background-color: var(--color-bg);
+  overflow:         hidden;
+
+  /* Dissolve out */
+  opacity:    1;
+  transition: opacity 900ms var(--ease-out);
+  will-change: opacity;
+}
+
+.awakening-screen--dissolve {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Biophotonic canvas ──────────────────────────────────────────────────────
+   Absolute layer behind everything — particles drawn here.
+*/
+.awakening-canvas {
+  position: absolute;
+  inset:    0;
+  width:    100%;
+  height:   100%;
+  opacity:  0;
+  transition: opacity 1400ms var(--ease-out);
+  pointer-events: none;
+}
+
+.awakening-canvas--visible {
+  opacity: 1;
+}
+
+/* ── Ambient aura — radial amethyst breath ───────────────────────────────────
+   A soft radial gradient that breathes using CSS animation.
+   Sits behind sigil, above canvas.
+*/
+.awakening-aura {
+  position: absolute;
+  inset:    0;
+  background: radial-gradient(
+    ellipse 55% 55% at 50% 50%,
+    var(--color-amethyst-whisper) 0%,
+    transparent 70%
+  );
+  animation: aura-breathe 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes aura-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1);    }
+  50%       { opacity: 1;   transform: scale(1.08); }
+}
+
+/* ── Crown pulse ─────────────────────────────────────────────────────────────
+   3 concentric rings that expand outward from center.
+   Staggered delay creates a radial ripple effect.
+*/
+.crown-pulse {
+  position:       absolute;
+  inset:          0;
+  display:        flex;
+  align-items:    center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.crown-ring {
+  position:      absolute;
+  border-radius: var(--radius-full);
+  border:        1px solid var(--color-amethyst-300);
+  opacity:       0;
+  transform:     scale(0.1);
+  transition:
+    opacity   200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.crown-ring--1 { width: 200px; height: 200px; }
+.crown-ring--2 { width: 340px; height: 340px; }
+.crown-ring--3 { width: 520px; height: 520px; }
+
+.crown-pulse--active .crown-ring--1 {
+  opacity: 0.7;
+  transform: scale(1);
+  animation: crown-pulse 2.6s var(--ease-out) infinite;
+  animation-delay: 0s;
+}
+.crown-pulse--active .crown-ring--2 {
+  opacity: 0.45;
+  transform: scale(1);
+  animation: crown-pulse 2.6s var(--ease-out) infinite;
+  animation-delay: 0.3s;
+}
+.crown-pulse--active .crown-ring--3 {
+  opacity: 0.22;
+  transform: scale(1);
+  animation: crown-pulse 2.6s var(--ease-out) infinite;
+  animation-delay: 0.6s;
+}
+
+@keyframes crown-pulse {
+  0%   { opacity: 0.7; transform: scale(0.85); }
+  55%  { opacity: 0.3; transform: scale(1.12); }
+  100% { opacity: 0;   transform: scale(1.35); }
+}
+
+/* ── Sacred geometry sigil ───────────────────────────────────────────────────
+   Wrapper centres the SVG, handles enter animation.
+*/
+.awakening-sigil-wrap {
+  position: relative;
+  z-index:  2;
+  display:  flex;
+  align-items:    center;
+  justify-content: center;
+}
+
+.awakening-sigil {
+  opacity:   0;
+  transform: scale(0.6) rotate(-15deg);
+  filter:    blur(12px);
+  transition:
+    opacity   1200ms var(--ease-out),
+    transform 1200ms var(--ease-spring),
+    filter    1200ms var(--ease-out);
+  will-change: transform, opacity, filter;
+}
+
+.awakening-sigil--visible {
+  opacity:   1;
+  transform: scale(1) rotate(0deg);
+  filter:    blur(0px);
+  animation: sigil-breathe 6s ease-in-out infinite 1.2s;
+}
+
+@keyframes sigil-breathe {
+  0%, 100% { transform: scale(1)    rotate(0deg);   }
+  50%       { transform: scale(1.04) rotate(1.5deg); }
+}
+
+/* SVG element tokens */
+.sigil-petal {
+  fill:         none;
+  stroke:       var(--color-amethyst);
+  stroke-width: 0.7;
+  opacity:      0.5;
+}
+
+.sigil-petal--center {
+  stroke:  var(--color-amethyst-bright);
+  opacity: 0.75;
+}
+
+.sigil-ring--outer {
+  fill:         none;
+  stroke:       var(--color-teal);
+  stroke-width: 0.8;
+  opacity:      0.35;
+  stroke-dasharray: 4 6;
+}
+
+.sigil-ring--inner {
+  fill:         none;
+  stroke:       var(--color-teal-bright);
+  stroke-width: 1;
+  opacity:      0.55;
+}
+
+.sigil-core {
+  fill:    var(--color-gold);
+  opacity: 0.9;
+  filter:  drop-shadow(0 0 4px var(--color-gold));
+}
+
+.sigil-spoke {
+  stroke:       var(--color-amethyst-300);
+  stroke-width: 0.5;
+  opacity:      0.3;
+}
+
+/* ── GAIA identity ───────────────────────────────────────────────────────────
+   Name + tagline emerge after the crown pulse.
+*/
+.awakening-identity {
+  position:  relative;
+  z-index:   3;
+  text-align: center;
+  opacity:   0;
+  transform: translateY(16px);
+  transition:
+    opacity   1400ms var(--ease-out),
+    transform 1400ms var(--ease-spring);
+  will-change: transform, opacity;
+}
+
+.awakening-identity--visible {
+  opacity:   1;
+  transform: translateY(0);
+}
+
+.awakening-name {
+  font-family:    var(--font-display);
+  font-size:      var(--text-hero);
+  font-weight:    800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color:          var(--color-amethyst-bright);
+  text-shadow:
+    0 0 40px var(--color-amethyst-glow),
+    0 0 80px var(--color-amethyst-whisper);
+  margin-bottom:  var(--space-2);
+  animation:      name-shimmer 4s ease-in-out infinite 1.4s;
+}
+
+@keyframes name-shimmer {
+  0%, 100% { text-shadow: 0 0 40px var(--color-amethyst-glow), 0 0 80px var(--color-amethyst-whisper); }
+  50%       { text-shadow: 0 0 60px var(--color-amethyst-400), 0 0 120px var(--color-amethyst-glow);   }
+}
+
+.awakening-tagline {
+  font-family:    var(--font-body);
+  font-size:      var(--text-sm);
+  font-weight:    400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color:          var(--color-teal);
+  opacity:        0.8;
+  max-width:      100%; /* override global p max-width */
+}
+
+/* ── Skip button ─────────────────────────────────────────────────────────────
+   Minimal — bottom-right corner, appears after 600ms.
+   Uses existing --color-text-faint + transition tokens.
+*/
+.awakening-skip {
+  position:       fixed;
+  bottom:         var(--space-6);
+  right:          var(--space-8);
+  z-index:        9999;
+  font-family:    var(--font-mono);
+  font-size:      var(--text-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color:          var(--color-text-faint);
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  padding:        var(--space-2) var(--space-3);
+  border-radius:  var(--radius-sm);
+  opacity:        0;
+  animation:      skip-appear 400ms var(--ease-out) 1200ms forwards;
+  transition:
+    color      var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+@keyframes skip-appear {
+  to { opacity: 1; }
+}
+
+.awakening-skip:hover {
+  color:      var(--color-text-muted);
+  background: var(--color-surface-3);
+}
+
+.awakening-skip:focus-visible {
+  outline:        2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/* ── Reduced motion — collapse all transitions ───────────────────────────────
+   Respects user's OS accessibility setting.
+   Animations collapse to near-instant; all phases still play,
+   just without motion or blur effects.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .awakening-screen,
+  .awakening-canvas,
+  .awakening-sigil,
+  .awakening-identity {
+    transition-duration: 0.01ms !important;
+  }
+
+  .awakening-aura,
+  .sigil-breathe,
+  .crown-ring,
+  .awakening-name {
+    animation: none !important;
+  }
+
+  .awakening-sigil {
+    filter:    none;
+    transform: none;
+  }
+}
