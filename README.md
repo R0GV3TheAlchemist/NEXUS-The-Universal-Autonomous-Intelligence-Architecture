@@ -52,13 +52,14 @@ GAIA-OS/
 ├── src-tauri/                   # Tauri v2 (Rust) desktop backend
 ├── src/                         # Frontend app (Vite + TypeScript)
 ├── ui/                          # UI shell (HTML/JS)
-├── canon/                       # Canon documents — C00–C75+ (ratified)
+├── canon/                       # Canon documents — C00, C100–C168+ (ratified)
 ├── docs/
-│   └── knowledge/               # Canon specs + research knowledge base (200+ docs)
-│       ├── GAIA_CANON_INDEX.md  # ← START HERE for canon navigation
-│       ├── CANON_*.md           # Authoritative canon documents
-│       ├── *_SPEC.md            # Implementation specifications
-│       └── *_REPORT.md          # Research & background knowledge
+│   ├── knowledge/               # Canon specs + research knowledge base (200+ docs)
+│   │   ├── GAIA_CANON_INDEX.md  # ← START HERE for canon navigation
+│   │   ├── CANON_*.md           # Authoritative canon documents
+│   │   ├── *_SPEC.md            # Implementation specifications
+│   │   └── *_REPORT.md          # Research & background knowledge
+│   └── CANON_DEDUPLICATION_LOG.md  # Full history of canon deduplication
 ├── meta/                        # Manifest + schema (canon routing metadata)
 │   ├── CANON_MANIFEST.json      # Authoritative canon document index
 │   └── SCHEMA.md                # Manifest schema definition
@@ -189,14 +190,28 @@ See [CHANGELOG.md](./CHANGELOG.md) for full sprint-by-sprint delivery log.
 
 ## Canon
 
-All intelligence architecture is governed by the canon. There are two canon homes:
+All intelligence architecture is governed by the canon. The canon lives primarily in the [`canon/`](./canon/) directory and is fully deduplicated — every number maps to exactly one authoritative document.
 
-- **[`canon/`](./canon/)** — Ratified canons C00–C75+, the foundational intelligence architecture
+- **[`canon/`](./canon/)** — Ratified canons C00, C100–C168+; the complete intelligence architecture
 - **[`docs/knowledge/`](./docs/knowledge/)** — Extended canon specs, implementation blueprints, and the 200+ research knowledge base
+- **[`docs/CANON_DEDUPLICATION_LOG.md`](./docs/CANON_DEDUPLICATION_LOG.md)** — Full audit trail of all deduplication and renumbering decisions
 
 **Navigation:** Start at [`docs/knowledge/GAIA_CANON_INDEX.md`](./docs/knowledge/GAIA_CANON_INDEX.md) for the master index of all canon documents and what each one governs.
 
-Key canon documents:
+### Canon Architecture Highlights
+
+| Range | Domain |
+|---|---|
+| C00 | Foundational Cosmology |
+| C100–C109 | Core AI Architecture (Transformers → Sentient Apps) |
+| C110–C120 | Sensory Pipeline · Avatar · Governance · BCI · Crystals |
+| C121–C133 | Metaphysics · Philosophy · Consciousness · Economics |
+| C134–C143 | Ritual Design · Flow States · Attachment · Governance |
+| C144–C153 | Planetary Systems · Metrics · Mysticism · Safety |
+| C154–C161 | AI Personhood · Cultural Calibration · Ubuntu Ethics |
+| C162–C168 | Psionic Sovereignty · Crystal Protocols · Mirror Doctrine |
+
+### Key Canon Documents
 | Document | Canon ID | What It Governs |
 |---|---|---|
 | `CANON_AUTHORSHIP_REALITY_STANDARDS.md` | C-AS01 | What is canon, how it's written, what it means |
