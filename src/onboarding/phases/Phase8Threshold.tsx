@@ -1,53 +1,51 @@
-// C-OB01 — Phase 8: The Threshold v3
-// The ceremonial exit from onboarding into GAIA proper.
-// Not a confirmation screen. A rite of passage.
+// C-OB01 — Phase 8: The Threshold v3.1
+// Fix #364: buildLines() depthMap corrected to match DepthPreference type.
 //
-// Changes from v2:
-//   - completeOnboarding() deferred to the Enter click, not mount.
-//     Marking complete before the user confirms meant a closed window
-//     would skip onboarding permanently next boot.
-//   - Lines are personalised: name + intent + depth tier pulled from store.
-//   - phase--enter animation added (matches every other phase).
-//   - Keyboard: Enter/Space triggers onComplete once button is visible.
-//   - Escape calls markInterrupted (consistent with other phases).
-//   - GaiaSigil brightness prop removed; not part of the component's API.
-//   - threshold-cta class added so CSS can target the CTA block independently.
+// DepthPreference = 'surface' | 'reflective' | 'deep'  (from types.ts)
+//
+// The v3 depthMap had 'familiar' and 'architect' which are not valid
+// DepthPreference values and would always fall through to the default line.
+// Corrected to 'surface', 'reflective', 'deep'.
+//
+// Also reads s.depth (alias) instead of s.depth_preference directly,
+// and s.intentOther (alias) is available if needed by future gift logic.
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
 import { GaiaSigil } from '../components/GaiaSigil';
 
-// ── Personalised lines ───────────────────────────────────────────────────────
+// ── Personalised lines ────────────────────────────────────────────────────────
 //
-// Build 3 lines that reflect what the user told us during onboarding.
-// Each line has a 'muted' flag — the first two are quieter, the last pops.
+// intent values (UserIntent):  productivity | exploration | self_discovery |
+//                               privacy | building | other
+// depth values (DepthPreference): surface | reflective | deep
 
 function buildLines(
-  name:    string,
-  intent:  string,
-  depth:   string,
+  name:   string,
+  intent: string,
+  depth:  string,
 ): { text: string; muted: boolean }[] {
   // Line 1 — acknowledge what they came for
   const intentMap: Record<string, string> = {
-    productivity:  'Your workflows are waiting.',
-    research:      'The depths are open.',
-    creativity:    'The canvas is ready.',
-    learning:      'Your questions have a home.',
-    personal:      'Your space is yours.',
-    other:         'Your path is your own.',
+    productivity:    'Your workflows are waiting.',
+    exploration:     'The depths are open.',
+    self_discovery:  'Your mirror is ready.',
+    privacy:         'What is yours stays yours.',
+    building:        'The tools are ready.',
+    other:           'Your path is your own.',
   };
   const line1 = intentMap[intent] ?? 'The foundation is set.';
 
-  // Line 2 — acknowledge depth / relationship tier
+  // Line 2 — acknowledge depth tier
+  // Matches DepthPreference: 'surface' | 'reflective' | 'deep'
   const depthMap: Record<string, string> = {
-    surface:   'No history kept. Clean slate each time.',
-    familiar:  'Context will grow with you.',
-    deep:      'Every thread remembered.',
-    architect: 'Full memory. Full trust.',
+    surface:    'Clean slate each time. No threads held.',
+    reflective: 'Context will grow with you.',
+    deep:       'Every thread remembered.',
   };
   const line2 = depthMap[depth] ?? 'Your context is yours.';
 
-  // Line 3 — the payoff line, always unambiguous
+  // Line 3 — the payoff line
   const line3 = name ? `GAIA is ready, ${name}.` : 'GAIA is ready.';
 
   return [
@@ -57,13 +55,13 @@ function buildLines(
   ];
 }
 
-// ── Timing constants ─────────────────────────────────────────────────────────
+// ── Timing constants ──────────────────────────────────────────────────────────
 
-const LINE_DELAY_BASE = 700;   // ms before first line appears
-const LINE_STAGGER    = 750;   // ms between each subsequent line
-const CTA_AFTER_LAST  = 500;   // ms after final line before Enter appears
+const LINE_DELAY_BASE = 700;
+const LINE_STAGGER    = 750;
+const CTA_AFTER_LAST  = 500;
 
-// ── Component ────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface Phase8ThresholdProps {
   onComplete: () => void;
@@ -73,46 +71,47 @@ export function Phase8Threshold({ onComplete }: Phase8ThresholdProps) {
   const completeOnboarding = useOnboardingStore((s: OnboardingStore) => s.completeOnboarding);
   const markInterrupted    = useOnboardingStore((s: OnboardingStore) => s.markInterrupted);
   const name               = useOnboardingStore((s: OnboardingStore) => s.name);
-  const intent             = useOnboardingStore((s: OnboardingStore) => s.intent);
-  const depth              = useOnboardingStore((s: OnboardingStore) => s.depth);
 
-  const lines = buildLines(name ?? '', intent ?? '', depth ?? '');
+  // FIX #364: read camelCase aliases — these are guaranteed non-undefined
+  // because the store initialises them from INITIAL_STATE and keeps them
+  // in sync via setDepthPreference / setIntentOther.
+  const depth  = useOnboardingStore((s: OnboardingStore) => s.depth);
+  const intent = useOnboardingStore((s: OnboardingStore) => s.intent);
+
+  // Use the first intent if multiple were selected; fall back to empty string
+  const primaryIntent = Array.isArray(intent) ? (intent[0] ?? '') : '';
+
+  const lines = buildLines(name ?? '', primaryIntent, depth ?? 'reflective');
 
   const [visibleCount, setVisibleCount] = useState(0);
   const [showCta,      setShowCta]      = useState(false);
 
-  // Lock so timers only run once even under StrictMode double-invoke
   const timersFired = useRef(false);
 
   useEffect(() => {
     if (timersFired.current) return;
     timersFired.current = true;
 
-    // Stagger lines in
     lines.forEach((_, i) => {
       setTimeout(() => {
         setVisibleCount((n) => n + 1);
       }, LINE_DELAY_BASE + i * LINE_STAGGER);
     });
 
-    // Show CTA after all lines have appeared
     const ctaDelay = LINE_DELAY_BASE + lines.length * LINE_STAGGER + CTA_AFTER_LAST;
     setTimeout(() => setShowCta(true), ctaDelay);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Enter: mark complete THEN call onComplete ─────────────────────────────
   const handleEnter = useCallback(() => {
     completeOnboarding();
     onComplete();
   }, [completeOnboarding, onComplete]);
 
-  // ── Keyboard ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { markInterrupted(); return; }
       if ((e.key === 'Enter' || e.key === ' ') && showCta) {
-        // Only fire if nothing else is focused (the button handles its own Enter)
         const tag = (document.activeElement as HTMLElement)?.tagName;
         if (tag !== 'BUTTON') handleEnter();
       }
@@ -121,7 +120,6 @@ export function Phase8Threshold({ onComplete }: Phase8ThresholdProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [showCta, handleEnter, markInterrupted]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <section
       className="phase phase--threshold phase--enter"
@@ -129,15 +127,12 @@ export function Phase8Threshold({ onComplete }: Phase8ThresholdProps) {
     >
       <div className="phase__content phase__content--centered">
 
-        {/* Sigil — no brightness prop; size matched to Phase 2 intro */}
         <GaiaSigil animate size={140} />
 
-        {/* Personalised greeting */}
         <h1 className="threshold-greeting">
           {name ? `Welcome, ${name}.` : 'Welcome.'}
         </h1>
 
-        {/* Staggered lines */}
         <div className="threshold-lines" aria-live="polite">
           {lines.map((line, i) => (
             <p
@@ -153,7 +148,6 @@ export function Phase8Threshold({ onComplete }: Phase8ThresholdProps) {
           ))}
         </div>
 
-        {/* Enter CTA — deferred until all lines have landed */}
         {showCta && (
           <div className="threshold-cta">
             <button
