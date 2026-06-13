@@ -1,0 +1,303 @@
+/*
+ * GaiaPresenceBar.css — GAIA's Persistent Heartbeat
+ *
+ * All colours consumed exclusively from src/styles.css tokens.
+ * No raw hex values defined here.
+ *
+ * Layout: horizontal pill — [orb][waveform|qdots][label]
+ * Collapses to orb-only after idle. Expands on hover or mode change.
+ *
+ * Mode colour mapping (via data-mode attribute on orb):
+ *   resting   → amethyst (soft pulse)
+ *   listening → teal     (breath in)
+ *   thinking  → amethyst (quantum shimmer)
+ *   speaking  → gold     (radiant out)
+ *   offline   → grey     (flat)
+ */
+
+/* ── Root pill ───────────────────────────────────────────────────────────────
+   Sits inline in the topbar. Collapses width smoothly to just the orb.
+*/
+.gpb {
+  display:        flex;
+  align-items:    center;
+  gap:            var(--space-2);
+  padding:        var(--space-1) var(--space-3);
+  border-radius:  var(--radius-full);
+  border:         1px solid var(--color-border);
+  background:     var(--color-surface-3);
+  overflow:       hidden;
+  max-width:      180px;
+  min-width:      32px;
+  transition:
+    max-width     400ms var(--ease-out),
+    border-color  var(--duration-base) var(--ease-out),
+    background    var(--duration-base) var(--ease-out);
+  will-change: max-width;
+  user-select: none;
+  position: relative;
+}
+
+/* Active mode border glow */
+.gpb--mode-listening {
+  border-color: var(--color-border-teal);
+  background:   var(--color-surface-teal);
+}
+.gpb--mode-thinking {
+  border-color: var(--color-border-amethyst);
+  background:   var(--color-surface-crystal);
+}
+.gpb--mode-speaking {
+  border-color: rgba(232, 175, 52, 0.25);
+  background:   rgba(232, 175, 52, 0.05);
+}
+
+/* Collapsed state — shrink to orb only */
+.gpb--collapsed {
+  max-width:   32px;
+  padding:     var(--space-1);
+  border-color: var(--color-border-subtle);
+  background:   transparent;
+}
+
+.gpb--collapsed .gpb__content {
+  opacity:    0;
+  pointer-events: none;
+}
+
+/* ── Orb ─────────────────────────────────────────────────────────────────────
+   Core sphere + 2 concentric pulse rings.
+   data-mode drives colour via CSS custom properties.
+*/
+.gpb-orb {
+  position:       relative;
+  flex-shrink:    0;
+  width:          20px;
+  height:         20px;
+  display:        flex;
+  align-items:    center;
+  justify-content: center;
+}
+
+.gpb-orb__core {
+  width:         10px;
+  height:        10px;
+  border-radius: var(--radius-full);
+  background:    var(--color-amethyst);
+  box-shadow:    var(--glow-amethyst-sm);
+  transition:
+    background  var(--duration-slow) var(--ease-out),
+    box-shadow  var(--duration-slow) var(--ease-out);
+  animation: orb-breathe-amethyst 3s ease-in-out infinite;
+}
+
+.gpb-orb__ring {
+  position:      absolute;
+  border-radius: var(--radius-full);
+  border:        1px solid var(--color-amethyst-300);
+  opacity:       0;
+  transition: border-color var(--duration-base) var(--ease-out);
+}
+.gpb-orb__ring--1 { width: 14px; height: 14px; }
+.gpb-orb__ring--2 { width: 20px; height: 20px; }
+
+/* ── Orb mode colours ────────────────────────────────────────────────────── */
+
+[data-mode="resting"] .gpb-orb__core {
+  background: var(--color-amethyst);
+  box-shadow: var(--glow-amethyst-sm);
+  animation:  orb-breathe-amethyst 3s ease-in-out infinite;
+}
+
+[data-mode="listening"] .gpb-orb__core {
+  background: var(--color-teal);
+  box-shadow: var(--glow-teal-sm);
+  animation:  orb-breathe-teal 1.8s ease-in-out infinite;
+}
+[data-mode="listening"] .gpb-orb__ring {
+  border-color: var(--color-teal-300);
+}
+
+[data-mode="thinking"] .gpb-orb__core {
+  background: var(--color-amethyst-bright);
+  box-shadow: var(--glow-amethyst-sm);
+  animation:  orb-shimmer 0.9s ease-in-out infinite;
+}
+[data-mode="thinking"] .gpb-orb__ring {
+  border-color: var(--color-amethyst-300);
+}
+
+[data-mode="speaking"] .gpb-orb__core {
+  background: var(--color-gold);
+  box-shadow: 0 0 10px rgba(232, 175, 52, 0.40);
+  animation:  orb-radiate 1.2s ease-in-out infinite;
+}
+[data-mode="speaking"] .gpb-orb__ring {
+  border-color: rgba(232, 175, 52, 0.30);
+}
+
+[data-mode="offline"] .gpb-orb__core {
+  background: var(--color-text-faint);
+  box-shadow: none;
+  animation:  none;
+}
+
+/* Active rings — pulse when not resting/offline */
+[data-mode="listening"] .gpb-orb__ring--1,
+[data-mode="thinking"]  .gpb-orb__ring--1,
+[data-mode="speaking"]  .gpb-orb__ring--1 {
+  animation: ring-pulse 2s var(--ease-out) infinite;
+}
+[data-mode="listening"] .gpb-orb__ring--2,
+[data-mode="thinking"]  .gpb-orb__ring--2,
+[data-mode="speaking"]  .gpb-orb__ring--2 {
+  animation: ring-pulse 2s var(--ease-out) infinite 0.4s;
+}
+
+/* ── Orb keyframes ───────────────────────────────────────────────────────── */
+
+@keyframes orb-breathe-amethyst {
+  0%, 100% { opacity: 0.70; transform: scale(0.92); }
+  50%       { opacity: 1;    transform: scale(1.08); }
+}
+@keyframes orb-breathe-teal {
+  0%, 100% { opacity: 0.75; transform: scale(0.90); }
+  50%       { opacity: 1;    transform: scale(1.10); }
+}
+@keyframes orb-shimmer {
+  0%, 100% { opacity: 0.60; transform: scale(0.88); filter: brightness(0.9);  }
+  50%       { opacity: 1;    transform: scale(1.12); filter: brightness(1.35); }
+}
+@keyframes orb-radiate {
+  0%   { opacity: 0.80; transform: scale(0.95); }
+  40%  { opacity: 1;    transform: scale(1.15); }
+  100% { opacity: 0.80; transform: scale(0.95); }
+}
+@keyframes ring-pulse {
+  0%   { opacity: 0.6; transform: scale(0.85); }
+  60%  { opacity: 0;   transform: scale(1.5);  }
+  100% { opacity: 0;   transform: scale(1.5);  }
+}
+
+/* ── Expandable content ──────────────────────────────────────────────────── */
+
+.gpb__content {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-2);
+  opacity:    1;
+  transition: opacity 300ms var(--ease-out);
+  overflow:   hidden;
+  white-space: nowrap;
+}
+
+/* ── Mode label ──────────────────────────────────────────────────────────── */
+
+.gpb__label {
+  font-family:    var(--font-mono);
+  font-size:      var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--color-text-muted);
+  transition:     color var(--duration-base) var(--ease-out);
+  line-height:    1;
+}
+
+.gpb--mode-listening .gpb__label { color: var(--color-teal);            }
+.gpb--mode-thinking  .gpb__label { color: var(--color-amethyst-bright); }
+.gpb--mode-speaking  .gpb__label { color: var(--color-gold);            }
+.gpb--mode-offline   .gpb__label { color: var(--color-text-faint);      }
+
+/* ── Waveform bars ───────────────────────────────────────────────────────────
+   5 vertical bars, staggered animation via --bar-i CSS variable.
+   Inactive: flat 2px tall. Active: pulse to variable heights.
+*/
+.gpb-wave {
+  display:     flex;
+  align-items: center;
+  gap:         2px;
+  height:      16px;
+}
+
+.gpb-wave__bar {
+  width:         2.5px;
+  height:        2px;
+  border-radius: var(--radius-full);
+  background:    var(--color-teal);
+  transition:    background var(--duration-base) var(--ease-out);
+}
+
+.gpb-wave--active .gpb-wave__bar {
+  animation: wave-bar 1s ease-in-out infinite;
+  animation-delay: calc(var(--bar-i) * 120ms);
+}
+
+.gpb-wave--fast .gpb-wave__bar {
+  animation-duration: 0.55s;
+  background: var(--color-gold);
+}
+
+@keyframes wave-bar {
+  0%, 100% { height: 2px;  opacity: 0.4; }
+  50%       { height: 14px; opacity: 1;   }
+}
+
+/* ── Quantum dots ────────────────────────────────────────────────────────────
+   4 dots travelling as a sine-wave pulse during 'thinking'.
+*/
+.gpb-qdots {
+  display:     flex;
+  align-items: center;
+  gap:         3px;
+  height:      16px;
+}
+
+.gpb-qdot {
+  width:         4px;
+  height:        4px;
+  border-radius: var(--radius-full);
+  background:    var(--color-amethyst);
+  opacity:       0.2;
+  transform:     translateY(0);
+}
+
+.gpb-qdots--active .gpb-qdot {
+  animation: qdot-travel 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--dot-i) * 180ms);
+}
+
+@keyframes qdot-travel {
+  0%, 100% { opacity: 0.20; transform: translateY(0);    background: var(--color-amethyst); }
+  25%       { opacity: 1;    transform: translateY(-5px); background: var(--color-amethyst-bright); }
+  75%       { opacity: 0.50; transform: translateY(3px);  background: var(--color-teal); }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gpb-orb__core,
+  .gpb-orb__ring,
+  .gpb-wave__bar,
+  .gpb-qdot {
+    animation: none !important;
+  }
+
+  .gpb-orb__core {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gpb-wave--active .gpb-wave__bar {
+    height: 8px;
+    opacity: 0.8;
+  }
+
+  .gpb-qdots--active .gpb-qdot {
+    opacity: 0.7;
+    transform: none;
+  }
+
+  .gpb {
+    transition-duration: 0.01ms !important;
+  }
+}
