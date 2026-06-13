@@ -1,0 +1,16 @@
+Crystal,d_A,d_nm,lambda_nm,color,hex,harmonic_ratio,photon_energy_eV,bond_energy_proxy
+Quartz,3.34,0.334,550,White,#f0f0f0,1646.71,2.256,2.994
+Ruby,2.55,0.255,694,Red,#DC143C,2721.57,1.788,3.922
+Amethyst,3.34,0.334,420,Violet,#7B4FA6,1257.49,2.954,2.994
+Malachite,2.86,0.286,530,Green,#228B22,1853.15,2.341,3.497
+Lapis Lazuli,3.2,0.32,460,Blue,#4169E1,1437.5,2.697,3.125
+Citrine,3.34,0.334,575,Yellow,#FFD700,1721.57,2.158,2.994
+Magnetite,2.97,0.297,410,Black,#333333,1380.49,3.026,3.367
+Gold,2.35,0.235,580,Yellow,#d4aa00,2468.09,2.139,4.255
+Copper,2.09,0.209,505,Blue-Grn,#3d9e7a,2416.34,2.457,4.785
+Fluorite,3.15,0.315,435,Violet,#6a4c9c,1380.46,2.852,3.175
+Turquoise,3.68,0.368,495,Blue-Grn,#2cb5a0,1344.73,2.507,2.717
+Carnelian,3.34,0.334,620,Orange,#FF8C00,1856.29,2.001,2.994
+Aquamarine,3.2,0.32,480,Blue,#5b9dc9,1500.0,2.585,3.125
+Iron Ore,2.69,0.269,650,Red-Brown,#8b3a2a,2416.36,1.909,3.717
+Obsidian,3.5,0.35,400,Black,#1a1a1a,1142.86,3.102,2.857
