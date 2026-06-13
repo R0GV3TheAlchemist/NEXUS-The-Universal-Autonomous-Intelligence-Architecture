@@ -378,28 +378,16 @@
 /* — Step transition animations — */
 
 .q4-step {
-  /* Container for animated transitions between sub-steps */
   min-height: 280px;
   display:    flex;
   flex-direction: column;
   gap:        1.25rem;
 }
 
-.q4-step--exit-forward {
-  animation: q4ExitForward 240ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-.q4-step--exit-back {
-  animation: q4ExitBack 240ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-.q4-step--enter-forward {
-  animation: q4EnterForward 260ms cubic-bezier(0, 0, 0.2, 1) both;
-}
-
-.q4-step--enter-back {
-  animation: q4EnterBack 260ms cubic-bezier(0, 0, 0.2, 1) both;
-}
+.q4-step--exit-forward  { animation: q4ExitForward  240ms cubic-bezier(0.4, 0, 1, 1)   both; }
+.q4-step--exit-back     { animation: q4ExitBack     240ms cubic-bezier(0.4, 0, 1, 1)   both; }
+.q4-step--enter-forward { animation: q4EnterForward 260ms cubic-bezier(0, 0, 0.2, 1)   both; }
+.q4-step--enter-back    { animation: q4EnterBack    260ms cubic-bezier(0, 0, 0.2, 1)   both; }
 
 @keyframes q4ExitForward  { from { opacity: 1; transform: translateX(0);     } to { opacity: 0; transform: translateX(-28px); } }
 @keyframes q4ExitBack     { from { opacity: 1; transform: translateX(0);     } to { opacity: 0; transform: translateX( 28px); } }
@@ -435,37 +423,19 @@
   text-align:     left;
   transition:     border-color 180ms ease, background 180ms ease, transform 120ms ease;
 }
-
 .intent-card:hover {
   border-color: rgba(155, 109, 219, 0.45);
   background:   rgba(155, 109, 219, 0.12);
 }
-
 .intent-card--selected {
   border-color: #9b6ddb;
   background:   rgba(155, 109, 219, 0.22);
   box-shadow:   0 0 0 1px rgba(155, 109, 219, 0.4);
 }
+.intent-card__icon  { font-size: 1.4rem; line-height: 1; margin-bottom: 0.1rem; }
+.intent-card__label { font-size: 0.92rem; font-weight: 500; color: rgba(224, 221, 240, 0.88); }
+.intent-card__desc  { font-size: 0.78rem; color: rgba(224, 221, 240, 0.45); line-height: 1.35; }
 
-.intent-card__icon {
-  font-size:   1.4rem;
-  line-height: 1;
-  margin-bottom: 0.1rem;
-}
-
-.intent-card__label {
-  font-size:   0.92rem;
-  font-weight: 500;
-  color:       rgba(224, 221, 240, 0.88);
-}
-
-.intent-card__desc {
-  font-size:  0.78rem;
-  color:      rgba(224, 221, 240, 0.45);
-  line-height: 1.35;
-}
-
-/* Intent 'other' textarea */
 .intent-other {
   background:    rgba(255, 255, 255, 0.04);
   border:        1.5px solid rgba(155, 109, 219, 0.3);
@@ -487,11 +457,7 @@
 
 /* — Depth cards — */
 
-.depth-list {
-  display:        flex;
-  flex-direction: column;
-  gap:            0.55rem;
-}
+.depth-list { display: flex; flex-direction: column; gap: 0.55rem; }
 
 .depth-card {
   display:        grid;
@@ -508,61 +474,16 @@
   transition:     border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
   width:          100%;
 }
-
-.depth-card:hover {
-  border-color: rgba(155, 109, 219, 0.4);
-  background:   rgba(155, 109, 219, 0.1);
-}
-
-.depth-card--selected {
-  border-color: #9b6ddb;
-  background:   rgba(155, 109, 219, 0.18);
-  box-shadow:   0 0 0 1px rgba(155, 109, 219, 0.35),
-                0 0 14px rgba(155, 109, 219, 0.12);
-}
-
-.depth-card__icon {
-  grid-area:   icon;
-  font-size:   1.6rem;
-  line-height: 1;
-  display:     flex;
-  align-items: center;
-  justify-content: center;
-  color:       rgba(155, 109, 219, 0.75);
-}
-
-.depth-card__label {
-  grid-area:   label;
-  font-size:   1rem;
-  font-weight: 500;
-  color:       rgba(224, 221, 240, 0.9);
-  line-height: 1.3;
-  align-self:  end;
-}
-
-.depth-card__desc {
-  grid-area:    desc;
-  font-size:    0.8rem;
-  color:        rgba(155, 109, 219, 0.75);
-  font-weight:  500;
-  padding-left: 0.1rem;
-  align-self:   end;
-}
-
-.depth-card__detail {
-  grid-area:  detail;
-  font-size:  0.78rem;
-  color:      rgba(224, 221, 240, 0.42);
-  line-height: 1.45;
-}
+.depth-card:hover       { border-color: rgba(155, 109, 219, 0.4); background: rgba(155, 109, 219, 0.1); }
+.depth-card--selected   { border-color: #9b6ddb; background: rgba(155, 109, 219, 0.18); box-shadow: 0 0 0 1px rgba(155, 109, 219, 0.35), 0 0 14px rgba(155, 109, 219, 0.12); }
+.depth-card__icon       { grid-area: icon; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; color: rgba(155, 109, 219, 0.75); }
+.depth-card__label      { grid-area: label; font-size: 1rem; font-weight: 500; color: rgba(224, 221, 240, 0.9); align-self: end; }
+.depth-card__desc       { grid-area: desc; font-size: 0.8rem; color: rgba(155, 109, 219, 0.75); font-weight: 500; align-self: end; }
+.depth-card__detail     { grid-area: detail; font-size: 0.78rem; color: rgba(224, 221, 240, 0.42); line-height: 1.45; }
 
 /* — Topic chips — */
 
-.topics-chips {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       0.5rem;
-}
+.topics-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .topic-chip {
   display:       inline-flex;
@@ -578,19 +499,8 @@
   transition:    all 180ms ease;
   font-family:   inherit;
 }
-
-.topic-chip:hover {
-  border-color: rgba(155, 109, 219, 0.55);
-  color:        #e0ddf0;
-  background:   rgba(155, 109, 219, 0.08);
-}
-
-.topic-chip--selected {
-  background:   rgba(155, 109, 219, 0.22);
-  border-color: #9b6ddb;
-  color:        #e0ddf0;
-  box-shadow:   0 0 0 1px rgba(155, 109, 219, 0.3);
-}
+.topic-chip:hover        { border-color: rgba(155, 109, 219, 0.55); color: #e0ddf0; background: rgba(155, 109, 219, 0.08); }
+.topic-chip--selected    { background: rgba(155, 109, 219, 0.22); border-color: #9b6ddb; color: #e0ddf0; box-shadow: 0 0 0 1px rgba(155, 109, 219, 0.3); }
 
 .q4-none-btn {
   background:   none;
@@ -607,23 +517,12 @@
 }
 .q4-none-btn:hover { color: rgba(224, 221, 240, 0.6); }
 
-/* — Actions row — */
+.q4-actions { justify-content: space-between; }
 
-.q4-actions {
-  justify-content: space-between;
-}
-
-/* Accessibility: screen-reader only */
 .sr-only {
-  position:   absolute;
-  width:      1px;
-  height:     1px;
-  padding:    0;
-  margin:     -1px;
-  overflow:   hidden;
-  clip:       rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border:     0;
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
 }
 
 /* ── 9. Phase 5 — Consent ────────────────────────────────────────────────── */
@@ -631,74 +530,142 @@
 .consent-list {
   display:        flex;
   flex-direction: column;
-  gap:            0.6rem;
+  gap:            0.45rem;
 }
 
+/* Group heading line — 'On by default · stored only on your device' */
+.consent-group-label {
+  font-size:      0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          rgba(155, 109, 219, 0.6);
+  margin-top:     0.35rem;
+  margin-bottom:  0.1rem;
+  padding-left:   0.1rem;
+}
+.consent-group-label--dim {
+  color: rgba(224, 221, 240, 0.28);
+}
+
+/* Thin separator between groups */
+.consent-divider {
+  height:     1px;
+  background: rgba(155, 109, 219, 0.14);
+  margin:     0.6rem 0 0.25rem;
+  border:     none;
+}
+
+/* Each consent row — starts invisible, becomes visible via JS revealCount */
 .consent-item {
-  display:       flex;
-  gap:           0.85rem;
-  align-items:   flex-start;
-  padding:       0.75rem 1rem;
-  border-radius: 8px;
-  border:        1.5px solid rgba(155, 109, 219, 0.15);
-  background:    rgba(155, 109, 219, 0.04);
-  cursor:        pointer;
-  transition:    border-color 200ms ease, background 200ms ease;
-}
-.consent-item:hover    { border-color: rgba(155, 109, 219, 0.35); }
-.consent-item--on {
-  border-color: rgba(155, 109, 219, 0.45);
-  background:   rgba(155, 109, 219, 0.1);
+  display:     grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  align-items: center;
+  gap:         0.8rem;
+  padding:     0.7rem 0.9rem;
+  border-radius: 9px;
+  border:      1.5px solid rgba(155, 109, 219, 0.14);
+  background:  rgba(155, 109, 219, 0.03);
+  /* Hidden until revealed */
+  opacity:     0;
+  transform:   translateY(8px);
+  transition:  border-color 200ms ease, background 200ms ease;
+  /* No motion transition here — handled by --visible class */
 }
 
-.consent-item__toggle {
-  flex-shrink:   0;
-  width:         36px;
-  height:        20px;
-  border-radius: 10px;
-  background:    rgba(155, 109, 219, 0.2);
-  border:        1.5px solid rgba(155, 109, 219, 0.35);
-  position:      relative;
-  transition:    background 200ms ease, border-color 200ms ease;
-  margin-top:    2px;
+.consent-item--visible {
+  animation: consentItemIn 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.consent-item--on .consent-item__toggle {
-  background:   #9b6ddb;
-  border-color: #b48fe8;
+
+@keyframes consentItemIn {
+  from { opacity: 0; transform: translateY(8px);  }
+  to   { opacity: 1; transform: translateY(0);    }
 }
-.consent-item__toggle::after {
-  content:       '';
-  position:      absolute;
-  top:           2px;
-  left:          2px;
-  width:         13px;
-  height:        13px;
-  border-radius: 50%;
-  background:    #fff;
-  transition:    transform 200ms ease;
+
+.consent-item--on {
+  border-color: rgba(155, 109, 219, 0.38);
+  background:   rgba(155, 109, 219, 0.09);
 }
-.consent-item--on .consent-item__toggle::after {
-  transform: translateX(15px);
+
+.consent-item__icon {
+  font-size:   1.1rem;
+  line-height: 1;
+  color:       rgba(155, 109, 219, 0.65);
+  justify-self: center;
+}
+
+.consent-item__body {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.18rem;
 }
 
 .consent-item__label {
-  font-size:  0.92rem;
+  font-size:   0.9rem;
   font-weight: 500;
-  color:      rgba(224, 221, 240, 0.85);
+  color:       rgba(224, 221, 240, 0.86);
+  line-height: 1.3;
 }
 
 .consent-item__desc {
-  font-size:  0.82rem;
-  color:      rgba(224, 221, 240, 0.48);
-  margin-top: 0.2rem;
+  font-size:   0.78rem;
+  color:       rgba(224, 221, 240, 0.42);
   line-height: 1.5;
 }
 
+/* Toggle switch pill */
+.consent-toggle {
+  flex-shrink:   0;
+  width:         38px;
+  height:        22px;
+  border-radius: 11px;
+  background:    rgba(155, 109, 219, 0.18);
+  border:        1.5px solid rgba(155, 109, 219, 0.3);
+  position:      relative;
+  cursor:        pointer;
+  transition:    background 220ms ease, border-color 220ms ease;
+  outline:       none;
+  padding:       0;
+}
+
+.consent-toggle--on {
+  background:   #9b6ddb;
+  border-color: #b48fe8;
+}
+
+/* Keyboard focus ring — visible only for keyboard nav */
+.consent-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(155, 109, 219, 0.45);
+}
+
+.consent-toggle__thumb {
+  position:      absolute;
+  top:           3px;
+  left:          3px;
+  width:         14px;
+  height:        14px;
+  border-radius: 50%;
+  background:    rgba(224, 221, 240, 0.7);
+  transition:    transform 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms ease;
+  display:       block;
+}
+
+.consent-toggle--on .consent-toggle__thumb {
+  transform:  translateX(16px);
+  background: #fff;
+}
+
+/* Footer note */
 .consent-footer {
   font-size:  0.8rem;
-  color:      rgba(224, 221, 240, 0.38);
+  color:      rgba(224, 221, 240, 0.32);
   line-height: 1.6;
   text-align: center;
+}
+
+.consent-footer__path {
+  color:       rgba(155, 109, 219, 0.7);
+  font-style:  normal;
+  font-weight: 500;
 }
 
 /* ── 10. Phase 6 — First Gift ────────────────────────────────────────────── */
@@ -725,187 +692,85 @@
   transition:    opacity 500ms ease, transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
                  border-color 300ms ease;
 }
-
-.gift-card--visible {
-  opacity:   1;
-  transform: scale(1) translateY(0);
-}
-
-.gift-card:hover {
-  border-color: rgba(155, 109, 219, 0.42);
-}
-
-.gift-card__icon {
-  font-size:  1.8rem;
-  line-height: 1;
-}
-
-.gift-card__title {
-  font-size:   1.2rem;
-  font-weight: 500;
-  color:       #e0ddf0;
-}
-
-.gift-card__body {
-  font-size:   0.97rem;
-  line-height: 1.65;
-  color:       rgba(224, 221, 240, 0.72);
-}
-
-.gift-card__hint {
-  font-size:  0.8rem;
-  color:      rgba(224, 221, 240, 0.38);
-  font-style: italic;
-}
+.gift-card--visible  { opacity: 1; transform: scale(1) translateY(0); }
+.gift-card:hover     { border-color: rgba(155, 109, 219, 0.42); }
+.gift-card__icon     { font-size: 1.8rem; line-height: 1; }
+.gift-card__title    { font-size: 1.2rem; font-weight: 500; color: #e0ddf0; }
+.gift-card__body     { font-size: 0.97rem; line-height: 1.65; color: rgba(224, 221, 240, 0.72); }
+.gift-card__hint     { font-size: 0.8rem; color: rgba(224, 221, 240, 0.38); font-style: italic; }
 
 /* ── 11. Phase 7 — Account Setup ─────────────────────────────────────────── */
 
 .account-fields {
-  display:        flex;
-  flex-direction: column;
-  gap:            1rem;
-  width:          100%;
-  max-width:      360px;
-  margin:         0 auto;
+  display: flex; flex-direction: column; gap: 1rem;
+  width: 100%; max-width: 360px; margin: 0 auto;
 }
-
-.field-group {
-  display:        flex;
-  flex-direction: column;
-  gap:            0.35rem;
-}
-
-.field-group label {
-  font-size:  0.85rem;
-  color:      rgba(224, 221, 240, 0.5);
-  letter-spacing: 0.03em;
-}
-
+.field-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.field-group label { font-size: 0.85rem; color: rgba(224, 221, 240, 0.5); letter-spacing: 0.03em; }
 .field-group input {
-  background:    rgba(255, 255, 255, 0.05);
-  border:        1.5px solid rgba(155, 109, 219, 0.3);
-  border-radius: 7px;
-  color:         #e0ddf0;
-  font-size:     0.97rem;
-  padding:       0.5rem 0.85rem;
-  outline:       none;
-  transition:    border-color 200ms ease, box-shadow 200ms ease;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(155, 109, 219, 0.3);
+  border-radius: 7px; color: #e0ddf0; font-size: 0.97rem;
+  padding: 0.5rem 0.85rem; outline: none;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
-.field-group input:focus {
-  border-color: #9b6ddb;
-  box-shadow:   0 0 0 3px rgba(155, 109, 219, 0.18);
-}
+.field-group input:focus        { border-color: #9b6ddb; box-shadow: 0 0 0 3px rgba(155, 109, 219, 0.18); }
 .field-group input::placeholder { color: rgba(224, 221, 240, 0.22); }
-
-.account-error {
-  font-size:  0.85rem;
-  color:      #e87070;
-  text-align: center;
-  animation:  phaseEnter 250ms ease both;
-}
-
-.account-skip {
-  font-size:  0.82rem;
-  color:      rgba(224, 221, 240, 0.38);
-  text-align: center;
-}
+.account-error { font-size: 0.85rem; color: #e87070; text-align: center; animation: phaseEnter 250ms ease both; }
+.account-skip  { font-size: 0.82rem; color: rgba(224, 221, 240, 0.38); text-align: center; }
 .account-skip button {
-  background:  none;
-  border:      none;
-  color:       rgba(155, 109, 219, 0.65);
-  cursor:      pointer;
-  font-size:   inherit;
-  padding:     0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  background: none; border: none; color: rgba(155, 109, 219, 0.65);
+  cursor: pointer; font-size: inherit; padding: 0;
+  text-decoration: underline; text-underline-offset: 2px;
 }
 .account-skip button:hover { color: #9b6ddb; }
 
 /* ── 12. Phase 8 — Threshold ─────────────────────────────────────────────── */
 
-.phase--threshold .phase__content {
-  gap: 2rem;
-}
+.phase--threshold .phase__content { gap: 2rem; }
 
 .threshold-greeting {
-  font-size:      2rem;
-  font-weight:    300;
-  letter-spacing: 0.03em;
-  color:          #e0ddf0;
-  animation:      phaseEnter 600ms ease both;
+  font-size: 2rem; font-weight: 300; letter-spacing: 0.03em;
+  color: #e0ddf0; animation: phaseEnter 600ms ease both;
 }
-
-.threshold-lines {
-  display:        flex;
-  flex-direction: column;
-  gap:            0.55rem;
-  min-height:     4rem;
-}
-
+.threshold-lines { display: flex; flex-direction: column; gap: 0.55rem; min-height: 4rem; }
 .threshold-line {
-  font-size:   1.05rem;
-  color:       rgba(224, 221, 240, 0.85);
-  opacity:     0;
-  transform:   translateY(8px);
-  transition:  opacity 500ms ease, transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  font-size: 1.05rem; color: rgba(224, 221, 240, 0.85);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 500ms ease, transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.threshold-line--muted {
-  color: rgba(224, 221, 240, 0.45);
-}
-
-.threshold-line--visible {
-  opacity:   1;
-  transform: translateY(0);
-}
+.threshold-line--muted   { color: rgba(224, 221, 240, 0.45); }
+.threshold-line--visible { opacity: 1; transform: translateY(0); }
 
 /* ── 13. Resume Dialog ───────────────────────────────────────────────────── */
 
 .onboarding-resume {
-  position:   fixed;
-  inset:      0;
-  display:    flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
   background: rgba(12, 12, 20, 0.88);
   backdrop-filter: blur(8px);
-  z-index:    200;
-  animation:  phaseEnter 300ms ease both;
+  z-index: 200;
+  animation: phaseEnter 300ms ease both;
 }
-
 .onboarding-resume__card {
-  background:    rgba(24, 20, 40, 0.95);
-  border:        1.5px solid rgba(155, 109, 219, 0.3);
+  background: rgba(24, 20, 40, 0.95);
+  border: 1.5px solid rgba(155, 109, 219, 0.3);
   border-radius: 14px;
-  padding:       2.5rem 2rem;
-  max-width:     380px;
-  width:         90%;
-  display:       flex;
-  flex-direction: column;
-  gap:           1.5rem;
-  text-align:    center;
-  box-shadow:    0 8px 48px rgba(0, 0, 0, 0.5);
+  padding: 2.5rem 2rem; max-width: 380px; width: 90%;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  text-align: center;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
 }
-
-.onboarding-resume__card p {
-  font-size:   1.05rem;
-  line-height: 1.6;
-  color:       rgba(224, 221, 240, 0.78);
-}
+.onboarding-resume__card p { font-size: 1.05rem; line-height: 1.6; color: rgba(224, 221, 240, 0.78); }
 
 /* ── 14. Shared components ───────────────────────────────────────────────── */
 
 .gaia-question {
-  font-size:   1.3rem;
-  font-weight: 300;
-  color:       rgba(224, 221, 240, 0.9);
-  line-height: 1.55;
+  font-size: 1.3rem; font-weight: 300;
+  color: rgba(224, 221, 240, 0.9); line-height: 1.55;
 }
-
 .gaia-aside {
-  font-size:   0.95rem;
-  color:       rgba(224, 221, 240, 0.5);
-  font-style:  italic;
+  font-size: 0.95rem; color: rgba(224, 221, 240, 0.5); font-style: italic;
 }
 
 /* ── 15. Reduced motion ──────────────────────────────────────────────────── */
@@ -918,6 +783,7 @@
   .gift-card,
   .threshold-line,
   .onboarding-resume,
+  .consent-item--visible,
   .q4-step--exit-forward,
   .q4-step--exit-back,
   .q4-step--enter-forward,
@@ -928,5 +794,6 @@
     transform:  none !important;
   }
   .ob-stepper__dot,
-  .q4-dot { transition: none; }
+  .q4-dot,
+  .consent-toggle__thumb { transition: none; }
 }
