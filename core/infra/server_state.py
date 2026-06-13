@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.canon_loader import CanonLoader
+from core.canon_ingestor import ingest_canon_directory
 from core.gaian import GaianMemory
 from core.gaian.base_forms import get_base_form
 from core.gaian_runtime import GAIANIdentity, GAIANRuntime
@@ -28,9 +29,24 @@ logger = get_logger(__name__)
 SERVER_VERSION = "2.1.0"
 GAIANS_MEMORY_DIR: str = os.environ.get("GAIANS_MEMORY_DIR", "./gaians")
 
-# ─ Singletons ─
+# ─ Canon ─
+# Initialise the CanonLoader and immediately ingest all canon/ .md files.
+# ingest_canon_directory() scans canon/, parses every .md file,
+# constructs CanonEntry objects, and feeds them into the TF-IDF index.
+# The IngestionReport is logged — startup will warn if any files failed.
 canon = CanonLoader()
-canon.load()
+_canon_report = ingest_canon_directory(loader=canon)
+if _canon_report.failed > 0:
+    logger.warning(
+        "[server_state] Canon ingestion had %d failure(s) — "
+        "inference may be incomplete. Check logs for details.",
+        _canon_report.failed,
+    )
+else:
+    logger.info(
+        "[server_state] Canon ingested: %d documents loaded.",
+        _canon_report.loaded,
+    )
 
 _inference_router: GAIAInferenceRouter = get_router()
 _mother_thread: MotherThread = get_mother_thread()
