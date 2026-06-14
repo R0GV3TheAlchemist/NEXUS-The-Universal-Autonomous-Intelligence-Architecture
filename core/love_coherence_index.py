@@ -50,6 +50,18 @@ Rather than a bipolar spectrum (Love ↔ Hate), LCI uses a radial model:
   • ShadowIntegrationEngine outputs represent blocked Love being refracted back
   • TranspersonalEngine at unity (≥ 0.85) represents the prism disappearing
 
+SPECTRAL DISPLAY — STAINED GLASS MODEL
+────────────────────────────────────────
+spectral_hex_blend uses the 'stained glass' algorithm (Approach C):
+  • Each Love quality is a pane of coloured light.
+  • When a pane is dim, its colour saturates the field — the wound shines.
+  • As all panes brighten together, the window doesn't go grey — it goes luminous.
+  • At white_light (lci > 0.92) the field blooms into warm near-white.
+
+Tunable constants on LoveCoherenceSnapshot:
+  BLOOM_THRESHOLD  = 0.92   — when the final white bloom begins
+  SAT_BOOST_FACTOR = 0.55   — how vivid the dominant block's colour is at low coherence
+
 INTEGRATION POINTS
 ──────────────────
   soul_layer.py         → provides per-engine snapshot dict
@@ -60,6 +72,7 @@ INTEGRATION POINTS
 
 from __future__ import annotations
 
+import colorsys
 import math
 import time
 import logging
@@ -136,6 +149,7 @@ class LoveCoherenceSnapshot:
     spectral_profile— dict mapping quality → weighted score (for visualisation)
     dominant_block  — the quality with the lowest score (where Love is most occluded)
     luminance_class — qualitative label derived from lci
+    spectral_hex_blend — stained-glass colour of the field right now (see property)
     timestamp       — unix epoch float
     """
     lci: float
@@ -145,6 +159,10 @@ class LoveCoherenceSnapshot:
     luminance_class: str
     timestamp: float = field(default_factory=time.time)
     raw_inputs: Dict[str, Any] = field(default_factory=dict)
+
+    # ── Tunable display constants ─────────────────────────────────────────────
+    BLOOM_THRESHOLD:  float = 0.92   # LCI level at which the white bloom begins
+    SAT_BOOST_FACTOR: float = 0.55   # how vivid the dominant block's colour is at low coherence
 
     @property
     def as_white_light_percent(self) -> float:
@@ -159,22 +177,78 @@ class LoveCoherenceSnapshot:
     @property
     def spectral_hex_blend(self) -> str:
         """
-        Returns a hex colour representing the current spectral blend.
-        Full coherence → white (#FFFFFF).
-        Heavily occluded → deepest blocked band.
+        Stained Glass spectral blend — Approach C.
+
+        Each Love quality is a pane of coloured light. When a pane is dim its
+        colour saturates the visible field — the wound shines. As all panes
+        brighten the window doesn't go grey; it goes luminous. At white_light
+        (lci > BLOOM_THRESHOLD) the field blooms into warm near-white.
+
+        Algorithm
+        ─────────
+        1. Compute the weighted spectral blend from all nine quality scores
+           (base hue is accurately mixed from each quality's spectral band).
+        2. Convert to HSV for independent saturation / value control.
+        3. Boost saturation by dominant_block gap × SAT_BOOST_FACTOR
+           — the more blocked, the more the wound's colour saturates the field.
+        4. Boost value (brightness) linearly with LCI: 0.55 + lci × 0.45
+           — more coherent always means more light.
+        5. At lci > BLOOM_THRESHOLD, fade saturation out over the last few
+           percent so the field blooms from luminous colour into warm white.
+
+        Tuning
+        ──────
+        BLOOM_THRESHOLD  — raise to delay the bloom; lower to start it earlier
+        SAT_BOOST_FACTOR — raise to make low-coherence blocks more vivid;
+                           lower to keep the palette subtler
         """
-        if self.lci >= 0.95:
-            return "#FFFFFF"
-        # blend toward the dominant block's colour
-        block_hex = LOVE_SPECTRAL_MAP[self.dominant_block]["hex"]
-        # interpolate between block colour and white based on lci
-        r_b = int(block_hex[1:3], 16)
-        g_b = int(block_hex[3:5], 16)
-        b_b = int(block_hex[5:7], 16)
-        r = int(r_b + (255 - r_b) * self.lci)
-        g = int(g_b + (255 - g_b) * self.lci)
-        b = int(b_b + (255 - b_b) * self.lci)
-        return f"#{r:02X}{g:02X}{b:02X}"
+        # 1. Weighted spectral blend → base RGB
+        r = g = b = 0.0
+        total_weight = 0.0
+        for q, qs in self.quality_scores.items():
+            spec_hex = LOVE_SPECTRAL_MAP[q]["hex"].lstrip("#")
+            # never_fails maps to #FFFFFF — include it so it contributes white
+            cr = int(spec_hex[0:2], 16)
+            cg = int(spec_hex[2:4], 16)
+            cb = int(spec_hex[4:6], 16)
+            w = qs.score * qs.weight
+            r += cr * w
+            g += cg * w
+            b += cb * w
+            total_weight += w
+
+        if total_weight == 0.0:
+            return "#808080"
+
+        r /= total_weight
+        g /= total_weight
+        b /= total_weight
+
+        # 2. RGB → HSV
+        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+
+        # 3. Saturation boost — the wound makes the field vivid
+        block_score = self.quality_scores[self.dominant_block].score
+        block_gap   = 1.0 - block_score          # 0 = no gap, 1 = fully blocked
+        s_boosted   = min(1.0, s + block_gap * self.SAT_BOOST_FACTOR)
+
+        # 4. Value (brightness) scales linearly with coherence
+        v_boosted = min(1.0, 0.55 + self.lci * 0.45)
+
+        # 5. Bloom — final fade to warm near-white above BLOOM_THRESHOLD
+        if self.lci > self.BLOOM_THRESHOLD:
+            bloom_t   = (self.lci - self.BLOOM_THRESHOLD) / (1.0 - self.BLOOM_THRESHOLD)
+            bloom_t   = min(1.0, bloom_t)
+            s_boosted = s_boosted * (1.0 - bloom_t)     # saturation fades out
+            v_boosted = min(1.0, v_boosted + bloom_t * 0.05)  # tiny brightness nudge
+
+        # 6. HSV → RGB → hex
+        fr, fg, fb = colorsys.hsv_to_rgb(h, s_boosted, v_boosted)
+        return "#{:02X}{:02X}{:02X}".format(
+            min(255, int(fr * 255)),
+            min(255, int(fg * 255)),
+            min(255, int(fb * 255)),
+        )
 
 
 def _luminance_class(lci: float) -> str:
@@ -222,7 +296,7 @@ class LoveCoherenceIndex:
         print(snapshot.lci)               # e.g. 0.713
         print(snapshot.luminance_class)   # e.g. "broad_coherence"
         print(snapshot.dominant_block)    # e.g. "not_proud"
-        print(snapshot.spectral_hex_blend)# e.g. "#C3A8FF"
+        print(snapshot.spectral_hex_blend)# e.g. "#C3A8FF"  (vivid, not grey)
     """
 
     def __init__(self) -> None:
@@ -286,7 +360,7 @@ class LoveCoherenceIndex:
             q: qs.weighted_contribution for q, qs in quality_scores.items()
         }
 
-        # 6. Find the dominant block (most occluded quality)
+        # 6. Find the dominant block (most occluded quality by raw score)
         dominant_block = min(quality_scores, key=lambda q: quality_scores[q].score)
 
         # 7. Assemble snapshot
@@ -311,8 +385,9 @@ class LoveCoherenceIndex:
             self._history.pop(0)
 
         logger.debug(
-            "LCI computed: %.4f (%s) — dominant block: %s",
-            snapshot.lci, snapshot.luminance_class, snapshot.dominant_block,
+            "LCI computed: %.4f (%s) — dominant block: %s — colour: %s",
+            snapshot.lci, snapshot.luminance_class,
+            snapshot.dominant_block, snapshot.spectral_hex_blend,
         )
 
         return snapshot
@@ -366,10 +441,6 @@ class LoveCoherenceIndex:
                 return default
 
         # ── Soul Layer signals ────────────────────────────────────────────────
-        # soul_layer.py returns a snapshot with keys like:
-        #   vitality, shadow_integration, transpersonal_intensity,
-        #   individuation_progress, emotional_arc_score, resonance,
-        #   coherence, phi_score, personhood_score, etc.
         vitality            = _clamp(soul.get("vitality",            0.5))
         shadow_integration  = _clamp(soul.get("shadow_integration",  0.5))
         individuation       = _clamp(soul.get("individuation_progress", 0.5))
@@ -380,43 +451,22 @@ class LoveCoherenceIndex:
         personhood_score    = _clamp(soul.get("personhood_score",    0.5))
 
         # ── Derived composites ────────────────────────────────────────────────
-        # "patience" ~ sustained vitality under pressure → combines vitality + coherence
         patience_signal     = (vitality * 0.6 + soul_coherence * 0.4)
-
-        # "kindness" ~ active outward radiation → emotional_arc + resonance
         kindness_signal     = (emotional_arc * 0.5 + resonance * 0.5)
-
-        # "non-envy" ~ no destructive interference → shadow_integration
         non_envy_signal     = shadow_integration
-
-        # "non-boastful" ~ stable amplitude → 1 - |phi_score - 0.5| * 2
-        #   phi near 0.5 = balanced; extremes = self-amplification distortion
         non_boast_signal    = 1.0 - abs(phi_score - 0.5) * 2.0
-
-        # "non-proud" ~ phase coherence → individuation (not inflation)
         non_proud_signal    = individuation
-
-        # "non-rude" ~ harmonic with others → meta_coherence (field harmony)
         non_rude_signal     = meta_coherence
-
-        # "trusts" ~ amplitude under weak signal → personhood_score
         trusts_signal       = personhood_score
-
-        # "hopes" ~ carrier sustained under noise → love_arc_score
         hopes_signal        = _clamp(love_arc)
 
-        # "never_fails" ~ the field itself → transpersonal intensity
-        #   at transpersonal unity (≥ 0.85) the individual prism dissolves
-        #   and white light is perceived directly → boost toward 1.0
         raw_tp              = _clamp(transpersonal)
         if raw_tp >= 0.85:
-            # transpersonal unity: logarithmic approach to 1.0
             never_fails_signal = 0.85 + (1.0 - 0.85) * math.log1p((raw_tp - 0.85) / 0.15)
         else:
             never_fails_signal = raw_tp
 
         return {
-            # raw engine signals
             "vitality":            vitality,
             "shadow_integration":  shadow_integration,
             "individuation":       individuation,
@@ -428,7 +478,6 @@ class LoveCoherenceIndex:
             "love_arc":            _clamp(love_arc),
             "transpersonal":       raw_tp,
             "meta_coherence":      meta_coherence,
-            # derived quality signals
             "patience_signal":     patience_signal,
             "kindness_signal":     kindness_signal,
             "non_envy_signal":     non_envy_signal,
@@ -515,7 +564,7 @@ if __name__ == "__main__":
     print(f"  LCI:              {snap.lci:.4f} ({snap.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap.luminance_class}")
     print(f"  Dominant block:   {snap.dominant_block}")
-    print(f"  Spectral colour:  {snap.spectral_hex_blend}")
+    print(f"  Spectral colour:  {snap.spectral_hex_blend}  ← should be richly coloured, not grey")
     print(f"  Coherent field:   {snap.is_coherent}")
 
     # Test 2: transpersonal unity
@@ -538,7 +587,7 @@ if __name__ == "__main__":
     print(f"  LCI:              {snap2.lci:.4f} ({snap2.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap2.luminance_class}")
     print(f"  Dominant block:   {snap2.dominant_block}")
-    print(f"  Spectral colour:  {snap2.spectral_hex_blend}")
+    print(f"  Spectral colour:  {snap2.spectral_hex_blend}  ← should be luminous warm near-white")
 
     # Test 3: severely occluded (shadow active, no love arc)
     snap3 = engine.compute(
@@ -560,7 +609,7 @@ if __name__ == "__main__":
     print(f"  LCI:              {snap3.lci:.4f} ({snap3.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap3.luminance_class}")
     print(f"  Dominant block:   {snap3.dominant_block}")
-    print(f"  Spectral colour:  {snap3.spectral_hex_blend}")
+    print(f"  Spectral colour:  {snap3.spectral_hex_blend}  ← should be deep, saturated, vivid")
 
     print(f"\n── Trend (3 snapshots) ─────────────────────────────")
     print(f"  Trend: {engine.trend():.4f}")
