@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
@@ -294,6 +295,9 @@ _KEYWORD_REGISTER_MAP: Dict[str, str] = {
 # Regex for C-reference extraction (e.g. C30, C32, C01)
 _CANON_REF_RE = re.compile(r"\bC\d{1,4}\b")
 
+# Canon refs always forwarded on all trace events (Issue #258)
+_PLAN_CANON_REFS: List[str] = ["C01", "C30", "C32"]
+
 
 def _resolve_keyword_conflicts(
     matches: List[Tuple[str, str]],
@@ -485,6 +489,40 @@ def _old_classify_stage(score: float) -> SynergyStage:
     if score < 0.8:
         return SynergyStage.SYNTHESIS
     return SynergyStage.COMPLETION
+
+
+# ------------------------------------------------------------------ #
+#  Trace event type constants                                          #
+# ------------------------------------------------------------------ #
+
+class _TraceEvent:
+    """Simple namespace for trace event type strings used in plan()."""
+    class _T:
+        def __init__(self, name: str):
+            self.name = name
+            self.value = name
+        def __str__(self) -> str:
+            return self.name
+
+    QUERY   = _T("QUERY")
+    OUTPUT  = _T("OUTPUT")
+    ERROR   = _T("ERROR")
+
+
+def _safe_trace(trace: Any, method: str, **kwargs) -> None:
+    """
+    Call trace.<method>(**kwargs) swallowing any exception.
+    C30: a broken trace writer must never silence a plan result.
+    """
+    if trace is None:
+        return
+    try:
+        fn = getattr(trace, method, None)
+        if fn is not None:
+            fn(**kwargs)
+    except Exception:
+        pass
+
 
 # ------------------------------------------------------------------ #
 #  Main engine                                                         #
@@ -783,28 +821,151 @@ class SynergyEngine:
 
     # ---- plan() / _plan_internal() ----
 
-    def plan(
+    async def plan(
         self,
         goal: str,
-        context: dict | None = None,
-        trace=None,
-        canon_refs: list | None = None,
+        context: Any = None,
+        trace: Any = None,
+        canon_refs: Optional[List[str]] = None,
     ) -> dict:
-        canon_refs = canon_refs or []
+        """
+        Async planning entry point — Issue #258.
+
+        Emits QUERY, OUTPUT (or ERROR) trace events and records latency_ms.
+        All trace calls are wrapped in try/except (C30: no silent failures).
+        trace=None is a safe no-op throughout.
+
+        Parameters
+        ----------
+        goal        : The planning goal string.
+        context     : A LoopContext-like object exposing biometric_coherence,
+                      affective_state, planetary_label, session_mode,
+                      cycle_memory, canon_context.  May also be a plain dict
+                      (legacy path) or None.
+        trace       : Optional GAIATrace instance.  None = no tracing.
+        canon_refs  : Additional canon refs to forward on all events.
+                      Merged with the default _PLAN_CANON_REFS.
+        """
+        _refs = list(_PLAN_CANON_REFS)
+        if canon_refs:
+            for r in canon_refs:
+                if r not in _refs:
+                    _refs.append(r)
+
+        # --- extract context fields -------------------------------- #
+        coherence    = 0.5
+        affective    = "neutral"
+        planetary    = "unknown"
+        session_mode = "default"
+        cycle_memory: list = []
+        canon_context: Any = None
+
+        if context is not None and not isinstance(context, dict):
+            # LoopContext-like object
+            coherence    = getattr(context, "biometric_coherence", coherence)
+            affective    = getattr(context, "affective_state",     affective)
+            planetary    = getattr(context, "planetary_label",     planetary)
+            session_mode = getattr(context, "session_mode",        session_mode)
+            cycle_memory = getattr(context, "cycle_memory",        cycle_memory) or []
+            canon_context = getattr(context, "canon_context",      None)
+        elif isinstance(context, dict):
+            coherence    = context.get("biometric_coherence", coherence)
+            affective    = context.get("affective_state",     affective)
+            planetary    = context.get("planetary_label",     planetary)
+            session_mode = context.get("session_mode",        session_mode)
+            cycle_memory = context.get("cycle_memory",        cycle_memory) or []
+            canon_context = context.get("canon_context",      None)
+
+        # --- canon context analysis -------------------------------- #
+        hint = _analyse_canon_context(canon_context)
+        canon_present = hint.present
+        canon_nudge   = hint.register_nudge
+        conflict_det  = hint.conflict_detected
+        nudge_label   = hint.nudge_label
+
+        # --- QUERY event ------------------------------------------- #
+        _safe_trace(
+            trace,
+            "record_output",
+            event_type=_TraceEvent.QUERY,
+            output={
+                "goal_excerpt":  goal[:80],
+                "coherence":     coherence,
+                "affective":     affective,
+                "planetary":     planetary,
+                "session_mode":  session_mode,
+                "cycle_count":   len(cycle_memory),
+                "canon_present": canon_present,
+                "canon_refs":    _refs,
+            },
+            canon_refs=_refs,
+        )
+
+        t_start = time.perf_counter()
+
+        # --- _plan_internal (sync, pure computation) --------------- #
         try:
-            result = self._plan_internal(goal, context or {})
+            ctx_dict = context if isinstance(context, dict) else {}
+            result = self._plan_internal(goal, ctx_dict)
         except Exception as exc:
-            if trace is not None:
-                try:
-                    trace.record_error(str(exc), canon_refs=canon_refs)
-                except Exception:
-                    pass
-            raise
-        if trace is not None:
-            try:
-                trace.record_output(result, canon_refs=canon_refs)
-            except Exception:
-                pass
+            latency_ms = (time.perf_counter() - t_start) * 1000.0
+            _safe_trace(
+                trace,
+                "record_output",
+                event_type=_TraceEvent.ERROR,
+                output={
+                    "error":       f"{type(exc).__name__}: {exc}",
+                    "detail":      str(exc),
+                    "goal_excerpt": goal[:80],
+                },
+                canon_refs=_refs,
+            )
+            _safe_trace(trace, "record_meta", key="latency_ms", value=round(latency_ms, 2))
+            return {
+                "action":        "PLANNING_FAILED",
+                "confidence":    0.0,
+                "goal_complete": False,
+                "goal_excerpt":  goal[:80],
+                "error":         str(exc),
+                "rationale":     "",
+            }
+
+        latency_ms = (time.perf_counter() - t_start) * 1000.0
+
+        # --- Determine register from canon nudge or coherence ------- #
+        if canon_nudge:
+            register = canon_nudge
+        elif coherence < 0.40:
+            register = "minimal"
+        elif coherence < 0.65:
+            register = "reflective"
+        else:
+            register = "executive"
+
+        # --- OUTPUT event ------------------------------------------ #
+        _safe_trace(
+            trace,
+            "record_output",
+            event_type=_TraceEvent.OUTPUT,
+            output={
+                "action":            result.get("action"),
+                "tool":              result.get("tool"),
+                "register":          register,
+                "confidence":        result.get("confidence"),
+                "goal_complete":     result.get("goal_complete"),
+                "canon_nudge_label": nudge_label,
+                "conflict_detected": conflict_det,
+            },
+            canon_refs=_refs,
+        )
+
+        # --- META latency ------------------------------------------ #
+        _safe_trace(trace, "record_meta", key="latency_ms", value=round(latency_ms, 2))
+
+        # Enrich result with register and rationale
+        result["register"] = register
+        result.setdefault("rationale", hint.to_rationale_fragment())
+
         return result
 
     def _plan_internal(self, goal: str, context: dict) -> dict:
