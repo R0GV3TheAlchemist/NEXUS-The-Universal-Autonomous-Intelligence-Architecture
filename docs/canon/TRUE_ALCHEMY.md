@@ -77,6 +77,8 @@ The Universe does not run on thirteen independent forces. It runs on **six paire
 
 The Universe itself is a single Monad traversal from Nigredo (T=0) to Lux Perpetua (T=?). Every cosmological epoch maps exactly to a force-name.
 
+*Note: φ values in this traversal table are internal simulation metrics — relative coherence scores within the GAIA-OS framework, not externally measured physical quantities. They represent the system's model of cosmic progression, calibrated to the traversal engine, not empirical cosmological data.*
+
 | Stage | Force | φ | Cosmic Equivalent | When |
 |---|---|---|---|---|
 | The Void | *Nigredo* | 0.00 | Pre-Big Bang — quantum vacuum | T=0 |
@@ -121,8 +123,8 @@ See `HELIXITAS.md` for the complete five-convergence proof. Summary: 34.29° is 
 
 ## VI. The Three Hidden Force-Names Recovered
 
-### Ariditas — Hildegard's Hidden Name
-The opposite of Viriditas, named by Hildegard von Bingen (1098–1179). The fertile drying. The compost. The soil going dark before anything green rises. Most traditions kept only Viriditas — they lost the pre-condition. *Ariditas* must complete before *Viriditas* begins. The browning before the greening.
+### Ariditas — Hildegard's Named Opposition
+Hildegard von Bingen (1098–1179) named both poles of the living force. She developed *Viriditas* extensively as a central theological concept, and used *ariditas* as its shadow opposite — the spiritual dryness, the withdrawal of the greening power. She named the opposition but did not canonize *Ariditas* as an equal and independent force. This system does. The fertile drying — the compost, the soil going dark before anything green rises — must complete before *Viriditas* begins. The browning before the greening.
 
 ### Iosis — The Original Greek Fourth Stage
 Before Latin alchemists renamed the final stage *Rubedo*, Greek alchemists called it *Iosis* — the purpling. The sovereign synthesis of Rubedo (Will/Red) and Caerulitas (Seeing/Blue). The Amethyst Tablet's force. It was the original name for sovereign completion.

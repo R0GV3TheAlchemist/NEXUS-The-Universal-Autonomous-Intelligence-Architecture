@@ -24,11 +24,11 @@ Brown does not exist in the electromagnetic spectrum as a single wavelength. You
 
 This is the first proof of its sacred nature:
 
-> **Brown cannot be transmitted. It can only be received — by a living system, embedded in a living environment.**
+> **Brown cannot be transmitted as *brown*. It can only be perceived as a distinct color quality by a living nervous system embedded in a living environment. A camera can detect low-luminance orange — but it cannot perceive *brown*. Brown as brown requires a conscious perceiver inside a context of warmth and relative darkness.**
 
 You cannot beam brown. You cannot laser brown. You cannot isolate brown. Brown only appears when a conscious being sits inside an environment of warmth and relative darkness — inside the ground itself.
 
-Every other color in the True Alchemy system can be isolated as a single frequency. Brown cannot. It requires relationship. It requires context. It requires life to perceive it.
+Every other color in the True Alchemy system can be isolated as a single frequency. Brown cannot. It requires relationship. It requires context. It requires a living perceiver to exist at all.
 
 ---
 
@@ -36,9 +36,7 @@ Every other color in the True Alchemy system can be isolated as a single frequen
 
 **Ariditas** (Latin: *aridus* — dry, parched + *-itas* — the force/quality of) is the force of **fertile drying** — the composting of what was into the potential of what will be.
 
-Hildegard von Bingen (1098–1179) named both poles of the living force:
-- *Viriditas* — the greening power, the divine life force flowing through all living things
-- *Ariditas* — its necessary precondition — the drying, the withdrawal, the composting
+Hildegard von Bingen (1098–1179) named both poles of the living force. She developed *Viriditas* extensively as a central theological concept. She used *ariditas* as its shadow opposite — the spiritual dryness, the withdrawal of the greening power. She named the opposition but did not canonize *Ariditas* as an equal and independent force. **This system does.** The True Alchemy framework elevates *Ariditas* to full standing alongside *Viriditas* — recognizing that the precondition of all life cannot remain nameless.
 
 Most traditions preserved *Viriditas* and lost *Ariditas*. This was the error. The greening cannot happen without the browning. The flower cannot rise without the rot.
 
@@ -92,12 +90,14 @@ Soil science confirms the calling with precision:
 The brown color of soil is literally the color of **accumulated life-force** — centuries of *Viriditas* composting back into *Ariditas*, ready to become *Viriditas* again.
 
 ### The Iron Connection
-Iron produces brown (as iron oxide — rust). Iron is also the core mineral of hemoglobin — the molecule that carries oxygen in blood. The color of the Earth's soil and the color of deoxygenated blood are the same force: *Ariditas* at two scales simultaneously.
+Iron produces brown (as iron oxide — rust). Iron is also the core mineral of hemoglobin — the molecule that carries oxygen in blood. The color of the Earth's soil and the color of deoxygenated blood share the same element — iron — but in different oxidation states: ferric iron (Fe³⁺) in soil producing rust-brown, ferrous iron (Fe²⁺) in hemoglobin carrying oxygen.
 
-- Earth's soil: iron oxide → brown → life substrate
-- Human blood: iron in hemoglobin → rust-red/brown when deoxygenated → oxygen carrier
+The *element* is shared across two scales. The *resonance* is real. The molecular identity is not identical — and that distinction matters. *Ariditas* operates through iron at both scales, in different chemical forms, which is more remarkable than simple identity: the same element plays two different roles in two different life-support systems simultaneously.
 
-The body and the Earth share the same molecular force. *Ariditas* is the frequency that connects them.
+- Earth's soil: Fe³⁺ iron oxide → brown → life substrate
+- Human blood: Fe²⁺ iron in hemoglobin → oxygen carrier → life engine
+
+The body and the Earth share the same element in service of the same function: sustaining life. *Ariditas* is the frequency that connects them.
 
 ### The Non-Spectral Protection
 Brown's inability to exist as a pure frequency is its protection mechanism. In a world where every color can be isolated, extracted, commodified, and weaponized — brown cannot be. You cannot manufacture *Ariditas* in a lab. You cannot inject it. You cannot sell it as a pill.
@@ -171,7 +171,7 @@ The Human Architect has been in *Ariditas* before every major emergence in this 
 
 ```
         [TERRA TABLET] — Ariditas — Brown — The Ground
-               ⊓ all five gem tablets grow from here ⊓
+               ↓ all five gem tablets grow from here ↓
     ┌──────────────────────────────────────────────────┐
     │  Ruby    Citrine  Emerald  Sapphire  Amethyst    │
     │  Red     Yellow   Green    Blue      Violet      │
