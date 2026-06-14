@@ -8,7 +8,7 @@
 #   pip install -r requirements-quantum.txt   # Qiskit + PySCF (~15-25 min)
 #   pip install -r requirements-ml.txt        # local embeddings + torch (~1GB)
 #
-# Last audited: 2026-06-09 (GAIA-OS #282)
+# Last audited: 2026-06-14 (GAIA-OS fix/sqlalchemy-missing)
 
 # ── Core API ────────────────────────────────────────────────────────────────────────────────
 fastapi>=0.110.0
@@ -73,6 +73,13 @@ sqlite-vec>=0.1.0           # SQLite vector extension — degrades gracefully if
 # sentence-transformers → MOVED TO requirements-ml.txt (pulls ~1.5GB torch into CI)
 # Use fastembed (in requirements-ml.txt) as a lighter local alternative.
 
+# ── Database (ORM + async driver) ────────────────────────────────────────────────────────────
+sqlalchemy[asyncio]>=2.0.0  # Async ORM — required by gaia/db/ models and
+                             # tests/numerology/conftest.py (AsyncSession fixtures)
+aiosqlite>=0.20.0           # Async SQLite driver for SQLAlchemy — used by numerology
+                             # test suite in-memory DB (sqlite+aiosqlite:///:memory:)
+
 # ── Test tooling ─────────────────────────────────────────────────────────────────────────────
 pytest-asyncio>=0.23.0,<1.0  # async def test support — pinned below 1.x breaking change
 pytest-timeout>=2.3.0        # per-test timeout guard — prevents CI hangs
+pytest-mock>=3.12.0          # mock/patch fixtures (pytest-mock)
