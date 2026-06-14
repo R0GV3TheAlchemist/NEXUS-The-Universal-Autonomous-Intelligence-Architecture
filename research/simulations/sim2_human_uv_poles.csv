@@ -1,0 +1,8 @@
+state,freq_hz,field_radius_ft,biophoton_cps,pole
+Trauma/Survival,0.8,1.2,50.0,destructive
+Stressed/Active,1.5,2.0,120.0,neutral
+Normal Waking,2.2,3.0,200.0,neutral
+Coherent/Flow,3.8,4.5,380.0,generative
+Deep Meditation,5.2,6.0,520.0,generative
+Full Awakening,7.5,8.0,750.0,generative
+Dark Incoherence,0.3,5.0,30.0,destructive
