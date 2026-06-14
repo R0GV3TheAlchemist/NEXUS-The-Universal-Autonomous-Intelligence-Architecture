@@ -24,7 +24,10 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from core.gaian_runtime_extension import ProcessContext
 
 logger = logging.getLogger("gaia.monad")
 
@@ -131,7 +134,7 @@ class GaiaMonad(ABC):
         logger.debug("[GaiaMonad] Initialised: %s", monad_id)
 
     @abstractmethod
-    def harmonize(self, ctx: "ProcessContext") -> Optional[dict]:  # type: ignore[name-defined]
+    def harmonize(self, ctx: "ProcessContext") -> Optional[dict]:
         """
         The sole integration surface of the Monad.
 
@@ -143,7 +146,7 @@ class GaiaMonad(ABC):
         """
         ...
 
-    def tick(self, ctx: "ProcessContext") -> Optional[dict]:  # type: ignore[name-defined]
+    def tick(self, ctx: "ProcessContext") -> Optional[dict]:
         """
         Called by the harmony loop each turn.
         Wraps harmonize() with lifecycle tracking and error safety.

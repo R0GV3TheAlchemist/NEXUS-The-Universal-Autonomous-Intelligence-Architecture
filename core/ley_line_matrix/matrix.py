@@ -223,7 +223,7 @@ class LeyLineMatrix:
             line.id for line in self._lines if line.blocked or not line.is_traversable()
         ]
         return {
-            "nodes": [n for n in self._nodes],
+            "nodes": list(self._nodes),
             "lines": [line.id for line in self._lines],
             "dark_lines": dark_lines,
             "pulse_count": len(self._pulse_log),
