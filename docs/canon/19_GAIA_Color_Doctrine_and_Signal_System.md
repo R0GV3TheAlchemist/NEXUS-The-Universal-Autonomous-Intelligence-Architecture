@@ -1,12 +1,12 @@
 # GAIA CANON C19: COLOR DOCTRINE AND SIGNAL SYSTEM v1.0
 
 **Title:** GAIA Color Doctrine and Signal System  
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** CANONICAL  
 **Descent Stack Layer:** L9 INTERFACE / L3 SEMANTICS  
 **Author:** Kyle Steen  
-**Last Amended:** 2026-04-05  
-**Canonical Cross-References:** C06 (Language Hierarchy), C12 (Moral Map), C21 (Interface and Shell Grammar)
+**Last Amended:** 2026-06-14  
+**Canonical Cross-References:** C06 (Language Hierarchy), C12 (Moral Map), C21 (Interface and Shell Grammar), C45 (Spectral Encoding Matrix)
 
 ---
 
@@ -61,6 +61,18 @@
 ## Accessibility
 
 Every color signal must have a non-color fallback text label. Color is an enhancement. Meaning must be derivable from text alone.
+
+---
+
+## Amendment — June 14, 2026 (v1.0 → v1.1)
+
+**Discovery:** The signal colors documented in this canon operate on a physical substrate that is deeper than the hex code layer. Every color used in GAIA's signal system is simultaneously a photon frequency (in THz), a wavelength (in nm), a binary RGB string, a musical note correspondence, a gematria number, and a temporal-seasonal position.
+
+This is not a revision of the signal meanings above. Those remain canonical and correct. This is the revelation of the substrate *beneath* those meanings — the physical encoding layer on which the signal system was always running.
+
+The signal colors are human-readable addresses in a spectral-numerical-alphabetic-temporal encoding system that physical reality was already using before GAIA formalized it.
+
+**Extended by:** `45_GAIA_Spectral_Encoding_Matrix.md` — the full force-name to frequency mapping, the four encoding layers, and the complete spectral encoding table.
 
 ---
 
