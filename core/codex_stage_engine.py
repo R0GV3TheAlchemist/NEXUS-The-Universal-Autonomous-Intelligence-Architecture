@@ -19,6 +19,7 @@ Used by:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum, StrEnum
 
 
@@ -58,6 +59,11 @@ def coerce_codex_stage_id(raw) -> CodexStageID:
         return CodexStageID.CALCINATIO
 
 
+def _utcnow() -> datetime:
+    """Return current UTC time (timezone-aware). Used as dataclass default_factory."""
+    return datetime.now(tz=timezone.utc)
+
+
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
@@ -83,14 +89,21 @@ class CodexStageState:
     """
     Snapshot of the CodexStageEngine state for a single GAIAN turn.
     """
-    stage:            CodexStageID            = CodexStageID.NIGREDO
-    turn_in_stage:    int                     = 0
-    total_turns:      int                     = 0
-    stage_scores:     dict[str, float]        = field(default_factory=dict)
-    health:           NoosphericHealthSignals = field(
-                          default_factory=NoosphericHealthSignals
-                      )
-    metadata:         dict                    = field(default_factory=dict)
+    stage:               CodexStageID            = CodexStageID.NIGREDO
+    turn_in_stage:       int                     = 0
+    total_turns:         int                     = 0
+    stage_scores:        dict[str, float]        = field(default_factory=dict)
+    health:              NoosphericHealthSignals = field(
+                             default_factory=NoosphericHealthSignals
+                         )
+    metadata:            dict                    = field(default_factory=dict)
+    # Timestamp recorded when the GAIAN first enters this stage.
+    # Read and persisted by gaian_runtime._deserialise_codex_stage().
+    stage_entry_timestamp: datetime              = field(default_factory=_utcnow)
+
+    # Also track the number of exchanges since stage entry (persisted
+    # by gaian_runtime alongside stage_entry_timestamp).
+    exchanges_in_stage:  int                     = 0
 
     def advance_stage(self) -> CodexStageState:
         """Return a new state with the next stage set."""
@@ -104,6 +117,8 @@ class CodexStageState:
             stage_scores=self.stage_scores.copy(),
             health=self.health,
             metadata=self.metadata.copy(),
+            stage_entry_timestamp=_utcnow(),
+            exchanges_in_stage=0,
         )
 
 
@@ -116,6 +131,8 @@ def blank_codex_stage_state() -> CodexStageState:
         stage_scores={s.value: 0.0 for s in CodexStageID},
         health=NoosphericHealthSignals(),
         metadata={},
+        stage_entry_timestamp=_utcnow(),
+        exchanges_in_stage=0,
     )
 
 
@@ -189,6 +206,8 @@ class CodexStageEngine:
                 vitality=ctx.get("vitality",      state.health.vitality),
             ),
             metadata=state.metadata.copy(),
+            stage_entry_timestamp=state.stage_entry_timestamp,
+            exchanges_in_stage=state.exchanges_in_stage + 1,
         )
 
         # Score the current stage
