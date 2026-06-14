@@ -1,9 +1,10 @@
 //! GAIA-OS — Tauri ↔ Python sidecar bridge for Soul Mirror engines
 //!
-//! This module exposes the SovereignMemory, AffectEngine, and StageEngine
-//! HTTP surfaces as Tauri `invoke`-able commands.  Every command is a thin
-//! async proxy: it serialises the frontend payload, POSTs/GETs the sidecar
-//! on 127.0.0.1:52000, and returns the JSON response verbatim.
+//! This module exposes the SovereignMemory, AffectEngine, StageEngine,
+//! and Onboarding HTTP surfaces as Tauri `invoke`-able commands.  Every
+//! command is a thin async proxy: it serialises the frontend payload,
+//! POSTs/GETs the sidecar on 127.0.0.1:52000, and returns the JSON
+//! response verbatim.
 //!
 //! No business logic lives here — this is pure transport.
 //!
@@ -20,6 +21,7 @@
 //! | `affect_history`     | GET    | /affect/history/{principal} |
 //! | `affect_trend`       | GET    | /affect/trend/{principal}   |
 //! | `stage_evaluate`     | POST   | /stage/evaluate             |
+//! | `seed_soul_mirror`   | POST   | /onboarding/seed            |
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -337,6 +339,113 @@ pub async fn stage_evaluate(
         .send()
         .await
         .map_err(|e| format!("stage_evaluate request failed: {e}"))?;
+
+    if resp.status().is_success() {
+        resp.json::<Value>().await.map_err(|e| e.to_string())
+    } else {
+        Err(sidecar_err(resp).await)
+    }
+}
+
+// ── /onboarding commands ───────────────────────────────────────────────────────
+//
+// Called exactly once per user: when Phase 8 "Enter" is pressed and
+// `completeOnboarding()` fires in the TS store.  The payload carries the
+// full identity profile collected during onboarding so the Python backend
+// can initialise the Soul Mirror, set default memory preferences, and
+// pre-populate the user's semantic graph before the first conversation.
+//
+// The command is fire-and-confirm: it returns Ok(Value) on a 200 response
+// from the sidecar, or Err(String) on any transport or HTTP error.  The TS
+// caller swallows errors in a catch{} — a failed seed does NOT block the
+// user from entering the shell.  The sidecar must be idempotent (re-seeding
+// with the same `name` + `completed_at` is a no-op).
+
+/// Consent flags mirroring the TS `ConsentPreferences` interface.
+/// All fields are required — the TS store always serialises all six keys.
+#[derive(Deserialize)]
+pub struct ConsentFlags {
+    pub conversation_history: bool,
+    pub mood_signals:         bool,
+    pub topic_patterns:       bool,
+    pub usage_patterns:       bool,
+    pub telemetry:            bool,
+    pub cloud_backup:         bool,
+}
+
+/// Full onboarding payload — mirrors the object built in `seedSoulMirror()`
+/// inside `onboardingStore.ts`.
+///
+/// All string/vec fields use `Option` so that partially-complete onboarding
+/// states (e.g. a resume that was interrupted mid-Phase 4) are still accepted
+/// gracefully.  `consent` is required because its defaults are baked in at
+/// Phase 5 and cannot be absent by Phase 8.
+#[derive(Deserialize)]
+pub struct OnboardingResponses {
+    /// User's chosen name (Phase 3)
+    pub name:             Option<String>,
+    /// Primary intents, e.g. ["productivity", "building"] (Phase 4)
+    pub intent:           Option<Vec<String>>,
+    /// Free-text elaboration when intent includes "other" (Phase 4)
+    pub intent_other:     Option<String>,
+    /// Memory depth tier: "surface" | "reflective" | "deep" (Phase 4)
+    pub depth_preference: Option<String>,
+    /// Topics to handle with extra care (Phase 4)
+    pub sensitive_topics: Option<Vec<String>>,
+    /// Six-flag consent record (Phase 5)
+    pub consent:          ConsentFlags,
+    /// ISO-8601 timestamp from `completeOnboarding()` (Phase 8)
+    pub completed_at:     Option<String>,
+}
+
+/// Seed the Soul Mirror with the user's onboarding responses.
+///
+/// Forwards the payload verbatim to `POST /onboarding/seed` on the Python
+/// sidecar.  Returns the sidecar's JSON response (a summary of what was
+/// initialised) or an error string.
+///
+/// # Sidecar contract
+/// The Python endpoint is expected to:
+///   1. Create / update the user's principal profile
+///   2. Write depth-preference into the SovereignMemory config
+///   3. Write consent flags into the privacy policy store
+///   4. Pre-populate the semantic graph with intent-derived seeds
+///   5. Return `{ "status": "seeded", "principal_id": "..." }`
+///
+/// The endpoint MUST be idempotent — calling it twice with the same
+/// `completed_at` timestamp must be a no-op.
+#[tauri::command]
+pub async fn seed_soul_mirror(
+    state:     tauri::State<'_, SidecarClient>,
+    responses: OnboardingResponses,
+) -> Result<Value, String> {
+    // Build the JSON body to forward. We use serde_json::json! rather than
+    // directly serialising OnboardingResponses so we can emit all fields
+    // explicitly and keep the sidecar contract visible in one place.
+    let body = serde_json::json!({
+        "name":             responses.name.as_deref().unwrap_or(""),
+        "intent":           responses.intent.unwrap_or_default(),
+        "intent_other":     responses.intent_other.as_deref().unwrap_or(""),
+        "depth_preference": responses.depth_preference.as_deref().unwrap_or("reflective"),
+        "sensitive_topics": responses.sensitive_topics.unwrap_or_default(),
+        "completed_at":     responses.completed_at.as_deref().unwrap_or(""),
+        "consent": {
+            "conversation_history": responses.consent.conversation_history,
+            "mood_signals":         responses.consent.mood_signals,
+            "topic_patterns":       responses.consent.topic_patterns,
+            "usage_patterns":       responses.consent.usage_patterns,
+            "telemetry":            responses.consent.telemetry,
+            "cloud_backup":         responses.consent.cloud_backup,
+        },
+    });
+
+    let resp = state
+        .0
+        .post(format!("{SIDECAR_BASE}/onboarding/seed"))
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("seed_soul_mirror request failed: {e}"))?;
 
     if resp.status().is_success() {
         resp.json::<Value>().await.map_err(|e| e.to_string())

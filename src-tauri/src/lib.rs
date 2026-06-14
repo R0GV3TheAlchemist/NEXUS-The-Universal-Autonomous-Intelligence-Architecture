@@ -308,7 +308,7 @@ fn start_python_sidecar(app: &tauri::App, handle: SidecarHandle) {
                         .send()
                         .await;
                     if let Err(e) = ipc_notify {
-                        eprintln!("[GAIA] IPC-ready notify failed (non-fatal): {e}");
+                        eprintln!("[IPC-ready notify failed (non-fatal): {e}");
                     } else {
                         println!("[GAIA] IPC bridge registered with Python backend \u{2713}");
                     }
@@ -429,6 +429,8 @@ pub fn run() {
             memory::affect_history,
             memory::affect_trend,
             memory::stage_evaluate,
+            // ── Onboarding bridge ──────────────────────
+            memory::seed_soul_mirror,
         ])
         .run(tauri::generate_context!())
         .expect("error while running GAIA");
