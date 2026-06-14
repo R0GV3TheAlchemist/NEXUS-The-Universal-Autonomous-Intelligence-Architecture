@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from gaia.db.session import get_db  # standard async session dep
+from gaia.db.session import get_db
 from gaia.numerology.models import (
     NumerologyChart,
     NumerologyChartListResponse,
@@ -49,13 +49,13 @@ def get_numerology_service(db: AsyncSession = Depends(get_db)) -> NumerologyServ
 def _orm_chart_to_schema(orm_chart, engine) -> NumerologyChart:
     """Convert a NumerologyChart ORM row into the Pydantic response schema.
 
-    Re-uses the engine's ChartResult.as_dict() via raw_chart when the number
-    rows are not loaded, falling back to individual number rows when they are.
+    Reads from raw_chart JSONB where possible (fast path); falls back to
+    individual NumerologyNumber rows if JSONB is absent.
+    personal_year_cycle is read directly from raw_chart JSONB.
     """
     raw = orm_chart.raw_chart or {}
 
     def _number_detail(position: str) -> dict:
-        # Prefer the denormalised JSONB payload; fall back to ORM number rows.
         if position in raw:
             return raw[position]
         nr = orm_chart.get_number(position)
@@ -94,6 +94,9 @@ def _orm_chart_to_schema(orm_chart, engine) -> NumerologyChart:
         birthday=_number_detail("birthday"),
         personal_year=_number_detail("personal_year"),
         computed_for_year=orm_chart.computed_for_year,
+        # personal_year_cycle is stored as a list in raw_chart JSONB.
+        # Default to [] so older charts (pre-improvement) don't break.
+        personal_year_cycle=raw.get("personal_year_cycle", []),
         challenges=[_number_detail(c["number_type"]) for c in raw.get("challenges", [])],
         master_numbers_present=master_numbers,
     )
@@ -113,6 +116,16 @@ def _ephemeral_chart(computed) -> NumerologyChart:
             "reduction_path": nr.reduction_path,
             "archetype": arc[0],
             "theme": arc[1],
+        }
+
+    def _pye(entry) -> dict:
+        """Convert a PersonalYearEntry dataclass to the Pydantic-compatible dict."""
+        return {
+            "year": entry.year,
+            "reduced_value": entry.reduced_value,
+            "is_master_number": entry.is_master_number,
+            "archetype": entry.archetype,
+            "theme": entry.theme,
         }
 
     master_numbers = [
@@ -138,6 +151,7 @@ def _ephemeral_chart(computed) -> NumerologyChart:
         birthday=_nd(computed.birthday),
         personal_year=_nd(computed.personal_year),
         computed_for_year=date.today().year,
+        personal_year_cycle=[_pye(e) for e in computed.personal_year_cycle],
         challenges=[_nd(c) for c in computed.challenges],
         master_numbers_present=master_numbers,
     )
@@ -155,9 +169,9 @@ def _ephemeral_chart(computed) -> NumerologyChart:
     description=(
         "Accepts a birth name and date. Returns the five core numbers "
         "(Life Path, Expression, Soul Urge, Personality, Birthday), "
-        "Personal Year, Challenge Numbers, and archetype labels for each. "
-        "When user_id is provided the chart is persisted; otherwise it is ephemeral. "
-        "Canon: C160."
+        "Personal Year, Personal Year Cycle, Challenge Numbers, and archetype "
+        "labels for each. When user_id is provided the chart is persisted; "
+        "otherwise it is ephemeral. Canon: C160."
     ),
 )
 async def generate_chart(
@@ -166,23 +180,25 @@ async def generate_chart(
 ) -> NumerologyChart:
     try:
         if inp.user_id is not None:
-            # Persistent path — save to DB
+            # Persistent path — save to DB, passing cycle_years through.
             orm_chart = await svc.get_or_create_chart(
                 full_name=inp.full_name,
                 birth_date=inp.birth_date,
                 user_id=inp.user_id,
                 system=inp.system,
                 force_recompute=inp.force_recompute,
+                cycle_years=inp.cycle_years,
             )
             return _orm_chart_to_schema(orm_chart, None)
         else:
-            # Ephemeral path — compute only, no DB write
+            # Ephemeral path — compute only, no DB write.
             from gaia.numerology.engine import NumerologyEngine
             engine = NumerologyEngine()
             computed = engine.compute(
                 full_name=inp.full_name,
                 birth_date=inp.birth_date,
                 system=inp.system,
+                cycle_years=inp.cycle_years,
             )
             return _ephemeral_chart(computed)
     except NotImplementedError as exc:

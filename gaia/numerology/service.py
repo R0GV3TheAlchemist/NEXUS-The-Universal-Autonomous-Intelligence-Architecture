@@ -49,11 +49,18 @@ class NumerologyService:
         user_id: Optional[uuid.UUID] = None,
         system: str = "pythagorean",
         force_recompute: bool = False,
+        cycle_years: int = 3,
     ) -> NumerologyChart:
         """Return the latest chart for this name+date, creating if absent.
 
-        If ``force_recompute`` is True, always create a fresh chart even
-        if one already exists (useful after a system upgrade).
+        Args:
+            full_name:       Birth name (will be normalised internally).
+            birth_date:      Date of birth.
+            user_id:         Gaian user UUID; None for anonymous charts.
+            system:          Numerology system (only 'pythagorean' for now).
+            force_recompute: Always create a fresh chart even if one exists.
+            cycle_years:     How many future years to include in personal_year_cycle
+                             (0 to omit, max 9). Stored in raw_chart JSONB.
         """
         profile = await self._get_or_create_profile(
             full_name=full_name,
@@ -65,7 +72,7 @@ class NumerologyService:
         if not force_recompute and profile.latest_chart is not None:
             return profile.latest_chart
 
-        return await self._create_chart(profile)
+        return await self._create_chart(profile, cycle_years=cycle_years)
 
     async def get_chart_by_id(
         self, chart_id: uuid.UUID
@@ -151,7 +158,6 @@ class NumerologyService:
             .options(selectinload(NumerologyProfile.charts))
             .limit(1)
         )
-        # If user_id provided, scope to that user
         if user_id is not None:
             stmt = stmt.where(NumerologyProfile.user_id == user_id)
 
@@ -169,17 +175,26 @@ class NumerologyService:
             system=system,
         )
         self._db.add(profile)
-        await self._db.flush()  # populate profile.id before creating chart
+        await self._db.flush()
         return profile
 
     async def _create_chart(
-        self, profile: NumerologyProfile
+        self,
+        profile: NumerologyProfile,
+        cycle_years: int = 3,
     ) -> NumerologyChart:
-        """Compute a fresh chart and persist it with all number rows."""
+        """Compute a fresh chart and persist it with all number rows.
+
+        Args:
+            profile:     The NumerologyProfile ORM row this chart belongs to.
+            cycle_years: Passed through to engine.compute() to control how many
+                         future years appear in personal_year_cycle inside raw_chart.
+        """
         computed: ChartResult = self._engine.compute(
             full_name=profile.full_name,
             birth_date=profile.birth_date,
             system=profile.system,
+            cycle_years=cycle_years,
         )
 
         chart = NumerologyChart(
@@ -197,9 +212,8 @@ class NumerologyService:
             raw_chart=computed.as_dict(),
         )
         self._db.add(chart)
-        await self._db.flush()  # populate chart.id before creating numbers
+        await self._db.flush()
 
-        # Persist individual number rows
         core_results = [
             computed.life_path,
             computed.expression,
