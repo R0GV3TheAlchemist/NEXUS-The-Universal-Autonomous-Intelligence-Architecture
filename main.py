@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# ── Path setup ────────────────────────────────────────────────────────────────────────────────
+# ── Path setup ────────────────────────────────────────────────────────────────────────────────────
 if getattr(sys, 'frozen', False):
     ROOT = sys._MEIPASS
 else:
@@ -42,12 +42,13 @@ from api.crypto import router as crypto_router
 from api.auth import router as auth_router
 from core.safety.router import router as safety_router
 from emrys_engine.router import emrys_router, init_emrys_engine
+from api.routes.numerology import router as numerology_router          # C160 — Numerology
 
 log = logging.getLogger("gaia")
 
 _START_TIME = time.time()
 
-# ── Graceful shutdown ───────────────────────────────────────────────────────────────────────────────
+# ── Graceful shutdown ─────────────────────────────────────────────────────────────────────────────────────────
 
 _shutdown_event = asyncio.Event()
 
@@ -84,7 +85,7 @@ async def _flush_state() -> None:
     log.info("[GAIA] Shutdown complete.")
 
 
-# ── Ollama health probe ─────────────────────────────────────────────────────────────────────────────
+# ── Ollama health probe ───────────────────────────────────────────────────────────────────────────────────────
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("GAIA_MODEL", "llama3")
@@ -124,7 +125,7 @@ async def _check_ollama() -> dict:
         return {"ready": False, "model": None, "error": str(e)}
 
 
-# ── FastAPI lifespan ─────────────────────────────────────────────────────────────────────────────
+# ── FastAPI lifespan ───────────────────────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -138,7 +139,7 @@ async def lifespan(application: FastAPI):
     except Exception as e:
         log.warning(f"[GAIA] Encryption init warning: {e}")
 
-    # ── Runtime orchestrator ───────────────────────────────────────────────────────────
+    # ── Runtime orchestrator ────────────────────────────────────────────────────────────
     from core.runtime import GAIAOrchestrator, init_orchestrator
     try:
         init_orchestrator()
@@ -146,7 +147,7 @@ async def lifespan(application: FastAPI):
     except Exception as e:
         log.warning(f"[GAIA] Runtime orchestrator init warning: {e}")
 
-    # ── Emrys L2 vibronic bridge ───────────────────────────────────────────────────────
+    # ── Emrys L2 vibronic bridge ────────────────────────────────────────────────────────
     try:
         init_emrys_engine()
         log.info("[GAIA] Emrys L2 vibronic bridge ready")
@@ -158,11 +159,11 @@ async def lifespan(application: FastAPI):
 
     yield
 
-    # ── Teardown ─────────────────────────────────────────────────────────────────────────────────
+    # ── Teardown ────────────────────────────────────────────────────────────────────────────────────────────
     await _flush_state()
 
 
-# ── App ──────────────────────────────────────────────────────────────────────────────────────
+# ── App ──────────────────────────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="GAIA Backend",
@@ -185,7 +186,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ─────────────────────────────────────────────────────────────────────────────────────
+# ── Routers ───────────────────────────────────────────────────────────────────────────────────────────
 
 app.include_router(auth_router)                                        # /auth/*
 app.include_router(zodiac.router,                   prefix="/api/zodiac",          tags=["Zodiac"])
@@ -200,9 +201,10 @@ app.include_router(crypto_router)
 app.include_router(safety_router)                                      # /safety/*
 app.include_router(observability_router)                               # /metrics + /health/detailed  (Issue #265)
 app.include_router(emrys_router,                    prefix="/api/emrys",           tags=["Emrys"])
+app.include_router(numerology_router,               prefix="/api/v1",              tags=["Numerology"])  # C160
 
 
-# ── Core endpoints ───────────────────────────────────────────────────────────────────────────────
+# ── Core endpoints ───────────────────────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
@@ -237,7 +239,7 @@ async def get_state():
     }
 
 
-# ── Launch ──────────────────────────────────────────────────────────────────────────────────────
+# ── Launch ────────────────────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     port = int(os.environ.get("GAIA_PORT", 8008))
