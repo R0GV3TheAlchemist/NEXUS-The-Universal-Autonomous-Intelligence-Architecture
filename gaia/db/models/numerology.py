@@ -55,10 +55,12 @@ class NumerologyProfile(Base):
         default=uuid.uuid4,
         nullable=False,
     )
+    # index=True intentionally OMITTED — covered by the named Index in
+    # __table_args__.  Having both causes SQLAlchemy to emit two CREATE INDEX
+    # statements for the same column, which SQLite rejects as a duplicate index.
     user_id = Column(
         UUID(as_uuid=True),
         nullable=True,
-        index=True,
         comment="FK to Gaian user identity; NULL for anonymous/ephemeral sessions",
     )
     full_name = Column(
@@ -66,8 +68,6 @@ class NumerologyProfile(Base):
         nullable=False,
         comment="Full birth name as registered; source for Expression/Soul Urge/Personality",
     )
-    # Normalised name stored separately so the engine never has to re-normalise
-    # (strip accents, collapse whitespace, uppercase) at query time.
     normalized_name = Column(
         String(512),
         nullable=False,
@@ -113,6 +113,8 @@ class NumerologyProfile(Base):
     )
 
     __table_args__ = (
+        # Single named index — the only index on user_id.
+        # Do NOT also set index=True on the column above.
         Index("ix_gaia_numerology_profiles_user_id", "user_id"),
     )
 
@@ -164,11 +166,13 @@ class NumerologyChart(Base):
         default=uuid.uuid4,
         nullable=False,
     )
+    # index=True intentionally OMITTED — covered by the composite named Index
+    # in __table_args__.  Adding index=True here would emit a second,
+    # auto-named index on profile_id alone, duplicating the composite.
     profile_id = Column(
         UUID(as_uuid=True),
         ForeignKey("gaia_numerology_profiles.id", ondelete="CASCADE", name="fk_chart_profile"),
         nullable=False,
-        index=True,
     )
 
     # Five core numbers ---------------------------------------------------
@@ -221,6 +225,9 @@ class NumerologyChart(Base):
     )
 
     __table_args__ = (
+        # Composite index covers profile_id lookups (leftmost prefix rule)
+        # AND profile+time ordering queries in a single index.
+        # Do NOT also set index=True on profile_id above.
         Index(
             "ix_gaia_numerology_charts_profile_created",
             "profile_id",
@@ -291,11 +298,12 @@ class NumerologyNumber(Base):
         default=uuid.uuid4,
         nullable=False,
     )
+    # index=True intentionally OMITTED — covered by the named Index in
+    # __table_args__.  Having both causes a duplicate index error on SQLite.
     chart_id = Column(
         UUID(as_uuid=True),
         ForeignKey("gaia_numerology_charts.id", ondelete="CASCADE", name="fk_number_chart"),
         nullable=False,
-        index=True,
     )
     number_type = Column(
         String(32),
@@ -342,6 +350,8 @@ class NumerologyNumber(Base):
             "number_type",
             name="uq_numerology_number_chart_type",
         ),
+        # Single named index on chart_id.
+        # Do NOT also set index=True on the column above.
         Index("ix_gaia_numerology_numbers_chart_id", "chart_id"),
     )
 
