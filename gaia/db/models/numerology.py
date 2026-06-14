@@ -27,7 +27,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
 from gaia.db.base import Base
@@ -104,7 +104,7 @@ class NumerologyProfile(Base):
     )
 
     # Relationships
-    charts: List["NumerologyChart"] = relationship(
+    charts: Mapped[List["NumerologyChart"]] = relationship(
         "NumerologyChart",
         back_populates="profile",
         cascade="all, delete-orphan",
@@ -209,11 +209,11 @@ class NumerologyChart(Base):
     )
 
     # Relationships -------------------------------------------------------
-    profile: "NumerologyProfile" = relationship(
+    profile: Mapped["NumerologyProfile"] = relationship(
         "NumerologyProfile",
         back_populates="charts",
     )
-    numbers: List["NumerologyNumber"] = relationship(
+    numbers: Mapped[List["NumerologyNumber"]] = relationship(
         "NumerologyNumber",
         back_populates="chart",
         cascade="all, delete-orphan",
@@ -331,7 +331,7 @@ class NumerologyNumber(Base):
     )
 
     # Relationships
-    chart: "NumerologyChart" = relationship(
+    chart: Mapped["NumerologyChart"] = relationship(
         "NumerologyChart",
         back_populates="numbers",
     )
