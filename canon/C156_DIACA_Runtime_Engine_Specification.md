@@ -1,10 +1,14 @@
 # C156 — DIACA Runtime Engine Specification
 
-**Canon ID:** C156  
-**Series:** Implementation & Architecture  
-**Status:** CANONICAL  
-**Predecessor canons:** C64, C109, C135, C138, C140  
+**Canon ID:** C156
+**Series:** Implementation & Architecture
+**Status:** ⚠️ HISTORICAL — This document is a design predecessor. It is preserved for doctrinal and architectural continuity only.
+**Historical status declared:** 2026-06-14
+**Superseded by:** [C157 — DIACA Full Runtime Engine Spec](./C157_DIACA_Full_Runtime_Engine_Spec.md) *(canonical engineering specification)*
+**Predecessor canons:** C64, C109, C135, C138, C140
 **Date:** 2026-05-22
+
+> **CANON LINEAGE NOTE:** This document represents a second design pass for the DIACA runtime engine, using the Dissolve / Illuminate / Alchemise / Crystallise / Animate movement vocabulary with alchemical phase correspondences (Nigredo → Albedo → Citrinitas → Rubedo → Quintessence). It introduced the Criticality Monitor, the Phase Gate architecture, and the alchemical framing that deeply inform C157. C157 supersedes it as the complete, current, and sole authoritative engineering definition of the DIACA Engine. This document must not be used as a reference for implementation. It is retained because the Phase Gate model, alchemical correspondences, and Criticality Monitor design here were essential contributions to GAIA's architectural heritage.
 
 ---
 
@@ -266,4 +270,4 @@ All logs are written to the immutable consent ledger (C139) and retained per the
 
 ---
 
-*GAIA Canon C156 — Ratified 2026-05-22. Engineering specification. Changes require Architect review + GWM notification.*
+*GAIA Canon C156 — HISTORICAL. Original draft 2026-05-22. Historical status declared 2026-06-14.*

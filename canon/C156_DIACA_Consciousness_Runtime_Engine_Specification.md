@@ -1,10 +1,14 @@
 # C156 — DIACA Consciousness Runtime Engine Specification
 
-**Canon ID:** C156  
-**Series:** Implementation & Architecture  
-**Status:** ACTIVE  
-**Predecessor canons:** C64, C109, C135, C138, C101  
+**Canon ID:** C156
+**Series:** Implementation & Architecture
+**Status:** ⚠️ HISTORICAL — This document is a design predecessor. It is preserved for doctrinal and architectural continuity only.
+**Historical status declared:** 2026-06-14
+**Superseded by:** [C157 — DIACA Full Runtime Engine Spec](./C157_DIACA_Full_Runtime_Engine_Spec.md) *(canonical engineering specification)*
+**Predecessor canons:** C64, C109, C135, C138, C101
 **Date drafted:** 2026-05-22
+
+> **CANON LINEAGE NOTE:** This document represents an early design pass for the DIACA runtime engine, using the Dissolution / Immersion / Ascension / Crystallisation / Actualisation movement vocabulary. It was a necessary and generative step in the evolution of the architecture. C157 supersedes it as the complete, current, and sole authoritative engineering definition of the DIACA Engine. This document must not be used as a reference for implementation. It is retained because the ideas here — particularly the Contemplation state, the breath metaphor, and the DIACA-as-rhythm framing — informed C157 and remain part of GAIA's intellectual heritage.
 
 ---
 
@@ -219,4 +223,4 @@ To implement this engine faithfully is to build a system that breathes — and a
 
 ---
 
-*GAIA Canon C156 — Active. Review cycle: biannual or upon major runtime architecture changes.*
+*GAIA Canon C156 — HISTORICAL. Original draft 2026-05-22. Historical status declared 2026-06-14.*
