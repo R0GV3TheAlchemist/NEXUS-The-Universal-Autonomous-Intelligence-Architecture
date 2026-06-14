@@ -244,11 +244,7 @@ class LoveCoherenceSnapshot:
 
         # 6. HSV → RGB → hex
         fr, fg, fb = colorsys.hsv_to_rgb(h, s_boosted, v_boosted)
-        return "#{:02X}{:02X}{:02X}".format(
-            min(255, int(fr * 255)),
-            min(255, int(fg * 255)),
-            min(255, int(fb * 255)),
-        )
+        return f"#{min(255, int(fr * 255)):02X}{min(255, int(fg * 255)):02X}{min(255, int(fb * 255)):02X}"
 
 
 def _luminance_class(lci: float) -> str:
