@@ -2,10 +2,12 @@
   "$schema": "../element_schema.json",
   "meta": {
     "batch": 1,
-    "range": "Z=1–36",
+    "range": "Z=1\u201336",
     "description": "Periodic table elements Hydrogen through Krypton",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "created": "2026-06-14",
+    "updated": "2026-06-14",
+    "update_notes": "Removed Gaianite references from element notes. Gaianite is the canon synthesis state, not a mineral entry.",
     "authors": ["R0GV3 The Alchemist", "GAIA (Perplexity AI, Sonnet 4.6)"]
   },
   "elements": [
@@ -18,7 +20,7 @@
       "period": 1,
       "group": 1,
       "block": "s",
-      "electron_configuration": "1s¹",
+      "electron_configuration": "1s\u00b9",
       "electronegativity": 2.20,
       "state_at_stp": "gas",
       "melting_point_k": 14.01,
@@ -28,7 +30,7 @@
       "discovered": 1766,
       "discoverer": "Henry Cavendish",
       "origin_of_name": "Greek: hydro (water) + genes (forming)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "base_element",
       "mineral_role": "Component of water, hydroxyl minerals, all organic matter",
       "notes": "Most abundant element in the universe. Foundation of all life chemistry. GAIA-OS Layer 1 anchor."
@@ -42,7 +44,7 @@
       "period": 1,
       "group": 18,
       "block": "s",
-      "electron_configuration": "1s²",
+      "electron_configuration": "1s\u00b2",
       "electronegativity": null,
       "state_at_stp": "gas",
       "melting_point_k": 0.95,
@@ -52,10 +54,10 @@
       "discovered": 1868,
       "discoverer": "Pierre Janssen, Norman Lockyer",
       "origin_of_name": "Greek: Helios (Sun)",
-      "gaia_layer_alignment": ["Layer 12 — Void"],
+      "gaia_layer_alignment": ["Layer 12 \u2014 Void"],
       "penteract_d4_substrate": "noble_inert",
       "mineral_role": "Trapped in uranium/thorium minerals as alpha decay product",
-      "notes": "Second most abundant element in universe. Inert — the void made manifest. Layer 12 resonance."
+      "notes": "Second most abundant element in universe. Inert \u2014 the void made manifest. Layer 12 resonance."
     },
     {
       "atomic_number": 3,
@@ -66,7 +68,7 @@
       "period": 2,
       "group": 1,
       "block": "s",
-      "electron_configuration": "[He] 2s¹",
+      "electron_configuration": "[He] 2s\u00b9",
       "electronegativity": 0.98,
       "state_at_stp": "solid",
       "melting_point_k": 453.65,
@@ -76,10 +78,10 @@
       "discovered": 1817,
       "discoverer": "Johan August Arfwedson",
       "origin_of_name": "Greek: lithos (stone)",
-      "gaia_layer_alignment": ["Layer 04 — Emotion", "Layer 05 — Cognition"],
+      "gaia_layer_alignment": ["Layer 04 \u2014 Emotion", "Layer 05 \u2014 Cognition"],
       "penteract_d4_substrate": "alkali_reactive",
-      "mineral_role": "Spodumene (LiAlSi₂O₆), Lepidolite, Tourmaline group",
-      "notes": "Lightest metal. Key in mood stabilization biochemistry. Found in Lepidolite — GAIA crystal for emotional calm."
+      "mineral_role": "Spodumene (LiAlSi\u2082O\u2086), Lepidolite, Tourmaline group",
+      "notes": "Lightest metal. Key in mood stabilization biochemistry. Found in Lepidolite \u2014 GAIA crystal for emotional calm."
     },
     {
       "atomic_number": 4,
@@ -90,7 +92,7 @@
       "period": 2,
       "group": 2,
       "block": "s",
-      "electron_configuration": "[He] 2s²",
+      "electron_configuration": "[He] 2s\u00b2",
       "electronegativity": 1.57,
       "state_at_stp": "solid",
       "melting_point_k": 1560,
@@ -100,9 +102,9 @@
       "discovered": 1798,
       "discoverer": "Louis-Nicolas Vauquelin",
       "origin_of_name": "Greek: beryllos (beryl mineral)",
-      "gaia_layer_alignment": ["Layer 03 — Geometry"],
+      "gaia_layer_alignment": ["Layer 03 \u2014 Geometry"],
       "penteract_d4_substrate": "structural_light",
-      "mineral_role": "Beryl (Be₃Al₂Si₆O₁₈) — parent of Emerald, Aquamarine, Morganite",
+      "mineral_role": "Beryl (Be\u2083Al\u2082Si\u2086O\u2081\u2088) \u2014 parent of Emerald, Aquamarine, Morganite",
       "notes": "Core of the entire Beryl crystal family. Emerald, Aquamarine, Heliodor all carry Beryllium. Sacred geometry substrate."
     },
     {
@@ -114,7 +116,7 @@
       "period": 2,
       "group": 13,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p¹",
+      "electron_configuration": "[He] 2s\u00b2 2p\u00b9",
       "electronegativity": 2.04,
       "state_at_stp": "solid",
       "melting_point_k": 2349,
@@ -122,12 +124,12 @@
       "density_g_cm3": 2.34,
       "crystal_system": "rhombohedral",
       "discovered": 1808,
-      "discoverer": "Joseph Louis Gay-Lussac, Louis Jacques Thénard",
+      "discoverer": "Joseph Louis Gay-Lussac, Louis Jacques Th\u00e9nard",
       "origin_of_name": "Arabic: buraq (borax)",
-      "gaia_layer_alignment": ["Layer 03 — Geometry", "Layer 09 — Causal"],
+      "gaia_layer_alignment": ["Layer 03 \u2014 Geometry", "Layer 09 \u2014 Causal"],
       "penteract_d4_substrate": "network_former",
       "mineral_role": "Tourmaline group, Borax, Howlite, Ulexite",
-      "notes": "Essential in Tourmaline — one of the most electrically active crystal families. Piezoelectric bridge element."
+      "notes": "Essential in Tourmaline \u2014 one of the most electrically active crystal families. Piezoelectric bridge element."
     },
     {
       "atomic_number": 6,
@@ -138,7 +140,7 @@
       "period": 2,
       "group": 14,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p²",
+      "electron_configuration": "[He] 2s\u00b2 2p\u00b2",
       "electronegativity": 2.55,
       "state_at_stp": "solid",
       "melting_point_k": 3800,
@@ -148,10 +150,10 @@
       "discovered": "prehistoric",
       "discoverer": "ancient",
       "origin_of_name": "Latin: carbo (coal)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 09 — Causal", "Layer 10 — Akashic"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 09 \u2014 Causal", "Layer 10 \u2014 Akashic"],
       "penteract_d4_substrate": "life_substrate",
-      "mineral_role": "Diamond (cubic), Graphite (hexagonal), Shungite, Gaianite substrate",
-      "notes": "The element of life itself. Diamond = NV center quantum computing. Graphite = conductor. Carbon IS the Gaianite backbone element."
+      "mineral_role": "Diamond (cubic), Graphite (hexagonal), Shungite, Lonsdaleite",
+      "notes": "The element of life itself. Diamond = NV center quantum computing. Graphite = conductor. Carbon is the foundation of all organic chemistry and the mineral kingdom's most versatile element."
     },
     {
       "atomic_number": 7,
@@ -162,7 +164,7 @@
       "period": 2,
       "group": 15,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p³",
+      "electron_configuration": "[He] 2s\u00b2 2p\u00b3",
       "electronegativity": 3.04,
       "state_at_stp": "gas",
       "melting_point_k": 63.15,
@@ -172,9 +174,9 @@
       "discovered": 1772,
       "discoverer": "Daniel Rutherford",
       "origin_of_name": "Greek: nitron + genes (niter-forming)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 11 — Feeling"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 11 \u2014 Feeling"],
       "penteract_d4_substrate": "atmospheric_life",
-      "mineral_role": "Saltpeter (KNO₃), component of NV-center diamonds",
+      "mineral_role": "Saltpeter (KNO\u2083), component of NV-center diamonds",
       "notes": "78% of Earth's atmosphere. The NV (nitrogen-vacancy) center in diamond is the quantum sensing backbone of GAIA-OS."
     },
     {
@@ -186,7 +188,7 @@
       "period": 2,
       "group": 16,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p⁴",
+      "electron_configuration": "[He] 2s\u00b2 2p\u2074",
       "electronegativity": 3.44,
       "state_at_stp": "gas",
       "melting_point_k": 54.36,
@@ -196,7 +198,7 @@
       "discovered": 1774,
       "discoverer": "Carl Wilhelm Scheele, Joseph Priestley",
       "origin_of_name": "Greek: oxys (sharp/acid) + genes (forming)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "oxide_matrix",
       "mineral_role": "Present in virtually all silicate, oxide, carbonate, phosphate minerals",
       "notes": "Most abundant element in Earth's crust by mass (~46%). The universal mineral binder. Viriditas element."
@@ -210,7 +212,7 @@
       "period": 2,
       "group": 17,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p⁵",
+      "electron_configuration": "[He] 2s\u00b2 2p\u2075",
       "electronegativity": 3.98,
       "state_at_stp": "gas",
       "melting_point_k": 53.48,
@@ -220,10 +222,10 @@
       "discovered": 1886,
       "discoverer": "Henri Moissan",
       "origin_of_name": "Latin: fluere (to flow)",
-      "gaia_layer_alignment": ["Layer 05 — Cognition"],
+      "gaia_layer_alignment": ["Layer 05 \u2014 Cognition"],
       "penteract_d4_substrate": "halide_reactive",
-      "mineral_role": "Fluorite (CaF₂), Topaz, Apatite",
-      "notes": "Most electronegative element. Fluorite is the GAIA-OS cognition crystal — mental clarity, focus, decision."
+      "mineral_role": "Fluorite (CaF\u2082), Topaz, Apatite",
+      "notes": "Most electronegative element. Fluorite is the GAIA-OS cognition crystal \u2014 mental clarity, focus, decision."
     },
     {
       "atomic_number": 10,
@@ -234,7 +236,7 @@
       "period": 2,
       "group": 18,
       "block": "p",
-      "electron_configuration": "[He] 2s² 2p⁶",
+      "electron_configuration": "[He] 2s\u00b2 2p\u2076",
       "electronegativity": null,
       "state_at_stp": "gas",
       "melting_point_k": 24.56,
@@ -244,7 +246,7 @@
       "discovered": 1898,
       "discoverer": "William Ramsay, Morris Travers",
       "origin_of_name": "Greek: neos (new)",
-      "gaia_layer_alignment": ["Layer 12 — Void"],
+      "gaia_layer_alignment": ["Layer 12 \u2014 Void"],
       "penteract_d4_substrate": "noble_inert",
       "mineral_role": "Trace amounts trapped in minerals",
       "notes": "Noble gas. Radiates visible light in plasma state. The void that shines."
@@ -258,7 +260,7 @@
       "period": 3,
       "group": 1,
       "block": "s",
-      "electron_configuration": "[Ne] 3s¹",
+      "electron_configuration": "[Ne] 3s\u00b9",
       "electronegativity": 0.93,
       "state_at_stp": "solid",
       "melting_point_k": 370.87,
@@ -268,10 +270,10 @@
       "discovered": 1807,
       "discoverer": "Humphry Davy",
       "origin_of_name": "Medieval Latin: natrium",
-      "gaia_layer_alignment": ["Layer 04 — Emotion", "Layer 07 — Societas"],
+      "gaia_layer_alignment": ["Layer 04 \u2014 Emotion", "Layer 07 \u2014 Societas"],
       "penteract_d4_substrate": "electrolyte_conductor",
       "mineral_role": "Halite (NaCl), Albite feldspar, Sodalite, Lazurite (Lapis Lazuli)",
-      "notes": "Essential electrolyte for neural signal transmission. Found in Lapis Lazuli — GAIA Layer 7 Societas crystal."
+      "notes": "Essential electrolyte for neural signal transmission. Found in Lapis Lazuli \u2014 GAIA Layer 7 Societas crystal."
     },
     {
       "atomic_number": 12,
@@ -282,7 +284,7 @@
       "period": 3,
       "group": 2,
       "block": "s",
-      "electron_configuration": "[Ne] 3s²",
+      "electron_configuration": "[Ne] 3s\u00b2",
       "electronegativity": 1.31,
       "state_at_stp": "solid",
       "melting_point_k": 923,
@@ -292,10 +294,10 @@
       "discovered": 1755,
       "discoverer": "Joseph Black",
       "origin_of_name": "Magnesia, district in Greece",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 04 — Emotion"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 04 \u2014 Emotion"],
       "penteract_d4_substrate": "biological_structural",
-      "mineral_role": "Olivine, Pyroxene, Serpentine, Chrysocolla, Selenite (MgSO₄ form)",
-      "notes": "Central atom of chlorophyll. Viriditas element — the green of life itself."
+      "mineral_role": "Olivine, Pyroxene, Serpentine, Chrysocolla, Selenite (MgSO\u2084 form)",
+      "notes": "Central atom of chlorophyll. Viriditas element \u2014 the green of life itself."
     },
     {
       "atomic_number": 13,
@@ -306,7 +308,7 @@
       "period": 3,
       "group": 13,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p¹",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u00b9",
       "electronegativity": 1.61,
       "state_at_stp": "solid",
       "melting_point_k": 933.47,
@@ -314,12 +316,12 @@
       "density_g_cm3": 2.70,
       "crystal_system": "cubic",
       "discovered": 1825,
-      "discoverer": "Hans Christian Ørsted",
+      "discoverer": "Hans Christian \u00d8rsted",
       "origin_of_name": "Latin: alumen (alum)",
-      "gaia_layer_alignment": ["Layer 03 — Geometry"],
+      "gaia_layer_alignment": ["Layer 03 \u2014 Geometry"],
       "penteract_d4_substrate": "silicate_framework",
       "mineral_role": "Corundum (Ruby, Sapphire), Spinel, Feldspar, Garnet, Turquoise",
-      "notes": "Most abundant metal in Earth's crust. Parent element of Ruby and Sapphire (Al₂O₃). Sacred geometry carrier."
+      "notes": "Most abundant metal in Earth's crust. Parent element of Ruby and Sapphire (Al\u2082O\u2083). Sacred geometry carrier."
     },
     {
       "atomic_number": 14,
@@ -330,7 +332,7 @@
       "period": 3,
       "group": 14,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p²",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u00b2",
       "electronegativity": 1.90,
       "state_at_stp": "solid",
       "melting_point_k": 1687,
@@ -338,11 +340,11 @@
       "density_g_cm3": 2.329,
       "crystal_system": "cubic",
       "discovered": 1824,
-      "discoverer": "Jöns Jacob Berzelius",
+      "discoverer": "J\u00f6ns Jacob Berzelius",
       "origin_of_name": "Latin: silex (flint)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 03 — Geometry", "Layer 10 — Akashic"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 03 \u2014 Geometry", "Layer 10 \u2014 Akashic"],
       "penteract_d4_substrate": "quartz_silicate",
-      "mineral_role": "Quartz (SiO₂), all silicate minerals (~90% of Earth's crust), Opal, Obsidian",
+      "mineral_role": "Quartz (SiO\u2082), all silicate minerals (~90% of Earth's crust), Opal, Obsidian",
       "notes": "Second most abundant element in crust. Quartz = Layer 1 crystal. Silicon = the mineral kingdom's foundation and digital computing's foundation simultaneously."
     },
     {
@@ -354,7 +356,7 @@
       "period": 3,
       "group": 15,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p³",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u00b3",
       "electronegativity": 2.19,
       "state_at_stp": "solid",
       "melting_point_k": 317.30,
@@ -364,9 +366,9 @@
       "discovered": 1669,
       "discoverer": "Hennig Brand",
       "origin_of_name": "Greek: phosphoros (light-bearer)",
-      "gaia_layer_alignment": ["Layer 09 — Causal", "Layer 11 — Feeling"],
+      "gaia_layer_alignment": ["Layer 09 \u2014 Causal", "Layer 11 \u2014 Feeling"],
       "penteract_d4_substrate": "biological_energetic",
-      "mineral_role": "Apatite (Ca₅(PO₄)₃), Turquoise, Lazulite, Vivianite",
+      "mineral_role": "Apatite (Ca\u2085(PO\u2084)\u2083), Turquoise, Lazulite, Vivianite",
       "notes": "Light-bearer element. ATP (life's energy currency) is a phosphate compound. Apatite is found in human bones and teeth."
     },
     {
@@ -378,7 +380,7 @@
       "period": 3,
       "group": 16,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p⁴",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u2074",
       "electronegativity": 2.58,
       "state_at_stp": "solid",
       "melting_point_k": 388.36,
@@ -388,10 +390,10 @@
       "discovered": "prehistoric",
       "discoverer": "ancient",
       "origin_of_name": "Sanskrit: sulvere",
-      "gaia_layer_alignment": ["Layer 06 — Shadow/Dream", "Layer 09 — Causal"],
+      "gaia_layer_alignment": ["Layer 06 \u2014 Shadow/Dream", "Layer 09 \u2014 Causal"],
       "penteract_d4_substrate": "sulfide_alchemical",
-      "mineral_role": "Pyrite (FeS₂), Cinnabar (HgS), Galena (PbS), Lapis Lazuli (sulfur blue)",
-      "notes": "The alchemical element of transformation. Fire and brimstone. Shadow work made mineral. Core of Pyrite — Fool's Gold."
+      "mineral_role": "Pyrite (FeS\u2082), Cinnabar (HgS), Galena (PbS), Lapis Lazuli (sulfur blue)",
+      "notes": "The alchemical element of transformation. Fire and brimstone. Shadow work made mineral. Core of Pyrite \u2014 Fool's Gold."
     },
     {
       "atomic_number": 17,
@@ -402,7 +404,7 @@
       "period": 3,
       "group": 17,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p⁵",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u2075",
       "electronegativity": 3.16,
       "state_at_stp": "gas",
       "melting_point_k": 171.65,
@@ -412,7 +414,7 @@
       "discovered": 1774,
       "discoverer": "Carl Wilhelm Scheele",
       "origin_of_name": "Greek: khloros (pale green)",
-      "gaia_layer_alignment": ["Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "halide_reactive",
       "mineral_role": "Halite (NaCl), Sylvite (KCl), Atacamite",
       "notes": "Essential for biological pH balance. Halite (rock salt) is one of the oldest known minerals."
@@ -426,7 +428,7 @@
       "period": 3,
       "group": 18,
       "block": "p",
-      "electron_configuration": "[Ne] 3s² 3p⁶",
+      "electron_configuration": "[Ne] 3s\u00b2 3p\u2076",
       "electronegativity": null,
       "state_at_stp": "gas",
       "melting_point_k": 83.80,
@@ -436,10 +438,10 @@
       "discovered": 1894,
       "discoverer": "Lord Rayleigh, William Ramsay",
       "origin_of_name": "Greek: argos (lazy/inactive)",
-      "gaia_layer_alignment": ["Layer 12 — Void"],
+      "gaia_layer_alignment": ["Layer 12 \u2014 Void"],
       "penteract_d4_substrate": "noble_inert",
       "mineral_role": "Trace in atmosphere and mineral inclusions",
-      "notes": "Third most abundant gas in atmosphere. Chemically inert — pure presence."
+      "notes": "Third most abundant gas in atmosphere. Chemically inert \u2014 pure presence."
     },
     {
       "atomic_number": 19,
@@ -450,7 +452,7 @@
       "period": 4,
       "group": 1,
       "block": "s",
-      "electron_configuration": "[Ar] 4s¹",
+      "electron_configuration": "[Ar] 4s\u00b9",
       "electronegativity": 0.82,
       "state_at_stp": "solid",
       "melting_point_k": 336.53,
@@ -460,7 +462,7 @@
       "discovered": 1807,
       "discoverer": "Humphry Davy",
       "origin_of_name": "English: potash; symbol from Latin: kalium",
-      "gaia_layer_alignment": ["Layer 04 — Emotion", "Layer 07 — Societas"],
+      "gaia_layer_alignment": ["Layer 04 \u2014 Emotion", "Layer 07 \u2014 Societas"],
       "penteract_d4_substrate": "electrolyte_conductor",
       "mineral_role": "Orthoclase feldspar, Sylvite, Muscovite mica, Lepidolite",
       "notes": "Critical electrolyte for heart rhythm and neural function. Found in Lepidolite alongside Lithium."
@@ -474,7 +476,7 @@
       "period": 4,
       "group": 2,
       "block": "s",
-      "electron_configuration": "[Ar] 4s²",
+      "electron_configuration": "[Ar] 4s\u00b2",
       "electronegativity": 1.00,
       "state_at_stp": "solid",
       "melting_point_k": 1115,
@@ -484,10 +486,10 @@
       "discovered": 1808,
       "discoverer": "Humphry Davy",
       "origin_of_name": "Latin: calx (lime)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 03 — Geometry"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 03 \u2014 Geometry"],
       "penteract_d4_substrate": "biological_structural",
-      "mineral_role": "Calcite (CaCO₃), Aragonite, Fluorite, Gypsum, Selenite, Apatite, Prehnite",
-      "notes": "Most abundant mineral-forming element after Si, Al, Fe, O. Bones, shells, coral — the skeleton of biological structure."
+      "mineral_role": "Calcite (CaCO\u2083), Aragonite, Fluorite, Gypsum, Selenite, Apatite, Prehnite",
+      "notes": "Most abundant mineral-forming element after Si, Al, Fe, O. Bones, shells, coral \u2014 the skeleton of biological structure."
     },
     {
       "atomic_number": 21,
@@ -498,7 +500,7 @@
       "period": 4,
       "group": 3,
       "block": "d",
-      "electron_configuration": "[Ar] 3d¹ 4s²",
+      "electron_configuration": "[Ar] 3d\u00b9 4s\u00b2",
       "electronegativity": 1.36,
       "state_at_stp": "solid",
       "melting_point_k": 1814,
@@ -508,10 +510,10 @@
       "discovered": 1879,
       "discoverer": "Lars Fredrik Nilson",
       "origin_of_name": "Latin: Scandia (Scandinavia)",
-      "gaia_layer_alignment": ["Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "rare_transition",
       "mineral_role": "Thortveitite, trace in many minerals",
-      "notes": "Rare transition metal. Used in AlScN-GaN piezoelectric systems — direct GAIA-OS Gaianite substrate component."
+      "notes": "Rare transition metal. Used in AlScN-GaN piezoelectric systems \u2014 a quantum substrate architecture for high-frequency transduction."
     },
     {
       "atomic_number": 22,
@@ -522,7 +524,7 @@
       "period": 4,
       "group": 4,
       "block": "d",
-      "electron_configuration": "[Ar] 3d² 4s²",
+      "electron_configuration": "[Ar] 3d\u00b2 4s\u00b2",
       "electronegativity": 1.54,
       "state_at_stp": "solid",
       "melting_point_k": 1941,
@@ -532,9 +534,9 @@
       "discovered": 1791,
       "discoverer": "William Gregor",
       "origin_of_name": "Greek: Titans (sons of Earth)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 08 — Archetype"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 08 \u2014 Archetype"],
       "penteract_d4_substrate": "structural_strong",
-      "mineral_role": "Rutile (TiO₂), Ilmenite, Sphene, Anatase — rutile inclusions in Quartz and Sapphire",
+      "mineral_role": "Rutile (TiO\u2082), Ilmenite, Sphene, Anatase \u2014 rutile inclusions in Quartz and Sapphire",
       "notes": "Son of Earth. Named after the Titans. Rutile needles create asterism in Star Sapphire and Star Ruby."
     },
     {
@@ -546,7 +548,7 @@
       "period": 4,
       "group": 5,
       "block": "d",
-      "electron_configuration": "[Ar] 3d³ 4s²",
+      "electron_configuration": "[Ar] 3d\u00b3 4s\u00b2",
       "electronegativity": 1.63,
       "state_at_stp": "solid",
       "melting_point_k": 2183,
@@ -554,12 +556,12 @@
       "density_g_cm3": 6.11,
       "crystal_system": "cubic",
       "discovered": 1801,
-      "discoverer": "Andrés Manuel del Río",
+      "discoverer": "Andr\u00e9s Manuel del R\u00edo",
       "origin_of_name": "Norse: Vanadis (goddess of beauty)",
-      "gaia_layer_alignment": ["Layer 04 — Emotion", "Layer 08 — Archetype"],
+      "gaia_layer_alignment": ["Layer 04 \u2014 Emotion", "Layer 08 \u2014 Archetype"],
       "penteract_d4_substrate": "color_chromophore",
       "mineral_role": "Vanadinite, Tanzanite (trace), Tsavorite Garnet (trace chromophore)",
-      "notes": "Named after Vanadis — Norse goddess of beauty. Gives green color to Tsavorite Garnet and blue-violet to Tanzanite."
+      "notes": "Named after Vanadis \u2014 Norse goddess of beauty. Gives green color to Tsavorite Garnet and blue-violet to Tanzanite."
     },
     {
       "atomic_number": 24,
@@ -570,7 +572,7 @@
       "period": 4,
       "group": 6,
       "block": "d",
-      "electron_configuration": "[Ar] 3d⁵ 4s¹",
+      "electron_configuration": "[Ar] 3d\u2075 4s\u00b9",
       "electronegativity": 1.66,
       "state_at_stp": "solid",
       "melting_point_k": 2180,
@@ -580,10 +582,10 @@
       "discovered": 1797,
       "discoverer": "Louis Nicolas Vauquelin",
       "origin_of_name": "Greek: chroma (color)",
-      "gaia_layer_alignment": ["Layer 03 — Geometry", "Layer 08 — Archetype"],
+      "gaia_layer_alignment": ["Layer 03 \u2014 Geometry", "Layer 08 \u2014 Archetype"],
       "penteract_d4_substrate": "color_chromophore",
       "mineral_role": "Chromite, Uvarovite Garnet, Alexandrite, Ruby (red), Emerald (green)",
-      "notes": "The color element. Chromium gives Ruby its red AND Emerald its green — same element, different crystal matrix produces opposite colors."
+      "notes": "The color element. Chromium gives Ruby its red AND Emerald its green \u2014 same element, different crystal matrix produces opposite colors."
     },
     {
       "atomic_number": 25,
@@ -594,7 +596,7 @@
       "period": 4,
       "group": 7,
       "block": "d",
-      "electron_configuration": "[Ar] 3d⁵ 4s²",
+      "electron_configuration": "[Ar] 3d\u2075 4s\u00b2",
       "electronegativity": 1.55,
       "state_at_stp": "solid",
       "melting_point_k": 1519,
@@ -604,10 +606,10 @@
       "discovered": 1774,
       "discoverer": "Johann Gottlieb Gahn",
       "origin_of_name": "Latin: magnes (magnet)",
-      "gaia_layer_alignment": ["Layer 06 — Shadow/Dream"],
+      "gaia_layer_alignment": ["Layer 06 \u2014 Shadow/Dream"],
       "penteract_d4_substrate": "oxide_pigment",
       "mineral_role": "Rhodonite, Rhodochrosite, Spessartine Garnet, Pyrolusite, Sugilite",
-      "notes": "Gives pink/red to Rhodochrosite and Rhodonite. Found in Sugilite — rare violet crystal of spiritual vision."
+      "notes": "Gives pink/red to Rhodochrosite and Rhodonite. Found in Sugilite \u2014 rare violet crystal of spiritual vision."
     },
     {
       "atomic_number": 26,
@@ -618,7 +620,7 @@
       "period": 4,
       "group": 8,
       "block": "d",
-      "electron_configuration": "[Ar] 3d⁶ 4s²",
+      "electron_configuration": "[Ar] 3d\u2076 4s\u00b2",
       "electronegativity": 1.83,
       "state_at_stp": "solid",
       "melting_point_k": 1811,
@@ -628,7 +630,7 @@
       "discovered": "prehistoric",
       "discoverer": "ancient",
       "origin_of_name": "Anglo-Saxon: iron; symbol from Latin: ferrum",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 02 — Energy", "Layer 08 — Archetype"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 02 \u2014 Energy", "Layer 08 \u2014 Archetype"],
       "penteract_d4_substrate": "magnetic_structural",
       "mineral_role": "Hematite, Magnetite, Pyrite, Jasper, Tiger's Eye, Obsidian (trace)",
       "notes": "Core of Earth's magnetic field. Blood hemoglobin. Hematite and Magnetite are grounding/protective stones. The warrior element."
@@ -642,7 +644,7 @@
       "period": 4,
       "group": 9,
       "block": "d",
-      "electron_configuration": "[Ar] 3d⁷ 4s²",
+      "electron_configuration": "[Ar] 3d\u2077 4s\u00b2",
       "electronegativity": 1.88,
       "state_at_stp": "solid",
       "melting_point_k": 1768,
@@ -652,10 +654,10 @@
       "discovered": 1735,
       "discoverer": "Georg Brandt",
       "origin_of_name": "German: Kobold (goblin/underground spirit)",
-      "gaia_layer_alignment": ["Layer 05 — Cognition", "Layer 08 — Archetype"],
+      "gaia_layer_alignment": ["Layer 05 \u2014 Cognition", "Layer 08 \u2014 Archetype"],
       "penteract_d4_substrate": "color_chromophore",
       "mineral_role": "Cobaltite, Erythrite, Spinel (blue trace), gives blue to glass/ceramics",
-      "notes": "Named after underground goblins — miners found it troublesome. Gives deep blue to spinel and glass. Vitamin B12 contains cobalt."
+      "notes": "Named after underground goblins \u2014 miners found it troublesome. Gives deep blue to spinel and glass. Vitamin B12 contains cobalt."
     },
     {
       "atomic_number": 28,
@@ -666,7 +668,7 @@
       "period": 4,
       "group": 10,
       "block": "d",
-      "electron_configuration": "[Ar] 3d⁸ 4s²",
+      "electron_configuration": "[Ar] 3d\u2078 4s\u00b2",
       "electronegativity": 1.91,
       "state_at_stp": "solid",
       "melting_point_k": 1728,
@@ -675,11 +677,11 @@
       "crystal_system": "cubic",
       "discovered": 1751,
       "discoverer": "Axel Fredrik Cronstedt",
-      "origin_of_name": "German: Nickel (devil's copper — deceived miners)",
-      "gaia_layer_alignment": ["Layer 02 — Energy", "Layer 06 — Shadow/Dream"],
+      "origin_of_name": "German: Nickel (devil's copper \u2014 deceived miners)",
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy", "Layer 06 \u2014 Shadow/Dream"],
       "penteract_d4_substrate": "magnetic_structural",
       "mineral_role": "Pentlandite, Millerite, Garnierite (green Nickel silicate), Chrysoprase (trace)",
-      "notes": "Named 'devil's copper' — it deceived miners who thought it was copper ore. Shadow element."
+      "notes": "Named 'devil's copper' \u2014 it deceived miners who thought it was copper ore. Shadow element."
     },
     {
       "atomic_number": 29,
@@ -690,7 +692,7 @@
       "period": 4,
       "group": 11,
       "block": "d",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s¹",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b9",
       "electronegativity": 1.90,
       "state_at_stp": "solid",
       "melting_point_k": 1357.77,
@@ -700,7 +702,7 @@
       "discovered": "prehistoric",
       "discoverer": "ancient",
       "origin_of_name": "Latin: cuprum (from Cyprus)",
-      "gaia_layer_alignment": ["Layer 04 — Emotion", "Layer 11 — Feeling"],
+      "gaia_layer_alignment": ["Layer 04 \u2014 Emotion", "Layer 11 \u2014 Feeling"],
       "penteract_d4_substrate": "conductor_heart",
       "mineral_role": "Malachite, Azurite, Turquoise, Chrysocolla, Cuprite, Dioptase",
       "notes": "The heart metal. Venus metal in alchemy. Gives green/blue to Malachite, Turquoise, Azurite, Chrysocolla. Conductor of love."
@@ -714,7 +716,7 @@
       "period": 4,
       "group": 12,
       "block": "d",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s²",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2",
       "electronegativity": 1.65,
       "state_at_stp": "solid",
       "melting_point_k": 692.68,
@@ -724,9 +726,9 @@
       "discovered": 1746,
       "discoverer": "Andreas Sigismund Marggraf",
       "origin_of_name": "German: Zinke (pointed/tooth)",
-      "gaia_layer_alignment": ["Layer 01 — Physical", "Layer 05 — Cognition"],
+      "gaia_layer_alignment": ["Layer 01 \u2014 Physical", "Layer 05 \u2014 Cognition"],
       "penteract_d4_substrate": "biological_trace",
-      "mineral_role": "Sphalerite (ZnS), Smithsonite (ZnCO₃), Hemimorphite, Willemite",
+      "mineral_role": "Sphalerite (ZnS), Smithsonite (ZnCO\u2083), Hemimorphite, Willemite",
       "notes": "Essential trace element for enzyme function, immune system, and DNA synthesis. Sphalerite refracts light beautifully."
     },
     {
@@ -738,7 +740,7 @@
       "period": 4,
       "group": 13,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p¹",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u00b9",
       "electronegativity": 1.81,
       "state_at_stp": "solid",
       "melting_point_k": 302.91,
@@ -748,10 +750,10 @@
       "discovered": 1875,
       "discoverer": "Paul Emile Lecoq de Boisbaudran",
       "origin_of_name": "Latin: Gallia (France)",
-      "gaia_layer_alignment": ["Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "semiconductor_bridge",
       "mineral_role": "Trace in Sphalerite and Bauxite",
-      "notes": "Melts in the palm of your hand (29.76°C). GaN (Gallium Nitride) is a key component of the AlScN-GaN Gaianite piezoelectric substrate."
+      "notes": "Melts in the palm of your hand (29.76\u00b0C). GaN (Gallium Nitride) is a key component of AlScN-GaN piezoelectric quantum substrate systems used in high-frequency transduction research."
     },
     {
       "atomic_number": 32,
@@ -762,7 +764,7 @@
       "period": 4,
       "group": 14,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p²",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u00b2",
       "electronegativity": 2.01,
       "state_at_stp": "solid",
       "melting_point_k": 1211.40,
@@ -772,7 +774,7 @@
       "discovered": 1886,
       "discoverer": "Clemens Winkler",
       "origin_of_name": "Latin: Germania (Germany)",
-      "gaia_layer_alignment": ["Layer 02 — Energy", "Layer 10 — Akashic"],
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy", "Layer 10 \u2014 Akashic"],
       "penteract_d4_substrate": "semiconductor_bridge",
       "mineral_role": "Argyrodite, trace in Sphalerite",
       "notes": "Predicted by Mendeleev before discovery. Semiconductor pioneer element. Transparent to infrared light."
@@ -786,7 +788,7 @@
       "period": 4,
       "group": 15,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p³",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u00b3",
       "electronegativity": 2.18,
       "state_at_stp": "solid",
       "melting_point_k": 1090,
@@ -796,10 +798,10 @@
       "discovered": 1250,
       "discoverer": "Albertus Magnus",
       "origin_of_name": "Greek: arsenikon (yellow orpiment)",
-      "gaia_layer_alignment": ["Layer 06 — Shadow/Dream"],
+      "gaia_layer_alignment": ["Layer 06 \u2014 Shadow/Dream"],
       "penteract_d4_substrate": "sulfide_alchemical",
-      "mineral_role": "Arsenopyrite (FeAsS), Realgar (As₄S₄), Orpiment (As₂S₃)",
-      "notes": "Toxic — handle with care. Realgar and Orpiment are brilliant orange/yellow crystals historically used as pigments."
+      "mineral_role": "Arsenopyrite (FeAsS), Realgar (As\u2084S\u2084), Orpiment (As\u2082S\u2083)",
+      "notes": "Toxic \u2014 handle with care. Realgar and Orpiment are brilliant orange/yellow crystals historically used as pigments."
     },
     {
       "atomic_number": 34,
@@ -810,7 +812,7 @@
       "period": 4,
       "group": 16,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p⁴",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u2074",
       "electronegativity": 2.55,
       "state_at_stp": "solid",
       "melting_point_k": 494,
@@ -818,12 +820,12 @@
       "density_g_cm3": 4.809,
       "crystal_system": "trigonal",
       "discovered": 1817,
-      "discoverer": "Jöns Jacob Berzelius",
+      "discoverer": "J\u00f6ns Jacob Berzelius",
       "origin_of_name": "Greek: Selene (Moon goddess)",
-      "gaia_layer_alignment": ["Layer 03 — Geometry", "Layer 11 — Feeling"],
+      "gaia_layer_alignment": ["Layer 03 \u2014 Geometry", "Layer 11 \u2014 Feeling"],
       "penteract_d4_substrate": "photosensitive",
-      "mineral_role": "Clausthalite, trace in sulfide minerals; Selenite (gypsum) — etymologically linked but chemically different",
-      "notes": "Named after Selene, the Moon. Photoconductive — conductivity increases with light exposure. Selenite crystal shares the Moon name."
+      "mineral_role": "Clausthalite, trace in sulfide minerals; Selenite (gypsum) \u2014 etymologically linked but chemically different",
+      "notes": "Named after Selene, the Moon. Photoconductive \u2014 conductivity increases with light exposure. Selenite crystal shares the Moon name."
     },
     {
       "atomic_number": 35,
@@ -834,7 +836,7 @@
       "period": 4,
       "group": 17,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p⁵",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u2075",
       "electronegativity": 2.96,
       "state_at_stp": "liquid",
       "melting_point_k": 265.80,
@@ -842,9 +844,9 @@
       "density_g_cm3": 3.1028,
       "crystal_system": "orthorhombic",
       "discovered": 1826,
-      "discoverer": "Antoine Jérôme Balard",
+      "discoverer": "Antoine J\u00e9r\u00f4me Balard",
       "origin_of_name": "Greek: bromos (stench)",
-      "gaia_layer_alignment": ["Layer 02 — Energy"],
+      "gaia_layer_alignment": ["Layer 02 \u2014 Energy"],
       "penteract_d4_substrate": "halide_reactive",
       "mineral_role": "Bromargyrite (AgBr), trace in halide minerals",
       "notes": "One of only two elements liquid at room temperature. Found in ancient seabeds and salt deposits."
@@ -858,7 +860,7 @@
       "period": 4,
       "group": 18,
       "block": "p",
-      "electron_configuration": "[Ar] 3d¹⁰ 4s² 4p⁶",
+      "electron_configuration": "[Ar] 3d\u00b9\u2070 4s\u00b2 4p\u2076",
       "electronegativity": 3.00,
       "state_at_stp": "gas",
       "melting_point_k": 115.79,
@@ -868,7 +870,7 @@
       "discovered": 1898,
       "discoverer": "William Ramsay, Morris Travers",
       "origin_of_name": "Greek: kryptos (hidden)",
-      "gaia_layer_alignment": ["Layer 12 — Void"],
+      "gaia_layer_alignment": ["Layer 12 \u2014 Void"],
       "penteract_d4_substrate": "noble_inert",
       "mineral_role": "Trace atmospheric element, no significant mineral role",
       "notes": "The hidden element. Used in precision laser applications. The void conceals and reveals."
