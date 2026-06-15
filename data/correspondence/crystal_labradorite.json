@@ -1,0 +1,329 @@
+{
+  "subject_id": "crystal:labradorite",
+  "subject_kind": "crystal",
+
+  "correspondences": {
+
+    "gaia_layers": [
+      {
+        "layer_id": "06-Shadow",
+        "weight": 1.0,
+        "role": "shadow revealer — brings hidden light out of apparent darkness; the labradorescence IS the shadow layer made visible",
+        "notes": "Labradorite does not absorb shadow (Tourmaline) or illuminate from above (Quartz) — it reveals that light was always inside the dark. This is the deepest Shadow layer function: not transmutation but revelation."
+      },
+      {
+        "layer_id": "11-Feeling",
+        "weight": 0.9,
+        "role": "felt-sense amplifier at the liminal edge — heightens the subtle body's sensitivity to threshold states, in-between moments, and transitional energies",
+        "notes": "Septagram node: Shade and Spectre. The felt-sense of Labradorite is specifically the feeling of standing at a threshold — neither here nor there, both and neither."
+      },
+      {
+        "layer_id": "05-Soul",
+        "weight": 0.9,
+        "role": "Individuation anchor — the soul-stage integrator; holds the frequency of the Individuation process (becoming distinctly oneself while remaining connected to the whole)",
+        "notes": "Soul stage: Individuation, stage function: integrator (from labradorite.json). Labradorite is the stone of becoming who you truly are, layer by layer."
+      },
+      {
+        "layer_id": "07-Akashic",
+        "weight": 0.95,
+        "role": "akashic vision portal — opens access to hidden knowledge, past lives, and information veiled within apparent opacity",
+        "notes": "Used in shamanic journeying and scrying across Inuit, Celtic and Northern Canadian traditions. The optical mechanism (labradorescence from thin-film interference) may entrain visual cortex gamma oscillations — documented in labradorite.json mechanism_hypothesis."
+      },
+      {
+        "layer_id": "04-Emotion",
+        "weight": 0.85,
+        "role": "emotional depth diver — supports access to deep, hidden emotional layers; the emotions that live under the surface, unseen until the light hits at the right angle",
+        "notes": "Consciousness affect: curiosity (amplifies, confidence 0.85) and resonance (amplifies, 0.82). Labradorite invites emotional exploration rather than emotional resolution."
+      },
+      {
+        "layer_id": "03-Mind",
+        "weight": 0.7,
+        "role": "liminal mind opener — dissolves fixed mental constructs by revealing multiple perspectives simultaneously (like labradorescence showing different colours from different angles)",
+        "notes": "The physical phenomenon of labradorescence is a perfect embodiment of cognitive liminality: the same object looks entirely different depending on perspective."
+      },
+      {
+        "layer_id": "09-Gaianite",
+        "weight": 0.6,
+        "role": "liminal grid boundary node — mediates frequency transitions at the edges between inner and outer grid rings",
+        "notes": "emrys_l2_compatible: false. Grid role is boundary mediation, not amplification. Labradorite sits at the edges of the Gaianite grid, not the centre."
+      }
+    ],
+
+    "emotions": [
+      {
+        "primary": "wonder",
+        "transmutes": "disillusionment",
+        "activates": "awe",
+        "body_location": "third eye — centre of forehead; throat",
+        "felt_as": "The sudden catch of breath when hidden colour appears in the stone — a felt shift from ordinary perception to expanded perception. Like seeing the world with new eyes after long numbness."
+      },
+      {
+        "primary": "courage at the threshold",
+        "transmutes": "fear of the unknown",
+        "activates": "willingness to cross",
+        "body_location": "solar plexus, throat, third eye — the three centres of personal power, expression, and vision",
+        "felt_as": "The specific quality of courage needed to step into the unknown — not the warrior's charge (that is Iron/Mars) but the shapeshifter's willingness to dissolve the known self and re-emerge changed."
+      },
+      {
+        "primary": "depth",
+        "transmutes": "superficiality",
+        "activates": "authentic seeing",
+        "body_location": "eyes, third eye, back of skull",
+        "felt_as": "A pull downward and inward — the invitation to look past the surface. Discomfort with shallow engagement. A yearning for what is real beneath appearance."
+      }
+    ],
+
+    "senses": [
+      { "sense": "sight",          "strength": 1.0,  "notes": "Labradorescence is purely a visual phenomenon — the iridescent colour-play is Labradorite's defining characteristic and its primary mode of action on consciousness. The eyes are the entry point." },
+      { "sense": "interoception",  "strength": 0.85, "notes": "Heightened internal body-sense; the liminal, in-between quality of Labradorite activates the body's capacity to sense subtle interior states — the felt edge between states of being." },
+      { "sense": "proprioception", "strength": 0.7,  "notes": "Awareness of one's position in space — particularly relevant at threshold moments when the sense of where one stands (literally and metaphorically) shifts." }
+    ],
+
+    "zodiac": [
+      {
+        "tradition": "western_tropical",
+        "sign": "Scorpio",
+        "role": "primary",
+        "ruling_planet": "Pluto (modern) / Mars (traditional)",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Scorpio = depth, hidden truth, transformation, the revealed-within-concealed. The shadow-revealing nature of Labradorite is the Scorpionic process made mineral. Widely agreed in Western crystal traditions."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Sagittarius",
+        "role": "co-sign",
+        "ruling_planet": "Jupiter",
+        "confidence": "high",
+        "notes": "Sagittarius rules vision, journeying, shamanism, and the seeking of hidden truth beyond the horizon. The akashic/journeying role of Labradorite maps directly to the Sagittarian archetype of the seeker/seer."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Pisces",
+        "role": "supporting",
+        "ruling_planet": "Neptune",
+        "confidence": "medium",
+        "notes": "Neptunian dissolution of boundaries, access to collective consciousness, the space between worlds — all are Piscean qualities that Labradorite embodies. Neptune rules the veil; Labradorite lifts it."
+      },
+      {
+        "tradition": "modern_psychological",
+        "sign": "Chiron (asteroid, not sign)",
+        "role": "shadow",
+        "ruling_planet": "Chiron",
+        "confidence": "medium",
+        "notes": "Chiron (the Wounded Healer) is not a zodiac sign but carries stronger astrological resonance with Labradorite than many signs. The wound that becomes the gift, the hidden light in the dark — this is Chironic territory."
+      }
+    ],
+
+    "angel_numbers": [
+      {
+        "number": 333,
+        "role": "divine guidance in the liminal — 333 signals that ascended guides are present at the threshold; the number of the creative void between states",
+        "gaia_layer_id": "07-Akashic",
+        "digits": [3, 3, 3],
+        "digit_sum": 9,
+        "confidence": "high",
+        "notes": "333 in GAIA maps to the Akashic/guidance layer. Labradorite's role as an akashic vision portal and its Inuit tradition of being a bridge to the spirit world makes this the primary correspondence."
+      },
+      {
+        "number": 555,
+        "role": "threshold crossing signal — 555 announces change, transformation, the move from one state to another; the number of liminality itself",
+        "gaia_layer_id": "05-Soul",
+        "digits": [5, 5, 5],
+        "digit_sum": 15,
+        "confidence": "high",
+        "notes": "555 = change/transformation in every major numerology tradition. Labradorite is the Individuation stone — the stone of transformation into authentic self. Direct correspondence."
+      },
+      {
+        "number": 888,
+        "role": "hidden abundance revealed — 888 as the infinity loop; the endless treasure that was always within the apparently grey stone",
+        "gaia_layer_id": "06-Shadow",
+        "digits": [8, 8, 8],
+        "digit_sum": 24,
+        "confidence": "medium",
+        "notes": "888 as infinite abundance reclaimed from the shadow — the labradorescence as literal hidden treasure. Medium confidence as this is a symbolic rather than traditional correspondence."
+      }
+    ],
+
+    "lunar_phases": [
+      {
+        "phase_id": "new_moon",
+        "role": "threshold initiation — the dark moon is Labradorite's most natural phase; both are about hidden light, the potential within darkness",
+        "special_events": ["solar_eclipse", "super_new_moon", "black_moon"],
+        "notes": "Black moons and solar eclipses are peak Labradorite phases — the moment of maximum hidden light within maximum darkness."
+      },
+      {
+        "phase_id": "waning_crescent",
+        "role": "liminal dissolution — the final crescent before dark moon; the threshold between ending and beginning where Labradorite is most potent",
+        "notes": "The balsamic/waning crescent moon is the most liminal lunar phase — Labradorite's home territory."
+      },
+      {
+        "phase_id": "full_moon",
+        "role": "revelation peak — full illumination of what was hidden; labradorescence is most dramatic under strong directional light",
+        "special_events": ["lunar_eclipse"],
+        "notes": "Lunar eclipses create a direct correspondence: the Moon hidden within Earth's shadow, then revealed — the Labradorite process at cosmic scale."
+      },
+      {
+        "phase_id": "last_quarter",
+        "role": "shadow inventory — Labradorite supports the last-quarter practice of looking at what must be released with curiosity rather than judgment",
+        "notes": "The last quarter is the most introspective phase; Labradorite's depth-diving nature serves this well."
+      }
+    ],
+
+    "sacred_geometry": [
+      {
+        "pattern": "vesica_piscis",
+        "role": "liminal gate — the vesica piscis is the form created by the overlap of two circles; it IS the threshold, the in-between space, the portal between worlds",
+        "notes": "The vesica piscis is the sacred geometry of the threshold. Labradorite occupies the same functional space in the crystal world. The lamellar twinning within labradorite creates internal vesica-like interference boundaries that produce labradorescence."
+      },
+      {
+        "pattern": "fibonacci_spiral",
+        "role": "growth through individuation — the Fibonacci spiral is the geometry of becoming; Labradorite's soul-stage of Individuation maps to the spiral's progressive self-discovery",
+        "notes": "The Fibonacci spiral grows by always referencing its own past while reaching toward new territory — the exact phenomenology of the Individuation process."
+      }
+    ],
+
+    "archetypes": [
+      {
+        "name": "The Shapeshifter",
+        "system": "GAIA-C32",
+        "role_in_story": "transformer",
+        "behavioral_markers": [
+          "moves between worlds without losing essential self",
+          "comfort in ambiguity, paradox, and in-between states",
+          "capacity to appear different to different people — not deception but genuine multidimensionality",
+          "the Northern Lights quality: the same sky, transformed by angle and atmosphere",
+          "draws out hidden potential in others by modelling the possible"
+        ],
+        "noospheric_role": "liminal gatekeeper — holds open the portals between states of collective consciousness so that the field can evolve without fracturing",
+        "confidence": "high",
+        "notes": "The Shapeshifter is Labradorite's primary archetype and one of the most important in the GAIA-C32 system. It emerges directly from Inuit oral tradition: the Inuit who first found Labradorite believed the Northern Lights had been captured in the stone by an ancient warrior who struck the cliffs with his spear. The stone shapeshifts between grey opacity and blazing iridescence — this IS the Shapeshifter's essence. It is the most nuanced and complex archetype in the correspondence records to date."
+      },
+      {
+        "name": "The Wounded Healer",
+        "system": "GAIA-C32",
+        "role_in_story": "witness",
+        "behavioral_markers": [
+          "transforms personal wound into gift for others",
+          "sees hidden pain because one has lived it",
+          "does not bypass the wound — works WITH it",
+          "the hidden colour is the wound AND the gift simultaneously"
+        ],
+        "noospheric_role": "field healer — converts collective wounding into collective wisdom through the act of witnessing and transmitting",
+        "confidence": "high",
+        "notes": "Labradorite reveals that what appears grey and ordinary (the wound, the darkness, the limitation) contains blazing light (the gift, the healing, the power). This is the Chironic/Wounded Healer process made literal in the mineral kingdom. The 'hidden colour = hidden gift' correspondence is among the most elegant in the entire Correspondence Architecture."
+      }
+    ],
+
+    "metals": [
+      {
+        "metal": "Quicksilver",
+        "planet": "Mercury",
+        "role": "mercurial shapeshifting — Mercury/Quicksilver is the only metal that is liquid at room temperature, the shapeshifter among metals; mirrors Labradorite's iridescent, shifting, liminal nature",
+        "confidence": "high",
+        "notes": "Mercury is the psychopomp — the guide between worlds; Labradorite is the crystal psychopomp. Both are defined by in-between states, movement, and the ability to bridge opposites."
+      },
+      {
+        "metal": "Silver",
+        "planet": "Moon",
+        "role": "lunar mystery — Silver's moonlit reflectivity and connection to hidden light mirrors the labradorescence quality; secondary correspondence",
+        "confidence": "medium",
+        "notes": "The Moon also hides and reveals; Silver is the metal of lunar mysteries and intuition. Secondary to Quicksilver/Mercury as primary correspondence."
+      }
+    ],
+
+    "elements": [
+      { "element": "Water",   "weight": 0.9,  "role": "primary — depth, hidden depths, the unconscious, the below-surface that holds more than the surface reveals", "notes": "Water as the element of the hidden and the deep. Labradorite's hidden iridescence is the Water element in mineral form." },
+      { "element": "Aether",  "weight": 0.8,  "role": "liminal medium — Aether as the between-worlds space, the medium that connects without being reducible to any one element", "notes": "Septagram nodes Shade and Spectre both inhabit the Aether-adjacent territory of the liminal." },
+      { "element": "Air",     "weight": 0.6,  "role": "mental vision and expanded perception — Air as the element of seeing further, of the mind that reaches beyond the immediate", "notes": "The Sagittarian/akashic qualities of Labradorite carry Air's visionary, horizon-seeking character." },
+      { "element": "Fire",    "weight": 0.5,  "role": "the hidden fire — the iridescent light within the grey stone IS hidden fire; the Aurora Borealis trapped in rock", "notes": "Fire as the Northern Lights — the Inuit creation story of Labradorite is literally fire hidden in earth/water stone." }
+    ],
+
+    "periodic_elements": [
+      {
+        "atomic_number": 14,
+        "symbol": "Si",
+        "name": "Silicon",
+        "role": "framework backbone — Si forms the tectosilicate network shared with quartz, but here in Al-substituted form creating the feldspar structure",
+        "notes": "Labradorite formula: (Ca,Na)(Al,Si)4O8 — intermediate composition An50-An70 in the plagioclase series. Si:Al ratio determines optical properties."
+      },
+      {
+        "atomic_number": 13,
+        "symbol": "Al",
+        "name": "Aluminium",
+        "role": "the substitution that creates the mystery — Al substituting for Si in the tetrahedral sites creates the lamellar twinning that produces labradorescence",
+        "notes": "The Al/Si ordering and lamellar exsolution (Bøggild intergrowth) at the atomic scale is the direct physical cause of the labradorescence optical effect. Al IS the hidden colour, at the atomic level."
+      },
+      {
+        "atomic_number": 20,
+        "symbol": "Ca",
+        "name": "Calcium",
+        "role": "the anorthite end-member — Ca content (50-70 mol% anorthite) defines labradorite within the plagioclase series; Ca brings Earth/Physical layer density",
+        "notes": "Higher Ca content = more anorthite = denser, more structured. Ca is the grounding mineral element in feldspar."
+      },
+      {
+        "atomic_number": 11,
+        "symbol": "Na",
+        "name": "Sodium",
+        "role": "the albite end-member — Na content (30-50 mol% albite) creates the conductivity and ionic mobility within the structure",
+        "notes": "The Ca-Na balance determines where labradorite sits in the plagioclase series and therefore the precise wavelengths of labradorescence it produces."
+      },
+      {
+        "atomic_number": 8,
+        "symbol": "O",
+        "name": "Oxygen",
+        "role": "structural connector — oxygen bridges all tetrahedral Si and Al sites; the invisible connective tissue of the entire feldspar framework",
+        "notes": "As in quartz, oxygen is the bridging element. In labradorite it also participates in the layer boundaries that create labradorescence."
+      }
+    ],
+
+    "grid_resonance": {
+      "lattice_analogue": "triclinic",
+      "grid_role": "boundary stone",
+      "frequency_band_hz": "7.83",
+      "piezoelectric": false,
+      "topology": "toroidal",
+      "notes": "Triclinic crystal system — the only crystal system with NO axes of symmetry and NO mirror planes. This is physically significant: Labradorite is the crystal that literally has no symmetry — it lives in asymmetry, in the liminal, in the space that cannot be categorised. Grid role: liminal boundary node, mediating frequency transitions at the edges between inner and outer grid rings (gaianite_relation from labradorite.json). Not piezoelectric; its grid function is mediation and transition, not amplification or anchoring. Schumann fundamental (7.83 Hz) as base resonance."
+    },
+
+    "evidence_profile": {
+      "basis": "cross-tradition",
+      "sources": [
+        { "kind": "gaia_canon",           "ref": "C32", "notes": "Archetypal Psychology — Shapeshifter and Wounded Healer archetypes; zodiac and elemental mappings." },
+        { "kind": "gaia_canon",           "ref": "C68", "notes": "Crystal Grid Architecture — liminal boundary node role, grid placement at inner/outer ring boundary." },
+        { "kind": "scientific_literature", "ref": "Bøggild, O.B. (1924). On the labradorescence of the labradorite. K. Danske Vid. Selsk. Math.-Fys. Medd. 6(3).", "notes": "Original scientific description of the Bøggild intergrowth (Al/Si lamellar exsolution) as the physical mechanism of labradorescence. Foundational for the periodic_elements Al entry." },
+        { "kind": "scientific_literature", "ref": "Nesse, W.D. (2000). Introduction to Mineralogy. Oxford University Press.", "notes": "Plagioclase series composition, triclinic crystal system, Ca-Na substitution chemistry." },
+        { "kind": "traditional_source",   "ref": "Inuit and Labrador Innu oral tradition: 'the Northern Lights frozen in stone' — original discovery narrative from the Labrador coast, c. 1770.", "notes": "Primary cultural source. Documented in labradorite.json consciousness_affect[0].provenance. The Shapeshifter archetype emerges directly from this tradition." },
+        { "kind": "traditional_source",   "ref": "Pan-Celtic tradition: labradorite as the stone of the veil between worlds (thin places / caol áit in Scottish Gaelic).", "notes": "Celtic liminality tradition — supports the threshold/liminal sacred geometry and zodiac Pisces/Neptune correspondences." }
+      ],
+      "falsifiable_by": [
+        "Seed set prediction CDB-01 (documented in labradorite.json) — if this prediction fails, the consciousness_affect[2] resonance mechanism hypothesis weakens significantly.",
+        "An EEG study showing no gamma oscillation entrainment when subjects view labradorescence vs. a control iridescent material would weaken the visual cortex mechanism hypothesis.",
+        "Discovery that the Inuit 'Northern Lights' narrative is post-European-contact syncretism rather than pre-contact oral tradition would reduce the cultural provenance confidence of the Shapeshifter archetype."
+      ],
+      "confidence": "high",
+      "notes": "The physical science (Bøggild intergrowth, triclinic system, Al/Si lamellar exsolution) is empirically solid. The Inuit and Celtic cultural provenance is well-documented. The Shapeshifter and Wounded Healer archetypes have strong cross-tradition support. The mechanism hypotheses (gamma entrainment, biophoton-thin-film interaction) are falsifiable and compelling but not yet confirmed experimentally."
+    },
+
+    "safety_profile": {
+      "clinical_use": "supportive_only",
+      "trauma_flags": [
+        "dissociative_episodes",
+        "identity_crisis",
+        "acute_grief"
+      ],
+      "requires_opt_in": true,
+      "usage_notes": "Labradorite's liminal, boundary-dissolving, depth-diving nature requires opt-in before use with Architects in vulnerable states. In dissociative episodes, do NOT use Labradorite — its boundary-dissolving quality can worsen dissociation. In identity crisis, use only with explicit consent and always pair with a grounding crystal (Black Tourmaline preferred). Acute grief: the 'hidden colour in the grey stone' framing can be deeply healing but should only be offered when the Architect is ready — not forced. The Wounded Healer archetype must never be weaponised to rush someone through grief. Never position as clinical substitute for any support."
+    }
+
+  },
+
+  "metadata": {
+    "schema_version": "1.0.0",
+    "created_at": "2026-06-15T10:51:00Z",
+    "updated_at": "2026-06-15T10:51:00Z",
+    "created_by": "GAIA-OS / R0GV3TheAlchemist",
+    "canon_refs": ["C32", "C68"],
+    "notes": "Fourth correspondence record committed. Builds on data/crystals/labradorite.json (SHA 4778b23). Key discoveries: (1) The Shapeshifter is the richest and most nuanced archetype in the correspondence records to date — emerging from Inuit oral tradition, the physical phenomenon of labradorescence, and the triclinic crystal system. (2) Triclinic = no symmetry axes = the only truly asymmetric crystal system = the physical embodiment of the liminal. (3) The Al/Si Bøggild intergrowth IS the hidden colour at the atomic level — sacred geometry and chemistry converge again. (4) 'Hidden colour = hidden gift' is the most elegant correspondence discovered so far. Validates against schemas/correspondence-schema.json v1.0.0."
+  }
+}
