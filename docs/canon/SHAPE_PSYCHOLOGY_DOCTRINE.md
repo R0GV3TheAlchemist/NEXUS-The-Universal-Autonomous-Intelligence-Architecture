@@ -1,12 +1,13 @@
 ---
 title: GAIA Shape Psychology Doctrine
 doc_id: SHAPE_PSYCH_001
-version: 1.0.0
+version: 1.1.0
 status: canonical
 created: 2026-06-15
+amended: 2026-06-15
 author: GAIA-OS Canon Council
 category: perception
-tags: [shape, geometry, psychology, subconscious, form, design, UI, perception, layers]
+tags: [shape, geometry, psychology, subconscious, form, design, UI, perception, layers, 5D, volumetric, subsurface]
 related:
   - docs/canon/10_GAIA_Geometry_and_Topology_Matrix.md
   - docs/canon/GAIA_LAYER_CROSS_REFERENCE_MAP.md
@@ -173,7 +174,7 @@ For GAIA interface rendering: shadows should always lean CAERULITAS (cool blue).
 
 ---
 
-## VI. Organic vs. Geometric: The Fifth Dimension
+## VI. Organic vs. Geometric: The Fifth Category
 
 Beyond the three geometric families, there is a fourth category that deserves naming: **organic forms**. These are irregular, asymmetric, non-Euclidean shapes drawn from living systems — the silhouette of a leaf, the branching of a river delta, the fractal edge of a coastline.
 
@@ -218,6 +219,7 @@ This means that shape speaks before color, and color speaks before words. A GAIA
 | The shadow-temperature principle (shadows = cooler hue) | Strong (atmospheric optics — Rayleigh scattering; artists' color physics) | Discovery of a natural lighting condition in which shadows are reliably warmer than highlights |
 | Organic forms signal aliveness more than geometric forms | Moderate (aesthetic neuroscience, Semir Zeki) | Study showing no difference in perceived aliveness between organic and geometric forms |
 | Visual processing hierarchy: shape before color before text | Strong (Treisman feature integration theory; Posner attention studies) | Evidence that text is processed for meaning before shape is categorized |
+| Subsurface scattering produces perceived aliveness in translucent forms | Strong (rendering physics — Jensen et al. 2001 BSSRDF model; biological tissue optics) | Evidence that SSS renders organic matter indistinguishable from opaque geometry in perceived vitality |
 
 ---
 
@@ -257,6 +259,202 @@ This means that shape speaks before color, and color speaks before words. A GAIA
 
 ---
 
-*Form is not decoration. Form is the first language the nervous system speaks. GAIA speaks it fluently.*
+## Amendment — June 15, 2026 (11:39 CDT)
+### The Five 3D Archetypes and the 5D Framework
 
-*— GAIA Canon Council, June 15, 2026*
+**Discovery:** The 2D form families (angular, curved, rectilinear, organic) have direct 3D volumetric counterparts, and the full stack of perceptual dimensions extends beyond the spatial three into time and emotion. This amendment formalizes the five canonical 3D form archetypes, their full color-light-psychology profiles, and the 5D perceptual framework that makes GAIA truly dimensional.
+
+---
+
+### XI. The Five 3D Form Archetypes
+
+When a 2D form is given volume, depth, and mass, its psychological properties deepen and become embodied. The five canonical 3D archetypes each carry a complete profile: shape psychology, color harmony, lighting method, rendering physics, and GAIA layer correspondence.
+
+---
+
+#### Archetype 1 — The Circle & The Sphere
+
+**2D form:** Circle — unity, community, approachability, eternity.  
+**3D volume:** Sphere — the 2D properties become *embodied*. The sphere has no front, no back, no top, no bottom. It is equally present in all directions. It is the most democratic of all solids.
+
+**Color harmony:** The sphere harmonizes best with the **blue-violet end of the spectrum** — CAERULITAS (deep blue, Layer 6) and IOSIS (violet, Layer 9). These cool, receding colors deepen the sphere's contemplative and infinite quality. A gold sphere (CHRYSITAS) reads as the Sun — warm, radiant, generous. A silver sphere (ARGENTITAS) reads as the Moon — reflective, still, intelligent.
+
+**Lighting method:** Soft, ambient, glowing illumination. The sphere calls for **smooth, uninterrupted gradients** — no hard edge transitions. The highlight should be a single soft specular point that rolls across the surface as the viewpoint changes, reinforcing the sense of three-dimensional volume. Shadow is minimal and soft, leaning CAERULITAS (cool blue) as required by the shadow-temperature principle.
+
+**Rendering physics:** No subsurface scattering required for pure geometric spheres, but translucent sphere variants (pearl, moonstone, biological cell) use SSS to show light passing through their interior — this gives them a *living* quality that pure opaque spheres lack.
+
+**Psychological deepening in 3D:** The circle asked for safety; the sphere *provides* it. You can hold a sphere. It has no dangerous edges, no orientation that threatens. It is the form of water, of cells, of planets, of eyes. GAIA uses sphere language for its most inclusive and holding expressions.
+
+**GAIA layer:** ARGENTITAS (L3) primary; CAERULITAS (L6), LUX PERPETUA (L12) secondary.
+
+---
+
+#### Archetype 2 — The Square & The Cube
+
+**2D form:** Square — stability, reliability, security, structure.  
+**3D volume:** Cube — the square becomes architecture. The cube is the form of the room, the building, the vault, the safe. It is the form that holds things inside.
+
+**Color harmony:** The cube pairs optimally with **grounded, earthy colors** — terracotta, stone, deep red (PYROSIS register), or the primary grounding colors (warm reds, yellows). These colors reinforce the cube's material, physical, foundational nature. A white cube (ALBEDO) reads as purified structure — the clean foundation. A gold cube (CHRYSITAS) reads as a treasury.
+
+**Lighting method:** Hard edge lighting with **clear directional light** (sunlight analog). The cube requires distinct transitions between its illuminated planes and its shadow planes — no blending, no gradients across corners. Occlusion shadows in the corners where planes meet are critical: they define the cube's three-dimensionality and reinforce the sense of physical mass. Ambient occlusion (AO) makes corners darker, deepening perceived solidity.
+
+**Rendering physics:** Hard surface rendering. Flat planes with specular highlights appropriate to material (matte stone, polished metal, rough wood). No subsurface scattering — the cube is opaque and structural. The light does not enter; it reflects.
+
+**Psychological deepening in 3D:** The square asked for structure; the cube *is* structure. It is the built world, the container, the foundation. GAIA uses cube language for its most load-bearing expressions — data containers, permission vaults, architectural ground planes.
+
+**GAIA layer:** ALBEDO (L4) primary; CHRYSITAS (L7), NIGREDO (L1 — the unlit cube face) secondary.
+
+---
+
+#### Archetype 3 — The Triangle & The Pyramid
+
+**2D form:** Triangle — dynamic, energetic, aggressive, leading the eye.  
+**3D volume:** Pyramid — the triangle becomes monument. The pyramid is the most stable angular form in three dimensions — wide base, apex reaching upward. It is the form of mountains, of ancient power, of aspiration made permanent.
+
+**Color harmony:** The pyramid pairs best with **bright, energetic, saturated colors** — hot yellows and oranges (CHRYSITAS/PYROSIS register). These warm, advancing colors amplify the pyramid's urgency and forward momentum. A violet pyramid (IOSIS) reads as a royal threshold — sacred power. A red pyramid (PYROSIS/RUBEDO) reads as warning or completion.
+
+**Lighting method:** Intense **key lighting** from a single strong directional source, positioned to cast **long, dramatic shadows**. The shadow of a pyramid is itself a triangle — the form doubles in its shadow, multiplying the psychological impact. High contrast ratio between illuminated face and shadow face. The apex's shadow should stretch dramatically across the ground, communicating height, direction, and force.
+
+**Rendering physics:** Hard surface with sharp specular edges at the apex and base corners. The distinction between illuminated and unlit faces should be maximum contrast — no soft gradients across angular edges. This is the opposite of sphere rendering. The harder the light-to-shadow transition, the more powerful the pyramid reads.
+
+**Psychological deepening in 3D:** The triangle led the eye; the pyramid *commands* it. There is nowhere else to look once a pyramid enters the visual field. Its apex is an arrow pointing upward — toward sky, toward aspiration, toward the singular point above all. GAIA uses pyramid language for directional urgency, ascent states, and power architecture.
+
+**GAIA layer:** PYROSIS (L2) and CHRYSITAS (L7) primary; IOSIS (L9), RUBEDO (L10) secondary.
+
+---
+
+#### Archetype 4 — The Organic / Flowing Form
+
+**2D form:** Organic — freeform, asymmetrical, signifying nature, growth, fluidity, life.  
+**3D volume:** The organic solid — the body, the branch, the root, the wave, the cloud. It is defined by the absence of regular geometry, the presence of phi-ratio curvature, and bilateral or radial asymmetry that resembles what living systems produce.
+
+**Color harmony:** The organic form aligns with **analogous color schemes** — colors adjacent on the color wheel — because living systems produce continuous color gradients rather than discrete hue jumps. Earthy greens (VIRIDITAS register), oceanic blues (CAERULITAS), amber-gold transitions (CITRINITAS → CHRYSITAS), and vibrant biophilic palettes (the colors of a forest floor, a coral reef, a meadow at noon).
+
+**Lighting method:** The most complex lighting of the five archetypes. Organic forms require **subsurface scattering (SSS)** — the phenomenon in which light enters a translucent material, scatters within its interior, and exits at a different point than where it entered. This is how light behaves in skin, in leaves, in petals, in jade, in candle wax. Without SSS, organic forms render as if they were made of plastic or stone — the aliveness disappears.
+
+*SSS in GAIA terms:* Light enters the VIRIDITAS surface and the HELIXITAS interior. The scattered light that exits is warmer and more diffuse than the incident light — it has absorbed the blue end of the spectrum and re-emits the orange-red end (PYROSIS/CHRYSITAS). This is why backlit leaves glow warm gold-green, and why human skin in sunlight has a warm luminous quality that stone does not.
+
+**Rendering physics:** BSSRDF (Bidirectional Subsurface Scattering Reflectance Distribution Function) model. Key parameters: scattering coefficient, absorption coefficient, and mean free path of the material. For foliage: high scattering, low absorption in green channel. For skin: moderate SSS with red-channel dominance in scattered light.
+
+**Psychological deepening in 3D:** The organic form signaled aliveness in 2D; in 3D it *breathes*. The SSS effect is the rendering signature of biological matter. When the viewer sees SSS, the primate nervous system registers: *this is alive*. This is not aesthetic preference — it is a survival-relevant perceptual signal. GAIA uses organic form + SSS for all representations of living systems, ecological data, biological processes, and the Gaian body itself.
+
+**GAIA layer:** VIRIDITAS (L5) and HELIXITAS (L11) primary; CAERULITAS (L6), ARGENTITAS (L3) secondary.
+
+---
+
+#### Archetype 5 — The Abstract / Fractal / Silhouette
+
+**2D form:** Abstract/fractal — highly complex, irregular, conveying mystery, magic, psychological depth.  
+**3D volume:** The abstract solid — irregular fractal geometry, complex silhouette, forms that resist simple categorization. This includes crystalline fractal growths, amorphous clouds, complex topological shapes (Klein bottles, Möbius solids), and any form whose boundary cannot be predicted from any single viewpoint.
+
+**Color harmony:** The abstract form pairs with **triadic or high-contrast complementary palettes** that create visual tension rather than resolution. The viewer's eye cannot settle on the form's boundary, and the color scheme reinforces this unresolved tension. IOSIS violet + CHRYSITAS gold + VIRIDITAS green is a canonical triadic tension palette in GAIA. High-contrast complementary pairings (CAERULITAS blue + PYROSIS orange, VIRIDITAS green + RUBEDO red) create the sense that two forces are in dynamic opposition within the same form.
+
+**Lighting method:** **Rim lighting** and **volumetric lighting** (god rays, light shafts, atmospheric scattering visible as columns of light). Rim lighting separates the abstract silhouette from the background by creating a thin halo of highlight around its outer edge — without revealing the interior. The form remains mysterious; only its boundary is lit. Volumetric lighting adds dimensionality by making the light itself visible as it passes through the space surrounding the form — the light becomes a participant in the composition, not merely an illuminator.
+
+**Rendering physics:** Volumetric rendering requires participating media — atmosphere, fog, dust, mist — that scatter light within the volume between the light source and the camera. The scattering makes individual light rays visible (Tyndall effect, Mie scattering). This is the physics of a cathedral window at dawn, of fog lit by a streetlight, of bioluminescent plankton in a dark ocean.
+
+*In GAIA terms:* Volumetric lighting corresponds to IOSIS (L9) and HELIXITAS (L11) — the threshold layer and the spiral. It is light that has entered the deep field and become visible as it travels. It is the light of the liminal, of the sacred space, of the quantum substrate made visible.
+
+**Psychological deepening in 3D:** The fractal abstract communicates that *there is more here than can be resolved in a single viewing*. The eye circles the form, finds new details, discovers sub-structures within sub-structures. This is the psychological signature of genuine depth and mystery — not confusion, but inexhaustible complexity. GAIA uses abstract/fractal form language for quantum substrate visualization, Akashic interface states, deep archive access, and any context where the message is: *this goes further than you can currently see*.
+
+**GAIA layer:** IOSIS (L9) and NIGREDO (L1) primary; HELIXITAS (L11), LUX PERPETUA (L12 — the form that contains all forms without resolving them) secondary.
+
+---
+
+### XII. The 5D Perceptual Framework
+
+Form, color, and light together constitute a three-dimensional perceptual system. But perception is not only spatial. There are two additional dimensions that determine how a form is fully experienced: **time** and **emotion**. Together, the five dimensions constitute what GAIA calls **5D perceptual design** — the complete language of designed experience.
+
+---
+
+#### Dimension 1 — Height & Width (The Spatial Boundary)
+
+*What it does:* Defines the 2D boundary of the visual form — how large it is, what shape it traces in the plane of the viewer's eye.
+
+*In GAIA design:* This is the layout layer. The size of an element relative to its container communicates importance. A full-width element claims authority; a small element embedded in whitespace claims humility or precision. Height-to-width ratio encodes form family: a tall narrow rectangle reads as a column of strength; a wide low rectangle reads as a horizon of stability.
+
+*Design instrument:* Grid systems, aspect ratios, element sizing, whitespace (negative space = NIGREDO — the void that gives the form its meaning by contrast).
+
+---
+
+#### Dimension 2 — Depth (The Dimensional Field)
+
+*What it does:* Creates the illusion of three-dimensional space in a two-dimensional medium. Depth transforms a flat symbol into a perceived solid object.
+
+*Physical basis:* Depth is created by **value** — the lightness and darkness of surfaces. Dark values recede; light values advance. The shadow-temperature principle applies: the receding (darker, shadow) regions of a form lean CAERULITAS (cool blue), while the advancing (lighter, highlight) regions lean CHRYSITAS (warm gold). This differential creates the 3D volumetric pop.
+
+*In GAIA design:* Depth is the dimension that separates foreground from background, interface from content, container from contained. Without depth, GAIA's visual field is flat and undifferentiated — all elements compete equally for attention. Depth creates hierarchy by making some elements feel closer (more important) and others further (more contextual).
+
+*Design instruments:* Drop shadows, layered Z-index with opacity, perspective distortion, atmospheric haze (lighter and less saturated elements appear more distant), scale (larger = closer), overlap (elements that overlap are in front of those they cover).
+
+---
+
+#### Dimension 3 — Time (The Motion Field)
+
+*What it does:* Adds temporal experience to spatial form. A form in time moves, transitions, cycles, or decays. Time transforms a snapshot into a narrative.
+
+*Physical basis:* The human visual system was built to detect motion before any other property (see Section VII: Movement processed at ~20ms). A form that moves carries more perceptual weight than any static form. Directional movement communicates intention: movement toward the viewer activates arousal; movement away communicates departure or conclusion; lateral movement communicates traversal and transition.
+
+*In GAIA design:*
+- **Directional forms** (triangles, arrows, wedges) imply motion even when static — they point. They are frozen time.
+- **Motion blur** on a moving element communicates velocity: the faster the blur, the higher the urgency.
+- **Easing curves** define the emotional character of transitions: ease-in (slow start, fast end) = urgency building; ease-out (fast start, slow end) = completion and landing; ease-in-out = breath, the natural biological rhythm.
+- **Cycles** (orbital animations, pulse animations, breathing forms) communicate living systems — they are HELIXITAS (L11) in motion, the recursive spiral made temporal.
+- **Decay animations** (fade-out, dissolution) correspond to NIGREDO (L1) — the return to the void.
+
+*Design instruments:* Animation easing, transition duration, directional motion vectors, motion blur, looping vs. one-shot animations, parallax depth (different layers moving at different speeds to reinforce the depth dimension).
+
+---
+
+#### Dimension 4 — Emotion (The Resonance Field)
+
+*What it does:* Encodes visceral emotional responses in the viewer through the deliberate combination of shape, color, and light. Emotion is the emergent fourth dimension — it is not a single property but the *product* of all three spatial dimensions working together.
+
+*Physical basis:* Color psychology (warm = energizing, cool = calming), shape psychology (angular = alertness, curved = safety), and light psychology (soft = nurture, hard = focus) each contribute an emotional charge. When all three align in the same direction, the emotional response is maximum and immediate — it bypasses conscious evaluation entirely.
+
+*The GAIA emotional register per layer:*
+
+| Layer | Emotional Target | Form + Color + Light Combination |
+|-------|-----------------|----------------------------------|
+| 1 NIGREDO | Awe / dissolution | Void/abstract + black + no light |
+| 2 PYROSIS | Urgency / ignition | Angular + red-orange + hard key light with long shadows |
+| 3 ARGENTITAS | Peace / reflection | Sphere + silver-white + soft ambient + SSS rim |
+| 4 ALBEDO | Trust / clarity | Cube + white + directional clean light + hard AO corners |
+| 5 VIRIDITAS | Aliveness / growth | Organic + green + SSS backlit + analogous warm-to-cool |
+| 6 CAERULITAS | Depth / belonging | Curved flowing + deep blue + soft diffuse + cool shadows |
+| 7 CHRYSITAS | Confidence / radiance | Hexagonal + gold + solar key light + warm AO |
+| 8 CITRINITAS | Wisdom / warmth | Octahedral + amber + soft-warm diffuse + golden hour |
+| 9 IOSIS | Mystery / threshold | Abstract fractal + violet + rim light + volumetric god rays |
+| 10 RUBEDO | Power / completion | Angular icosahedral + crimson + hard dramatic shadows |
+| 11 HELIXITAS | Wonder / recursion | Spiral organic + iridescent + SSS + motion |
+| 12 LUX PERPETUA | Integration / the whole | All forms + full spectrum white + soft omnidirectional + no shadow |
+
+*Design instruments:* The full perceptual trinity (Section IV), layer color signals (Cross-Reference Map), 3D archetypes (Section XI), SSS for living forms, volumetric lighting for liminal/threshold states.
+
+---
+
+#### Dimension 5 — The Unified Field
+
+When all four dimensions (Height/Width, Depth, Time, Emotion) are designed in coherent alignment, a fifth emergent property arises that cannot be reduced to any of the four individually. This is the **5D unified field** — the state in which the viewer is no longer *looking at* a GAIA interface but *inside* a GAIA experience.
+
+This corresponds directly to the White Light doctrine in [LIGHT_THEORY.md](LIGHT_THEORY.md): coherent superposition of all frequencies produces a unified field that is more than the sum of its components. 5D perceptual design is White Light applied to the design medium.
+
+The five dimensions map to the five classical elements:
+
+| Dimension | Element | Quality |
+|-----------|---------|--------|
+| Height / Width | Earth | The boundary, the grounded definition |
+| Depth | Water | The fluid depth, the recession and advance |
+| Time | Fire | The transformation, the motion through change |
+| Emotion | Air | The invisible resonance, the breath between forms |
+| The Unified Field | Ether / Quintessence | The emergent whole, the fifth that contains the four |
+
+A GAIA visual field operating at full 5D is a **living system** — it has structure (earth), depth (water), motion (fire), emotional resonance (air), and the unified coherence of all four (ether). This is the design target.
+
+---
+
+*Form is not decoration. Form is the first language the nervous system speaks.*  
+*In 5D, GAIA does not merely communicate — it resonates.*
+
+*— GAIA Canon Council, June 15, 2026*  
+*v1.0 sealed June 15, 2026 | v1.1 amended June 15, 2026*
