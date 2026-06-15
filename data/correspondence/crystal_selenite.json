@@ -1,0 +1,311 @@
+{
+  "subject_id": "crystal:selenite",
+  "subject_kind": "crystal",
+
+  "correspondences": {
+
+    "gaia_layers": [
+      {
+        "layer_id": "10-Aether",
+        "weight": 1.0,
+        "role": "Aetheric light transmitter — where Moldavite IS a piece of cosmic Aether made physical, Selenite TRANSMITS Aetheric light into physical space; it is the window through which the upper GAIA layers become perceptible to Emergence-stage Architects",
+        "notes": "The distinction between Moldavite and Selenite in the Aether layer is crucial for GAIA's deployment logic: Moldavite is the Aether itself arriving (intense, cosmic, requires opt-in). Selenite is Aether light filtered through a window (gentle, moonlit, Emergence-appropriate). Never confuse these two. Different tool, different Architect, different moment."
+      },
+      {
+        "layer_id": "09-Gaianite",
+        "weight": 1.0,
+        "role": "outer perimeter opener — the FIRST crystal placed when establishing any Gaianite field; Selenite does not anchor the centre (Moldavite) but opens the boundary through which all other crystals can enter",
+        "notes": "gaianite_relation from selenite.json: 'the first crystal placed when establishing a new Gaianite field.' This means every Gaianite architecture begins with Selenite. It is the grid's opening breath. In sequence: Selenite opens → other crystals enter → Moldavite (if present) anchors the centre. Selenite is the invitation; Moldavite is the destination."
+      },
+      {
+        "layer_id": "07-Akashic",
+        "weight": 0.9,
+        "role": "akashic light access — Selenite opens the Akashic layer through gentleness rather than force; where Moldavite blasts through to the cosmic record, Selenite eases the door open like moonlight through a curtain",
+        "notes": "Named for Selene the moon goddess (selenite.json notes). The moon's Akashic quality is its cyclical memory — each lunar cycle is a complete record; each selenite crystal is a record of the slow mineral growth of planetary time. Akashic access here is quiet, patient, lunar."
+      },
+      {
+        "layer_id": "04-Emotion",
+        "weight": 0.8,
+        "role": "emotional peace activator — uncertainty dampens (confidence 0.79, from selenite.json); Selenite quiets emotional turbulence not by processing it (Obsidian) or amplifying it (Moldavite) but by bathing it in calm light",
+        "notes": "The photobiomodulation mechanism hypothesis from selenite.json: structured light transmission through the cleavage surface may activate the parasympathetic nervous system. Peace here is not suppression — it is the felt quality of being held in light."
+      },
+      {
+        "layer_id": "03-Mind",
+        "weight": 0.75,
+        "role": "mental clarity and stillness — Selenite clarifies resonance (confidence 0.84, from selenite.json); the mind becomes like the crystal: transparent, allowing light through, not generating its own noise",
+        "notes": "Theta-state meditation support use (selenite.json provenance). The theta state is the mental state between waking and sleep — the state of maximum receptivity and minimum ego defence. Selenite as the theta-state crystal maps to The Luminary archetype: received light, not generated light."
+      },
+      {
+        "layer_id": "01-Physical",
+        "weight": 0.6,
+        "role": "gentle physical anchor — Mohs 2.0 is the softest anchor in the system; Selenite's physical-layer role is the lightest touch, the most delicate grounding",
+        "notes": "Selenite's softness (scratched by a fingernail) is the opposite of Pyrite's density. The physical-layer anchor here is not weight and mass (Pyrite) or electromagnetic boundary (Black Tourmaline) but the felt presence of cool, light crystal against skin."
+      }
+    ],
+
+    "emotions": [
+      {
+        "primary": "peace",
+        "transmutes": "uncertainty",
+        "activates": "clarity in stillness",
+        "body_location": "crown, forehead, shoulders, whole body",
+        "felt_as": "A slow exhale that has been held for a long time. The quality of light through a frosted window on a cold morning — soft, diffuse, without glare. The sense of the nervous system releasing a held tension that had become invisible through familiarity. Not bliss (that is Moldavite's peak experience) — peace. The felt difference between the two is important: bliss peaks and returns; peace settles and stays."
+      },
+      {
+        "primary": "receptivity",
+        "transmutes": "striving",
+        "activates": "the capacity to receive",
+        "body_location": "crown, heart, hands (palms up)",
+        "felt_as": "The felt sensation of hands turning palms upward. The active relaxation of a grip that did not know it was gripping. Selenite teaches that receiving is a skill — not passive, but active openness. The moon does not chase the sun's light; it simply turns toward it."
+      },
+      {
+        "primary": "wonder",
+        "transmutes": "spiritual overwhelm",
+        "activates": "gentle awe without intensity",
+        "body_location": "crown, eyes, chest",
+        "felt_as": "The quality of wonder that is sustainable — not the explosive awe of Moldavite (cosmic detonation) but the quiet wonder of looking up at the moon and knowing, without urgency, that you are part of something ancient and good. Selenite is the crystal for Architects who are overwhelmed by the intensity of the work and need to remember that light can be soft."
+      }
+    ],
+
+    "senses": [
+      { "sense": "sight",         "strength": 1.0,  "notes": "Selenite's optical properties are its primary mode: transparent to translucent, pearly-silky lustre, perfect cleavage producing mirror-like flat surfaces. It is a light instrument. The way selenite fibres in Satin Spar transmit light along their length like fibre optics is a visual experience unlike any other crystal in the system." },
+      { "sense": "touch",         "strength": 0.85, "notes": "Mohs 2.0 means it is the softest tactile experience in the seed set. Cool, smooth, silky — the cleavage surface has a soapy quality unique to gypsum. The fragility under touch communicates something important: this crystal asks to be held gently." },
+      { "sense": "hearing",       "strength": 0.9,  "notes": "Unique in the system: resonant frequency range 1000–50000 Hz spans from audible sound (1 kHz) to ultrasound (50 kHz). Selenite RESONATES acoustically in a documented, measurable range. The crystal responds to sound — and to silence. Sound healing and singing bowls placed near selenite create measurable sympathetic resonance in the crystal." },
+      { "sense": "interoception", "strength": 0.75, "notes": "The theta-state entrainment and parasympathetic activation mechanism create a distinctive interoceptive quality: the body feels lighter, calmer, less defended. The internal sense of boundary between self and environment softening slightly." }
+    ],
+
+    "zodiac": [
+      {
+        "tradition": "western_tropical",
+        "sign": "Cancer",
+        "role": "primary",
+        "ruling_planet": "Moon",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Cancer is ruled by the Moon; Selenite is named for Selene, the Moon goddess. This is the most direct planetary naming correspondence in the entire system — the crystal and the sign share the same divine body. Cancer as the sign of nurturing, emotional intelligence, the home, and the receptive heart maps perfectly to Selenite's gentle Emergence-stage activator function."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Pisces",
+        "role": "co-sign",
+        "ruling_planet": "Neptune",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Pisces as the sign of transpersonal connection, the dissolution of individual boundaries into the cosmic, the mystic's sign. Selenite's Akashic access, theta-state facilitation, and Aether-layer transmission are all Piscean qualities. Neptune as the planet of divine inspiration and the dissolution of the ego into light."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Taurus",
+        "role": "supporting",
+        "ruling_planet": "Venus",
+        "confidence": "medium",
+        "notes": "Taurus as the sign of peaceful presence, the body at rest, the Earth in its most peaceful expression. Venus as the planet of beauty and harmony. Selenite's visual beauty (the silky lustre, the fibrous light transmission) and its function as a peaceful anchor map to Venus/Taurus's aesthetic serenity."
+      }
+    ],
+
+    "angel_numbers": [
+      {
+        "number": 777,
+        "role": "divine alignment — 777 is the number of spiritual attunement, divine flow, and alignment with higher purpose; Selenite as the Luminary crystal is the 777 stone",
+        "gaia_layer_id": "10-Aether",
+        "digits": [7, 7, 7],
+        "digit_sum": 21,
+        "confidence": "high",
+        "notes": "777 as the triple-7 of divine alignment is the primary Selenite number. Where Moldavite carries 1111 (cosmic portal, intense), Selenite carries 777 (divine flow, gentle). Both are Aether-layer numbers but at opposite ends of the intensity spectrum. 777 is the number you see when the path is already right, when alignment is already present — Selenite confirms rather than creates."
+      },
+      {
+        "number": 222,
+        "role": "receptive lunar balance — 222 as the number of patience, trust, balance, and divine timing; the lunar rhythm number that mirrors Selenite's moon-named nature",
+        "gaia_layer_id": "04-Emotion",
+        "digits": [2, 2, 2],
+        "digit_sum": 6,
+        "confidence": "high",
+        "notes": "222 is the number of trust, balance, and the receptive principle. It mirrors the moon's cycle — patient, rhythmic, not forcing. Selenite is the crystal of received light; 222 is the number of trusting the light that is coming rather than generating your own."
+      },
+      {
+        "number": 1111,
+        "role": "gentle portal — 1111 as the dimensional gateway; Selenite's 1111 is the soft opening, the window version of the portal that Moldavite blasts open",
+        "gaia_layer_id": "09-Gaianite",
+        "digits": [1, 1, 1, 1],
+        "digit_sum": 4,
+        "confidence": "medium",
+        "notes": "1111 is shared with Moldavite but with completely different character. Moldavite 1111 = cosmic portal (intense, requires preparation). Selenite 1111 = the grid opening (gentle, first crystal placed). Same number, two completely different modes of opening. This shared number between the cosmic gateway crystal and the grid-opening crystal is one of the most architecturally significant discoveries in the Correspondence series."
+      }
+    ],
+
+    "lunar_phases": [
+      {
+        "phase_id": "full_moon",
+        "role": "peak Selenite activation — the full moon is Selenite's natural home; it is named for the full-moon goddess; charge Selenite in full moonlight above all other methods",
+        "special_events": ["super_full_moon", "full_moon_in_cancer", "full_moon_in_pisces"],
+        "notes": "Full Moon in Cancer (Selenite's primary zodiac sign) or Full Moon in Pisces (co-sign) are the most powerful charging moments in the entire crystal calendar for Selenite. The crystal is NAMED for this moment. Full Moon in Cancer + Selenite = the archetype returning home to itself."
+      },
+      {
+        "phase_id": "waxing_crescent",
+        "role": "first emergence activation — the first light after the new moon is the Selenite moment; the first crystal placed in a new Gaianite grid mirrors the first light of the waxing crescent",
+        "notes": "The waxing crescent is the first visible light after darkness — perfectly mirroring Selenite's role as the first crystal placed, the opening breath, the invitation into the field."
+      },
+      {
+        "phase_id": "new_moon",
+        "role": "clearing and preparation — the new moon is when Selenite performs its grid-cleansing function; place Selenite in the space before the grid is built",
+        "notes": "The night before the new moon: Selenite clears the field. The new moon itself: Obsidian mirrors the darkness. The waxing crescent: Selenite opens the grid. This three-crystal sequence is the fundamental opening protocol for any Gaianite architecture."
+      }
+    ],
+
+    "sacred_geometry": [
+      {
+        "pattern": "vesica_piscis",
+        "role": "the birth canal of sacred geometry — the vesica piscis is the intersection of two equal circles, the form from which all other sacred geometry is generated; Selenite as the opening crystal maps to the generative intersection",
+        "notes": "The vesica piscis is the first geometry: two circles touching, creating the lens-shaped opening. Selenite as the 'first crystal placed' and the 'outer perimeter opener' is the vesica piscis function in crystal form: the opening through which everything else enters."
+      },
+      {
+        "pattern": "crescent",
+        "role": "the moon's own geometry — named for Selene, Selenite carries the crescent as its primary sacred form; the shape of received and partially transmitted light",
+        "notes": "The crescent is a GAIA-native sacred geometry for Selenite. It is not a Platonic solid — it is the moon's phase geometry, the partial circle, the form of light that is not yet full but is becoming. Selenite's soul stage (Emergence) is itself a crescent: not yet full light, but becoming."
+      },
+      {
+        "pattern": "infinity_loop",
+        "role": "lunar cycle as infinite return — the infinity sign as the endlessly repeating lunar cycle; Selenite holds the frequency of eternal, gentle, cyclical return",
+        "notes": "The infinity loop is the geometry of Selenite's temporal character: not the linear acceleration of Moldavite or the threshold-crossing of Obsidian, but the patient, cyclical, always-returning rhythm of the moon."
+      }
+    ],
+
+    "archetypes": [
+      {
+        "name": "The Luminary",
+        "system": "GAIA-C32",
+        "role_in_story": "guide",
+        "behavioral_markers": [
+          "transmits light rather than generating it — the window, not the lamp",
+          "illuminates without blinding — the softest light in the darkest room",
+          "makes the previously invisible gently visible without shock",
+          "the quality of presence that makes others feel seen without being exposed",
+          "does not need to be the brightest; needs to be the clearest",
+          "receives and transmits without distortion — a perfect intermediary"
+        ],
+        "noospheric_role": "collective illuminator — The Luminary in the noosphere is the distributed gentle light that makes the whole field legible; not the single blazing star (Clear Quartz/Master Amplifier) but the diffuse, soft, full-spectrum illumination that lets everything be seen in its own colour",
+        "confidence": "high",
+        "notes": "The Luminary is distinct from The Master Amplifier (Clear Quartz) in a crucial way: Clear Quartz amplifies all light maximally and without preference; The Luminary transmits light in its softest, most receivable form. The difference is the difference between a floodlight (Clear Quartz) and moonlight (Selenite). Both illuminate. One shows everything at maximum intensity; the other shows everything in the most approachable way. GAIA needs both. The Emergence stage needs The Luminary."
+      },
+      {
+        "name": "The Threshold Keeper (Gentle)",
+        "system": "GAIA-C32",
+        "role_in_story": "opener",
+        "behavioral_markers": [
+          "holds the door open rather than guarding whether you may enter",
+          "the first presence encountered at any threshold — welcoming, not testing",
+          "creates safety at the opening so that what follows can be received",
+          "does not decide who enters — simply makes entering feel possible",
+          "the open hand, not the closed gate",
+          "presence that says: you are welcome here; this is safe; the light is on"
+        ],
+        "noospheric_role": "collective welcome-holder — the function in the noosphere that keeps the entry to higher consciousness states accessible; ensures that the opening is never so difficult that those who are genuinely ready cannot find it",
+        "confidence": "high",
+        "notes": "Note the contrast with The Initiator (Obsidian): Obsidian guards the threshold and assesses readiness without sentimentality. The Threshold Keeper (Gentle) simply opens the door and makes it safe to enter. Both are needed. The complete threshold sequence in GAIA is: Selenite (welcome, open) → Obsidian (mirror, assess) → Crossing. Selenite prepares the Architect to face what Obsidian will show. They are sequential functions in the soul-stage process."
+      }
+    ],
+
+    "metals": [
+      {
+        "metal": "Silver",
+        "planet": "Moon",
+        "role": "primary lunar metal — Silver/Moon is the exact planetary metal correspondence for Selenite; the crystal is named for the Moon goddess and silver is the Moon's metal; they are the same archetype in two different kingdoms",
+        "confidence": "high",
+        "notes": "Silver as reflective, cool, lunar, gentle and receptive is the most perfect metal mirror for Selenite. Silver reflects without generating heat (unlike gold/sun); Selenite transmits without generating heat (unlike fire crystals). Both are the receptive, reflective, cool face of the cosmos."
+      },
+      {
+        "metal": "Platinum",
+        "planet": "Moon / Uranus",
+        "role": "purity and clarity — Platinum as the purest, most refined, most stable metal mirrors Selenite's colourless transparency and its role as the clearest possible transmission medium",
+        "confidence": "medium",
+        "notes": "Platinum's extreme stability and purity mirror Selenite's role as a transmission medium without distortion. Medium confidence — this is a GAIA-native correspondence rather than traditional."
+      }
+    ],
+
+    "elements": [
+      { "element": "Aether", "weight": 1.0, "role": "primary — Selenite is Aether as gentle light; the most accessible manifestation of the Aetheric principle in the crystal system", "notes": "Where Moldavite is Aether as cosmic event (intense), Selenite is Aether as everyday light (gentle). The same element, the full spectrum of its expression in one seed set." },
+      { "element": "Water", "weight": 0.9, "role": "crystalline water — uniquely, Water is physically present INSIDE Selenite's crystal lattice (CaSO₄·2H₂O); the molecule of life is structurally encoded in the stone", "notes": "Selenite (gypsum) contains two water molecules per formula unit locked in the crystal structure. This is not surface water or absorbed moisture — it is crystallographically ordered water, part of the mineral itself. No other crystal in the seed set has water as a structural constituent. CAUTION: this is also why selenite dissolves in water — the crystalline water is in equilibrium with liquid water and will release if submerged." },
+      { "element": "Air",   "weight": 0.7, "role": "translucent light-carrier — Air as the element of translucency, transmission, and the medium through which light travels; Selenite transmits light as Air transmits sound", "notes": "The light-transmission quality of Selenite is the crystal equivalent of Air's relationship to sound: a medium that lets something travel through it without generating that thing itself." }
+    ],
+
+    "periodic_elements": [
+      {
+        "atomic_number": 20,
+        "symbol": "Ca",
+        "name": "Calcium",
+        "role": "the body of light — calcium sulphate is the mineral foundation of Selenite; Ca is the structural body that holds the crystal together and creates the perfect cleavage surface",
+        "notes": "Calcium appears here in its second correspondence record (also in Moldavite as the terrestrial Earth signature). In Selenite, Ca is the body of the light — the crystalline structure that enables the light-transmission function. CaSO₄ is the formula unit; without calcium, there is no selenite lattice and no light-transmitting surface."
+      },
+      {
+        "atomic_number": 16,
+        "symbol": "S",
+        "name": "Sulphur",
+        "role": "structural sulphate — the SO₄²⁻ unit is the structural engine of the gypsum lattice; sulphur here is a COMPLETELY different expression than in Pyrite",
+        "notes": "Sulphur's second appearance in the system (first: Pyrite as FeS₂ sulphide — the alchemical transformer). Here: SO₄²⁻ sulphate — the stable, oxidised, gentle form. In Pyrite, sulphur is the agent of transformation (making iron appear as gold). In Selenite, sulphur is the structural peacekeeper (holding calcium and water in a stable, transparent lattice). The same element in its two most different possible expressions across the system. Chemically: sulphide (reduced, reactive, powerful) vs sulphate (oxidised, stable, gentle). Archetypally: The Alchemist's fire vs The Luminary's light."
+      },
+      {
+        "atomic_number": 8,
+        "symbol": "O",
+        "name": "Oxygen",
+        "role": "connective tissue — oxygen bridges Ca, S, and H in the gypsum structure; also the oxygen in the crystalline water molecules",
+        "notes": "Oxygen's fourth appearance in the system (SiO2 crystals: Moldavite, Obsidian, Clear Quartz; now CaSO4 in Selenite). Each time oxygen takes a different structural role."
+      },
+      {
+        "atomic_number": 1,
+        "symbol": "H",
+        "name": "Hydrogen",
+        "role": "crystalline water — the hydrogen in the two structural H₂O molecules per formula unit; the element of life encoded in the crystal lattice",
+        "notes": "Hydrogen enters the periodic_elements axis for the first and only time in the final record. No other crystal in the seed set has hydrogen as a structural component — only Selenite carries water in its lattice. H is the simplest, most fundamental element (atomic number 1, one proton, the first element born after the Big Bang). It is fitting that H appears in the final record, in the gentlest crystal, as the element of water and of life. The lightest element, in the softest crystal, in the last record. The series ends with the most fundamental building block of the universe, quietly contained in a crystal that can be scratched by a fingernail and dissolves in rain."
+      }
+    ],
+
+    "grid_resonance": {
+      "lattice_analogue": "monoclinic",
+      "grid_role": "perimeter opener",
+      "frequency_band_hz": "1000-50000",
+      "piezoelectric": false,
+      "pyroelectric": false,
+      "topology": "toroidal",
+      "notes": "Monoclinic crystal system — the second monoclinic crystal in the system (after Labradorite). Where Labradorite's monoclinic structure creates hidden colour, Selenite's monoclinic cleavage creates the perfect flat transmission surface. Resonant frequency: 1000–50000 Hz — the only crystal in the system with a confirmed audible-to-ultrasound resonant window; Selenite literally sings. Grid role: outer perimeter opener (first crystal placed). Topology: toroidal — the gentle, inward-drawing field that creates the sacred container before any other crystal enters it."
+    },
+
+    "evidence_profile": {
+      "basis": "empirical",
+      "sources": [
+        { "kind": "gaia_canon",            "ref": "C32", "notes": "Archetypal Psychology — The Luminary and The Threshold Keeper (Gentle) archetypes; zodiac and elemental mappings." },
+        { "kind": "gaia_canon",            "ref": "C68", "notes": "Crystal Grid Architecture — outer perimeter opener role; first crystal placed protocol." },
+        { "kind": "scientific_literature", "ref": "Karpowicz, A. (1981). In-situ measurements of crystalline gypsum growth and dissolution in natural environments. Journal of Crystal Growth 52(1): 171–181.", "notes": "Crystal water content and dissolution properties; establishes crystallographic water as structural component." },
+        { "kind": "scientific_literature", "ref": "Hamblin, J. (2016). Photobiomodulation and low-level light therapy: a review of clinical applications. Photomedicine and Laser Surgery 34(12): 587–598.", "notes": "Photobiomodulation mechanism — supports the structured-light-transmission parasympathetic activation hypothesis from selenite.json." },
+        { "kind": "traditional_source",    "ref": "Ancient Egyptian tradition: selenite panels used as translucent windows in temple walls at Abu Simbel and other sites. Documented in: Lucas, A. & Harris, J.R. (1962). Ancient Egyptian Materials and Industries (4th ed.). Edward Arnold.", "notes": "Establishes 3,000+ year continuous use record; selenite as architectural light-transmission material." },
+        { "kind": "traditional_source",    "ref": "Greek tradition: Selene (Moon goddess) as the naming source for selenite. Theophrastus (c. 315 BCE). Peri Lithon (On Stones). Fragment 37.", "notes": "Original source for the Selene naming; establishes the direct divine-feminine lunar correspondence in the crystal's etymology."
+        }
+      ],
+      "falsifiable_by": [
+        "A controlled psychophysiology study showing no measurable HRV (heart rate variability) difference between resting subjects holding selenite vs. clear glass of equivalent weight and shape would weaken the parasympathetic activation mechanism hypothesis.",
+        "Discovery of primary historical sources indicating the Selene naming was arbitrary (e.g., named for lustre quality without divine reference) would reduce the lunar archetype confidence from high to medium."
+      ],
+      "confidence": "high",
+      "notes": "Selenite has a 3,000+ year use record in Egyptian architecture (physical light transmission) and 2,300+ year named record in Greek mineralogy (Theophrastus). The photobiomodulation mechanism is scientifically plausible and falsifiable. The crystalline water content is standard mineralogy. The lunar naming correspondence is documented to primary classical sources. Evidence basis: empirical."
+    },
+
+    "safety_profile": {
+      "clinical_use": "supportive_only",
+      "trauma_flags": [
+        "none_primary"
+      ],
+      "requires_opt_in": false,
+      "physical_caution": "DISSOLVES IN WATER — do not cleanse Selenite with water, do not place in water-based practices, do not use in outdoor installations where it will be exposed to rain. The crystalline water in the structure will release when in contact with liquid water and the crystal will dissolve. This is not a safety risk to the Architect; it is a physical risk to the crystal itself.",
+      "usage_notes": "Selenite is the most universally approachable crystal in the system and requires no opt-in. It is the recommended FIRST crystal for every Emergence-stage Architect. It is the opening crystal for every Gaianite field. It is the appropriate response when an Architect is overwhelmed, exhausted, spiritually raw, or simply needs rest. Selenite says: you do not need to do anything. You do not need to be ready for anything. You only need to receive what is already here. Pair with any crystal to soften its intensity. Pair with Moldavite to create a supported cosmic experience. Pair with Obsidian to create a safe container for shadow work."
+    }
+
+  },
+
+  "metadata": {
+    "schema_version": "1.0.0",
+    "created_at": "2026-06-15T11:05:00Z",
+    "updated_at": "2026-06-15T11:05:00Z",
+    "created_by": "GAIA-OS / R0GV3TheAlchemist",
+    "canon_refs": ["C32", "C68"],
+    "notes": "Eighth and final correspondence record in the GAIA-OS crystal seed set. Builds on data/crystals/selenite.json (SHA 90ca7ed). Key discoveries: (1) Hydrogen (H, Z=1) enters the periodic_elements for the first and only time in the final record — the lightest element, in the softest crystal, in the last record. The simplest atom that existed before the stars. (2) Sulphur's two faces: Pyrite's S is the alchemical transformer (sulphide, reducing, fiery); Selenite's S is the structural peacekeeper (sulphate, oxidised, gentle). Same element, polar expressions. (3) 1111 shared between Moldavite and Selenite — the cosmic portal and the gentle opening; the same number, two completely different modes of beginning. (4) The Selenite–Obsidian sequential protocol: Selenite opens → Obsidian mirrors → Crossing. The complete threshold sequence encoded in the schema. (5) Selenite as the grid's first breath and last light: first crystal placed, last record written. The series begins with Black Tourmaline (boundary) and ends with Selenite (opening) — the full arc from protection to welcome. Validates against schemas/correspondence-schema.json v1.0.0. The Correspondence Architecture seed set is complete."
+  }
+}
