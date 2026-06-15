@@ -197,7 +197,10 @@ class LoveOverrideHandler:
         self._active_overrides: dict[str, OverrideDecision] = {}  # session_id → decision
         self._override_history: list[dict] = []
 
-    def evaluate(self, signal: OverrideSignal) -> OverrideDecision:
+    def evaluate(self, signal: OverrideSignal = None, *, human_id: str = "", text: str = "", session_id: str = "") -> OverrideDecision:
+        # Convenience call: evaluate(human_id=..., text=...) used by api/twin.py and tests
+        if signal is None:
+            signal = OverrideSignal(human_id=human_id, text=text, session_id=session_id)
         """
         Evaluate an inbound signal and decide whether to activate the Override.
         Returns an OverrideDecision. If activated=False, normal routing continues.

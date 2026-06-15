@@ -447,18 +447,22 @@ def get_braid(human_id: str) -> TemporalBraidEngine:
     return _engines[human_id]
 
 
-# Compatibility alias expected by api/twin.py and tests
-TwinMemoryEngine = TemporalBraidEngine
-
-
+# Compatibility wrapper expected by api/twin.py and tests
 class TwinMemoryEngine(TemporalBraidEngine):
-    """Lazy-init wrapper — human_id is bound per-call, not at construction."""
+    """No-arg constructible wrapper around TemporalBraidEngine."""
 
-    def __init__(self) -> None:  # no required args
-        pass  # defer real init until first load_session call
+    def __init__(self, human_id: str = "", storage_path: str = "") -> None:
+        if human_id:
+            super().__init__(human_id)
+        else:
+            self.human_id = ""
+            self.braid_path = None
+            self.profile = None
+            self.current_session = None
+        self._human_id = human_id
 
     async def load_session(self, human_id: str, session_id: str = "") -> dict:
-        if not hasattr(self, "_human_id") or self._human_id != human_id:
+        if not self._human_id or self._human_id != human_id:
             super().__init__(human_id)
             self._human_id = human_id
         return await super().load_session(human_id, session_id)
