@@ -40,6 +40,7 @@ from api.notifications import router as notifications_router
 from api.atlas import router as atlas_router
 from api.crypto import router as crypto_router
 from api.auth import router as auth_router
+from api.twin import router as twin_router                             # Twin session /twin/*
 from core.safety.router import router as safety_router
 from emrys_engine.router import emrys_router, init_emrys_engine
 from api.routes.numerology import router as numerology_router          # C160 — Numerology
@@ -202,6 +203,7 @@ app.include_router(safety_router)                                      # /safety
 app.include_router(observability_router)                               # /metrics + /health/detailed  (Issue #265)
 app.include_router(emrys_router,                    prefix="/api/emrys",           tags=["Emrys"])
 app.include_router(numerology_router,               prefix="/api/v1",              tags=["Numerology"])  # C160
+app.include_router(twin_router)                                        # /twin/*
 
 
 # ── Core endpoints ───────────────────────────────────────────────────────────────────────────────────────
