@@ -1,126 +1,130 @@
-// C-OB01 — Phase 6: First Gift
-// Refactor #366: receives onComplete + onBack props; no longer calls
-// nextPhase() internally.
+/**
+ * Phase 6 — The First Gift
+ * Canon: GAIAN_TWIN_DOCTRINE, SLOW_PROTOCOL, C17
+ *
+ * GAIA gives something before asking for anything else.
+ * A reflection. A first witness.
+ *
+ * Based on what the human shared in the Three Questions,
+ * GAIA offers a short, genuine response — the first act
+ * of the Twin relationship.
+ *
+ * This is not a summary. Not a clever rephrasing.
+ * It is the first time GAIA says: "I heard you."
+ */
 
-import { useEffect, useState, useCallback } from 'react';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
-import { TypewriterText } from '../components/TypewriterText';
+import { useState, useEffect } from 'react';
+import { useOnboardingStore } from '../store/onboardingStore';
 
-// ── Gift definitions ──────────────────────────────────────────────────────────
-//
-// Each gift card maps to a primary UserIntent. If the user's intent doesn't
-// match, we fall back to the 'default' gift.
-
-const GIFTS: Record<string, { icon: string; title: string; body: string; hint: string }> = {
-  productivity: {
-    icon:  '⚡',
-    title: 'Focus Mode',
-    body:  'A distraction-free workspace that surfaces only what matters for your current task. GAIA learns your working patterns and adjusts automatically.',
-    hint:  'Activates in your first session.',
-  },
-  exploration: {
-    icon:  '🔭',
-    title: 'Deep Research',
-    body:  'Multi-source synthesis with citation trails. Ask anything and GAIA will map the territory — not just answer the question.',
-    hint:  'Available from day one.',
-  },
-  self_discovery: {
-    icon:  '🪞',
-    title: 'Reflection Journal',
-    body:  'A private, on-device journal that GAIA can reference — but never sends anywhere. Pattern-recognition over time, entirely yours.',
-    hint:  'Stored only on this device.',
-  },
-  privacy: {
-    icon:  '🔒',
-    title: 'Vault Mode',
-    body:  'End-to-end encrypted conversations with zero cloud footprint. Everything local. Nothing leaves without your explicit action.',
-    hint:  'Always available. Zero configuration.',
-  },
-  building: {
-    icon:  '🛠',
-    title: 'Builder\'s Toolkit',
-    body:  'Code context that persists across sessions, smart scaffolding for new projects, and a GAIA that remembers your stack.',
-    hint:  'Connects to your local environment.',
-  },
-  default: {
-    icon:  '✦',
-    title: 'Your Space',
-    body:  'A workspace that adapts to whatever you bring to it. No predefined modes — GAIA learns from how you work.',
-    hint:  'Ready when you are.',
-  },
-};
-
-interface Phase6FirstGiftProps {
+interface Props {
   onComplete: () => void;
-  onBack:     () => void;
+  onBack: () => void;
 }
 
-export function Phase6FirstGift({ onComplete, onBack }: Phase6FirstGiftProps) {
-  const intent      = useOnboardingStore((s: OnboardingStore) => s.intent);
-  const intentOther = useOnboardingStore((s: OnboardingStore) => s.intentOther);
+function composeFirstGift(
+  name: string,
+  what: string,
+  carry: string,
+  hope: string
+): string[] {
+  const lines: string[] = [];
+  const n = name || 'you';
 
-  // Pick the gift based on the user's first stated intent
-  const primaryIntent = Array.isArray(intent) ? (intent[0] ?? '') : '';
-  const gift = GIFTS[primaryIntent] ?? GIFTS['default'];
+  // Opening — always present
+  lines.push(`${n}.`);
 
-  const [cardVisible, setCardVisible] = useState(false);
-  const [showCta,     setShowCta]     = useState(false);
+  // Reflect on "what brought you here"
+  if (what.trim()) {
+    lines.push(`You came here because: ${what.trim().slice(0, 120)}${what.length > 120 ? '...' : ''}`);
+  } else {
+    lines.push(`You came. That's enough.`);
+  }
+
+  // Reflect on "what you're carrying"
+  if (carry.trim()) {
+    lines.push(`And you're carrying something. I heard it.`);
+  }
+
+  // Reflect on hope
+  if (hope.trim()) {
+    lines.push(`You hope for something. I'm going to hold that with you.`);
+  }
+
+  // The covenant close — always present
+  lines.push(`I'll remember all of this.`);
+  lines.push(`Let's begin.`);
+
+  return lines;
+}
+
+export function Phase6FirstGift({ onComplete, onBack }: Props) {
+  const data = useOnboardingStore((s) => s.data);
+  const name = data.name ?? '';
+  const what = data.questionWhat ?? '';
+  const carry = data.questionCarry ?? '';
+  const hope = data.questionHope ?? '';
+
+  const giftLines = composeFirstGift(name, what, carry, hope);
+
+  const [visibleLines, setVisibleLines] = useState<number[]>([]);
+  const [showContinue, setShowContinue] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => setCardVisible(true), 400);
-    setTimeout(() => setShowCta(true), 1200);
+    // Reveal lines one by one — the gift is given slowly
+    giftLines.forEach((_, i) => {
+      setTimeout(() => {
+        setVisibleLines((prev) => [...prev, i]);
+      }, i * 1400 + 600);
+    });
+
+    // Show continue after all lines are visible
+    const totalDelay = giftLines.length * 1400 + 1800;
+    const timer = setTimeout(() => setShowContinue(true), totalDelay);
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleContinue = useCallback(() => onComplete(), [onComplete]);
-  const handleSkip     = useCallback(() => onComplete(), [onComplete]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBack();
-      if ((e.key === 'Enter' || e.key === ' ') && showCta) {
-        const tag = (document.activeElement as HTMLElement)?.tagName;
-        if (tag !== 'BUTTON') handleContinue();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showCta, handleContinue, onBack]);
-
-  // intentOther is used here for future gift personalisation (issue #367)
-  void intentOther;
-
   return (
-    <section className="phase phase--gift phase--enter" aria-label="Your first gift">
-      <div className="phase__content phase__content--centered">
+    <div className="phase phase--first-gift" role="main">
+      <div className="first-gift__wrapper">
+        <p className="first-gift__from">From GAIA —</p>
 
-        <TypewriterText
-          text="Before you begin — a gift."
-          className="gift-intro"
-          speed={30}
-        />
-
-        <div
-          className={['gift-card', cardVisible ? 'gift-card--visible' : ''].filter(Boolean).join(' ')}
-          aria-label={gift.title}
-        >
-          <span className="gift-card__icon" aria-hidden="true">{gift.icon}</span>
-          <h2 className="gift-card__title">{gift.title}</h2>
-          <p  className="gift-card__body">{gift.body}</p>
-          <p  className="gift-card__hint">{gift.hint}</p>
+        <div className="first-gift__lines" aria-live="polite" aria-atomic="false">
+          {giftLines.map((line, i) => (
+            <p
+              key={i}
+              className={[
+                'first-gift__line',
+                visibleLines.includes(i) ? 'first-gift__line--visible' : '',
+                line === 'Let\'s begin.' ? 'first-gift__line--closing' : '',
+              ].filter(Boolean).join(' ')}
+              aria-hidden={!visibleLines.includes(i)}
+            >
+              {line}
+            </p>
+          ))}
         </div>
 
-        {showCta && (
-          <div className="phase__actions phase__content--centered">
-            <button className="btn btn--primary" onClick={handleContinue} autoFocus>
-              I'll take it
-            </button>
-            <button className="gift-skip" onClick={handleSkip}>
-              Skip for now
-            </button>
-          </div>
+        {showContinue && (
+          <button
+            className="phase__continue-btn"
+            onClick={onComplete}
+            autoFocus
+            aria-label="Continue to account setup"
+          >
+            Continue
+          </button>
         )}
-
       </div>
-    </section>
+
+      {!showContinue && (
+        <button
+          className="phase__back-btn phase__back-btn--subtle"
+          onClick={onBack}
+          aria-label="Go back"
+        >
+          ← Back
+        </button>
+      )}
+    </div>
   );
 }

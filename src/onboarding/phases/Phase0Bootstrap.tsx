@@ -1,63 +1,39 @@
-// C-OB01 — Phase 0: Bootstrap
-// Silent environment check. No UI rendered.
-// Detects platform, GPU, disk space, network, locale, accessibility preferences.
+/**
+ * Phase 0 — Bootstrap
+ * Silent. Invisible. GAIA wakes.
+ *
+ * No UI. Just the system initialising.
+ * Completes automatically after a breath.
+ */
 
 import { useEffect } from 'react';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
-import type { SystemCapabilities } from '../types';
+import { useOnboardingStore } from '../store/onboardingStore';
 
-interface Phase0BootstrapProps {
+interface Props {
   onComplete: () => void;
 }
 
-export function Phase0Bootstrap({ onComplete }: Phase0BootstrapProps) {
-  const setSystem = useOnboardingStore((s: OnboardingStore) => s.setSystem);
+export function Phase0Bootstrap({ onComplete }: Props) {
+  const setData = useOnboardingStore((s) => s.setData);
 
   useEffect(() => {
-    async function runBootstrap() {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const prefersHighContrast  = window.matchMedia('(forced-colors: active)').matches;
-      const hasScreenReader      = document.querySelector('[aria-live]') !== null;
+    // Initialise the human's IDs on first boot
+    const now = new Date().toISOString();
+    const humanId = `human_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    setData({ humanId, sessionId });
 
-      let platform: SystemCapabilities['platform'] = 'unknown';
-      let hasGpu      = false;
-      let diskSpaceGb = 0;
-      let isOnline    = navigator.onLine;
-      const locale    = navigator.language || 'en-US';
+    // The sacred pause — GAIA wakes in silence
+    const timer = setTimeout(() => onComplete(), 1200);
+    return () => clearTimeout(timer);
+  }, [onComplete, setData]);
 
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const caps = await invoke<SystemCapabilities>('check_system_capabilities');
-        platform    = caps.platform;
-        hasGpu      = caps.hasGpu;
-        diskSpaceGb = caps.diskSpaceGb;
-        isOnline    = caps.isOnline;
-      } catch {
-        const ua = navigator.userAgent.toLowerCase();
-        if (ua.includes('win'))  platform = 'windows';
-        else if (ua.includes('mac'))   platform = 'macos';
-        else if (ua.includes('linux')) platform = 'linux';
-
-        try {
-          const canvas = document.createElement('canvas');
-          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          hasGpu = gl !== null;
-        } catch {
-          hasGpu = false;
-        }
-      }
-
-      const capabilities: SystemCapabilities = {
-        platform, hasGpu, diskSpaceGb, isOnline,
-        locale, prefersReducedMotion, prefersHighContrast, hasScreenReader,
-      };
-
-      setSystem(capabilities);
-      onComplete();
-    }
-
-    runBootstrap();
-  }, [setSystem, onComplete]);
-
-  return null;
+  // Intentionally blank — this phase has no face
+  return (
+    <div
+      className="phase phase--bootstrap"
+      aria-hidden="true"
+      style={{ background: 'transparent' }}
+    />
+  );
 }

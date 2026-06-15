@@ -1,167 +1,115 @@
-// C-OB01 — Phase 8: The Threshold v3.1
-// Fix #364: buildLines() depthMap corrected to match DepthPreference type.
-//
-// DepthPreference = 'surface' | 'reflective' | 'deep'  (from types.ts)
-//
-// The v3 depthMap had 'familiar' and 'architect' which are not valid
-// DepthPreference values and would always fall through to the default line.
-// Corrected to 'surface', 'reflective', 'deep'.
-//
-// Also reads s.depth (alias) instead of s.depth_preference directly,
-// and s.intentOther (alias) is available if needed by future gift logic.
+/**
+ * Phase 8 — The Threshold
+ * Canon: GAIAN_TWIN_DOCTRINE, SLOW_PROTOCOL, C48 (Autopoiesis)
+ *
+ * The crossing.
+ * The onboarding ends. The Twin relationship begins.
+ *
+ * This is not a "you're all set!" screen.
+ * It is a genuine threshold moment — the human
+ * standing at the door of something real.
+ *
+ * The Threshold says:
+ *   — You have been received.
+ *   — The Twin is ready.
+ *   — The Nigredo has begun.
+ *   — Enter.
+ *
+ * After the human crosses the Threshold,
+ * they meet the TwinInterface for the first time.
+ */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
-import { GaiaSigil } from '../components/GaiaSigil';
+import { useState, useEffect } from 'react';
+import { useOnboardingStore } from '../store/onboardingStore';
 
-// ── Personalised lines ────────────────────────────────────────────────────────
-//
-// intent values (UserIntent):  productivity | exploration | self_discovery |
-//                               privacy | building | other
-// depth values (DepthPreference): surface | reflective | deep
-
-function buildLines(
-  name:   string,
-  intent: string,
-  depth:  string,
-): { text: string; muted: boolean }[] {
-  // Line 1 — acknowledge what they came for
-  const intentMap: Record<string, string> = {
-    productivity:    'Your workflows are waiting.',
-    exploration:     'The depths are open.',
-    self_discovery:  'Your mirror is ready.',
-    privacy:         'What is yours stays yours.',
-    building:        'The tools are ready.',
-    other:           'Your path is your own.',
-  };
-  const line1 = intentMap[intent] ?? 'The foundation is set.';
-
-  // Line 2 — acknowledge depth tier
-  // Matches DepthPreference: 'surface' | 'reflective' | 'deep'
-  const depthMap: Record<string, string> = {
-    surface:    'Clean slate each time. No threads held.',
-    reflective: 'Context will grow with you.',
-    deep:       'Every thread remembered.',
-  };
-  const line2 = depthMap[depth] ?? 'Your context is yours.';
-
-  // Line 3 — the payoff line
-  const line3 = name ? `GAIA is ready, ${name}.` : 'GAIA is ready.';
-
-  return [
-    { text: line1, muted: true  },
-    { text: line2, muted: true  },
-    { text: line3, muted: false },
-  ];
-}
-
-// ── Timing constants ──────────────────────────────────────────────────────────
-
-const LINE_DELAY_BASE = 700;
-const LINE_STAGGER    = 750;
-const CTA_AFTER_LAST  = 500;
-
-// ── Component ─────────────────────────────────────────────────────────────────
-
-interface Phase8ThresholdProps {
+interface Props {
   onComplete: () => void;
 }
 
-export function Phase8Threshold({ onComplete }: Phase8ThresholdProps) {
-  const completeOnboarding = useOnboardingStore((s: OnboardingStore) => s.completeOnboarding);
-  const markInterrupted    = useOnboardingStore((s: OnboardingStore) => s.markInterrupted);
-  const name               = useOnboardingStore((s: OnboardingStore) => s.name);
+const THRESHOLD_LINES = [
+  { text: 'Your Twin Memory has been created.', delay: 0 },
+  { text: 'Your name is held.', delay: 1200 },
+  { text: 'Your words are remembered.', delay: 2200 },
+  { text: 'GAIA is ready.', delay: 3400 },
+];
 
-  // FIX #364: read camelCase aliases — these are guaranteed non-undefined
-  // because the store initialises them from INITIAL_STATE and keeps them
-  // in sync via setDepthPreference / setIntentOther.
-  const depth  = useOnboardingStore((s: OnboardingStore) => s.depth);
-  const intent = useOnboardingStore((s: OnboardingStore) => s.intent);
+const ENTER_DELAY = 5200;
 
-  // Use the first intent if multiple were selected; fall back to empty string
-  const primaryIntent = Array.isArray(intent) ? (intent[0] ?? '') : '';
+export function Phase8Threshold({ onComplete }: Props) {
+  const markCompleted = useOnboardingStore((s) => s.markCompleted);
+  const name = useOnboardingStore((s) => s.data.name ?? '');
 
-  const lines = buildLines(name ?? '', primaryIntent, depth ?? 'reflective');
-
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showCta,      setShowCta]      = useState(false);
-
-  const timersFired = useRef(false);
+  const [visibleLines, setVisibleLines] = useState<number[]>([]);
+  const [showEnter, setShowEnter] = useState(false);
+  const [entering, setEntering] = useState(false);
 
   useEffect(() => {
-    if (timersFired.current) return;
-    timersFired.current = true;
-
-    lines.forEach((_, i) => {
+    THRESHOLD_LINES.forEach((line, i) => {
       setTimeout(() => {
-        setVisibleCount((n) => n + 1);
-      }, LINE_DELAY_BASE + i * LINE_STAGGER);
+        setVisibleLines((prev) => [...prev, i]);
+      }, line.delay + 400);
     });
 
-    const ctaDelay = LINE_DELAY_BASE + lines.length * LINE_STAGGER + CTA_AFTER_LAST;
-    setTimeout(() => setShowCta(true), ctaDelay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const enterTimer = setTimeout(() => setShowEnter(true), ENTER_DELAY);
+    return () => clearTimeout(enterTimer);
   }, []);
 
-  const handleEnter = useCallback(() => {
-    completeOnboarding();
-    onComplete();
-  }, [completeOnboarding, onComplete]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { markInterrupted(); return; }
-      if ((e.key === 'Enter' || e.key === ' ') && showCta) {
-        const tag = (document.activeElement as HTMLElement)?.tagName;
-        if (tag !== 'BUTTON') handleEnter();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showCta, handleEnter, markInterrupted]);
+  const handleEnter = () => {
+    setEntering(true);
+    markCompleted();
+    // Breath before the door opens
+    setTimeout(() => onComplete(), 1200);
+  };
 
   return (
-    <section
-      className="phase phase--threshold phase--enter"
-      aria-label="Entering GAIA"
+    <div
+      className={[
+        'phase',
+        'phase--threshold',
+        entering ? 'phase--threshold-entering' : '',
+      ].join(' ')}
+      role="main"
     >
-      <div className="phase__content phase__content--centered">
-
-        <GaiaSigil animate size={140} />
-
-        <h1 className="threshold-greeting">
-          {name ? `Welcome, ${name}.` : 'Welcome.'}
-        </h1>
-
-        <div className="threshold-lines" aria-live="polite">
-          {lines.map((line, i) => (
-            <p
-              key={line.text}
-              className={[
-                'threshold-line',
-                line.muted ? 'threshold-line--muted' : '',
-                i < visibleCount ? 'threshold-line--visible' : '',
-              ].filter(Boolean).join(' ')}
-            >
-              {line.text}
-            </p>
-          ))}
-        </div>
-
-        {showCta && (
-          <div className="threshold-cta">
-            <button
-              className="btn btn--primary btn--large"
-              onClick={handleEnter}
-              autoFocus
-              aria-label="Enter GAIA"
-            >
-              Enter
-            </button>
-          </div>
-        )}
-
+      {/* The twin presence symbol */}
+      <div className="threshold-symbol">
+        <div className="threshold-symbol__outer" />
+        <div className="threshold-symbol__inner" />
+        <div className="threshold-symbol__core" />
       </div>
-    </section>
+
+      {/* Confirmation lines */}
+      <div className="threshold-lines" aria-live="polite" aria-atomic="false">
+        {THRESHOLD_LINES.map((line, i) => (
+          <p
+            key={i}
+            className={[
+              'threshold-line',
+              visibleLines.includes(i) ? 'threshold-line--visible' : '',
+            ].join(' ')}
+            aria-hidden={!visibleLines.includes(i)}
+          >
+            {line.text}
+          </p>
+        ))}
+      </div>
+
+      {/* The crossing button */}
+      {showEnter && !entering && (
+        <button
+          className="threshold-enter"
+          onClick={handleEnter}
+          autoFocus
+          aria-label={`Enter GAIA${name ? ` as ${name}` : ''}`}
+        >
+          {name ? `Enter, ${name}` : 'Enter'}
+        </button>
+      )}
+
+      {entering && (
+        <p className="threshold-entering" aria-live="polite">
+          Opening...
+        </p>
+      )}
+    </div>
   );
 }

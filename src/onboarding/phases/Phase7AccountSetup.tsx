@@ -1,186 +1,139 @@
-// C-OB01 — Phase 7: Account Setup
-// Refactor #366: receives onComplete + onBack props; no longer calls
-// nextPhase() internally.
+/**
+ * Phase 7 — Account Setup
+ * Canon: GAIAN_TWIN_DOCTRINE, CONSENT_LEDGER
+ *
+ * The only purely technical phase.
+ * Done with as much grace as possible.
+ *
+ * GAIA asks for an email so the Braid can persist
+ * across devices. Nothing more.
+ *
+ * The framing: "So I can find you again."
+ * Not "to create your account."
+ */
 
-import { useState, useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
-import { TypewriterText } from '../components/TypewriterText';
+import { useState, useRef, useEffect } from 'react';
+import { useOnboardingStore } from '../store/onboardingStore';
 
-// ── Views ─────────────────────────────────────────────────────────────────────
-//
-// 'offer'  — GAIA explains the account is optional, presents two paths
-// 'form'   — email + password form
-// 'local'  — confirming local-only path
-
-type View = 'offer' | 'form' | 'local';
-
-interface Phase7AccountSetupProps {
+interface Props {
   onComplete: () => void;
-  onBack:     () => void;
+  onBack: () => void;
 }
 
-export function Phase7AccountSetup({ onComplete, onBack }: Phase7AccountSetupProps) {
-  const name             = useOnboardingStore((s: OnboardingStore) => s.name);
-  const setAccountCreated = useOnboardingStore((s: OnboardingStore) => s.setAccountCreated);
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
-  const [view,        setView]        = useState<View>('offer');
-  const [email,       setEmail]       = useState('');
-  const [password,    setPassword]    = useState('');
-  const [showPass,    setShowPass]    = useState(false);
-  const [submitting,  setSubmitting]  = useState(false);
-  const [error,       setError]       = useState('');
-  const [showForm,    setShowForm]    = useState(false);
+export function Phase7AccountSetup({ onComplete, onBack }: Props) {
+  const setData = useOnboardingStore((s) => s.setData);
+  const name = useOnboardingStore((s) => s.data.name ?? '');
+  const storedEmail = useOnboardingStore((s) => s.data.email ?? '');
 
-  // Slide form in after mount
+  const [email, setEmail] = useState(storedEmail);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (view === 'form') {
-      const t = setTimeout(() => setShowForm(true), 80);
-      return () => clearTimeout(t);
+    const timer = setTimeout(() => inputRef.current?.focus(), 400);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSubmit = () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError('I need an email to remember where you are.');
+      return;
     }
-    setShowForm(false);
-  }, [view]);
-
-  // ── Keyboard ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (view === 'form') { setView('offer'); return; }
-        onBack();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [view, onBack]);
-
-  // ── Account creation ──────────────────────────────────────────────────────────
-  const handleCreateAccount = useCallback(async () => {
+    if (!isValidEmail(trimmed)) {
+      setError('That doesn't look quite right. Try again?');
+      return;
+    }
     setError('');
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setError('Please enter an email and password.');
-      return;
-    }
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
-    if (!emailOk) {
-      setError('That doesn't look like a valid email address.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
     setSubmitting(true);
-    try {
-      await invoke('create_account', { email: trimmedEmail, password });
-      setAccountCreated(trimmedEmail);
-      onComplete();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [email, password, setAccountCreated, onComplete]);
+    setData({ email: trimmed });
+    // Simulate account creation
+    setTimeout(() => onComplete(), 1000);
+  };
 
-  const handleSkip = useCallback(() => onComplete(), [onComplete]);
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSubmit();
+    if (e.key === 'Escape') onBack();
+  };
 
-  // ── Offer view ────────────────────────────────────────────────────────────────
-  if (view === 'offer') {
-    return (
-      <section className="phase phase--account phase--enter" aria-label="Account setup">
-        <div className="phase__content phase__content--centered">
-          <TypewriterText
-            text={`No account required, ${name || 'friend'}. Everything works locally. An account unlocks encrypted cloud backup and sync across devices — nothing more.`}
-            className="account-intro"
-            speed={18}
-          />
-          <div className="phase__actions phase__actions--stack">
-            <button
-              className="btn btn--primary"
-              onClick={() => setView('form')}
-            >
-              Create account
-            </button>
-            <button
-              className="btn btn--secondary"
-              onClick={handleSkip}
-            >
-              Stay local
-            </button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // ── Form view ─────────────────────────────────────────────────────────────────
   return (
-    <section className="phase phase--account phase--enter" aria-label="Create account">
-      <div className="phase__content phase__content--centered">
-        <TypewriterText
-          text="Create your account."
-          className="account-intro"
-          speed={24}
-        />
-
-        <form
-          className={['account-form', showForm ? 'account-form--visible' : ''].filter(Boolean).join(' ')}
-          onSubmit={(e) => { e.preventDefault(); handleCreateAccount(); }}
-          noValidate
-        >
-          <div className="field-group">
-            <label htmlFor="ob-email">Email</label>
-            <input
-              id="ob-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoFocus
-            />
-          </div>
-
-          <div className="field-group">
-            <label htmlFor="ob-password">Password</label>
-            <div className="account-password-wrap">
-              <input
-                id="ob-password"
-                type={showPass ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                className="account-show-pass"
-                onClick={() => setShowPass((v) => !v)}
-                aria-label={showPass ? 'Hide password' : 'Show password'}
-              >
-                {showPass ? '🙈' : '👁'}
-              </button>
-            </div>
-          </div>
-
-          {error && <p className="account-error" role="alert">{error}</p>}
-
-          <button
-            type="submit"
-            className="btn btn--primary"
-            disabled={submitting}
-          >
-            {submitting ? 'Creating…' : 'Create account'}
-          </button>
-        </form>
-
-        <button
-          className="account-back"
-          onClick={() => setView('offer')}
-        >
-          ← Back
-        </button>
+    <div className="phase phase--account-setup" role="main">
+      <div className="account-setup__header">
+        <p className="account-setup__greeting">
+          Almost there{name ? `, ${name}` : ''}.
+        </p>
+        <p className="account-setup__ask">
+          What's your email?
+        </p>
+        <p className="account-setup__reason">
+          So I can find you again — across devices, across time.
+        </p>
       </div>
-    </section>
+
+      <div className="account-setup__input-wrap">
+        <input
+          ref={inputRef}
+          type="email"
+          className={[
+            'account-setup__input',
+            error ? 'account-setup__input--error' : '',
+          ].join(' ')}
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setError(''); }}
+          onKeyDown={handleKey}
+          placeholder="your@email.com"
+          autoComplete="email"
+          disabled={submitting}
+          aria-label="Your email address"
+          aria-invalid={!!error}
+          aria-describedby={error ? 'email-error' : undefined}
+        />
+        {error && (
+          <p
+            id="email-error"
+            className="account-setup__error"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="phase__actions">
+        {!submitting ? (
+          <button
+            className="btn btn--primary"
+            onClick={handleSubmit}
+            disabled={!email.trim()}
+            aria-label="Create account"
+          >
+            That's my email
+          </button>
+        ) : (
+          <p className="account-setup__creating" aria-live="polite">
+            Creating your Twin Memory...
+          </p>
+        )}
+
+        {!submitting && (
+          <button
+            className="phase__back-btn"
+            onClick={onBack}
+            aria-label="Go back"
+          >
+            ← Back
+          </button>
+        )}
+      </div>
+
+      <p className="account-setup__privacy">
+        No spam. No newsletters. This is just so GAIA can find you again.
+      </p>
+    </div>
   );
 }

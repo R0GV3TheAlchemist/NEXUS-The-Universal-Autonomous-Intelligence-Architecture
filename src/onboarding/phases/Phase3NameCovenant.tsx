@@ -1,89 +1,133 @@
-// C-OB01 — Phase 3: Name Covenant
-// Refactor #366: receives onComplete + onBack props; no longer calls
-// nextPhase() or setPhase() internally.
+/**
+ * Phase 3 — The Name Covenant
+ * Canon: GAIAN_TWIN_DOCTRINE, SLOW_PROTOCOL, C17
+ *
+ * GAIA asks the human their name.
+ * Not a form field. Not a username.
+ * A covenant — the first thing the Twin will remember forever.
+ *
+ * This is the first HEAVY-weight memory in the Temporal Braid.
+ * The name is sacred. It is never forgotten.
+ *
+ * The ask is slow. Gentle. Unhurried.
+ * The human can take as long as they need.
+ */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
+import { useState, useRef, useEffect } from 'react';
+import { useOnboardingStore } from '../store/onboardingStore';
 
-interface Phase3NameCovenantProps {
+interface Props {
   onComplete: () => void;
-  onBack:     () => void;
+  onBack: () => void;
 }
 
-export function Phase3NameCovenant({ onComplete, onBack }: Phase3NameCovenantProps) {
-  const setName = useOnboardingStore((s: OnboardingStore) => s.setName);
-  const name    = useOnboardingStore((s: OnboardingStore) => s.name);
+export function Phase3NameCovenant({ onComplete, onBack }: Props) {
+  const setData = useOnboardingStore((s) => s.setData);
+  const storedName = useOnboardingStore((s) => s.data.name ?? '');
 
-  const [input,     setInput]     = useState(name ?? '');
-  const [confirmed, setConfirmed] = useState(false);
-  const [shake,     setShake]     = useState(false);
+  const [name, setName] = useState(storedName);
+  const [submitted, setSubmitted] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Focus the input on mount — the question deserves attention
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleSubmit = useCallback(() => {
-    const trimmed = input.trim();
-    if (!trimmed) {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
-    setName(trimmed);
-    setConfirmed(true);
-    setTimeout(() => onComplete(), 1200);
-  }, [input, setName, onComplete]);
+  // Keyboard: Escape = back
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onBack]);
 
-  const handleKey = useCallback((e: React.KeyboardEvent) => {
+  const handleSubmit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setData({ name: trimmed });
+    setSubmitted(true);
+    // The Twin acknowledges — then moves on
+    setTimeout(() => setAcknowledged(true), 1000);
+    setTimeout(() => onComplete(), 2600);
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit();
-  }, [handleSubmit]);
-
-  if (confirmed) {
-    return (
-      <section className="phase phase--name phase--enter" aria-label="Name confirmed">
-        <div className="phase__content phase__content--centered">
-          <div className="name-confirmed">
-            <p className="name-confirmed__echo">{input.trim()}</p>
-            <p className="name-confirmed__sub">I'll remember that.</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  };
 
   return (
-    <section className="phase phase--name phase--enter" aria-label="Your name">
-      <div className="phase__content">
-        <p className="gaia-question">What should I call you?</p>
+    <div className="phase phase--name-covenant" role="main">
+      {!submitted ? (
+        <>
+          {/* The question */}
+          <div className="name-covenant__question" aria-live="polite">
+            <p className="name-covenant__ask">
+              What's your name?
+            </p>
+            <p className="name-covenant__sub">
+              This is the first thing I'll remember about you.
+            </p>
+          </div>
 
-        <div
-          className={['name-input-wrap', shake ? 'name-input-wrap--shake' : ''].filter(Boolean).join(' ')}
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            className="name-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder="Your name"
-            maxLength={48}
-            autoComplete="off"
-            spellCheck={false}
-            aria-label="Enter your name"
-          />
+          {/* The input — styled to feel like writing, not typing */}
+          <div className="name-covenant__input-wrap">
+            <input
+              ref={inputRef}
+              type="text"
+              className="name-covenant__input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Your name..."
+              autoComplete="off"
+              autoCapitalize="words"
+              spellCheck={false}
+              maxLength={60}
+              aria-label="Your name"
+            />
+            <div
+              className="name-covenant__underline"
+              style={{ transform: name ? 'scaleX(1)' : 'scaleX(0)' }}
+            />
+          </div>
+
+          {/* Continue — appears only once the human has typed something */}
+          {name.trim() && (
+            <button
+              className="phase__continue-btn phase__continue-btn--name"
+              onClick={handleSubmit}
+              aria-label={`Continue as ${name}`}
+            >
+              That's my name
+            </button>
+          )}
+
           <button
-            className="btn btn--primary"
-            onClick={handleSubmit}
-            disabled={!input.trim()}
+            className="phase__back-btn"
+            onClick={onBack}
+            aria-label="Go back"
           >
-            That's me
+            ← Back
           </button>
+        </>
+      ) : (
+        /* The acknowledgement — GAIA receives the name */
+        <div className="name-covenant__acknowledgement" aria-live="polite">
+          {!acknowledged ? (
+            <p className="name-covenant__receiving">
+              {name.trim()}...
+            </p>
+          ) : (
+            <p className="name-covenant__received">
+              {name.trim()}. <span className="name-covenant__held">I'll remember that.</span>
+            </p>
+          )}
         </div>
-
-        <button className="q4-none-btn" onClick={onBack}>
-          ← Back
-        </button>
-      </div>
-    </section>
+      )}
+    </div>
   );
 }

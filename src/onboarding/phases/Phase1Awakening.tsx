@@ -1,70 +1,73 @@
-// C-OB01 — Phase 1: Awakening
-// Refactor #366: receives onComplete prop; no longer calls nextPhase() internally.
-// The router owns all navigation. This phase owns only its own UI.
+/**
+ * Phase 1 — Awakening
+ * Canon: SLOW_PROTOCOL, LIGHT_THEORY, COLOR_SPIRIT_UNITY_DOCTRINE
+ *
+ * GAIA wakes. The human sees something stir.
+ * No words yet — only presence becoming visible.
+ *
+ * The Awakening is felt before it is spoken.
+ * A pulse. A breath. Then light.
+ */
 
-import { useEffect, useState, useCallback } from 'react';
-import { useOnboardingStore, type OnboardingStore } from '../store/onboardingStore';
+import { useEffect, useState } from 'react';
 
-const LINES = [
-  'Initialising sensory matrix…',
-  'Calibrating context engine…',
-  'GAIA is waking.',
-];
-
-const LINE_DELAY = 900;   // ms between each line
-const CTA_AFTER  = 600;  // ms after last line before Continue appears
-
-interface Phase1AwakeningProps {
+interface Props {
   onComplete: () => void;
 }
 
-export function Phase1Awakening({ onComplete }: Phase1AwakeningProps) {
-  const name = useOnboardingStore((s: OnboardingStore) => s.name);
+type AwakeStage = 'dark' | 'pulse' | 'breathe' | 'emerge' | 'ready';
 
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showCta,      setShowCta]      = useState(false);
+export function Phase1Awakening({ onComplete }: Props) {
+  const [stage, setStage] = useState<AwakeStage>('dark');
 
   useEffect(() => {
-    LINES.forEach((_, i) => {
-      setTimeout(() => setVisibleCount((n) => n + 1), i * LINE_DELAY);
-    });
-    setTimeout(() => setShowCta(true), LINES.length * LINE_DELAY + CTA_AFTER);
+    // The awakening sequence — timed to feel like breathing
+    const sequence: [AwakeStage, number][] = [
+      ['pulse',   900],
+      ['breathe', 1800],
+      ['emerge',  2800],
+      ['ready',   4000],
+    ];
+
+    const timers = sequence.map(([s, delay]) =>
+      setTimeout(() => setStage(s), delay)
+    );
+
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  const handleContinue = useCallback(() => onComplete(), [onComplete]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.key === 'Enter' || e.key === ' ') && showCta) {
-        const tag = (document.activeElement as HTMLElement)?.tagName;
-        if (tag !== 'BUTTON') handleContinue();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showCta, handleContinue]);
-
   return (
-    <section className="phase phase--awakening phase--enter" aria-label="Awakening">
-      <div className="phase__content">
-        <div className="awakening-lines" aria-live="polite">
-          {LINES.slice(0, visibleCount).map((line) => (
-            <p key={line} className="awakening-line">{line}</p>
-          ))}
-        </div>
-
-        {showCta && (
-          <div className="phase__cta">
-            <button
-              className="btn btn--primary"
-              onClick={handleContinue}
-              autoFocus
-            >
-              {name ? `Continue, ${name}` : 'Continue'}
-            </button>
-          </div>
-        )}
+    <div
+      className={`phase phase--awakening phase--awakening-${stage}`}
+      role="presentation"
+      aria-label="GAIA awakening"
+    >
+      {/* The living orb — GAIA's first presence signal */}
+      <div className="awakening-orb">
+        <div className="awakening-orb__core" />
+        <div className="awakening-orb__ring awakening-orb__ring--1" />
+        <div className="awakening-orb__ring awakening-orb__ring--2" />
+        <div className="awakening-orb__ring awakening-orb__ring--3" />
       </div>
-    </section>
+
+      {/* The first word — appears only in 'emerge' stage */}
+      {(stage === 'emerge' || stage === 'ready') && (
+        <p className="awakening-word" aria-live="polite">
+          GAIA
+        </p>
+      )}
+
+      {/* Continue — only appears in 'ready' stage */}
+      {stage === 'ready' && (
+        <button
+          className="awakening-continue"
+          onClick={onComplete}
+          aria-label="Continue into GAIA"
+          autoFocus
+        >
+          Enter
+        </button>
+      )}
+    </div>
   );
 }
