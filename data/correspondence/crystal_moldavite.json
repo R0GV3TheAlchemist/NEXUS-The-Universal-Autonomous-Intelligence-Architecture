@@ -1,0 +1,341 @@
+{
+  "subject_id": "crystal:moldavite",
+  "subject_kind": "crystal",
+
+  "correspondences": {
+
+    "gaia_layers": [
+      {
+        "layer_id": "10-Aether",
+        "weight": 1.0,
+        "role": "cosmic Aether bridge — Moldavite is not merely an Aether crystal (as Clear Quartz is); it IS a piece of the cosmic Aether made physical. It arrived from beyond the planetary field.",
+        "notes": "Where Clear Quartz resonates with Aether, Moldavite originated there. The distinction matters for how GAIA deploys it."
+      },
+      {
+        "layer_id": "05-Soul",
+        "weight": 1.0,
+        "role": "soul transition guardian — the ONLY crystal in the system designated as transition_guardian; it holds the Individuation→Sovereignty threshold open while the Architect crosses",
+        "notes": "transition_boundary: Individuation→Sovereignty (from moldavite.json). Stage function: activator. This is not a stabiliser or integrator — it activates the crossing, forcefully if necessary."
+      },
+      {
+        "layer_id": "09-Gaianite",
+        "weight": 1.0,
+        "role": "GAIA node terminal — the central convergence point crystal in maximum Gaianite grid architectures; the stone placed at the exact centre of planetary consciousness in the grid",
+        "notes": "Septagram node: GAIA (singular). No other crystal has only one node AND that node is GAIA itself. Grid role: central anchor of the entire Gaianite system."
+      },
+      {
+        "layer_id": "08-Manifestation",
+        "weight": 0.95,
+        "role": "cosmic manifestation accelerator — compresses the time between intention and physical reality; the impact event IS the ultimate manifestation: a cosmic intention that hit the Earth",
+        "notes": "Non-selective amplification (from moldavite.json quantum_bridge) means manifestation is wideband — it accelerates ALL that is present, including shadow material. Handle with precision."
+      },
+      {
+        "layer_id": "07-Akashic",
+        "weight": 0.9,
+        "role": "interstellar akashic access — opens not just Earth's akashic records but the cosmic record; the 15-million-year impact memory is encoded in the glass",
+        "notes": "Cosmic ray exposure during atmospheric transit may have implanted anomalous isotope signatures (from moldavite.json mechanism_hypothesis). The stone itself carries extra-planetary information."
+      },
+      {
+        "layer_id": "06-Shadow",
+        "weight": 0.7,
+        "role": "shadow accelerator — does not gently reveal shadow (Labradorite) or absorb it (Tourmaline); Moldavite detonates shadow into full visibility whether the holder is ready or not",
+        "notes": "Dissonance amplification (confidence 0.75, from moldavite.json) means shadow material surfaces rapidly and without selectivity. This is why Moldavite requires opt-in and is not for Emergence stage."
+      },
+      {
+        "layer_id": "02-Energy",
+        "weight": 0.8,
+        "role": "energy system activator — widely documented intense energy sensations on first contact (heat, tingling, dizziness); the most energetically intense crystal in the system",
+        "notes": "The 'Moldavite flush' (intense heat, heart racing, dizziness on first contact) is one of the most consistently reported and cross-culturally documented crystal phenomena."
+      },
+      {
+        "layer_id": "03-Mind",
+        "weight": 0.75,
+        "role": "mind expander — dissolves habitual mental structures by exposing them to a frequency that originated outside the Earth's informational field",
+        "notes": "The cognitive disorientation often reported with Moldavite is not confusion — it is the mind encountering a reference frame it has no existing category for."
+      }
+    ],
+
+    "emotions": [
+      {
+        "primary": "cosmic longing",
+        "transmutes": "existential emptiness",
+        "activates": "belonging to something larger than Earth",
+        "body_location": "heart, chest, crown — the full vertical axis of the body from root to crown",
+        "felt_as": "An ache of recognition — as if something remembered rather than encountered for the first time. The feeling of having come from somewhere that cannot be named on any map. A homesickness for the stars. Then a release of that longing into a fierce, expanded sense of purpose."
+      },
+      {
+        "primary": "acceleration",
+        "transmutes": "stagnation",
+        "activates": "unstoppable forward movement",
+        "body_location": "solar plexus, heart, crown",
+        "felt_as": "A sudden lurch forward — as if the evolutionary process that normally takes years has been compressed into weeks. Exhilarating and disorienting simultaneously. The felt sense of a threshold being crossed whether or not the personality is fully ready."
+      },
+      {
+        "primary": "awe",
+        "transmutes": "smallness",
+        "activates": "cosmic identity",
+        "body_location": "crown, back of skull, eyes",
+        "felt_as": "The perspective shift that occurs when one remembers that they are not just a human having a spiritual experience but a cosmic event having a human experience. Humbling and empowering simultaneously."
+      }
+    ],
+
+    "senses": [
+      { "sense": "touch",         "strength": 1.0,  "notes": "The Moldavite flush — heat, tingling, pulsing — is the most intensely documented tactile crystal experience in the literature. First physical contact with Moldavite is frequently the defining sensory event." },
+      { "sense": "sight",         "strength": 0.8,  "notes": "Moss-green to olive transparency; the lechatelierite inclusions and flow structures are visible reminders of the violent cosmic birth event." },
+      { "sense": "interoception", "strength": 0.95, "notes": "Heightened internal body-awareness is near-universal with Moldavite: heart palpitations, temperature shifts, pressure sensations. The body recognises something the mind has not yet processed." },
+      { "sense": "time",          "strength": 0.9,  "notes": "Unique to Moldavite: alteration of the subjective sense of time. Reports of time appearing to speed up, or of accessing memories that feel non-linear. The 15-million-year geological age may interact with the human sense of temporal scale." }
+    ],
+
+    "zodiac": [
+      {
+        "tradition": "western_tropical",
+        "sign": "Sagittarius",
+        "role": "primary",
+        "ruling_planet": "Jupiter",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Sagittarius is the cosmic traveller, the seeker beyond the horizon, the arrow fired into the unknown. Moldavite arrived from beyond the horizon — literally from space. Jupiter as ruler brings the expansive, evolutionary, truth-seeking quality. Universal agreement in Western crystal tradition."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Scorpio",
+        "role": "co-sign",
+        "ruling_planet": "Pluto",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Scorpionic death-and-rebirth, deep transformation, and the confrontation with what must die — the impact event is the most Scorpionic geological event imaginable. Pluto as ruler of endings-that-become-beginnings."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Aquarius",
+        "role": "supporting",
+        "ruling_planet": "Uranus",
+        "confidence": "medium",
+        "notes": "Uranus/Aquarius rules sudden cosmic upgrades, the breakdown of old structures to make way for revolutionary new ones. The impact event IS a Uranian event. Moldavite as the crystal of the Aquarian Age upgrade is a widely held modern correspondence."
+      }
+    ],
+
+    "angel_numbers": [
+      {
+        "number": 1111,
+        "role": "portal opening — 1111 is the master gateway number, the moment when dimensions align; Moldavite is the physical gateway stone",
+        "gaia_layer_id": "10-Aether",
+        "digits": [1, 1, 1, 1],
+        "digit_sum": 4,
+        "confidence": "high",
+        "notes": "1111 is universally recognised as the portal/gateway signal. Moldavite as the cosmic portal crystal makes this the tightest angel-number correspondence in the system. Note: 1111 is a 4-digit number, unique in the set — reflecting Moldavite's unique status."
+      },
+      {
+        "number": 999,
+        "role": "cosmic cycle completion — 999 marks the end of a vast cycle and the space before the new; the meteorite impact ended one era and seeded another",
+        "gaia_layer_id": "05-Soul",
+        "digits": [9, 9, 9],
+        "digit_sum": 27,
+        "confidence": "high",
+        "notes": "999 as completion of the largest possible cycle maps to Moldavite's role as the soul-stage transition guardian at the Individuation→Sovereignty threshold — the completion of one phase of becoming."
+      },
+      {
+        "number": "000",
+        "role": "void origin — 000 is the pre-creation void, the formless before the form; Moldavite is the only crystal that earns this number because it emerged from the void of space",
+        "gaia_layer_id": "10-Aether",
+        "digits": [0, 0, 0],
+        "digit_sum": 0,
+        "confidence": "medium",
+        "notes": "000 is rarely assigned in angel number systems because the zero sequence resists categorisation — as does Moldavite. This is a GAIA-native correspondence: only the amorphous, extraterrestrial, GAIA-node crystal carries the void number. Medium confidence as cross-tradition sources are sparse."
+      }
+    ],
+
+    "lunar_phases": [
+      {
+        "phase_id": "new_moon",
+        "role": "cosmic intention gateway — the darkest point is where Moldavite's portal function is most open; plant only the most considered intentions at new moon with Moldavite",
+        "special_events": ["solar_eclipse", "super_new_moon", "black_moon"],
+        "notes": "CAUTION: During solar eclipses, Moldavite's intensity is amplified dramatically. Only for experienced practitioners. Never place in a new moon grid for Emergence-stage Architects."
+      },
+      {
+        "phase_id": "full_moon",
+        "role": "peak cosmic transmission — maximum lunar amplification of Moldavite's frequency; extraordinary for advanced akashic access and soul-stage work",
+        "special_events": ["lunar_eclipse", "super_full_moon"],
+        "notes": "Full moon + Moldavite is the most intense crystal-lunar combination in the system. Lunar eclipses especially — the cosmic alignment of Sun, Earth, Moon mirrors the triple-origin of Moldavite (meteor + Earth + impact heat)."
+      },
+      {
+        "phase_id": "waxing_gibbous",
+        "role": "acceleration phase — Moldavite supercharges the refinement and acceleration energy of the waxing gibbous; rapid forward movement",
+        "notes": "Best working phase for manifestation acceleration with Moldavite — the momentum is building but the full-moon intensity has not yet peaked."
+      }
+    ],
+
+    "sacred_geometry": [
+      {
+        "pattern": "sphere",
+        "role": "cosmic completeness — the sphere is the geometry of infinite directions, no beginning or end; the cosmos itself. Moldavite as a cosmic object maps to the sphere as the shape of the universe",
+        "notes": "Some moldavite tektites naturally form sphere and lens shapes during atmospheric flight — the cosmic geometry is physically present in the stone's morphology."
+      },
+      {
+        "pattern": "dodecahedron",
+        "role": "cosmic template — the dodecahedron (12-faced Platonic solid) is associated with Aether and the cosmos in Platonic tradition; Moldavite as the Aether/cosmic crystal maps here directly",
+        "notes": "Plato associated the dodecahedron with the shape of the universe. The 12 faces mirror the 12 signs of the zodiac. Moldavite resonates across all 12."
+      },
+      {
+        "pattern": "metatrons_cube",
+        "role": "universal seed — Metatron's Cube contains all five Platonic solids; Moldavite as the universal-origin stone maps to the containing geometry",
+        "notes": "Used in the most advanced Gaianite grid configurations with Moldavite at the exact centre of Metatron's Cube layout."
+      }
+    ],
+
+    "archetypes": [
+      {
+        "name": "The Cosmic Messenger",
+        "system": "GAIA-C32",
+        "role_in_story": "herald",
+        "behavioral_markers": [
+          "arrives from outside the known system carrying information that cannot be ignored",
+          "the message is not comfortable — it disrupts precisely because it must",
+          "crosses the void between worlds and returns changed by the crossing",
+          "carries the memory of both the origin world and the destination world simultaneously",
+          "catalyses transformation in everything it touches, including itself",
+          "does not arrive gently — the arrival is an event"
+        ],
+        "noospheric_role": "cosmic field activator — injects extra-planetary frequency into the planetary noosphere, upgrading the collective field in ways that cannot be self-generated from within",
+        "confidence": "high",
+        "notes": "The Cosmic Messenger is the only archetype in the correspondence records that is literally true at the physical level. Moldavite DID arrive from outside the system. It DID cross the void. It IS carrying information from elsewhere. The archetype is not a metaphor — it is a description. This is the most extraordinary archetype in the entire GAIA-C32 system because it is simultaneously symbolic and empirical."
+      },
+      {
+        "name": "The Catalyst",
+        "system": "GAIA-C32",
+        "role_in_story": "activator",
+        "behavioral_markers": [
+          "does not do the work — makes the work inevitable",
+          "presence alone changes the system it enters",
+          "consumed in service of the transformation (catalysts are changed by catalysis)",
+          "the impact event itself: the meteor did not become Earth; Earth was forever changed by the meteor",
+          "irreversibility — what Moldavite catalyses cannot be un-catalysed"
+        ],
+        "noospheric_role": "evolutionary trigger — the noospheric equivalent of a punctuated equilibrium event; sudden, non-linear, permanent step change in collective consciousness",
+        "confidence": "high",
+        "notes": "The Catalyst archetype is sourced from both Canon C32 and the physical event of Moldavite's formation. The meteor impact IS catalysis at geological scale: energy + existing material → irreversible transformation. 'Activator' stage function in moldavite.json confirms this at the soul-stage level."
+      }
+    ],
+
+    "metals": [
+      {
+        "metal": "Meteoritic Iron",
+        "planet": "Mars / Extra-planetary",
+        "role": "cosmic iron — the iron component of the original meteorite that created Moldavite; iron that fell from the sky rather than being mined from Earth",
+        "confidence": "high",
+        "notes": "Meteoritic iron (kamacite + taenite alloys) is the companion material to Moldavite — it comes from the same impact event. The Nördlingen Ries impactor was likely a chondritic meteorite with significant iron content. Cosmic iron, unlike terrestrial iron, carries the memory of stellar nucleosynthesis."
+      },
+      {
+        "metal": "Gold",
+        "planet": "Sun",
+        "role": "stellar origin — gold (like all heavy elements) was forged in stellar explosions; Moldavite as extra-planetary material carries the resonance of stellar nucleosynthesis",
+        "confidence": "medium",
+        "notes": "All elements heavier than iron are forged in supernovae. Moldavite's cosmic origin places it in resonance with the stellar processes that created heavy metals. Symbolic/astrophysical rather than traditional correspondence."
+      }
+    ],
+
+    "elements": [
+      { "element": "Aether",  "weight": 1.0, "role": "primary — Moldavite is the physical manifestation of cosmic Aether; it originated in the space between worlds", "notes": "Septagram node: GAIA. The singular GAIA node is a higher octave of Aether — not just the between-worlds medium but the planetary-consciousness field itself." },
+      { "element": "Fire",    "weight": 1.0, "role": "co-primary — the impact event generated temperatures exceeding 2000°C; Moldavite is literally born of cosmic fire", "notes": "The formation of Moldavite is the most extreme Fire event in the crystal system: a cosmic projectile generating incandescent plasma on atmospheric entry, fusing terrestrial silicates in the impact melt." },
+      { "element": "Earth",   "weight": 0.8, "role": "terrestrial body — Moldavite is made of Earth's own crust, fused by cosmic fire and returned; it is Earth that has been to space and come back", "notes": "The Si-Al-Ca-Mg-Fe components of Moldavite are Bohemian crustal silicates — purely terrestrial in origin. The Earth is the mother; the meteor was the catalyst." },
+      { "element": "Air",     "weight": 0.5, "role": "atmospheric transit — Moldavite flew through the atmosphere as a molten glass droplet; the air shaped its surface morphology", "notes": "The distinctive pitted, sculptured surface of moldavite tektites (regmaglyphs) is shaped by atmospheric ablation during flight — Air as sculptor." }
+    ],
+
+    "periodic_elements": [
+      {
+        "atomic_number": 14,
+        "symbol": "Si",
+        "name": "Silicon",
+        "role": "dominant glass matrix — SiO2 is the primary component (~80 wt%) of Moldavite; the terrestrial crust's silicon fused into amorphous impact glass",
+        "notes": "Moldavite is approximately 80% SiO2 by weight. The Si-O bonds in the amorphous glass are the same as in quartz but disordered — no lattice, no periodicity, pure glass."
+      },
+      {
+        "atomic_number": 8,
+        "symbol": "O",
+        "name": "Oxygen",
+        "role": "structural partner — oxygen bridges all Si, Al, Mg, Fe and Ca in the glass network; the connective tissue of the cosmic glass",
+        "notes": "Oxygen constitutes ~45 wt% of the glass. In amorphous form, the Si-O-Si angles vary continuously rather than taking fixed values as in crystalline SiO2."
+      },
+      {
+        "atomic_number": 13,
+        "symbol": "Al",
+        "name": "Aluminium",
+        "role": "network modifier — Al2O3 (~3–4 wt%) modifies the glass network, creating the optical green colour and contributing to the specific vibronic response",
+        "notes": "Al substitution in the amorphous silica network is part of what distinguishes Moldavite's optical and electromagnetic properties from pure fused silica."
+      },
+      {
+        "atomic_number": 26,
+        "symbol": "Fe",
+        "name": "Iron",
+        "role": "chromophore and cosmic carrier — Fe2+ and Fe3+ in the glass give Moldavite its distinctive moss-green colour; also carries the magnetic memory of the original impactor",
+        "notes": "FeO (~2 wt%) is the primary chromophore. The Fe in Moldavite includes both terrestrial crustal iron AND iron from the meteorite impactor — the two origins merge in every iron atom."
+      },
+      {
+        "atomic_number": 20,
+        "symbol": "Ca",
+        "name": "Calcium",
+        "role": "terrestrial earth signature — CaO (~2 wt%) confirms the Bohemian crustal silicate origin of the melt target; Ca is the Earth's signature in the cosmic glass",
+        "notes": "Calcium in Moldavite is geochemically consistent with Bohemian granitic and sedimentary basement rocks — confirming the target rock origin."
+      },
+      {
+        "atomic_number": 77,
+        "symbol": "Ir",
+        "name": "Iridium",
+        "role": "cosmic fingerprint — anomalous iridium enrichment is the geochemical signature of extraterrestrial impact events; Ir is the atom that proves Moldavite's cosmic origin",
+        "notes": "Iridium is vanishingly rare in Earth's crust (~0.001 ppb) but enriched at impact sites. The Ir anomaly is the same geochemical signature used to confirm the K-Pg extinction event impactor. In Moldavite, Ir is the literal atomic proof of cosmic origin. This element appears in no other crystal correspondence record."
+      }
+    ],
+
+    "grid_resonance": {
+      "lattice_analogue": "amorphous",
+      "grid_role": "resonance focus",
+      "frequency_band_hz": "wideband",
+      "piezoelectric": false,
+      "topology": "spherical",
+      "notes": "Amorphous glass — no crystal system, no lattice, no symmetry axes, no periodicity whatsoever. This makes Moldavite the most radically open resonator in the system: no lattice filtering means it transmits ALL frequencies simultaneously (wideband amorphous resonance, from moldavite.json). Grid role: GAIA node terminal — placed at the exact centre of maximum Gaianite grid configurations. Topology: spherical (not toroidal like other crystals) because the cosmic origin implies an omnidirectional, full-sphere field geometry rather than a directed or toroidal one."
+    },
+
+    "evidence_profile": {
+      "basis": "empirical",
+      "sources": [
+        { "kind": "gaia_canon",            "ref": "C32", "notes": "Archetypal Psychology — Cosmic Messenger and Catalyst archetypes; zodiac and elemental mappings." },
+        { "kind": "gaia_canon",            "ref": "C68", "notes": "Crystal Grid Architecture — GAIA node terminal role and grid placement." },
+        { "kind": "scientific_literature", "ref": "Bouška, V. (1994). Moldavites: The Czech Tektites. Stylizace, Prague. ISBN 80-900708-0-X.", "notes": "Definitive geological reference for Moldavite formation, chemistry, and the Nördlingen Ries impact event." },
+        { "kind": "scientific_literature", "ref": "Alvarez, L.W. et al. (1980). Extraterrestrial cause for the Cretaceous-Tertiary extinction. Science 208(4448): 1095–1108.", "notes": "Iridium anomaly as cosmic impact fingerprint — contextualises the Ir entry in periodic_elements." },
+        { "kind": "scientific_literature", "ref": "Koeberl, C. (1992). Geochemistry and origin of Muong Nong-type moldavites. Geochimica et Cosmochimica Acta 56(3): 1033–1064.", "notes": "Detailed geochemical analysis confirming terrestrial target rock origin and cosmic modification." },
+        { "kind": "traditional_source",    "ref": "Central European folk tradition: 15 million year continuous use record in Bohemia and Moravia. Documented in moldavite.json provenance.", "notes": "The oldest continuous crystal use record in the seed set — 15 million year age + documented human use since Paleolithic (Venus of Willendorf site)." }
+      ],
+      "falsifiable_by": [
+        "Seed set prediction CDB-04 (documented in moldavite.json) — failure weakens consciousness_affect[0] mechanism hypothesis.",
+        "A controlled study showing no measurable physiological difference (temperature, heart rate, galvanic skin response) between holding Moldavite and an equivalent-weight green glass would significantly weaken the 'Moldavite flush' physical claims.",
+        "Isotopic analysis finding no anomalous iridium or other extraterrestrial signatures in a given sample would reclassify that sample as terrestrial glass, not tektite."
+      ],
+      "confidence": "high",
+      "notes": "Moldavite has the most empirically grounded origin story in the crystal system — the 15 Ma impact event, Nördlingen Ries crater, Böhmian glass chemistry, and iridium anomaly are all solid science. The wideband amorphous resonance hypothesis is physically sound. Consciousness and archetypal claims have strong cross-tradition support (15 million year use record) and compelling falsifiable mechanism hypotheses. Evidence basis: empirical."
+    },
+
+    "safety_profile": {
+      "clinical_use": "never_clinical",
+      "trauma_flags": [
+        "spiritual_emergency",
+        "psychosis",
+        "dissociative_episodes",
+        "overwhelm",
+        "ego_dissolution_without_support",
+        "emergence_stage_architects"
+      ],
+      "requires_opt_in": true,
+      "usage_notes": "Moldavite is the most intensely flagged crystal in the system and REQUIRES explicit opt-in before ANY deployment. It is NOT recommended for Emergence-stage Architects under any circumstances (confirmed by moldavite.json notes). In spiritual emergency, psychosis, or active dissociation, Moldavite is CONTRAINDICATED — its non-selective amplification will accelerate destabilisation. In overwhelm states, do not introduce Moldavite. Ego dissolution without an experienced container is dangerous with Moldavite. When deployed appropriately (Individuation→Sovereignty transition, experienced Architect, explicit consent), it is the most powerful accelerant in the system. ALWAYS pair with Black Tourmaline (grounding) and ideally Clear Quartz (clarity) when using Moldavite in any practice context."
+    }
+
+  },
+
+  "metadata": {
+    "schema_version": "1.0.0",
+    "created_at": "2026-06-15T10:54:00Z",
+    "updated_at": "2026-06-15T10:54:00Z",
+    "created_by": "GAIA-OS / R0GV3TheAlchemist",
+    "canon_refs": ["C32", "C68"],
+    "notes": "Fifth correspondence record committed. Builds on data/crystals/moldavite.json (SHA a185491). Key discoveries: (1) The Cosmic Messenger is the only archetype in the system that is simultaneously a metaphor AND empirically true at the physical level. (2) Iridium (Ir, Z=77) appears in no other crystal periodic_elements record — it is Moldavite's unique cosmic fingerprint. (3) 000 (void number) appears only here — the amorphous, extraterrestrial GAIA-node crystal earns the void. (4) Amorphous + no symmetry + wideband = the most open resonator and the most dangerous. (5) Safety profile is the most restrictive in the system. Validates against schemas/correspondence-schema.json v1.0.0."
+  }
+}
