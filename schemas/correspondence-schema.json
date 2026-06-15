@@ -1,0 +1,511 @@
+{
+  "$id": "https://gaia-os.org/schemas/correspondence-schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GAIA-OS Correspondence Record",
+  "description": "Unified correspondence schema linking elements, minerals, crystals, GAIA layers, emotions, senses, zodiac, angel numbers, lunar phases, sacred geometry, archetypes, metals, and grid roles. Every node in the Correspondence Architecture validates against this schema. Open-world: new records (elements, crystals, signs, numbers) simply add a new file — the schema never needs to change.",
+  "type": "object",
+  "required": ["subject_id", "subject_kind", "correspondences"],
+  "additionalProperties": false,
+
+  "properties": {
+
+    "subject_id": {
+      "type": "string",
+      "description": "Canonical ID of the subject. Format: '<kind>:<slug>', e.g. 'element:26', 'mineral:malachite', 'crystal:black_tourmaline', 'zodiac:capricorn', 'angel_number:444'."
+    },
+
+    "subject_kind": {
+      "type": "string",
+      "enum": [
+        "element",
+        "mineral",
+        "crystal",
+        "gaia_layer",
+        "zodiac_sign",
+        "angel_number",
+        "lunar_phase",
+        "archetype",
+        "metal",
+        "geometry_pattern",
+        "other"
+      ],
+      "description": "Type of entity this correspondence record describes."
+    },
+
+    "correspondences": {
+      "type": "object",
+      "description": "All correspondence axes. Every field is optional — include only what is known. Unknown/unresearched axes should be omitted rather than left empty.",
+      "additionalProperties": false,
+      "properties": {
+
+        "gaia_layers": {
+          "type": "array",
+          "description": "GAIA layer alignments (e.g. Layer 01 Physical, 06 Shadow, 10 Akashic).",
+          "items": {
+            "type": "object",
+            "required": ["layer_id"],
+            "additionalProperties": false,
+            "properties": {
+              "layer_id": {
+                "type": "string",
+                "description": "Canonical layer identifier, e.g. '01-Physical', '06-Shadow', '10-Akashic', '11-Feeling', '12-Void'."
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Relative strength of this alignment (0.0–1.0). Optional."
+              },
+              "role": {
+                "type": "string",
+                "description": "Short phrase describing the role (e.g. 'root anchor', 'shadow transmuter', 'akashic gateway')."
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "emotions": {
+          "type": "array",
+          "description": "Primary emotional resonances. Descriptive/metaphorical — never diagnostic.",
+          "items": {
+            "type": "object",
+            "required": ["primary"],
+            "additionalProperties": false,
+            "properties": {
+              "primary": {
+                "type": "string",
+                "description": "Primary emotional quality (e.g. 'protection', 'groundedness', 'joy')."
+              },
+              "transmutes": {
+                "type": "string",
+                "description": "Emotion most clearly transmuted by this subject (e.g. 'fear', 'grief')."
+              },
+              "activates": {
+                "type": "string",
+                "description": "Emotion or quality most clearly activated (e.g. 'courage', 'clarity')."
+              },
+              "body_location": {
+                "type": "string",
+                "description": "Typical felt-sense body area (e.g. 'root — base of spine, feet')."
+              },
+              "felt_as": {
+                "type": "string",
+                "description": "Short phenomenological description (1–2 sentences)."
+              }
+            }
+          }
+        },
+
+        "senses": {
+          "type": "array",
+          "description": "Dominant sensory channels through which this subject is experienced.",
+          "items": {
+            "type": "object",
+            "required": ["sense"],
+            "additionalProperties": false,
+            "properties": {
+              "sense": {
+                "type": "string",
+                "enum": ["touch", "sight", "hearing", "smell", "taste", "proprioception", "interoception", "other"]
+              },
+              "strength": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Relative strength of this sensory channel (0.0–1.0)."
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "zodiac": {
+          "type": "array",
+          "description": "Zodiac correspondences with cultural tradition and classical dignity where applicable.",
+          "items": {
+            "type": "object",
+            "required": ["tradition", "sign"],
+            "additionalProperties": false,
+            "properties": {
+              "tradition": {
+                "type": "string",
+                "enum": ["western_tropical", "vedic_sidereal", "hellenistic", "modern_psychological", "other"]
+              },
+              "sign": {
+                "type": "string",
+                "description": "Zodiac sign name (e.g. 'Capricorn', 'Scorpio', 'Aquarius')."
+              },
+              "role": {
+                "type": "string",
+                "enum": ["primary", "co-sign", "supporting", "shadow"],
+                "description": "Relationship of this sign to the subject."
+              },
+              "ruling_planet": {
+                "type": "string",
+                "description": "Ruling planet for this sign (e.g. 'Saturn', 'Pluto')."
+              },
+              "dignity": {
+                "type": "string",
+                "enum": ["rulership", "exaltation", "detriment", "fall", "neutral"],
+                "description": "Classical dignity status (optional)."
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "speculative"]
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "angel_numbers": {
+          "type": "array",
+          "description": "Angel-number correspondences. Each number links to a GAIA layer and carries a symbolic role.",
+          "items": {
+            "type": "object",
+            "required": ["number"],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer",
+                "description": "Numeric angel code, e.g. 111, 222, 333, 444, 555, 666, 777, 888, 999."
+              },
+              "role": {
+                "type": "string",
+                "description": "Symbolic role of this number for this subject (e.g. 'foundation code', 'completion signal', 'guardian anchor')."
+              },
+              "gaia_layer_id": {
+                "type": "string",
+                "description": "GAIA layer this number is linked to (e.g. '01-Physical', '06-Shadow', '12-Void')."
+              },
+              "digits": {
+                "type": "array",
+                "items": { "type": "integer" },
+                "description": "Digit decomposition for numerological work, e.g. [4,4,4] for 444."
+              },
+              "digit_sum": {
+                "type": "integer",
+                "description": "Sum of all digits, e.g. 12 for 444."
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "speculative"]
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "lunar_phases": {
+          "type": "array",
+          "description": "Lunar phase resonance profile. Links to issue #450 Lunar Cycle Database.",
+          "items": {
+            "type": "object",
+            "required": ["phase_id"],
+            "additionalProperties": false,
+            "properties": {
+              "phase_id": {
+                "type": "string",
+                "enum": [
+                  "new_moon",
+                  "waxing_crescent",
+                  "first_quarter",
+                  "waxing_gibbous",
+                  "full_moon",
+                  "waning_gibbous",
+                  "last_quarter",
+                  "waning_crescent"
+                ]
+              },
+              "role": {
+                "type": "string",
+                "description": "What this phase activates or supports for this subject (e.g. 'shadow work', 'amplification', 'release', 'new beginnings')."
+              },
+              "special_events": {
+                "type": "array",
+                "description": "Special lunar events with heightened resonance (e.g. 'super_moon', 'lunar_eclipse', 'black_moon', 'blue_moon').",
+                "items": { "type": "string" }
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "sacred_geometry": {
+          "type": "array",
+          "description": "Sacred geometry patterns associated with this subject.",
+          "items": {
+            "type": "object",
+            "required": ["pattern"],
+            "additionalProperties": false,
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Name of geometric pattern (e.g. 'cube', 'tetrahedron', 'merkaba', 'flower_of_life', 'sri_yantra', 'fibonacci_spiral', 'vesica_piscis')."
+              },
+              "role": {
+                "type": "string",
+                "description": "How this geometry expresses through the subject (e.g. 'grounding structure', 'amplification field', 'gateway form')."
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "archetypes": {
+          "type": "array",
+          "description": "Metaphysical archetypes from Canon C32 (Archetypal Psychology, Zodiac, Elemental Archetypes).",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Archetype label (e.g. 'The Guardian', 'The Alchemist', 'The Shadow Navigator')."
+              },
+              "system": {
+                "type": "string",
+                "description": "Source archetypal system (e.g. 'PMAI', 'Jungian', 'GAIA-C32', 'Hermetic')."
+              },
+              "role_in_story": {
+                "type": "string",
+                "description": "Narrative role within the archetypal journey (e.g. 'boundary-holder', 'transformer', 'messenger', 'witness')."
+              },
+              "behavioral_markers": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Observable behavioral expressions of this archetype."
+              },
+              "noospheric_role": {
+                "type": "string",
+                "description": "Collective / noospheric function (e.g. 'local stabilizer', 'pattern anchor', 'field purifier')."
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "speculative"]
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "metals": {
+          "type": "array",
+          "description": "Planetary metal correspondences (Canon C32: SunGold, MoonSilver, MercuryQuicksilver, VenusCopper, MarsIron, JupiterTin, SaturnLead).",
+          "items": {
+            "type": "object",
+            "required": ["metal", "planet"],
+            "additionalProperties": false,
+            "properties": {
+              "metal": {
+                "type": "string",
+                "description": "Metal name (e.g. 'Gold', 'Silver', 'Iron', 'Copper', 'Tin', 'Lead', 'Quicksilver')."
+              },
+              "planet": {
+                "type": "string",
+                "description": "Ruling planet (e.g. 'Sun', 'Moon', 'Mars', 'Venus', 'Jupiter', 'Saturn', 'Mercury')."
+              },
+              "role": {
+                "type": "string",
+                "description": "How this metal correspondence expresses (e.g. 'solar amplifier', 'lunar receiver', 'martial protector')."
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "speculative"]
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "elements": {
+          "type": "array",
+          "description": "Classical elemental correspondences (Fire, Earth, Air, Water, Spirit/Aether). Distinct from the 118 chemical elements.",
+          "items": {
+            "type": "object",
+            "required": ["element"],
+            "additionalProperties": false,
+            "properties": {
+              "element": {
+                "type": "string",
+                "enum": ["Fire", "Earth", "Air", "Water", "Spirit", "Aether"]
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "role": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "periodic_elements": {
+          "type": "array",
+          "description": "Chemical element correspondences from the periodic table (atomic number 1–118). This is the Elements → Minerals → Crystals chain.",
+          "items": {
+            "type": "object",
+            "required": ["atomic_number", "symbol"],
+            "additionalProperties": false,
+            "properties": {
+              "atomic_number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 118,
+                "description": "Atomic number of the element (1 = Hydrogen, 118 = Oganesson)."
+              },
+              "symbol": {
+                "type": "string",
+                "description": "Chemical symbol (e.g. 'Fe', 'Si', 'Al', 'C')."
+              },
+              "name": {
+                "type": "string",
+                "description": "Full element name (e.g. 'Iron', 'Silicon', 'Aluminium', 'Carbon')."
+              },
+              "role": {
+                "type": "string",
+                "description": "Role of this element in the subject's composition or resonance."
+              },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+
+        "grid_resonance": {
+          "type": "object",
+          "description": "Crystal-grid and harmonic network role, aligned with Canon C68 (Crystal Grid Architecture) and C65–C67 (Gaianite).",
+          "additionalProperties": false,
+          "properties": {
+            "lattice_analogue": {
+              "type": "string",
+              "description": "Crystal-system lattice analogue (e.g. 'cubic', 'hexagonal', 'trigonal', 'kagome', 'quasicrystal')."
+            },
+            "grid_role": {
+              "type": "string",
+              "description": "Role in crystal grids (e.g. 'resonance focus', 'sensor node', 'boundary stone', 'center stone', 'amplifier')."
+            },
+            "frequency_band_hz": {
+              "type": "string",
+              "description": "Preferred resonance frequency band (e.g. '7.83' for Schumann fundamental, '7.83–20.8' for Schumann harmonics)."
+            },
+            "piezoelectric": {
+              "type": "boolean",
+              "description": "Whether this subject has piezoelectric properties relevant to the sensor mesh."
+            },
+            "topology": {
+              "type": "string",
+              "description": "Optional topological model (e.g. 'toroidal', 'hyperbolic', 'edge-of-chaos')."
+            },
+            "notes": { "type": "string" }
+          }
+        },
+
+        "evidence_profile": {
+          "type": "object",
+          "description": "Falsifiability and evidence basis. Feeds into issue #451 (Publication & Falsifiability Initiative).",
+          "additionalProperties": false,
+          "properties": {
+            "basis": {
+              "type": "string",
+              "enum": ["empirical", "cross-tradition", "lineage", "purely-symbolic"],
+              "description": "Primary evidence basis: empirical (scientific literature), cross-tradition (multiple independent traditions agree), lineage (single tradition), purely-symbolic (metaphorical/poetic)."
+            },
+            "sources": {
+              "type": "array",
+              "description": "Canonical and external sources supporting this correspondence.",
+              "items": {
+                "type": "object",
+                "required": ["kind", "ref"],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": ["gaia_canon", "scientific_literature", "traditional_source", "observational", "other"]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "description": "Canon ID (e.g. 'C32', 'C118'), DOI, URL, or descriptive citation."
+                  },
+                  "notes": { "type": "string" }
+                }
+              }
+            },
+            "falsifiable_by": {
+              "type": "array",
+              "description": "Concrete observations or experiments that would weaken or overturn this correspondence.",
+              "items": { "type": "string" }
+            },
+            "confidence": {
+              "type": "string",
+              "enum": ["high", "medium", "speculative"],
+              "description": "Integrative confidence rating across all axes in this record."
+            },
+            "notes": { "type": "string" }
+          }
+        },
+
+        "safety_profile": {
+          "type": "object",
+          "description": "Trauma-informed and ethical constraints on how GAIA uses this correspondence. Aligned with the Trauma-Informed AI canon and Gaian Laws.",
+          "additionalProperties": false,
+          "properties": {
+            "clinical_use": {
+              "type": "string",
+              "enum": ["never_clinical", "supportive_only", "requires_human_clinician", "unknown"],
+              "description": "Whether and how this correspondence may be invoked in mental-health-adjacent contexts."
+            },
+            "trauma_flags": {
+              "type": "array",
+              "description": "Contexts where invoking this correspondence may be harmful (e.g. 'active_crisis', 'ptsd_processing', 'grief').",
+              "items": { "type": "string" }
+            },
+            "requires_opt_in": {
+              "type": "boolean",
+              "description": "If true, GAIA must receive explicit opt-in before using this correspondence with an Architect."
+            },
+            "usage_notes": {
+              "type": "string",
+              "description": "Plain-language guidance for GAIA on safe, ethical, love-aligned use of this correspondence."
+            }
+          }
+        }
+
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "description": "Audit and provenance metadata.",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "Version of this schema used (e.g. '1.0.0').",
+          "default": "1.0.0"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User or process that created this record."
+        },
+        "canon_refs": {
+          "type": "array",
+          "description": "GAIA-OS canon IDs this record draws from (e.g. ['C32', 'C118', 'C68']).",
+          "items": { "type": "string" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+
+  }
+}
