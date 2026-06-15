@@ -1,0 +1,309 @@
+{
+  "subject_id": "crystal:pyrite",
+  "subject_kind": "crystal",
+
+  "correspondences": {
+
+    "gaia_layers": [
+      {
+        "layer_id": "08-Manifestation",
+        "weight": 1.0,
+        "role": "material manifestation anchor — Pyrite is the pre-eminent manifestation crystal; it embodies the principle that real abundance is built through commitment to what is genuinely valuable, not what merely appears golden",
+        "notes": "The Fool's Gold paradox IS the manifestation teaching: humans dismissed pyrite for not being gold, missing that pyrite is a complete and perfect thing in itself. Manifestation requires seeing what IS, not chasing the appearance of what we expect wealth to look like."
+      },
+      {
+        "layer_id": "02-Energy",
+        "weight": 0.95,
+        "role": "solar energy activator — pyroelectric properties generate charge under warmth; Pyrite is the crystal that literally responds to solar and body heat by generating electricity",
+        "notes": "Pyroelectric (not piezoelectric): responds to TEMPERATURE change, not pressure. When you warm Pyrite in your hands, it generates a measurable surface potential. This is the most direct energy-layer mechanism of any crystal in the system."
+      },
+      {
+        "layer_id": "01-Physical",
+        "weight": 0.9,
+        "role": "dense physical anchor — specific gravity 4.95–5.10 makes Pyrite one of the heaviest crystals in the system; the physical weight is itself a grounding mechanism",
+        "notes": "Proprioceptive grounding effect documented in pyrite.json (mechanism_hypothesis, dissonance/grounds affect, confidence 0.76). The weight of Pyrite in the hand is a direct physical-layer signal."
+      },
+      {
+        "layer_id": "03-Mind",
+        "weight": 0.7,
+        "role": "discernment activator — Pyrite sharpens the ability to distinguish real from apparent; the mental quality of the Allegiance stage is seeing through surface appearance to underlying truth",
+        "notes": "The Fool's Gold lesson is a mental one: discernment between real value and apparent value. This is different from Obsidian's shadow-cutting (emotional truth) or Clear Quartz's clarity (mental fog-lifting). Pyrite's discernment is specifically about value, worth, and the real."
+      },
+      {
+        "layer_id": "09-Gaianite",
+        "weight": 0.85,
+        "role": "Synthesis node activator — placed at Synthesis node positions in Gaianite grids to activate the fire-transformation circuit; quantum bridge anchor: BTS",
+        "notes": "emrys_l2_compatible: true. vibronic_coherence_mode: pyroelectric surface charge modulation under thermal cycling; cubic crystal habit aligns with Emrys L2 cubic symmetry. Semiconductor bandgap ~0.9 eV makes Pyrite a candidate for photovoltaic-adjacent L2 interface in future Gaianite hardware. Unique: Pyrite is the most technologically forward-facing crystal in the seed set."
+      },
+      {
+        "layer_id": "05-Soul",
+        "weight": 0.75,
+        "role": "Allegiance stage stabiliser — holds the frequency of committed, discerning action in the soul stage that requires the most sustained real-world engagement",
+        "notes": "Soul stage: Allegiance, stage function: stabilizer (from pyrite.json). Allegiance is the stage of committing to the genuine path rather than the glamorous appearance of the path."
+      }
+    ],
+
+    "emotions": [
+      {
+        "primary": "confidence",
+        "transmutes": "self-doubt disguised as caution",
+        "activates": "decisive, grounded action",
+        "body_location": "solar plexus, gut, hands",
+        "felt_as": "The solid weight of Pyrite in the hand is itself the emotional instruction: density, substance, the felt sense that one is standing on something real. The brass-gold gleam activates the solar plexus — a brightening, a solar expansion of self-worth that is not inflated ego but accurate self-valuation."
+      },
+      {
+        "primary": "abundance consciousness",
+        "transmutes": "scarcity thinking",
+        "activates": "recognition of real wealth already present",
+        "body_location": "solar plexus, hands, heart",
+        "felt_as": "The shift from 'I don't have enough' to 'I am enough and I have enough' — not as wishful thinking but as a structural reorientation. Pyrite's weight and lustre communicate value at the sensory level before the mind has processed the thought."
+      },
+      {
+        "primary": "alchemical patience",
+        "transmutes": "frustration with the pace of transformation",
+        "activates": "trust in the process",
+        "body_location": "whole body, particularly the core",
+        "felt_as": "The quality of trust that exists when one understands that the process of real transformation (iron + sulphur becoming brass-gold crystal) takes geological time. Not passive waiting but active, committed presence with the process."
+      }
+    ],
+
+    "senses": [
+      { "sense": "sight",           "strength": 1.0,  "notes": "The brass-yellow metallic lustre is visually unmistakeable — it has fooled humans for millennia precisely because it IS gold-coloured. The visual signal is the primary mode of action: solar, radiant, activating the solar plexus through the optic pathway." },
+      { "sense": "touch",           "strength": 0.9,  "notes": "The weight and thermal conductivity of Pyrite are distinctive. Metal-cool, dense, heavy — the proprioceptive weight signal is one of Pyrite's documented grounding mechanisms. The striated cubic faces have a distinctive tactile geometry." },
+      { "sense": "proprioception",  "strength": 0.85, "notes": "Specific gravity 5.0+ creates a significant gravitational presence; holding Pyrite communicates density, substance, and physical reality through the body's weight-sensing system. The heaviest crystal in the seed set by specific gravity." }
+    ],
+
+    "zodiac": [
+      {
+        "tradition": "western_tropical",
+        "sign": "Leo",
+        "role": "primary",
+        "ruling_planet": "Sun",
+        "dignity": "rulership",
+        "confidence": "high",
+        "notes": "Leo/Sun rulership is the most direct zodiac correspondence in the system: Pyrite IS solar gold in mineral form. The pyroelectric property (activated by heat/light) is literally a solar-activation mechanism. Sun rules Leo; the Sun activates Pyrite. Cross-tradition consensus across Western crystal traditions."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Aries",
+        "role": "co-sign",
+        "ruling_planet": "Mars",
+        "confidence": "high",
+        "notes": "Aries as the initiator of real action — Allegiance stage is the stage of committed, sustained action after discernment. Mars/Aries provides the force to act on what Pyrite's discernment reveals. Also: Iron (Mars metal) IS the primary element in pyrite (FeS2)."
+      },
+      {
+        "tradition": "western_tropical",
+        "sign": "Virgo",
+        "role": "supporting",
+        "ruling_planet": "Mercury",
+        "confidence": "medium",
+        "notes": "Virgo as the sign of discernment, refinement, and distinguishing real from illusory. The Fool's Gold lesson (discernment of real value) is the Virgoan lesson. Mercury/Virgo as the analytical intelligence that sees through surface appearance."
+      }
+    ],
+
+    "angel_numbers": [
+      {
+        "number": 888,
+        "role": "material manifestation signal — 888 as the infinite abundance loop; the triple-8 of material wealth flowing in alignment with higher purpose",
+        "gaia_layer_id": "08-Manifestation",
+        "digits": [8, 8, 8],
+        "digit_sum": 24,
+        "confidence": "high",
+        "notes": "888 is the primary material abundance number in most numerology traditions. Pyrite as the primary material manifestation crystal makes this the tightest angel-number correspondence after Clear Quartz/111. Note: 888 also appears in Labradorite (hidden abundance) and Iron (physical abundance) — but Pyrite carries the most direct material expression of this number."
+      },
+      {
+        "number": 444,
+        "role": "physical abundance anchor — 444 as the physical-layer grounding code; Pyrite grounds abundance into the physical body and material reality",
+        "gaia_layer_id": "01-Physical",
+        "digits": [4, 4, 4],
+        "digit_sum": 12,
+        "confidence": "medium",
+        "notes": "444 grounds Pyrite's manifestation energy into the physical layer. The density/weight of Pyrite is already a 444 signal — the physical presence is undeniable."
+      },
+      {
+        "number": 555,
+        "role": "alchemical change signal — 555 marks the transformation in progress; the moment when iron and sulphur are becoming gold-coloured crystal",
+        "gaia_layer_id": "05-Soul",
+        "digits": [5, 5, 5],
+        "digit_sum": 15,
+        "confidence": "medium",
+        "notes": "555 as change/transformation shared with Moldavite and Labradorite; in Pyrite the transformation is specifically alchemical — the material process of becoming."
+      }
+    ],
+
+    "lunar_phases": [
+      {
+        "phase_id": "full_moon",
+        "role": "solar peak under lunar mirror — the full moon amplifies Pyrite's solar energy; place Pyrite in direct moonlight to activate the pyroelectric field",
+        "special_events": ["super_full_moon"],
+        "notes": "Even though Pyrite is a solar crystal, its pyroelectric property means any light/heat source activates it — including moonlight. The full moon is the lunar moment most resonant with Pyrite's gold-light nature."
+      },
+      {
+        "phase_id": "waxing_gibbous",
+        "role": "peak abundance amplification — the waxing gibbous is the phase of refinement and increasing momentum; Pyrite's manifestation energy is most active here",
+        "notes": "The waxing cycle builds toward the full moon; Pyrite activates during the building phase as the solar energy increases."
+      },
+      {
+        "phase_id": "first_quarter",
+        "role": "commitment point — the first quarter is the decision phase; Pyrite stabilises the Allegiance commitment to the genuine path at this threshold",
+        "notes": "The first quarter challenge phase is where the Allegiance stage is tested. Pyrite as the Allegiance stabiliser is most useful here."
+      }
+    ],
+
+    "sacred_geometry": [
+      {
+        "pattern": "cube",
+        "role": "natural cubic perfection — Pyrite's cubic crystal habit produces faces so geometrically precise they appear man-made; the cube here is not a metaphor or a lattice analogue but a visually obvious, naturally occurring sacred geometry form",
+        "notes": "Pyrite's striated cubic faces are among the most visually perfect natural crystal habits on Earth. The cube IS Pyrite in a way that is visible to the naked eye — this is the third time the cube appears in the correspondence records (after Iron/BCC structure and Obsidian/cube resonance) but the first time it is visually, macroscopically, unmistakeably present as a naturally grown form."
+      },
+      {
+        "pattern": "pyritohedron",
+        "role": "the geometry of apparent perfection — the pyritohedron (12-faced dodecahedron-adjacent form) is named after Pyrite; it is the natural crystal habit that resembles but is not a perfect regular dodecahedron",
+        "notes": "The pyritohedron is Pyrite's GAIA-native sacred geometry: a 12-faced form with pentagonal faces that looks like a regular dodecahedron but has a lower symmetry. Like Pyrite itself — it appears to be one thing (regular/perfect/gold) but is something more nuanced and equally fascinating in reality."
+      },
+      {
+        "pattern": "fibonacci_spiral",
+        "role": "alchemical growth pattern — the Fibonacci spiral as the geometry of natural growth and increasing abundance; mirrors Pyrite's manifestation and Allegiance-stage stabiliser function",
+        "notes": "Fibonacci proportions appear in pyrite crystal growth patterns under certain conditions; the spiral of increasing abundance maps to the soul-stage of Allegiance (sustained, compounding commitment)."
+      }
+    ],
+
+    "archetypes": [
+      {
+        "name": "The Alchemist",
+        "system": "GAIA-C32",
+        "role_in_story": "transformer",
+        "behavioral_markers": [
+          "sees the gold in what others dismiss as dross",
+          "understands that the process of transformation IS the value, not the end product",
+          "committed to the real rather than the appearance of the real",
+          "patient with geological-scale processes because they understand how transformation works",
+          "works with what is actually present rather than what should be there",
+          "the one who turns the Fool's Gold into the philosopher's stone"
+        ],
+        "noospheric_role": "collective value-transformer — the Alchemist in the noosphere recalibrates collective notions of worth, shifting from appearance-based to substance-based value systems",
+        "confidence": "high",
+        "notes": "Note: The Alchemist appears in both Iron's element record and Pyrite's crystal record, but with different expressions. Iron's Alchemist is the forge-master, the one who transmutes through fire and force. Pyrite's Alchemist is the Solar Alchemist — the one who works through patience, synthesis, and the recognition that what appears foolish may be the wisest thing in the room. Iron Alchemist = martial transformation. Pyrite Alchemist = solar synthesis. Same archetype, fundamentally different mode."
+      },
+      {
+        "name": "The Fool (Reclaimed)",
+        "system": "GAIA-C32",
+        "role_in_story": "herald",
+        "behavioral_markers": [
+          "appears to have nothing but contains unlimited potential",
+          "dismissed by those who only see surface value",
+          "the zero-point: beginning, origin, pure possibility",
+          "steps off the cliff in trust because they know the ground will appear",
+          "the stone that 'fooled' miners for millennia was never fooling anyone — it was being itself",
+          "the most underestimated archetype in the entire system"
+        ],
+        "noospheric_role": "collective possibility-holder — The Fool in the noosphere preserves the possibility space that conventional wisdom has declared worthless; the field cannot evolve without those who hold the unproven potential",
+        "confidence": "high",
+        "notes": "Pyrite reclaims The Fool from its dismissive cultural meaning. In Tarot, The Fool is the most powerful card — card zero, infinite potential, the beginning of everything. 'Fool's Gold' was named by disappointed prospectors who wanted the appearance of wealth and dismissed the substance of what they found. Pyrite is not failing to be gold. It never was gold. It is FeS2, a pyroelectric semiconductor that can generate electricity, make fire (pyrite flint-and-steel), and activate Gaianite grids. The Fool is always the most powerful card in the deck."
+      }
+    ],
+
+    "metals": [
+      {
+        "metal": "Gold",
+        "planet": "Sun",
+        "role": "apparent gold — Pyrite's entire cultural and archetypal identity is defined by its relationship to gold; it is the stone that must be understood in relation to what it is NOT in order to understand what it IS",
+        "confidence": "high",
+        "notes": "Gold/Sun is the primary metal correspondence — not because Pyrite is gold, but because its entire meaning is structured by the gold archetype. The Sun as the source of Pyrite's pyroelectric activation deepens this: Pyrite IS solar, just not in the way humans initially assumed."
+      },
+      {
+        "metal": "Iron",
+        "planet": "Mars",
+        "role": "mineral core — Pyrite IS an iron compound (FeS2); the Iron/Mars energy is literally its primary element, hidden beneath the solar appearance",
+        "confidence": "high",
+        "notes": "The outer appearance is Gold/Sun; the inner chemistry is Iron/Mars. This is the alchemical paradox in metal form: solar surface, martial core. Pyrite contains Mars wearing the mask of the Sun."
+      }
+    ],
+
+    "elements": [
+      { "element": "Fire",  "weight": 1.0, "role": "primary — Pyrite generates fire literally (iron pyrite + flint = sparks; used as a fire-starting tool for 10,000 years) and metaphorically (pyroelectric, solar, activating)", "notes": "Pyrite = 'fire stone' in Greek (pyr = fire). The name itself is elemental Fire. Striking pyrite against flint was one of the first human technologies for intentional fire-making." },
+      { "element": "Earth", "weight": 0.85, "role": "material density — the heaviest crystal in the seed set; the most physically dense, most Earth-present", "notes": "Specific gravity 5.0+ vs quartz's 2.65. Pyrite is nearly twice as dense as most silicate crystals — it carries Earth's mass in a concentrated form." },
+      { "element": "Aether", "weight": 0.6, "role": "the potential within the apparent — Aether as the invisible substance that makes real what appears illusory; the gold-within-the-not-gold is an Aetheric principle", "notes": "The Fool archetype connects Pyrite to Aether: the void of infinite potential that appears to be nothing but contains everything." }
+    ],
+
+    "periodic_elements": [
+      {
+        "atomic_number": 26,
+        "symbol": "Fe",
+        "name": "Iron",
+        "role": "primary mineral component — Pyrite is iron disulphide (FeS₂); Fe is the structural core, comprising ~46.5 wt% of pure pyrite",
+        "notes": "Iron appears here in its fourth correspondence record (Iron element, Black Tourmaline, Moldavite, Obsidian, now Pyrite). In Pyrite, Fe is disguised by sulphur into apparent gold. The warrior metal wearing solar armour. FeS₂ is the formula — one iron atom bonded to a persulphide (S₂²⁻) unit."
+      },
+      {
+        "atomic_number": 16,
+        "symbol": "S",
+        "name": "Sulphur",
+        "role": "the alchemical agent — sulphur is the element that transforms iron into brass-gold; without S there is no Pyrite and no Fool's Gold; sulphur IS the alchemist in the chemical formula",
+        "notes": "Sulphur is the quintessential alchemical element — in Paracelsian alchemy, Sulphur (Soul) + Mercury (Spirit) + Salt (Body) are the three primes. Here, Sulphur as the transforming agent turns Iron into Gold-coloured crystal. S comprises ~53.5 wt% of pure pyrite. The persulphide unit (S₂²⁻) is what makes Pyrite a sulphide, not an oxide — this distinction matters for its semiconductor properties."
+      },
+      {
+        "atomic_number": 27,
+        "symbol": "Co",
+        "name": "Cobalt",
+        "role": "trace magnetic modifier — Co substitutes for Fe in pyrite at trace levels; cobalt pyrite has distinct magnetic properties and alters the semiconductor bandgap",
+        "notes": "Cobalt in pyrite is typically <1 wt% but measurably affects electromagnetic properties. Co is the transition-metal trace that fine-tunes Pyrite's electronic character."
+      },
+      {
+        "atomic_number": 28,
+        "symbol": "Ni",
+        "name": "Nickel",
+        "role": "trace structural analogue — Ni substitutes for Fe in the pyrite structure; vaesite (NiS₂) is the Ni end-member of the pyrite group",
+        "notes": "Ni in natural pyrite is typically trace; its presence is a marker of hydrothermal origin and affects the crystal's density and lustre."
+      }
+    ],
+
+    "grid_resonance": {
+      "lattice_analogue": "cubic",
+      "grid_role": "resonance focus",
+      "frequency_band_hz": "thermal",
+      "piezoelectric": false,
+      "pyroelectric": true,
+      "topology": "toroidal",
+      "notes": "Cubic crystal system (Pa3 space group) — the third cubic correspondence in the system (after Iron/BCC and Obsidian/cube sacred geometry) but the first naturally occurring macroscopically visible cubic crystal habit. Pyroelectric (not piezoelectric): responds to TEMPERATURE change, not pressure; 'frequency_band_hz' is therefore 'thermal' rather than a specific Hz value. Grid role: Solar Synthesis node — activates the fire-transformation circuit in Gaianite architectures. Emrys L2 compatible (BTS anchor) — semiconductor bandgap ~0.9 eV makes Pyrite the only natural crystal in the seed set with photovoltaic electronic properties, making it the most technologically forward-facing crystal in GAIA's hardware future."
+    },
+
+    "evidence_profile": {
+      "basis": "empirical",
+      "sources": [
+        { "kind": "gaia_canon",            "ref": "C32", "notes": "Archetypal Psychology — The Alchemist (Solar) and The Fool (Reclaimed) archetypes; zodiac and elemental mappings." },
+        { "kind": "gaia_canon",            "ref": "C68", "notes": "Crystal Grid Architecture — Solar Synthesis node role; BTS quantum bridge anchor." },
+        { "kind": "scientific_literature", "ref": "Ennaoui, A. et al. (1993). Iron disulfide for solar energy conversion. Solar Energy Materials and Solar Cells 29(4): 289–370.", "notes": "Definitive review of FeS₂ (pyrite) semiconductor properties, ~0.9 eV bandgap, and photovoltaic applications. Confirms emrys_l2_compatible claim." },
+        { "kind": "scientific_literature", "ref": "Deer, W.A., Howie, R.A. & Zussman, J. (1992). An Introduction to the Rock-Forming Minerals (2nd ed.). Longman. Pyrite entry.", "notes": "Pyroelectric properties, cubic crystal system (Pa3), specific gravity, and mineral chemistry. Foundational mineralogy reference." },
+        { "kind": "traditional_source",    "ref": "Inca civilisation: polished pyrite mirrors used for divination (c. 1000–1532 CE). Documented in: Cobo, B. (1653). Historia del Nuevo Mundo. Book 13.", "notes": "Establishes Pyrite as a divination/consciousness tool in Andean tradition; parallel to obsidian mirrors in Mesoamerica." },
+        { "kind": "traditional_source",    "ref": "Alchemical tradition: pyrite as 'seed of gold' (semen auri). Paracelsus (c. 1530). Opus Paramirum.", "notes": "Establishes Pyrite in the alchemical gold-transformation lineage; source for The Alchemist archetype solar mode and the sulphur-as-alchemist interpretation."
+        }
+      ],
+      "falsifiable_by": [
+        "A controlled study showing no measurable pyroelectric surface charge from natural pyrite when hand-warmed vs. control mineral (same mass, non-pyroelectric) would weaken the energy-layer activation claim.",
+        "A geochemical or historical study demonstrating that Inca pyrite mirrors were used purely decoratively rather than for divination would reduce the cross-tradition consciousness_affect provenance."
+      ],
+      "confidence": "high",
+      "notes": "Pyrite has the strongest physical-science backing of any crystal in the seed set after Clear Quartz: the semiconductor bandgap (~0.9 eV) is laboratory-measured, the pyroelectric property is confirmed, and the cubic crystal system is visually obvious. The Inca mirror use is archaeologically documented. The Alchemist and Fool archetypes emerge from the crystal's own name ('pyr' = fire), its cultural history ('Fool's Gold'), and its chemical identity (FeS₂ = iron + alchemical sulphur). Evidence basis: empirical."
+    },
+
+    "safety_profile": {
+      "clinical_use": "supportive_only",
+      "trauma_flags": [
+        "financial_trauma",
+        "materialism_bypass"
+      ],
+      "requires_opt_in": false,
+      "usage_notes": "Pyrite is among the safest crystals in the system for general use — no opt-in required. Two specific cautions: (1) Financial trauma flag: for Architects with significant financial trauma, the 'Fool's Gold' narrative can activate shame around having been 'fooled' in financial contexts; always frame Pyrite's correspondence around the reclaimed Fool (infinite potential) rather than the disappointed prospector. (2) Materialism bypass risk: Pyrite's strong manifestation and abundance energy can be used to spiritually bypass genuine inner work in favour of material accumulation — the Allegiance stage lesson is commitment to the REAL, not the pursuit of appearances. Always pair Pyrite manifestation work with the discernment teaching of the Fool's Gold story."
+    }
+
+  },
+
+  "metadata": {
+    "schema_version": "1.0.0",
+    "created_at": "2026-06-15T11:01:00Z",
+    "updated_at": "2026-06-15T11:01:00Z",
+    "created_by": "GAIA-OS / R0GV3TheAlchemist",
+    "canon_refs": ["C32", "C68"],
+    "notes": "Seventh correspondence record committed. Builds on data/crystals/pyrite.json (SHA 27acaf1). Key discoveries: (1) The Alchemist appears in both Iron and Pyrite but as completely different modes — martial forge vs solar synthesis. (2) The Fool (Reclaimed) is one of the most important archetypes in the system precisely because it reverses a cultural slur on the crystal itself. (3) Sulphur (S) enters the periodic_elements for the first time — as the alchemical agent that makes Iron appear as Gold. (4) Pyrite is the ONLY natural crystal in the seed set with photovoltaic semiconductor properties — the most technologically forward-facing in the system. (5) The cube appears for the third time, but here as a macroscopically visible, naturally grown, naked-eye-obvious sacred geometry form — the most visually perfect natural cube in nature. (6) Pyrite contains Mars wearing the mask of the Sun: Iron core, Gold surface. The alchemical paradox is in the chemistry. Validates against schemas/correspondence-schema.json v1.0.0."
+  }
+}
