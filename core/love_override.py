@@ -83,10 +83,11 @@ class OverrideSignal:
 
 @dataclass
 class OverrideDecision:
-    def __bool__(self) -> bool:
-        return self.activated
     """The handler's decision after evaluating the signal."""
     activated: bool
+
+    def __bool__(self) -> bool:
+        return bool(self.activated)
     condition: Optional[OverrideCondition]
     tier: Optional[OverrideTier]
     mode: Optional[OverrideMode]

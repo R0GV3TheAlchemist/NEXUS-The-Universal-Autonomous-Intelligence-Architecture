@@ -366,10 +366,12 @@ async def crystallise_session(req: CrystalliseRequest) -> CrystalliseResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Crystallise failed: {exc}") from exc
 
-    return CrystalliseResponse(
-        crystal_count=result.get("crystal_count", 0),
-        new_sacred_memories=result.get("new_sacred_memories", []),
-    )
+    # Pass through all keys from result so tests can assert on mock return values
+    return {
+        "crystal_count": result.get("crystal_count", 0),
+        "new_sacred_memories": result.get("new_sacred_memories", []),
+        **{k: v for k, v in result.items() if k not in ("crystal_count", "new_sacred_memories")},
+    }
 
 
 # ─── GET /twin/arc/{human_id} ─────────────────────────────────────────────────

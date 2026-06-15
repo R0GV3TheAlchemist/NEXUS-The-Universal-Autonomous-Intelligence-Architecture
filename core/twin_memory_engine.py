@@ -468,8 +468,8 @@ class TwinMemoryEngine(TemporalBraidEngine):
         session = self.open_session(session_id or None)
         return {
             "human_name": self.profile.name if self.profile else human_id,
-            "twin_phase": self.profile.current_phase if self.profile else "nigredo",
-            "session_count": self.profile.total_sessions if self.profile else 0,
+            "twin_phase": self.profile.twin_phase if self.profile else "nigredo",
+            "session_count": self.profile.session_count if self.profile else 0,
             "arc_summary": self.get_arc_summary(),
             "session_id": session.session_id,
             "sacred_memory_active": False,
