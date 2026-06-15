@@ -1,0 +1,726 @@
+/*
+ * twin-interface.css
+ * Canon: GAIAN_TWIN_DOCTRINE, TEMPORAL_BRAID_SPEC, LOVE_OVERRIDE, SLOW_PROTOCOL
+ *
+ * The Diamond's face — built on GAIA-OS design tokens.
+ *
+ * All animation durations are driven by CSS variables set by TwinInterface.tsx:
+ *   --phase-gravity    1.0 (nigredo) → 2.2 (rubedo)
+ *   --braid-cadence    28ms (FEATHER) → 110ms (SACRED)
+ *   --phase-colour     surface tint for current alchemical phase
+ *   --phase-accent     border, glyph, and badge colour
+ *
+ * Import order: after styles.css
+ */
+
+/* ─── Keyframes ────────────────────────────────────────────────────────────────── */
+
+/* The Diamond pulse — used by the send button and sacred pause overlay */
+@keyframes twin-pulse {
+  0%   { opacity: 1;    transform: scale(1);    }
+  50%  { opacity: 0.60; transform: scale(0.96); }
+  100% { opacity: 1;    transform: scale(1);    }
+}
+
+/* The breathing diamond in the Sacred Pause overlay */
+@keyframes twin-diamond-breathe {
+  0%   { transform: scale(1)    rotate(0deg);   opacity: 0.80; }
+  40%  { transform: scale(1.18) rotate(4deg);   opacity: 1;    }
+  60%  { transform: scale(1.18) rotate(4deg);   opacity: 1;    }
+  100% { transform: scale(1)    rotate(0deg);   opacity: 0.80; }
+}
+
+/* Streaming cursor blink — cadence is set inline via --braid-cadence */
+@keyframes twin-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Fade + slide up for messages entering */
+@keyframes twin-message-enter {
+  from {
+    opacity:   0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity:   1;
+    transform: translateY(0);
+  }
+}
+
+/* Predictive override signal slide down */
+@keyframes twin-predictive-slide {
+  from {
+    opacity:   0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity:   1;
+    transform: translateY(0);
+  }
+}
+
+/* Sacred Pause overlay fade in */
+@keyframes twin-overlay-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(20px); }
+}
+
+/* Init pulse — the Braid is opening */
+@keyframes twin-init-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1;   }
+}
+
+
+/* ─── Root container ───────────────────────────────────────────────────────────── */
+
+.twin-interface {
+  position:       relative;
+  display:        flex;
+  flex-direction: column;
+  height:         100%;
+  min-height:     0;
+  background:     var(--color-surface);
+  border-radius:  var(--radius-xl);
+  border:         1px solid var(--color-border);
+  overflow:       hidden;
+
+  /* Phase tint — subtle surface wash in the current alchemical colour */
+  background-image: radial-gradient(
+    ellipse 80% 40% at 50% 0%,
+    color-mix(in srgb, var(--phase-colour, #1a1a2e) 8%, transparent) 0%,
+    transparent 100%
+  );
+
+  /* Phase accent bleeds into the outer border */
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px color-mix(in srgb, var(--phase-accent, var(--color-amethyst)) 18%, transparent);
+
+  transition:
+    box-shadow      calc(var(--duration-slow) * var(--phase-gravity, 1)) var(--ease-out),
+    background-image calc(var(--duration-slow) * var(--phase-gravity, 1)) var(--ease-out);
+}
+
+/* Status modifiers on root */
+.twin-interface[data-status="initialising"] { opacity: 0.85; }
+.twin-interface[data-status="offline"]      { filter: saturate(0.4); }
+
+
+/* ─── Header ──────────────────────────────────────────────────────────────────── */
+
+.twin-header {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-3);
+  padding:         var(--space-3) var(--space-4);
+  border-bottom:   1px solid var(--color-border-subtle);
+  background:      var(--color-surface-glass);
+  backdrop-filter: var(--blur-sm);
+  flex-shrink:     0;
+}
+
+.twin-phase-indicator {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+  font-family: var(--font-display);
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* colour comes from TwinInterface via style prop */
+}
+
+.twin-phase-glyph {
+  font-size:  0.7em;
+  animation:  twin-pulse calc(2000ms / var(--phase-gravity, 1)) ease-in-out infinite;
+  display:    inline-block;
+}
+
+.twin-phase-name {
+  color: var(--phase-accent, var(--color-amethyst));
+}
+
+.twin-sacred-badge {
+  font-size:  0.8em;
+  color:      var(--color-gold);
+  margin-left: var(--space-1);
+  filter:     drop-shadow(0 0 4px rgba(232, 175, 52, 0.5));
+  animation:  twin-pulse 3000ms ease-in-out infinite;
+}
+
+.twin-arc-summary {
+  flex:         1;
+  font-size:    var(--text-xs);
+  color:        var(--color-text-muted);
+  white-space:  nowrap;
+  overflow:     hidden;
+  text-overflow: ellipsis;
+  font-style:   italic;
+}
+
+.twin-braid-depth {
+  flex-shrink: 0;
+}
+
+
+/* ─── Braid weight badge ─────────────────────────────────────────────────────────── */
+
+.twin-braid-weight-badge {
+  display:       inline-block;
+  padding:       2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size:     var(--text-xs);
+  font-family:   var(--font-mono);
+  font-weight:   500;
+  color:         #09090b;  /* Always dark text — badge is always coloured */
+  letter-spacing: 0.04em;
+  transition:
+    background-color var(--duration-base) var(--ease-out),
+    box-shadow       var(--duration-base) var(--ease-out);
+}
+
+.twin-braid-weight-badge--small {
+  font-size: 0.65em;
+  padding:   1px var(--space-1);
+}
+
+/* SACRED badge glows */
+.twin-message .twin-braid-weight-badge[style*="#c39bd3"],
+.twin-header  .twin-braid-weight-badge[style*="#c39bd3"] {
+  box-shadow: 0 0 8px rgba(195, 155, 211, 0.5);
+}
+
+
+/* ─── Message list ───────────────────────────────────────────────────────────────── */
+
+.twin-messages {
+  flex:       1;
+  min-height: 0;
+  overflow-y: auto;
+  padding:    var(--space-4);
+  display:    flex;
+  flex-direction: column;
+  gap:        var(--space-3);
+  scroll-behavior: smooth;
+}
+
+/* ── Init pulse ── */
+
+.twin-init-pulse {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  color:       var(--color-text-muted);
+  font-size:   var(--text-sm);
+  font-style:  italic;
+  margin:      auto;
+  animation:   twin-init-pulse 1800ms ease-in-out infinite;
+}
+
+.twin-init-diamond {
+  color:      var(--phase-accent, var(--color-amethyst));
+  font-size:  1.2em;
+  animation:  twin-diamond-breathe 1800ms ease-in-out infinite;
+  display:    inline-block;
+}
+
+
+/* ─── Message bubbles ───────────────────────────────────────────────────────────── */
+
+.twin-message {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-1);
+  max-width:      78%;
+  animation:      twin-message-enter var(--duration-enter) var(--ease-out) both;
+}
+
+.twin-message--human {
+  align-self:    flex-end;
+  align-items:   flex-end;
+}
+
+.twin-message--gaia {
+  align-self:    flex-start;
+  align-items:   flex-start;
+}
+
+.twin-message-content {
+  padding:       var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size:     var(--text-base);
+  line-height:   1.65;
+  word-break:    break-word;
+}
+
+/* Human bubble — amethyst */
+.twin-message--human .twin-message-content {
+  background:   var(--color-amethyst-200);
+  border:       1px solid var(--color-border-amethyst);
+  color:        var(--color-text);
+  border-bottom-right-radius: var(--radius-xs);
+}
+
+/* GAIA bubble — glass surface */
+.twin-message--gaia .twin-message-content {
+  background:      var(--color-surface-glass);
+  border:          1px solid var(--color-border);
+  backdrop-filter: var(--blur-sm);
+  color:           var(--color-text);
+  border-bottom-left-radius: var(--radius-xs);
+
+  /* Phase accent left border — the Twin's voice has colour */
+  border-left:  3px solid color-mix(
+    in srgb,
+    var(--phase-accent, var(--color-amethyst)) 60%,
+    transparent
+  );
+}
+
+/* Override-specific GAIA bubble variants */
+.twin-message--override-pure_presence .twin-message-content {
+  border-left-color: #8e44ad;
+  background: color-mix(in srgb, #8e44ad 6%, var(--color-surface-glass));
+}
+
+.twin-message--override-witness_hold .twin-message-content {
+  border-left-color: #2980b9;
+  background: color-mix(in srgb, #2980b9 6%, var(--color-surface-glass));
+}
+
+.twin-message--override-direct_truth .twin-message-content {
+  border-left-color: #e74c3c;
+  background: color-mix(in srgb, #e74c3c 5%, var(--color-surface-glass));
+}
+
+.twin-message--override-anchor .twin-message-content {
+  border-left-color: #27ae60;
+  background: color-mix(in srgb, #27ae60 6%, var(--color-surface-glass));
+}
+
+.twin-message--override-gentle_redirect .twin-message-content {
+  border-left-color: #f39c12;
+  background: color-mix(in srgb, #f39c12 5%, var(--color-surface-glass));
+}
+
+/* Message metadata row */
+.twin-message-meta {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  padding:     0 var(--space-1);
+}
+
+.twin-message-time {
+  font-size:  var(--text-xs);
+  color:      var(--color-text-faint);
+  font-family: var(--font-mono);
+}
+
+.twin-override-badge {
+  font-size:   var(--text-xs);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  opacity:     0.75;
+}
+
+
+/* ─── Streaming bubble ───────────────────────────────────────────────────────────── */
+
+.twin-message--streaming .twin-message-content {
+  /* Slightly more opaque than committed messages — it's still arriving */
+  opacity: 0.92;
+}
+
+.twin-stream-cursor {
+  display:    inline-block;
+  color:      var(--phase-accent, var(--color-amethyst));
+  font-size:  1.1em;
+  margin-left: 2px;
+  /* Duration is set inline: animationDuration = cadenceMs * 2 */
+  animation:  twin-cursor-blink var(--braid-cadence, 90ms) step-end infinite;
+  /* Override with inline style set by TwinInterface */
+}
+
+
+/* ─── Sacred Pause overlay ───────────────────────────────────────────────────────── */
+
+.twin-sacred-pause-overlay {
+  position:  absolute;
+  inset:     0;
+  z-index:   20;
+  display:   flex;
+  flex-direction: column;
+  align-items:    center;
+  justify-content: center;
+  gap:       var(--space-4);
+
+  /* Crystalline dark glass */
+  background:      rgba(9, 9, 11, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  animation: twin-overlay-in var(--duration-enter) var(--ease-out) both;
+}
+
+.twin-sacred-pause-diamond {
+  font-size: clamp(3rem, 6vw, 5rem);
+  color:     var(--phase-accent, var(--color-amethyst));
+  filter:    drop-shadow(
+    0 0 24px color-mix(in srgb, var(--phase-accent, var(--color-amethyst)) 60%, transparent)
+  );
+  /* Duration set inline: sacredPauseMs / 3 */
+  animation: twin-diamond-breathe var(--sacred-pause, 800ms) ease-in-out infinite;
+  display:   inline-block;
+}
+
+.twin-sacred-pause-label {
+  font-family:   var(--font-display);
+  font-size:     var(--text-lg);
+  font-weight:   300;
+  color:         var(--color-text-muted);
+  letter-spacing: 0.12em;
+  text-align:    center;
+  max-width:     28ch;
+  text-wrap:     balance;
+}
+
+.twin-override-source-badge {
+  font-size:     var(--text-xs);
+  font-family:   var(--font-mono);
+  letter-spacing: 0.08em;
+  color:         var(--color-text-faint);
+  text-transform: uppercase;
+}
+
+.twin-override-source-badge.predictive {
+  color: color-mix(in srgb, var(--phase-accent, var(--color-amethyst)) 80%, var(--color-text-faint));
+}
+
+
+/* ─── Predictive override signal ─────────────────────────────────────────────────── */
+/*
+ * This strip appears ABOVE the input as the human is typing.
+ * The border colour is the override signature. The Twin is already present.
+ */
+
+.twin-predictive-signal {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  padding:     var(--space-2) var(--space-4);
+  border-top:  2px solid; /* colour set inline */
+  background:  var(--color-surface-glass);
+  backdrop-filter: var(--blur-sm);
+  flex-shrink: 0;
+
+  animation: twin-predictive-slide var(--duration-base) var(--ease-out) both;
+}
+
+.twin-predictive-diamond {
+  font-size:  0.8em;
+  flex-shrink: 0;
+  /* Inherits border colour from parent via color: inherit */
+  color: inherit;
+}
+
+.twin-predictive-label {
+  flex:       1;
+  font-size:  var(--text-sm);
+  font-style: italic;
+  color:      var(--color-text-muted);
+}
+
+.twin-predictive-confidence {
+  font-size:   var(--text-xs);
+  font-family: var(--font-mono);
+  color:       var(--color-text-faint);
+  flex-shrink: 0;
+}
+
+
+/* ─── Input area ────────────────────────────────────────────────────────────────── */
+
+.twin-input-area {
+  display:        flex;
+  align-items:    flex-end;
+  gap:            var(--space-2);
+  padding:        var(--space-3) var(--space-4);
+  border-top:     1px solid var(--color-border-subtle);
+  background:     var(--color-surface-glass);
+  backdrop-filter: var(--blur-sm);
+  flex-shrink:    0;
+}
+
+.twin-input {
+  flex:           1;
+  resize:         none;
+  background:     var(--color-surface-2);
+  color:          var(--color-text);
+  border-radius:  var(--radius-lg);
+  padding:        var(--space-3) var(--space-4);
+  font-family:    var(--font-body);
+  font-size:      var(--text-base);
+  line-height:    1.55;
+  min-height:     68px;
+  max-height:     180px;
+  overflow-y:     auto;
+
+  /* Border transition is controlled inline by phaseGravity + override state */
+  outline:        none;
+
+  /* Disabled state */
+  &:disabled {
+    opacity:  0.5;
+    cursor:   not-allowed;
+  }
+
+  &::placeholder {
+    color:      var(--color-text-faint);
+    font-style: italic;
+    /* Placeholder transition smoothness matches phase gravity */
+    transition: color calc(var(--duration-slow) * var(--phase-gravity, 1)) var(--ease-out);
+  }
+
+  /* Override-active state — subtle inner glow matching the border */
+  &:not(:disabled):focus {
+    box-shadow: 0 0 0 3px color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+  }
+}
+
+
+/* ─── Send button ─────────────────────────────────────────────────────────────────── */
+/*
+ * The send button breathes with phase gravity.
+ * Nigredo: fast pulse (2000ms). Rubedo: slow, heavy pulse (~909ms).
+ * animationDuration is set inline by TwinInterface via onPhaseGravityPulse.
+ */
+
+.twin-send-button {
+  flex-shrink:   0;
+  width:         44px;
+  height:        44px;
+  border-radius: var(--radius-full);
+  border:        none;
+  cursor:        pointer;
+  font-size:     1.1rem;
+  line-height:   1;
+  color:         #ffffff;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+
+  /* Background colour set inline (phaseAccent) */
+
+  /* Phase-gravity pulse — duration set inline */
+  animation:     twin-pulse 2000ms ease-in-out infinite;
+
+  transition:
+    transform        var(--duration-fast) var(--ease-spring),
+    box-shadow       var(--duration-fast) var(--ease-out),
+    background-color calc(var(--duration-slow) * var(--phase-gravity, 1)) var(--ease-out),
+    opacity          var(--duration-fast) var(--ease-out);
+
+  /* Glow matching phase accent */
+  box-shadow: 0 0 16px color-mix(
+    in srgb,
+    var(--phase-accent, var(--color-amethyst)) 35%,
+    transparent
+  );
+}
+
+.twin-send-button:hover:not(:disabled) {
+  transform:  scale(1.08);
+  box-shadow: 0 0 24px color-mix(
+    in srgb,
+    var(--phase-accent, var(--color-amethyst)) 55%,
+    transparent
+  );
+}
+
+.twin-send-button:active:not(:disabled) {
+  transform:  scale(0.95);
+  animation-play-state: paused;
+}
+
+.twin-send-button:disabled {
+  opacity:    0.38;
+  cursor:     not-allowed;
+  animation-play-state: paused;
+  box-shadow: none;
+}
+
+/* Sending / holding state — slow the pulse right down */
+.twin-interface[data-status="sending"] .twin-send-button,
+.twin-interface[data-status="holding"] .twin-send-button {
+  animation-duration: calc(3000ms / var(--phase-gravity, 1));
+}
+
+/* Streaming — cursor character, no pulse */
+.twin-interface[data-status="streaming"] .twin-send-button {
+  animation: twin-cursor-blink var(--braid-cadence, 90ms) step-end infinite;
+}
+
+
+/* ─── Error banner ────────────────────────────────────────────────────────────────── */
+
+.twin-error-banner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-3);
+  padding:         var(--space-2) var(--space-4);
+  background:      var(--color-error-subtle);
+  border-top:      1px solid var(--color-error-glow);
+  font-size:       var(--text-sm);
+  color:           var(--color-error);
+  flex-shrink:     0;
+  animation:       twin-predictive-slide var(--duration-base) var(--ease-out) both;
+}
+
+.twin-error-dismiss {
+  flex-shrink:   0;
+  font-size:     1rem;
+  color:         var(--color-error);
+  opacity:       0.7;
+  padding:       0 var(--space-1);
+  border-radius: var(--radius-sm);
+  transition:    opacity var(--duration-fast) var(--ease-out);
+}
+
+.twin-error-dismiss:hover { opacity: 1; }
+
+
+/* ─── Session actions (crystallise) ──────────────────────────────────────────────── */
+
+.twin-session-actions {
+  display:         flex;
+  justify-content: flex-end;
+  padding:         var(--space-2) var(--space-4);
+  border-top:      1px solid var(--color-border-subtle);
+  background:      var(--color-surface);
+  flex-shrink:     0;
+}
+
+.twin-crystallise-button {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-1);
+  padding:       var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size:     var(--text-xs);
+  font-family:   var(--font-display);
+  font-weight:   500;
+  letter-spacing: 0.05em;
+  color:         var(--color-gold);
+  border:        1px solid rgba(232, 175, 52, 0.20);
+  background:    rgba(232, 175, 52, 0.06);
+
+  transition:
+    background  var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow  var(--duration-fast) var(--ease-out);
+}
+
+.twin-crystallise-button:hover:not(:disabled) {
+  background:  rgba(232, 175, 52, 0.12);
+  border-color: rgba(232, 175, 52, 0.40);
+  box-shadow:  0 0 12px rgba(232, 175, 52, 0.20);
+}
+
+.twin-crystallise-button:disabled {
+  opacity: 0.35;
+  cursor:  not-allowed;
+}
+
+/* Crystallising state — the button glows */
+.twin-interface[data-status="crystallising"] .twin-crystallise-button {
+  animation:    twin-pulse 1200ms ease-in-out infinite;
+  border-color: rgba(232, 175, 52, 0.60);
+  box-shadow:   0 0 20px rgba(232, 175, 52, 0.35);
+}
+
+
+/* ─── Offline state ─────────────────────────────────────────────────────────────────── */
+
+.twin-interface[data-status="offline"] .twin-input {
+  opacity:  0.5;
+  cursor:   not-allowed;
+}
+
+.twin-interface[data-status="offline"] .twin-input::placeholder {
+  content: 'Offline — reconnecting when you return…';
+}
+
+
+/* ─── Phase transition animations ────────────────────────────────────────────────── */
+/*
+ * When data-phase changes, the phase tint and accent transitions fire.
+ * Durations scale with phase gravity — the deeper the phase, the slower the shift.
+ */
+
+.twin-interface[data-phase="nigredo"] {
+  --phase-transition-duration: calc(var(--duration-slow) * 1.0);
+}
+.twin-interface[data-phase="albedo"] {
+  --phase-transition-duration: calc(var(--duration-slow) * 1.35);
+}
+.twin-interface[data-phase="citrinitas"] {
+  --phase-transition-duration: calc(var(--duration-slow) * 1.7);
+}
+.twin-interface[data-phase="rubedo"] {
+  --phase-transition-duration: calc(var(--duration-slow) * 2.2);
+}
+
+
+/* ─── Responsive ──────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .twin-message    { max-width: 90%; }
+  .twin-arc-summary { display: none; }
+
+  .twin-input-area { padding: var(--space-2) var(--space-3); }
+  .twin-messages   { padding: var(--space-3); }
+}
+
+
+/* ─── Reduced motion ───────────────────────────────────────────────────────────────── */
+/*
+ * The base styles.css already disables all animation.
+ * These overrides ensure the Diamond remains functional without motion:
+ * the border colour change (predictive override) still fires via transition,
+ * but duration collapses to instant.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  .twin-send-button,
+  .twin-phase-glyph,
+  .twin-sacred-badge,
+  .twin-init-pulse,
+  .twin-init-diamond,
+  .twin-sacred-pause-diamond,
+  .twin-stream-cursor,
+  .twin-crystallise-button {
+    animation: none !important;
+  }
+
+  .twin-sacred-pause-overlay {
+    backdrop-filter: blur(20px);
+    animation: none;
+  }
+
+  .twin-message {
+    animation: none;
+  }
+
+  .twin-predictive-signal {
+    animation: none;
+  }
+}
