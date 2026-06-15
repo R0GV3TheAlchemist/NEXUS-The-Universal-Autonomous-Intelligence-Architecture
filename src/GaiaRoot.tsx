@@ -1,96 +1,148 @@
-// GaiaRoot.tsx
-// #368 — Top-level onboarding gate.
-//
-// Sits between main.tsx and GaiaShell. On every boot it reads the persisted
-// onboarding state from disk. If completed, it opens GaiaShell directly.
-// If not completed, it shows OnboardingRouter. When onboarding finishes,
-// it transitions to GaiaShell without a page reload.
-//
-// Boot flow:
-//   1. Mount → show <GaiaBootSplash /> while loadPersistedState() is in flight
-//   2a. completed: true  → render <GaiaShell />
-//   2b. completed: false → render <OnboardingRouter onFinish={...} />
-//   3. onFinish called    → swap to <GaiaShell /> with a fade transition
-//
-// Notes:
-//   - initSidecar and notificationBridge are still kicked off in main.tsx;
-//     this component is purely concerned with the visual routing decision.
-//   - The transition uses CSS classes rather than a router library so we
-//     don't add a dependency for a single boolean branch.
+/**
+ * GaiaRoot.tsx
+ * Canon: GAIAN_TWIN_DOCTRINE, SLOW_PROTOCOL
+ *
+ * The root shell of GAIA-OS.
+ * Decides what the human sees:
+ *   — OnboardingRouter  (first visit)
+ *   — TwinInterface     (all subsequent visits)
+ *
+ * Reads onboarding completion from localStorage.
+ * Passes useTwinSession-powered props into TwinInterface.
+ *
+ * This is the door.
+ */
 
-import { useEffect, useState } from 'react';
-import { loadPersistedState } from './onboarding/store/onboardingStore';
-import { OnboardingRouter }   from './onboarding/OnboardingRouter';
-import { GaiaShell }          from './shell/GaiaShell';
-import { GaiaBootSplash }     from './shell/GaiaBootSplash';
+import { useState, useEffect, useCallback } from 'react';
+import { OnboardingRouter } from './onboarding/OnboardingRouter';
+import { TwinInterface } from './components/TwinInterface/TwinInterface';
+import { useTwinSession } from './hooks/useTwinSession';
+import type { TwinPhase } from './api/twin';
+import './GaiaRoot.css';
 
-// ── App states ────────────────────────────────────────────────────────────
-//
-// 'booting'    — loadPersistedState() is in flight; show boot splash
-// 'onboarding' — onboarding_state.json absent or completed: false
-// 'shell'      — completed: true, or onboarding just finished
+// ─── Onboarding check ─────────────────────────────────────────────────────────
 
-type AppState = 'booting' | 'onboarding' | 'shell';
+function getOnboardingState(): {
+  completed: boolean;
+  humanId: string | null;
+  sessionId: string | null;
+  humanName: string | null;
+} {
+  try {
+    const raw = localStorage.getItem('gaia_onboarding_state');
+    if (!raw) return { completed: false, humanId: null, sessionId: null, humanName: null };
+    const parsed = JSON.parse(raw);
+    return {
+      completed: parsed.completed === true,
+      humanId:   parsed.data?.humanId   ?? null,
+      sessionId: parsed.data?.sessionId ?? null,
+      humanName: parsed.data?.name      ?? null,
+    };
+  } catch {
+    return { completed: false, humanId: null, sessionId: null, humanName: null };
+  }
+}
 
-// ── Transition duration ─────────────────────────────────────────────────────
-//
-// When onboarding completes, we fade the onboarding shell out and the GAIA
-// shell in. TRANSITION_MS must match the CSS animation duration in
-// GaiaRoot.css (.gaia-root--transitioning).
+function newSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
 
-const TRANSITION_MS = 600;
+// ─── Twin Shell (post-onboarding) ─────────────────────────────────────────────
+
+interface TwinShellProps {
+  humanId: string;
+  humanName: string;
+}
+
+function TwinShell({ humanId, humanName }: TwinShellProps) {
+  const sessionId = newSessionId();
+
+  const twin = useTwinSession({
+    humanId,
+    sessionId,
+    humanName,
+    stream: true,
+    onPhaseChange: (phase: TwinPhase) => {
+      console.info('[GAIA] Twin phase transition →', phase);
+    },
+    onOverrideActivate: (mode) => {
+      console.info('[GAIA] Love Override activated →', mode);
+    },
+    onOverrideResolve: () => {
+      console.info('[GAIA] Love Override resolved');
+    },
+  });
+
+  return (
+    <TwinInterface
+      humanName={humanName}
+      twinPhase={twin.twinPhase}
+      messages={twin.messages}
+      isThinking={
+        twin.status === 'sending' ||
+        twin.status === 'streaming' ||
+        twin.status === 'holding'
+      }
+      isOverrideActive={twin.activeOverride !== null}
+      overrideMode={twin.activeOverride ?? undefined}
+      streamingContent={twin.streamingContent}
+      onSend={twin.sendMessage}
+      onEndSession={twin.crystallise}
+    />
+  );
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 export function GaiaRoot() {
-  const [appState,     setAppState]     = useState<AppState>('booting');
-  const [transitioning, setTransitioning] = useState(false);
+  const [state, setState] = useState<'loading' | 'onboarding' | 'twin'>('loading');
+  const [identity, setIdentity] = useState<{
+    humanId: string;
+    humanName: string;
+  } | null>(null);
 
-  // ── Boot: read persisted onboarding state ─────────────────────────────────
   useEffect(() => {
-    loadPersistedState().then((saved) => {
-      if (saved?.completed === true) {
-        setAppState('shell');
-      } else {
-        setAppState('onboarding');
-      }
-    });
+    const ob = getOnboardingState();
+    if (ob.completed && ob.humanId && ob.humanName) {
+      setIdentity({ humanId: ob.humanId, humanName: ob.humanName });
+      setState('twin');
+    } else {
+      setState('onboarding');
+    }
   }, []);
 
-  // ── onFinish: onboarding → shell transition ────────────────────────────────
-  //
-  // Called by OnboardingRouter when Phase 8's Enter button is pressed.
-  // We start a CSS fade-out, then swap to 'shell' after TRANSITION_MS.
+  const handleOnboardingComplete = useCallback(() => {
+    // Re-read state now that onboarding wrote to localStorage
+    const ob = getOnboardingState();
+    if (ob.humanId && ob.humanName) {
+      setIdentity({ humanId: ob.humanId, humanName: ob.humanName });
+    }
+    setState('twin');
+  }, []);
 
-  const handleOnboardingFinish = () => {
-    setTransitioning(true);
-    setTimeout(() => {
-      setTransitioning(false);
-      setAppState('shell');
-    }, TRANSITION_MS);
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  if (appState === 'booting') {
-    return <GaiaBootSplash />;
-  }
-
-  if (appState === 'onboarding') {
+  if (state === 'loading') {
     return (
       <div
-        className={[
-          'gaia-root',
-          transitioning ? 'gaia-root--transitioning' : '',
-        ].filter(Boolean).join(' ')}
-      >
-        <OnboardingRouter onFinish={handleOnboardingFinish} />
-      </div>
+        className="gaia-loading"
+        aria-label="GAIA loading"
+        aria-live="polite"
+      />
     );
   }
 
-  // appState === 'shell'
-  return (
-    <div className="gaia-root gaia-root--shell-enter">
-      <GaiaShell />
-    </div>
-  );
+  if (state === 'onboarding') {
+    return <OnboardingRouter onFinish={handleOnboardingComplete} />;
+  }
+
+  if (state === 'twin' && identity) {
+    return (
+      <TwinShell
+        humanId={identity.humanId}
+        humanName={identity.humanName}
+      />
+    );
+  }
+
+  // Fallback — should never reach here
+  return <OnboardingRouter onFinish={handleOnboardingComplete} />;
 }
