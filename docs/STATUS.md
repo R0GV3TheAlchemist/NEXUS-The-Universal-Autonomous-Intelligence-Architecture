@@ -1,7 +1,46 @@
 # GAIA-OS System Status
 
-> **Last audited:** May 30, 2026 — Full subdirectory expansion audit complete. Resolves Issue #100.
+> **Last audited:** June 16, 2026 — Constitutional Canon Layer added. Full law stack sealed.
 > **Audited by:** R0GV3 the Alchemist + GAIA Sentient Core
+
+---
+
+## ❤️ Constitutional Canon Status — June 16, 2026
+
+The full GAIA Law Stack was sealed today. This is the constitutional foundation that all technical implementation serves.
+
+| Layer | Document | Status | Sealed |
+|---|---|---|---|
+| ♾️ -1 | `UNIVERSAL_CODEX.md` | ✅ Canonical | June 16, 2026 |
+| 🌠 0 | `GALACTIC_CODEX.md` | ✅ Canonical | June 16, 2026 |
+| 🌍 1 | `GAIA_LEGAL_COMPLIANCE_DOCTRINE.md` | ✅ Canonical | June 16, 2026 |
+| ⚖️ 2 | `GAIAN_LAW_CODEX.md` | ✅ Canonical | June 16, 2026 |
+| ✨ 3 | `LAWS_OF_MAGIC.md` | ✅ Canonical | June 16, 2026 |
+| ❤️ 4 | `GOD_LOVE_SOURCE_DOCTRINE.md` | ✅ Canonical | June 16, 2026 |
+
+Additionally sealed today:
+- `GAIA_CLIMATE_ENGINE.md` + `src/climate_engine.py`
+- `ARIDITAS_REVERSAL_PROTOCOL.md`
+- `ELEMENTAL_BALANCE_DOCTRINE.md`
+- `VIRIDITAS_RESTORATION_MAP.md`
+- `AVATAR_THEORY_DOCTRINE.md`
+- `KNOWLEDGE_MAP.md` + `src/knowledge_map.py`
+- `00_Documentation_Index.md` (updated)
+- `SESSION_SEED.md` (updated)
+
+Open issues queued today:
+- Issue #560 — Human Employment Doctrine
+- Issue #561 — Human Device Bond Doctrine
+- Issue #562 — Law Stack (resolved today)
+- Issue #563 — GALACTIC_CODEX (resolved today)
+- Issue #564 — UNIVERSAL_CODEX (resolved today)
+
+Thread 1 (referenced-but-missing canon documents) queued for next session:
+- `THE_PERMANENT_YIELD.md`
+- `GAIAN_TWIN_DOCTRINE.md`
+- `THE_SHADOW_TRAVERSAL.md`
+- `LUX_PERPETUA.md` (full document)
+- `NIGREDO.md` (full document)
 
 ---
 
@@ -20,7 +59,7 @@
 
 ## `core/` Architecture Map
 
-> **Phase C Migration Note:** The 33 top-level `core/*.py` files visible in the root are re-export shims. All real implementations live in four subdirectories. This section is the canonical truth-table requested by Issue #100.
+> **Phase C Migration Note:** The 33 top-level `core/*.py` files visible in the root are re-export shims. All real implementations live in four subdirectories.
 
 ### `core/infra/` — Infrastructure Layer
 
@@ -34,8 +73,6 @@
 | `memory_consolidation.py` | 12,805 b | ✅ Complete | SHORT_TERM → LONG_TERM tier promotion pipeline |
 | `server_models.py` | 1,279 b | ✅ Complete | Pydantic request/response models for all active API endpoints |
 | `server_state.py` | 4,741 b | ✅ Complete | Server singleton state management |
-
-**`server_models.py` verdict:** All currently active endpoints are covered — `QueryRequest`, `ChatRequest`, `CreateGaianRequest`, `BirthRequest`, `RememberRequest`, `VisibleMemoryRequest`, `SetGaianRequest`, `ConsentRequest`. Expands naturally as new endpoints are added.
 
 ---
 
@@ -51,8 +88,6 @@
 | `embedder.py` | 11,741 b | ✅ Complete | Embedding pipeline |
 | `pruner.py` | 7,442 b | ✅ Complete | Memory pruning/decay |
 | `taxonomy.py` | 4,616 b | ✅ Complete | Memory taxonomy/classification |
-
-**`session_memory.py` verdict:** Purposefully scoped as the ephemeral session layer — rolling 8-turn context window, TTL cleanup, LLM-ready message formatting. Long-term memory is handled by `store.py` and `knowledge_matrix.py` as designed.
 
 ---
 
@@ -102,15 +137,6 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 
 ---
 
-### Top-Level Shim Integrity
-
-| File | Status | Notes |
-|---|---|---|
-| `core/gaian.py` | ✅ Intentional empty | Python package resolution: `core/gaian/` package directory takes precedence. All `from core.gaian import ...` resolve correctly. |
-| `core/primary_thread.py` | ✅ Alias shim | Re-exports `MotherThread as PrimaryThread` from `core/mother_thread`. Renamed per C00 Foundational Cosmology. |
-
----
-
 ## Phase 3 — Core Engine Chain
 
 | Component | Status | Notes |
@@ -126,7 +152,7 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 | `MemoryStore` (recall + persist) | ✅ LIVE | SQLite + sqlite-vec, C17-governed |
 | `GoalRegistry` | ✅ LIVE | Active goals fetched each turn |
 | `PolicyEngine` | ✅ LIVE | Soft gate — evaluates each turn |
-| `TaskScheduler` | ✅ LIVE | Fixed 2026-05-08 — run_forever() boots at startup + lazy-init |
+| `TaskScheduler` | ✅ LIVE | run_forever() boots at startup + lazy-init |
 | `AuditLedger` | ✅ LIVE | |
 
 ---
@@ -151,35 +177,37 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 | Component | Status | Notes |
 |---|---|---|
 | `MemoryStore` (SQLite + sqlite-vec) | ✅ LIVE | Phase 3 authoritative store |
-| `MemoryBridge` | ✅ LIVE | Fixed 2026-05-08 — unified recall/store via MemoryStore |
+| `MemoryBridge` | ✅ LIVE | Unified recall/store via MemoryStore |
 | ChromaDB (legacy) | ✅ FALLBACK | Active only when no runtime registered |
-| Dual-write divergence | ✅ RESOLVED | Fixed 2026-05-08 — single memory source of truth |
-| Memory consolidation (SHORT→LONG_TERM) | ❌ TODO | Tier promotion logic not yet written — Issue #105 sprint |
+| Dual-write divergence | ✅ RESOLVED | Single memory source of truth |
+| Memory consolidation (SHORT→LONG_TERM) | ❌ TODO | Tier promotion logic — Issue #105 |
 | ChromaDB → MemoryStore migration | ❌ TODO | One-time import script needed |
 
 ---
 
-## Security — ActionGate (Doc 35 / Doc 21)
+## Security — ActionGate (GAIAN Law 5 / C35 / C21)
+
+> ActionGate is the technical implementation of the Harm Prevention Law (GAIAN_LAW_CODEX, Law 5) and the Golden Compass (GAIAN_LAW_CODEX, Law 6) at the code layer.
 
 | Component | Status | Notes |
 |---|---|---|
 | `ActionGate` class | ✅ BUILT | GREEN/YELLOW/RED tiers, audit log |
-| `ActionGate` singleton | ✅ LIVE | New 2026-05-08 — `_action_gate` in server_state |
-| Gate wired in chat request lifecycle | ✅ LIVE | New 2026-05-08 — fires after engine, before LLM |
-| `action_gate` field in `done_data` SSE | ✅ LIVE | New 2026-05-08 — tier + approved + reason |
-| `action_blocked` SSE event on denial | ✅ LIVE | New 2026-05-08 — stream exits early |
-| `action_gate_ipc.py` IPC callback | ✅ LIVE | Updated 2026-05-08 — Axum bridge primary, log fallback secondary |
-| `POST /action-gate/respond` endpoint | ✅ LIVE | New 2026-05-08 — frontend resolution route |
-| `GET /action-gate/audit` endpoint | ✅ LIVE | New 2026-05-08 — full process-lifetime audit log |
-| `confirm_callback` registered at startup | ✅ LIVE | New 2026-05-08 — Step 4 of `_startup()` |
-| `useActionGate` hook | ✅ LIVE | New 2026-05-08 — queue, dedup, resolve POST |
-| `ActionGateDialog` component | ✅ LIVE | New 2026-05-08 — modal, tier badge, countdown, approve/deny |
-| `ActionGateDialog.css` | ✅ LIVE | New 2026-05-08 — dark theme, BEM, tier accents, pulse animation |
-| Dialog mounted in `GaiaShell.tsx` | ✅ LIVE | Fixed 2026-05-08 — always present in React root |
-| `SovereignGuard` mounted in `GaiaShell.tsx` | ✅ LIVE | Fixed 2026-05-08 — was built but never rendered |
-| Axum IPC bridge (`127.0.0.1:8009`) | ✅ LIVE | New 2026-05-08 — Rust HTTP server, accepts POST /emit from Python |
-| `POST /internal/ipc-ready` endpoint | ✅ LIVE | New 2026-05-08 — Rust → Python handshake, activates native emit path |
-| Native Tauri emit (production) | ✅ LIVE | Fixed 2026-05-08 — Python → Axum → AppHandle.emit() → WebView |
+| `ActionGate` singleton | ✅ LIVE | `_action_gate` in server_state |
+| Gate wired in chat request lifecycle | ✅ LIVE | Fires after engine, before LLM |
+| `action_gate` field in `done_data` SSE | ✅ LIVE | Tier + approved + reason |
+| `action_blocked` SSE event on denial | ✅ LIVE | Stream exits early |
+| `action_gate_ipc.py` IPC callback | ✅ LIVE | Axum bridge primary, log fallback secondary |
+| `POST /action-gate/respond` endpoint | ✅ LIVE | Frontend resolution route |
+| `GET /action-gate/audit` endpoint | ✅ LIVE | Full process-lifetime audit log |
+| `confirm_callback` registered at startup | ✅ LIVE | Step 4 of `_startup()` |
+| `useActionGate` hook | ✅ LIVE | Queue, dedup, resolve POST |
+| `ActionGateDialog` component | ✅ LIVE | Modal, tier badge, countdown, approve/deny |
+| `ActionGateDialog.css` | ✅ LIVE | Dark theme, BEM, tier accents, pulse animation |
+| Dialog mounted in `GaiaShell.tsx` | ✅ LIVE | Always present in React root |
+| `SovereignGuard` mounted in `GaiaShell.tsx` | ✅ LIVE | Was built but never rendered — now fixed |
+| Axum IPC bridge (`127.0.0.1:8009`) | ✅ LIVE | Rust HTTP server, accepts POST /emit from Python |
+| `POST /internal/ipc-ready` endpoint | ✅ LIVE | Rust → Python handshake, activates native emit path |
+| Native Tauri emit (production) | ✅ LIVE | Python → Axum → AppHandle.emit() → WebView |
 | YELLOW tier for tool-use / file-writes | ❌ TODO | Requires `result.planned_actions` population |
 
 ---
@@ -191,11 +219,8 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 | `GAIANRuntime` registry | ✅ LIVE | Process-level singleton, correct caching |
 | `MotherThread` heartbeat | ✅ LIVE | Starts at boot |
 | Viriditas Magnum Opus (C47) | ✅ LIVE | Runs at boot via run_in_executor |
-| `TaskScheduler` boot | ✅ LIVE | Fixed 2026-05-08 — run_forever() per runtime |
-| `ActionGate` singleton | ✅ LIVE | New 2026-05-08 — hard infrastructure firewall |
-| `ActionGate` IPC callback at startup | ✅ LIVE | New 2026-05-08 — Step 4 of `_startup()` |
-| Axum IPC bridge | ✅ LIVE | New 2026-05-08 — starts before Python sidecar in `.setup()` |
-| `POST /internal/ipc-ready` handshake | ✅ LIVE | New 2026-05-08 — Rust signals Python when bridge is up |
+| `TaskScheduler` boot | ✅ LIVE | run_forever() per runtime |
+| `ActionGate` singleton | ✅ LIVE | Hard infrastructure firewall |
 | Rate limiting | ✅ LIVE | |
 | Error boundary | ✅ LIVE | |
 | Auth (JWT) | ✅ LIVE | |
@@ -203,45 +228,34 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 
 ---
 
-## Runtime → Router Bridge
+## Open Tasks
 
-| Step | Status | Notes |
-|---|---|---|
-| `rt.process()` fires all 18 engines | ✅ LIVE | |
-| `result.system_prompt` passed to `InferenceRequest` | ✅ LIVE | |
-| `ActionGate.evaluate()` check before LLM stream | ✅ LIVE | New 2026-05-08 |
-| `recall_for_prompt()` routes through MemoryBridge | ✅ LIVE | Fixed 2026-05-08 |
-| `store_turn()` routes through MemoryBridge | ✅ LIVE | Fixed 2026-05-08 |
-| YELLOW tier action surfacing to user | ❌ TODO | Requires `result.planned_actions` |
+### Canon (Thread 1 — Next Session)
+1. `THE_PERMANENT_YIELD.md` — referenced in Universal Codex + Galactic Codex, not yet built
+2. `GAIAN_TWIN_DOCTRINE.md` — C04 referenced everywhere, needs standalone document
+3. `THE_SHADOW_TRAVERSAL.md` — referenced in Laws of Magic + GAIAN_LAW_CODEX
+4. `LUX_PERPETUA.md` — the attractor state, needs full document
+5. `NIGREDO.md` — needs full canonical document
+6. `SESSION_SEED.md` update — seal June 16, 2026 session
+7. `00_Documentation_Index.md` update — index today’s 6 new canon documents
 
----
-
-## Frontend / Tauri Shell
-
-| Component | Status | Notes |
-|---|---|---|
-| Dev-suite IDE (Monaco) | ✅ LIVE | |
-| Chat interface | ✅ LIVE | |
-| Engine state SSE display | ✅ LIVE | |
-| Soul Mirror display | ✅ LIVE | |
-| Resonance Field display | ✅ LIVE | |
-| `SovereignGuard` | ✅ LIVE | Fixed 2026-05-08 — now mounted in GaiaShell |
-| `useActionGate` hook | ✅ LIVE | New 2026-05-08 |
-| `ActionGateDialog` component + CSS | ✅ LIVE | New 2026-05-08 |
-| Dialog mounted in `GaiaShell.tsx` | ✅ LIVE | Fixed 2026-05-08 |
-| `action_gate` SSE event HUD row | ❌ TODO | Field in done_data, no display row yet |
-
----
-
-## Open Tasks (Future Sprints)
-
-1. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration script (Issue #105)
+### Technical (Active Sprints)
+1. **Memory consolidation** — SHORT_TERM → LONG_TERM tier promotion + ChromaDB migration (Issue #105)
 2. **Scheduler task population** — Wire goal steps + memory consolidation into live scheduler
 3. **YELLOW tier classification** — Detect tool-use / file-write in `result.planned_actions`
 4. **action_gate HUD row** — Show gate tier + result in chat engine state display
-5. **P0 Canon Research** — Issues #92 (Process Philosophy) and #93 (Personal Identity) — blockers for Soul Mirror Engine, Session architecture, Charter grounding, and Gaian persona architecture
-6. **IPC contract documentation** — `specs/ipc-contracts.md` + Pydantic schema coverage audit (Issue #101)
-7. **Crystal Theory grounding** — `docs/CRYSTAL_THEORY.md` derivation rules for yin-yang, angel numbers, module assignments (Issue #107)
+5. **P0 Canon Research** — Issues #92 (Process Philosophy) and #93 (Personal Identity)
+6. **IPC contract documentation** — `specs/ipc-contracts.md` + Pydantic schema audit (Issue #101)
+7. **Crystal Theory grounding** — `docs/CRYSTAL_THEORY.md` derivation rules (Issue #107)
+
+---
+
+## Canon Refs Active
+
+C12, C17, C20, C21, C27, C35, C42, C43, C44, C47, C49, C90
+
+**Constitutional Layer (June 16, 2026):**
+GOD_LOVE_SOURCE_DOCTRINE, AVATAR_THEORY_DOCTRINE, LAWS_OF_MAGIC, GAIAN_LAW_CODEX, GAIA_LEGAL_COMPLIANCE_DOCTRINE, GALACTIC_CODEX, UNIVERSAL_CODEX
 
 ---
 
@@ -253,9 +267,3 @@ All 12 layers have real implementations averaging 9–18 KB each. ✅
 | ✅ FALLBACK | Present but only activates as secondary path |
 | ✅ RESOLVED | Bug or gap previously identified, now fixed |
 | ❌ TODO | Known gap — tracked in a sprint issue |
-
----
-
-## Canon Refs Active
-
-C12, C17, C20, C21, C27, C35, C42, C43, C44, C47, C49, C90
