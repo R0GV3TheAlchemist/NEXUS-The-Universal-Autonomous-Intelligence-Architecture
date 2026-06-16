@@ -1,6 +1,1 @@
-"""
-tests/memory
-
-Test suite for Memory core modules.
-Issue: #213
-"""
+"""Test suite for GAIA Persistent Memory & Gaian Twin State Store — Issue #463."""
