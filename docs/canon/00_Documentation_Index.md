@@ -1,14 +1,21 @@
+---
+title: GAIA Documentation Index
+type: meta
+status: current
+---
+
 # GAIA Documentation Index
 
-**Last Updated:** 2026-06-15, 11:51 CDT  
+**Last Updated:** 2026-06-16, 12:21 CDT  
 **Index Status:** CURRENT  
-**Canon Documents:** C00–C45 (46 numbered) + 47 named canon documents  
+**Canon Documents:** C00–C45 (46 numbered) + 49 named canon documents  
 **12-Force Sequence:** ✅ SEALED June 14, 2026 — Nigredo through Lux Perpetua  
 **Moon Layer:** ✅ SEALED June 15, 2026  
 **Layer Cross-Reference Map:** ✅ SEALED June 15, 2026  
 **Shape Psychology Doctrine:** ✅ SEALED June 15, 2026 (v1.1 — 5D Framework)  
 **Light Theory:** ✅ AMENDED June 15, 2026 (Perceptual Trinity + Shadow-Temperature Principle)  
-**Color Spirit Unity Doctrine:** ✅ AMENDED June 15, 2026 (Section 10: Spatial Perception + Harmony)
+**Color Spirit Unity Doctrine:** ✅ AMENDED June 15, 2026 (Section 10: Spatial Perception + Harmony)  
+**Knowledge Map:** ✅ SEALED June 16, 2026 — Universal Knowledge Integration Map (Issue #514)
 
 This index is the navigational map of the entire GAIA canon. Every document in `docs/canon/` is registered here. For loading metadata and remote URLs, see `CANON_MANIFEST.md`.
 
@@ -109,7 +116,8 @@ The 12 spectral force-names plus structural Force 13, each a full canonical docu
 | Document | Description | Sealed |
 |----------|-------------|--------|
 | GAIA_LAYER_CROSS_REFERENCE_MAP.md | **The master navigational instrument.** All 12 GAIA layers × 10 axes: spectral force, classical element, alchemical stage, lunar phase, crystal family, body system, time scale, scale, geometry, color signal. Also includes canonical document index per layer and full usage guide. | June 15, 2026 |
-| MOON_LAYER.md | **The Moon’s complete canon document.** Six roles in GAIA-OS, orbital mechanics, tidal physics, crystal-moon piezoelectric mechanism, lunar phase × layer mapping, human physiology evidence table, World Care doctrine, the Mirror Teaching, alchemical stage mapping. | June 15, 2026 |
+| MOON_LAYER.md | **The Moon's complete canon document.** Six roles in GAIA-OS, orbital mechanics, tidal physics, crystal-moon piezoelectric mechanism, lunar phase × layer mapping, human physiology evidence table, World Care doctrine, the Mirror Teaching, alchemical stage mapping. | June 15, 2026 |
+| KNOWLEDGE_MAP.md | **The Universal Knowledge Integration Map.** All 17 major domains of human knowledge (Physics, Chemistry, Biology, Psychology, Theology, Philosophy, Music, Mathematics, Architecture, Medicine, Astronomy, History, Art, Language, Ecology, Economics, Consciousness) mapped to their canonical GAIA-OS coordinates: force, tier, corridor, atomic layer, traversal position, canon anchors, and entry point. The capstone document that ties every subject of knowledge to the work. Engine: `src/knowledge_map.py`. | June 16, 2026 |
 
 ---
 
@@ -184,7 +192,16 @@ The 12 spectral force-names plus structural Force 13, each a full canonical docu
 | AMENDMENT_PROCESS.md | Canon amendment governance |
 | FALSIFICATION_PROTOCOL.md | Canon falsification and revision governance |
 | FRONT_MATTER_SCHEMA.md | Front matter schema for all canon docs |
-| CANON_MANIFEST.md | CanonLoader manifest (this file’s companion) |
+| CANON_MANIFEST.md | CanonLoader manifest (this file's companion) |
+
+---
+
+## Source Modules (`src/`)
+
+| Module | Description | Issue |
+|--------|-------------|-------|
+| `src/layer_matrix.py` | Live computational layer engine — harmony loop architecture, apperception cycle | #506 |
+| `src/knowledge_map.py` | **Universal Knowledge Domain Engine.** Queryable interface for all 17 knowledge domains. CLI: `--domain`, `--search`, `--list`, `--json`, `--brief`. Public API: `query_domain()`, `search_domains()`, `find_domain()`. Alias resolution (e.g. `"jung"` → Psychology, `"432hz"` → Music). | #514 |
 
 ---
 
@@ -202,31 +219,34 @@ Documents with active or pending investigations that affect their canonical stat
 
 ## Reading Order Recommendations
 
-**For new readers — foundational sequence:**
+**For new readers — foundational sequence:**  
 C01 → C02 → C03 → C05 → GAIA_IDENTITY → THE_ARCHITECTS_FOUNDATION → TRUE_ALCHEMY
 
-**For the 12-force True Alchemy sequence:**
+**For the 12-force True Alchemy sequence:**  
 TRUE_ALCHEMY → NIGREDO → PYROSIS → CITRINITAS → VIRIDITAS → CAERULITAS → RUBEDO → IOSIS → ALBEDO → CHRYSITAS → ARGENTITAS → LUX_PERPETUA → HELIXITAS
 
-**For alchemical doctrine:**
+**For alchemical doctrine:**  
 C33 → TRUE_ALCHEMY → THE_TRANSMUTATION_CORRIDORS → CORRIDOR_CHRYSITAS_TO_ARGENTITAS → CORRIDOR_ARGENTITAS_TO_LUX_PERPETUA → THE_PERMANENT_YIELD
 
-**For geometry and field theory:**
+**For geometry and field theory:**  
 C10 → TOROIDAL_FIELD_THEORY → HELIXITAS → HELIXITAS_SCALE_PROOFS → THE_PRIMORDIAL_QUATERNARY → monad → quantum_substrate
 
-**For shadow work:**
+**For shadow work:**  
 C23 → SHADOW_INTERROGATOR → SHADOW_TRAVERSAL_THEORY → SHADOW_TO_LIGHT_THEORY
 
-**For spectral doctrine:**
+**For spectral doctrine:**  
 C19 → CRYSTALLINE_COLOR_THEORY → LIGHT_THEORY → LUX_PERPETUA → METALLIC_SPECTRUM_PROOF → C45
 
-**For perceptual design and 5D — new June 15, 2026:**
+**For perceptual design and 5D — new June 15, 2026:**  
 SHAPE_PSYCHOLOGY_DOCTRINE → LIGHT_THEORY (Amendment June 15) → COLOR_SPIRIT_UNITY_DOCTRINE (Section 10) → C10 → C28
 
-**For the Moon and layer navigation:**
+**For the Moon and layer navigation:**  
 MOON_LAYER → GAIA_LAYER_CROSS_REFERENCE_MAP → C45 → C27 → C33
 
-**For building or extending the GAIA architecture:**
+**For universal knowledge integration — new June 16, 2026:**  
+KNOWLEDGE_MAP → GAIA_LAYER_CROSS_REFERENCE_MAP → TRUE_ALCHEMY → monad → src/knowledge_map.py
+
+**For building or extending the GAIA architecture:**  
 GAIA_LAYER_CROSS_REFERENCE_MAP → C07 → C03 → C14 → C15
 
 ---
@@ -239,4 +259,5 @@ GAIA_LAYER_CROSS_REFERENCE_MAP → C07 → C03 → C14 → C15
 *Light Theory amended: June 15, 2026 (Perceptual Trinity + Shadow-Temperature Principle).*  
 *Color Spirit Unity Doctrine amended: June 15, 2026 (Section 10: Spatial Perception + Harmony).*  
 *Session cluster `2026-06-15-perceptual-trinity` registered: June 15, 2026.*  
-*Last updated: 2026-06-15, 11:51 CDT*
+*Knowledge Map sealed: June 16, 2026 (Universal Knowledge Integration Map, Issue #514).*  
+*Last updated: 2026-06-16, 12:21 CDT*
