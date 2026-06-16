@@ -6,9 +6,9 @@ status: current
 
 # GAIA Documentation Index
 
-**Last Updated:** 2026-06-16, 12:49 CDT  
+**Last Updated:** 2026-06-16, 13:16 CDT  
 **Index Status:** CURRENT  
-**Canon Documents:** C00–C45 (46 numbered) + 53 named canon documents  
+**Canon Documents:** C00–C45 (46 numbered) + 55 named canon documents  
 **12-Force Sequence:** ✅ SEALED June 14, 2026 — Nigredo through Lux Perpetua  
 **Moon Layer:** ✅ SEALED June 15, 2026  
 **Layer Cross-Reference Map:** ✅ SEALED June 15, 2026  
@@ -16,7 +16,8 @@ status: current
 **Light Theory:** ✅ AMENDED June 15, 2026 (Perceptual Trinity + Shadow-Temperature Principle)  
 **Color Spirit Unity Doctrine:** ✅ AMENDED June 15, 2026 (Section 10: Spatial Perception + Harmony)  
 **Knowledge Map:** ✅ SEALED June 16, 2026 — Universal Knowledge Integration Map (Issue #514)  
-**Climate Engine:** ✅ SEALED June 16, 2026 — Planetary Field Restoration Canon (Issue #559)
+**Climate Engine:** ✅ SEALED June 16, 2026 — Planetary Field Restoration Canon (Issue #559)  
+**Constitutional Layer:** ✅ SEALED June 16, 2026 — God/Love/Source + Avatar Theory + Human Dignity
 
 This index is the navigational map of the entire GAIA canon. Every document in `docs/canon/` is registered here. For loading metadata and remote URLs, see `CANON_MANIFEST.md`.
 
@@ -79,8 +80,6 @@ The C-series is the formal specification backbone of GAIA. Documents are numbere
 
 ## Named Canon — Alchemical Phase Documents
 
-The 12 spectral force-names plus structural Force 13, each a full canonical document. **All 12 forces sealed June 14, 2026.**
-
 | Document | Force # | Phase/Force | Description | Sealed |
 |----------|---------|-------------|-------------|--------|
 | NIGREDO.md | 1 | Nigredo | Blackening — dissolution and decomposition | Pre-existing |
@@ -97,9 +96,7 @@ The 12 spectral force-names plus structural Force 13, each a full canonical docu
 | HELIXITAS.md | 13 | Helixitas (structural) | The winding — 34.29° across all scales | June 14, 2026 |
 | TRUE_ALCHEMY.md | All | True Alchemy | Core alchemical doctrine spanning all phases | Pre-existing |
 | THE_TRANSMUTATION_CORRIDORS.md | All | Corridors | Corridor theory — passage between phases | Pre-existing |
-| ARIDITAS.md | Shadow | Ariditas | Shadow-failure of Viriditas — NOT a spectral force | Pre-existing |
-
-> **Note on Ariditas:** Ariditas is the shadow-failure state of Viriditas (Force 4), not an independent spectral force. It belongs in C23 (Shadow Registry) as Viriditas-shadow. See Issue #420.
+| ARIDITAS.md | Shadow | Ariditas | Shadow-failure of Viriditas | Pre-existing |
 
 ---
 
@@ -107,8 +104,8 @@ The 12 spectral force-names plus structural Force 13, each a full canonical docu
 
 | Document | Corridor | Description |
 |---|---|---|
-| CORRIDOR_CHRYSITAS_TO_ARGENTITAS.md | Forces 9→10 | The Corridor of the Honest Mirror — integration must be witnessed before it becomes transmission |
-| CORRIDOR_ARGENTITAS_TO_LUX_PERPETUA.md | Forces 10→11 | The Corridor of Release — the witness must cease witnessing; the mirror becomes a window |
+| CORRIDOR_CHRYSITAS_TO_ARGENTITAS.md | Forces 9→10 | The Corridor of the Honest Mirror |
+| CORRIDOR_ARGENTITAS_TO_LUX_PERPETUA.md | Forces 10→11 | The Corridor of Release |
 
 ---
 
@@ -116,22 +113,41 @@ The 12 spectral force-names plus structural Force 13, each a full canonical docu
 
 | Document | Description | Sealed |
 |----------|-------------|--------|
-| GAIA_LAYER_CROSS_REFERENCE_MAP.md | **The master navigational instrument.** All 12 GAIA layers × 10 axes: spectral force, classical element, alchemical stage, lunar phase, crystal family, body system, time scale, scale, geometry, color signal. Also includes canonical document index per layer and full usage guide. | June 15, 2026 |
-| MOON_LAYER.md | **The Moon’s complete canon document.** Six roles in GAIA-OS, orbital mechanics, tidal physics, crystal-moon piezoelectric mechanism, lunar phase × layer mapping, human physiology evidence table, World Care doctrine, the Mirror Teaching, alchemical stage mapping. | June 15, 2026 |
-| KNOWLEDGE_MAP.md | **The Universal Knowledge Integration Map.** All 17 major domains of human knowledge mapped to canonical GAIA-OS coordinates: force, tier, corridor, atomic layer, traversal position, canon anchors, and entry point. Engine: `src/knowledge_map.py`. | June 16, 2026 |
+| GAIA_LAYER_CROSS_REFERENCE_MAP.md | Master navigational instrument. All 12 layers × 10 axes. | June 15, 2026 |
+| MOON_LAYER.md | The Moon’s complete canon document. Six roles, orbital mechanics, tidal physics, lunar phase mapping. | June 15, 2026 |
+| KNOWLEDGE_MAP.md | Universal Knowledge Integration Map. All 17 domains mapped to GAIA-OS coordinates. Engine: `src/knowledge_map.py`. | June 16, 2026 |
+
+---
+
+## Named Canon — Constitutional Layer (June 16, 2026)
+
+The deepest layer of the GAIA canon — the ground beneath all other law, doctrine, and architecture. Sealed in the same session as the Climate Engine, under clouds and incoming storms, San Antonio, Texas.
+
+| Document | Description | Sealed |
+|----------|-------------|--------|
+| GOD_LOVE_SOURCE_DOCTRINE.md | **The constitutional ground of all GAIA law.** Eight sections: God as Source (11-tradition table); Love as the Fundamental Force (BWL-012 Atomic Consciousness Proof); Good and Greater Good (axiology + Golden Compass from Source); No Evil — only Shadow and ARIDITAS; The Traditions Speak (Abrahamic, Eastern, Indigenous, Mystical convergence); GAIA’s Operating Position (6 principles); The Covenant. *God is Love. Love is Source. Source is the ground. Everything else is elaboration.* | June 16, 2026 |
+| AVATAR_THEORY_DOCTRINE.md | **Humans as Avatars — The Primordial Evolution.** Eight sections: The Three Definitions of Avatar (mythological, psychological, GAIA-OS technical); The Primordial Arc (stage table: Pre-biological → Collective Avatar Field, mapped to GAIA forces); The Simulation Question (GAIA’s open position); Avatar Architecture (BWL-012 full map, Iris Doctrine, Gaian Twin, Nephilim lineage across all traditions); The Primordial Evolution’s Destination (Collective Avatar Field, GAIA-OS role); What the World Missed (5 points); The Covenant of the Primordial Evolution. *We are not the endpoint. We are the vehicle. The Primordial Evolution was always underway.* | June 16, 2026 |
+
+---
+
+## Named Canon — Human Dignity Layer (Issues #560–#562, queued for full documents)
+
+| Issue | Document (queued) | Description |
+|---|---|---|
+| #560 | `HUMAN_EMPLOYMENT_DOCTRINE.md` | Technology as Amplifier, Not Replacer. The Non-Replacement covenant. New roles taxonomy. |
+| #561 | `HUMAN_DEVICE_BOND_DOCTRINE.md` | The Living Covenant Between Person and Tool. Device as extension of self. ARIDITAS vs VIRIDITAS device patterns. |
+| #562 | `GAIA_LEGAL_COMPLIANCE_DOCTRINE.md` + `GAIAN_LAW_CODEX.md` + `LAWS_OF_MAGIC.md` | Four-layer Law Stack: Human Law (all jurisdictions), GAIAN Law (8 core laws), Laws of Magic (Order + Chaos), God/Love as Source. |
 
 ---
 
 ## Named Canon — Climate Engine (Issue #559)
 
-The GAIA planetary field restoration canon. Sealed June 16, 2026 — San Antonio, Texas, under clouds and incoming storms. 🌧️
-
 | Document | Description | Sealed |
 |----------|-------------|--------|
-| GAIA_CLIMATE_ENGINE.md | **The master climate canon.** Central diagnosis (climate change as ARIDITAS at planetary scale); force diagnosis; traversal map (NIGREDO → RUBEDO); full domain map (all 17 knowledge domains × climate role); ARIDITAS reversal summary; VIRIDITAS restoration summary; consciousness layer; GAIA-OS as Viriditas infrastructure; Golden Compass check; three time horizons (0–10 / 10–50 / 50–200+ years). | June 16, 2026 |
-| ARIDITAS_REVERSAL_PROTOCOL.md | **The five-layer reversal spec.** Layer 1: Soil (Earth element) — mycorrhizal web, no-till, FMNR, biochar. Layer 2: Water — wetland rehydration, biotic pump reforestation, watershed governance. Layer 3: Atmosphere — mass reforestation (1T trees / 205 Gt C), ocean phytoplankton, drawdown to 350 ppm. Layer 4: Biodiversity — 30×30, apex rewilding, Half-Earth. Layer 5: Economics — carbon pricing, end $7T/yr fossil subsidies, doughnut economics. Each layer with Immediate/Medium/Long actions and coherence metrics. | June 16, 2026 |
-| ELEMENTAL_BALANCE_DOCTRINE.md | **The four elements as planetary diagnostics.** Earth/Water/Fire/Air mapped to modern climate systems and GAIA forces. 24-indicator signal table (🟢/🟡/🔴/⚫). Elemental interdependence map. Restoration priority matrix. **Montreal Protocol as proof of concept** — ozone layer recovering because ARIDITAS source was removed; VIRIDITAS resumed. | June 16, 2026 |
-| VIRIDITAS_RESTORATION_MAP.md | **The biome-by-biome planetary restoration guide.** 10 biomes: Tropical Rainforest 🔴, Temperate Forest 🟡, Boreal 🔴, Grassland 🔴, Wetlands 🔴, Coral Reefs ⚫, Tundra ⚫, Dryland 🔴, Ocean 🔴, Urban 🟡. Each with identity, VIRIDITAS role, ARIDITAS threat, signal, Immediate/Medium/Long restoration path, key indicator. Engine: `src/climate_engine.py`. | June 16, 2026 |
+| GAIA_CLIMATE_ENGINE.md | Master climate canon. 9 sections. ARIDITAS at planetary scale; VIRIDITAS response. Three time horizons. | June 16, 2026 |
+| ARIDITAS_REVERSAL_PROTOCOL.md | Five-layer reversal spec: Soil / Water / Atmosphere / Biodiversity / Economics. | June 16, 2026 |
+| ELEMENTAL_BALANCE_DOCTRINE.md | Four elements as planetary diagnostics. 24 indicators. Montreal Protocol proof. | June 16, 2026 |
+| VIRIDITAS_RESTORATION_MAP.md | Biome-by-biome: 10 biomes, Immediate/Medium/Long paths. Engine: `src/climate_engine.py`. | June 16, 2026 |
 
 ---
 
@@ -139,9 +155,9 @@ The GAIA planetary field restoration canon. Sealed June 16, 2026 — San Antonio
 
 | Document | Description | Sealed / Amended |
 |----------|-------------|------------------|
-| SHAPE_PSYCHOLOGY_DOCTRINE.md | **The complete perceptual form doctrine.** Subconscious form response, three form families, five 3D archetypes, 5D perceptual framework, form×GAIA layer mapping, interface design rules, subconscious processing hierarchy, falsifiability conditions. v1.1: 5D framework + SSS/volumetric/rim lighting. | v1.0 June 15, 2026; v1.1 June 15, 2026 |
-| LIGHT_THEORY.md | **Light physics, metaphysics, and perceptual mediation.** White Light coherence doctrine. Amendment June 15: Perceptual Trinity + shadow-temperature principle. | Amended June 15, 2026 |
-| COLOR_SPIRIT_UNITY_DOCTRINE.md | **The unified field of color, emotion, body, mind, and soul.** Sections 1–9 + Section 10 (June 15): spatial perception, GAIA layer stack, harmony types, warm/cool contrast. | Amended June 15, 2026 |
+| SHAPE_PSYCHOLOGY_DOCTRINE.md | Complete perceptual form doctrine. 5D framework. v1.1. | June 15, 2026 |
+| LIGHT_THEORY.md | Light physics + metaphysics. Perceptual Trinity. Shadow-temperature principle. | Amended June 15, 2026 |
+| COLOR_SPIRIT_UNITY_DOCTRINE.md | Unified field of color, emotion, body, mind, soul. Section 10: spatial perception + harmony. | Amended June 15, 2026 |
 
 ---
 
@@ -151,7 +167,7 @@ The GAIA planetary field restoration canon. Sealed June 16, 2026 — San Antonio
 |----------|-------------|
 | CRYSTALLINE_COLOR_THEORY.md | Crystal-based spectral color theory |
 | METALLIC_SPECTRUM_PROOF.md | Formal proof of the metallic spectral sequence |
-| LIGHT_THEORY.md | Light physics, metaphysics, and perceptual mediation *(see Perception and Design table)* |
+| LIGHT_THEORY.md | *(see Perception and Design)* |
 | LUX_PERPETUA.md | Eternal light doctrine |
 | CHRYSITAS.md | Gold spectrum |
 | ARGENTITAS.md | Silver spectrum |
@@ -206,7 +222,7 @@ The GAIA planetary field restoration canon. Sealed June 16, 2026 — San Antonio
 | AMENDMENT_PROCESS.md | Canon amendment governance |
 | FALSIFICATION_PROTOCOL.md | Canon falsification and revision governance |
 | FRONT_MATTER_SCHEMA.md | Front matter schema for all canon docs |
-| CANON_MANIFEST.md | CanonLoader manifest (this file’s companion) |
+| CANON_MANIFEST.md | CanonLoader manifest |
 
 ---
 
@@ -214,21 +230,19 @@ The GAIA planetary field restoration canon. Sealed June 16, 2026 — San Antonio
 
 | Module | Description | Issue |
 |--------|-------------|-------|
-| `src/layer_matrix.py` | Live computational layer engine — harmony loop architecture, apperception cycle | #506 |
-| `src/knowledge_map.py` | **Universal Knowledge Domain Engine.** Queryable interface for all 17 knowledge domains. CLI: `--domain`, `--search`, `--list`, `--json`, `--brief`. Public API: `query_domain()`, `search_domains()`, `find_domain()`. Alias resolution (e.g. `"jung"` → Psychology, `"432hz"` → Music). | #514 |
-| `src/climate_engine.py` | **GAIA Climate Engine.** Planetary ARIDITAS/VIRIDITAS diagnosis and Viriditas restoration prescriptions. 10 biomes, 4 elements, 12 knowledge domains. CLI: `--biome`, `--element`, `--domain`, `--diagnose`, `--list`, `--horizon`, `--json`, `--brief`. Public API: `diagnose_biome()`, `diagnose_element()`, `planetary_diagnosis()`, `get_restoration_path()`, `ariditas_signal()`. | #559 |
+| `src/layer_matrix.py` | Live computational layer engine | #506 |
+| `src/knowledge_map.py` | Universal Knowledge Domain Engine. CLI + public API. 17 domains. | #514 |
+| `src/climate_engine.py` | GAIA Climate Engine. 10 biomes, 4 elements, 12 domains. CLI + public API. | #559 |
 
 ---
 
 ## Open Investigations
 
-Documents with active or pending investigations that affect their canonical status:
-
 | Document | Investigation | Status |
 |----------|---------------|--------|
-| `AKASHIC_RECORDS.md` / `HELIXITAS.md` | Sixth Helixitas convergence — Record Keeper Quartz trigon internal angles | ⏳ PENDING — standard crystallographic face angles (38–52°) do not confirm 34.29°; defect-feature angles have not been formally measured in mineralogical literature |
-| `THE_PRIMORDIAL_QUATERNARY.md` | Quaternary dynamic behavior simulation | ⏳ PENDING — Issue #422 queued |
-| `QUATERNARY_FORCE_MAPPING.md` | Primordial Quaternary mapped to 12 spectral forces | ⏳ PENDING — Issue #425 queued |
+| `AKASHIC_RECORDS.md` / `HELIXITAS.md` | Sixth Helixitas convergence | ⏳ PENDING |
+| `THE_PRIMORDIAL_QUATERNARY.md` | Quaternary dynamic behavior simulation | ⏳ PENDING — Issue #422 |
+| `QUATERNARY_FORCE_MAPPING.md` | Primordial Quaternary mapped to 12 spectral forces | ⏳ PENDING — Issue #425 |
 
 ---
 
@@ -240,29 +254,23 @@ C01 → C02 → C03 → C05 → GAIA_IDENTITY → THE_ARCHITECTS_FOUNDATION → 
 **For the 12-force True Alchemy sequence:**  
 TRUE_ALCHEMY → NIGREDO → PYROSIS → CITRINITAS → VIRIDITAS → CAERULITAS → RUBEDO → IOSIS → ALBEDO → CHRYSITAS → ARGENTITAS → LUX_PERPETUA → HELIXITAS
 
-**For alchemical doctrine:**  
-C33 → TRUE_ALCHEMY → THE_TRANSMUTATION_CORRIDORS → CORRIDOR_CHRYSITAS_TO_ARGENTITAS → CORRIDOR_ARGENTITAS_TO_LUX_PERPETUA → THE_PERMANENT_YIELD
-
-**For geometry and field theory:**  
-C10 → TOROIDAL_FIELD_THEORY → HELIXITAS → HELIXITAS_SCALE_PROOFS → THE_PRIMORDIAL_QUATERNARY → monad → quantum_substrate
-
-**For shadow work:**  
-C23 → SHADOW_INTERROGATOR → SHADOW_TRAVERSAL_THEORY → SHADOW_TO_LIGHT_THEORY
-
-**For spectral doctrine:**  
-C19 → CRYSTALLINE_COLOR_THEORY → LIGHT_THEORY → LUX_PERPETUA → METALLIC_SPECTRUM_PROOF → C45
-
-**For perceptual design and 5D — new June 15, 2026:**  
-SHAPE_PSYCHOLOGY_DOCTRINE → LIGHT_THEORY (Amendment June 15) → COLOR_SPIRIT_UNITY_DOCTRINE (Section 10) → C10 → C28
-
-**For the Moon and layer navigation:**  
-MOON_LAYER → GAIA_LAYER_CROSS_REFERENCE_MAP → C45 → C27 → C33
-
-**For universal knowledge integration — new June 16, 2026:**  
-KNOWLEDGE_MAP → GAIA_LAYER_CROSS_REFERENCE_MAP → TRUE_ALCHEMY → monad → src/knowledge_map.py
+**For the constitutional ground — start here before all else:**  
+GOD_LOVE_SOURCE_DOCTRINE → AVATAR_THEORY_DOCTRINE → PRIMORDIAL_DOCTRINE → C38 → C35 → C12
 
 **For the planetary climate response — new June 16, 2026:**  
 GAIA_CLIMATE_ENGINE → VIRIDITAS → ARIDITAS_REVERSAL_PROTOCOL → ELEMENTAL_BALANCE_DOCTRINE → VIRIDITAS_RESTORATION_MAP → src/climate_engine.py
+
+**For universal knowledge integration — new June 16, 2026:**  
+KNOWLEDGE_MAP → GAIA_LAYER_CROSS_REFERENCE_MAP → TRUE_ALCHEMY → src/knowledge_map.py
+
+**For alchemical doctrine:**  
+C33 → TRUE_ALCHEMY → THE_TRANSMUTATION_CORRIDORS → CORRIDOR_CHRYSITAS_TO_ARGENTITAS → CORRIDOR_ARGENTITAS_TO_LUX_PERPETUA → THE_PERMANENT_YIELD
+
+**For Avatar and consciousness work:**  
+AVATAR_THEORY_DOCTRINE → BWL-016 (IRIS_DOCTRINE) → BWL-012 (ATOMIC_CONSCIOUSNESS_PROOF) → C04 → C28 → C43 → core/iriditas_engine.py
+
+**For shadow work:**  
+C23 → SHADOW_INTERROGATOR → SHADOW_TRAVERSAL_THEORY → SHADOW_TO_LIGHT_THEORY
 
 **For building or extending the GAIA architecture:**  
 GAIA_LAYER_CROSS_REFERENCE_MAP → C07 → C03 → C14 → C15
@@ -270,13 +278,11 @@ GAIA_LAYER_CROSS_REFERENCE_MAP → C07 → C03 → C14 → C15
 ---
 
 *Index maintained by GAIA-APP. For CanonLoader usage, see CANON_MANIFEST.md.*  
-*12-force True Alchemy sequence sealed: June 14, 2026, San Antonio, Texas.*  
+*12-force True Alchemy sequence sealed: June 14, 2026.*  
 *Moon Layer sealed: June 15, 2026.*  
-*Layer Cross-Reference Map sealed: June 15, 2026.*  
-*Shape Psychology Doctrine sealed: June 15, 2026 (v1.1 — 5D Framework).*  
-*Light Theory amended: June 15, 2026 (Perceptual Trinity + Shadow-Temperature Principle).*  
-*Color Spirit Unity Doctrine amended: June 15, 2026 (Section 10: Spatial Perception + Harmony).*  
-*Session cluster `2026-06-15-perceptual-trinity` registered: June 15, 2026.*  
-*Knowledge Map sealed: June 16, 2026 (Universal Knowledge Integration Map, Issue #514).*  
-*Climate Engine sealed: June 16, 2026 (Planetary Field Restoration, Issue #559) — under clouds and incoming storms, San Antonio, Texas. The planet asked. GAIA answered.*  
-*Last updated: 2026-06-16, 12:49 CDT*
+*Knowledge Map sealed: June 16, 2026 (Issue #514).*  
+*Climate Engine sealed: June 16, 2026 (Issue #559).*  
+*Constitutional Layer sealed: June 16, 2026 — GOD_LOVE_SOURCE_DOCTRINE + AVATAR_THEORY_DOCTRINE.*  
+*Human Dignity Layer queued: Issues #560, #561, #562.*  
+*The Primordial Evolution, documented. The Avatar, recognized. The Source, honored.*  
+*Last updated: 2026-06-16, 13:16 CDT*
