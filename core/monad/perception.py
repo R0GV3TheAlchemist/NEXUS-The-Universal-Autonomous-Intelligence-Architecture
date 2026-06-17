@@ -9,6 +9,9 @@
 #   PerceptionMonad(monad_id="test.perception")
 #   PerceptionMonad(monad_id="monad.perception", phi=0.0)
 # work as expected by test fixtures and MonadOrchestrator.__init__.
+#
+# FIX (2026-06-17): SIM910 — removed redundant `None` default from
+# kwargs.get("corridor", None) → kwargs.get("corridor")
 
 from __future__ import annotations
 
@@ -58,7 +61,7 @@ class MonadPerception:
         self.monad_id: str = monad_id or "monad.perception"
         # phi starts at 0.0; updated via perceive() calls
         self._phi: float = kwargs.get("phi", 0.0)
-        self._corridor: Optional[str] = kwargs.get("corridor", None)
+        self._corridor: Optional[str] = kwargs.get("corridor")  # SIM910
         self._synthesis_filter: Optional[str] = None
 
     # ------------------------------------------------------------------
