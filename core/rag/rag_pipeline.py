@@ -25,7 +25,6 @@ from typing import Optional
 from .hallucination_guard import GuardConfig, HallucinationGuard
 from .models import HallucinationRisk, Query, SynthesisResult
 from .query_analyzer import QueryAnalyzer
-from .reranker import Reranker, RerankerConfig  # noqa: F401 (alias)
 from .reranker import Reranker, RerankerConfig
 from .retriever import Retriever, RetrieverConfig
 from .synthesizer import Synthesizer, SynthesizerConfig

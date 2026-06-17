@@ -22,10 +22,6 @@ from gaia.core.state import (
     GAIAState,
 )
 
-# ── GAIAStateStore ───────────────────────────────────────────────────────────
-# GAIAStateStore stub — state_store refactored in D6
-class GAIAStateStore: pass
-
 # ── Talisman ───────────────────────────────────────────────────────────────────
 from gaia.core.talisman import (
     CoherenceFunction,
@@ -60,7 +56,6 @@ __all__ = [
     "GAIAMode",
     "GAIAOperationalMode",
     "GAIAState",
-    "GAIAStateStore",
     # Talisman
     "CoherenceFunction",
     "DimensionalSignature",
