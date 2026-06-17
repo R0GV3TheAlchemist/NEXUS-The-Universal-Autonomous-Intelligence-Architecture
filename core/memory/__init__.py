@@ -23,6 +23,39 @@ from .shadow_registry import ShadowRegistry, ShadowEntry, ShadowPattern
 from .retrieval import MemoryRetrievalEngine, RetrievalQuery, RankedMemory
 from .manager import MemoryManager
 
+# ---------------------------------------------------------------------------
+# FallbackEmbedder — re-exported from embedder.py
+# Tests and consumers import: from core.memory import FallbackEmbedder
+# ---------------------------------------------------------------------------
+from .embedder import FallbackEmbedder
+
+
+# ---------------------------------------------------------------------------
+# build_default_router — convenience factory
+# Returns a MemoryManager configured with all default layers.
+# Tests import: from core.memory import build_default_router
+# ---------------------------------------------------------------------------
+
+def build_default_router(
+    gaian_id: str = "default",
+    session_id: str = "default",
+) -> MemoryManager:
+    """
+    Build and return a MemoryManager with all default memory layers.
+
+    This is the primary entry point for application code that needs a
+    fully configured memory system without manual wiring.
+
+    Args:
+        gaian_id:   The Gaian Twin identifier for this memory context.
+        session_id: The current session identifier.
+
+    Returns:
+        A configured MemoryManager instance.
+    """
+    return MemoryManager(gaian_id=gaian_id, session_id=session_id)
+
+
 __all__ = [
     "MemoryLayer",
     "MemoryRecord",
@@ -41,4 +74,7 @@ __all__ = [
     "RetrievalQuery",
     "RankedMemory",
     "MemoryManager",
+    # New in this fix
+    "FallbackEmbedder",
+    "build_default_router",
 ]
