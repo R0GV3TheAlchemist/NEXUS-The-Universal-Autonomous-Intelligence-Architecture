@@ -19,7 +19,7 @@ from .entities import (
 )
 from .relationships import RelationshipType, Relationship, RelationshipGraph
 from .state_machine import AlchemicalStateMachine, StateTransitionError
-from .permissions import PermissionEnvelope, AuditTrail, AuditEntry, PermissionDeniedError
+from .permissions import PermissionEnvelope, AuditTrail, AuditEntry, PermissionDeniedError, Capability
 from .runtime import GAIARuntime, OntologicalConstraintError
 
 __all__ = [
@@ -40,6 +40,7 @@ __all__ = [
     "AuditTrail",
     "AuditEntry",
     "PermissionDeniedError",
+    "Capability",
     "GAIARuntime",
     "OntologicalConstraintError",
 ]

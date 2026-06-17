@@ -21,7 +21,7 @@ from core.research.models import (
 from core.research.query_decomposer import QueryDecomposer
 from core.research.retrieval import RetrievalEngine
 from core.research.reranker import Reranker
-from core.research.synthesizer import Synthesizer
+from core.research.synthesizer import ResearchSynthesizer as Synthesizer
 from core.research.falsifiability_stamper import FalsifiabilityStamper
 from core.research.research_runtime import ResearchRuntime
 

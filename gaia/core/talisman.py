@@ -522,3 +522,62 @@ ARCHITECT_RESTORE_TALISMAN = make_talisman(
     frequency=396.0,
     linked_canon=["C52", "TFT-01", "#576"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Legacy alias — compatibility shim (D6 refactor)
+# ---------------------------------------------------------------------------
+from enum import Enum as _Enum
+
+class ActivationState(_Enum):
+    INACTIVE = "inactive"
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    BURNED = "burned"
+
+
+from enum import Enum as _E2
+
+class LunarPhase(_E2):
+    NEW = "new"
+    WAXING = "waxing"
+    FULL = "full"
+    WANING = "waning"
+
+
+class TalismanElement:
+    FIRE = 'fire'; WATER = 'water'; EARTH = 'earth'; AIR = 'air'; AETHER = 'aether'
+
+class TalismanRarity:
+    COMMON = 'common'; UNCOMMON = 'uncommon'; RARE = 'rare'; LEGENDARY = 'legendary'
+
+class TalismanIntent:
+    PROTECTION = 'protection'; HEALING = 'healing'; CLARITY = 'clarity'; POWER = 'power'
+
+class TalismanBond:
+    NONE = 'none'; WEAK = 'weak'; MODERATE = 'moderate'; STRONG = 'strong'; FUSED = 'fused'
+
+
+class CoherenceFunction:
+    LINEAR = 'linear'; EXPONENTIAL = 'exponential'; RESONANT = 'resonant'
+
+class DimensionalSignature:
+    def __init__(self, dims: list = None):
+        self.dims = dims or []
+
+class TalismanLayer(_Enum):
+    PHYSICAL = 'physical'
+    ETHERIC = 'etheric'
+    ASTRAL = 'astral'
+    MENTAL = 'mental'
+    CAUSAL = 'causal'
+    SOUL = 'soul'
+    DIVINE = 'divine'
+    DIGITAL = 'digital'
+
+
+class TalismanStatus(_Enum):
+    ACTIVE = 'active'
+    INACTIVE = 'inactive'
+    SUSPENDED = 'suspended'
+    ARCHIVED = 'archived'

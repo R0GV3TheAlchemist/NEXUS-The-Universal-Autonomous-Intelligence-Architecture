@@ -78,3 +78,12 @@ __all__ = [
     "FallbackEmbedder",
     "build_default_router",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Memory store / item exports — required by tests/test_memory_store.py
+# ---------------------------------------------------------------------------
+from .memory_store import MemoryStore          # noqa: F401
+from .items import MemoryItem, MemoryKind, RetrievedMemory          # noqa: F401
+from .memory_store import MemoryTier                                  # noqa: F401
+from .pruner import MemoryPruner                                      # noqa: F401

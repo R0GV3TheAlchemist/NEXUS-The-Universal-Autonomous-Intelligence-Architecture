@@ -112,3 +112,12 @@ class RetrievedMemory:
     @property
     def id(self) -> Optional[int]:
         return self.item.id
+
+
+from core.memory.pruner import MemoryPruner  # noqa: F401 re-export
+
+
+from core.memory.memory_store import MemoryStore  # noqa: F401 re-export
+
+
+from core.memory.memory_store import MemoryTier  # noqa: F401 re-export

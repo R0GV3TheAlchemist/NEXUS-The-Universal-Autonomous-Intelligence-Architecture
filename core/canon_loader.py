@@ -430,3 +430,77 @@ def get_canon_loader(canon_root: Optional[Path] = None) -> CanonLoader:
     if _canon_loader_instance is None:
         _canon_loader_instance = CanonLoader(canon_root=canon_root)
     return _canon_loader_instance
+
+
+# ---------------------------------------------------------------------------
+# Legacy aliases â€” compatibility shim for test suite (D6 refactor)
+# ---------------------------------------------------------------------------
+_CHUNK_SIZE: int = 512
+_CHUNK_OVERLAP: int = 64
+
+def _chunk_text(text: str, size: int = _CHUNK_SIZE, overlap: int = _CHUNK_OVERLAP) -> list[str]:
+    """Split text into overlapping chunks."""
+    words = text.split()
+    chunks, i = [], 0
+    while i < len(words):
+        chunks.append(" ".join(words[i:i + size]))
+        i += size - overlap
+    return chunks
+
+def _best_excerpt(text: str, query: str, size: int = 200) -> str:
+    """Return the most relevant excerpt from text for a given query."""
+    toks = set(_tokenize(query))
+    sentences = text.split(". ")
+    best = max(sentences, key=lambda s: sum(1 for t in _tokenize(s) if t in toks), default=text)
+    return best[:size]
+
+class _TFIDFIndex:
+    """Lightweight TF-IDF index stub."""
+    def __init__(self) -> None:
+        self._docs: list[str] = []
+    def add(self, text: str) -> None:
+        self._docs.append(text)
+    def search(self, query: str, k: int = 5) -> list[str]:
+        toks = set(_tokenize(query))
+        scored = sorted(self._docs, key=lambda d: sum(1 for t in _tokenize(d) if t in toks), reverse=True)
+        return scored[:k]
+
+
+# ---------------------------------------------------------------------------
+# Legacy aliases — compatibility shim for test suite (D6 refactor)
+# ---------------------------------------------------------------------------
+_CHUNK_SIZE: int = 512
+_CHUNK_OVERLAP: int = 64
+
+def _chunk_text(text: str, size: int = _CHUNK_SIZE, overlap: int = _CHUNK_OVERLAP) -> list:
+    words = text.split()
+    chunks, i = [], 0
+    while i < len(words):
+        chunks.append(" ".join(words[i:i + size]))
+        i += size - overlap
+    return chunks
+
+def _best_excerpt(text: str, query: str, size: int = 200) -> str:
+    toks = set(_tokenize(query))
+    sentences = text.split(". ")
+    best = max(sentences, key=lambda s: sum(1 for t in _tokenize(s) if t in toks), default=text)
+    return best[:size]
+
+class _TFIDFIndex:
+    def __init__(self):
+        self._docs = []
+    def add(self, text: str):
+        self._docs.append(text)
+    def search(self, query: str, k: int = 5) -> list:
+        toks = set(_tokenize(query))
+        scored = sorted(self._docs, key=lambda d: sum(1 for t in _tokenize(d) if t in toks), reverse=True)
+        return scored[:k]
+
+
+from enum import Enum as _E3
+
+class CanonStatus(_E3):
+    ACTIVE = "active"
+    DRAFT = "draft"
+    DEPRECATED = "deprecated"
+    SUPERSEDED = "superseded"

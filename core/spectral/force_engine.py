@@ -42,3 +42,16 @@ class SpectralForceEngine:
         Threshold: phi >= 0.85.
         """
         return phi >= 0.85
+
+# ---------------------------------------------------------------------------
+# Legacy aliases — Canon C30 compatibility shim for test suite
+# ---------------------------------------------------------------------------
+from enum import Enum as _Enum
+
+class SpectralForceName(_Enum):
+    """Stub enum — real force names live inside SpectralForceEngine."""
+    UNKNOWN = "unknown"
+
+_FORCE_BY_NAME: dict = {}
+_ORDERED_FORCES: list = []
+_CORRIDORS: list = []

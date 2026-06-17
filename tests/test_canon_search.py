@@ -4,7 +4,7 @@ Unit tests for G-8 Canon v2 semantic search.
 
 Covers:
   - _tokenize: lowercasing, punctuation stripping, min-length filter
-  - _term_freq: normalisation, empty input
+  - _tokenize: normalisation, empty input
   - _chunk_text: single chunk, multi-chunk, overlap correctness
   - _best_excerpt: term-centred extraction, fallback to head
   - _TFIDFIndex.build: chunk count, IDF smoke test
@@ -22,7 +22,7 @@ import pytest
 
 from core.canon_loader import (
     _tokenize,
-    _term_freq,
+    _tokenize,
     _chunk_text,
     _best_excerpt,
     _TFIDFIndex,
@@ -55,17 +55,17 @@ class TestTokenize:
 
 
 # ================================================================== #
-#  _term_freq                                                         #
+#  _tokenize                                                         #
 # ================================================================== #
 
 class TestTermFreq:
     def test_normalised(self):
-        tf = _term_freq("sovereignty sovereignty canon")
+        tf = _tokenize("sovereignty sovereignty canon")
         assert abs(tf["sovereignty"] - 2/3) < 1e-6
         assert abs(tf["canon"] - 1/3) < 1e-6
 
     def test_empty(self):
-        assert _term_freq("") == {}
+        assert _tokenize("") == {}
 
 
 # ================================================================== #

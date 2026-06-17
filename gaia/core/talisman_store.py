@@ -362,3 +362,20 @@ def seed_default_talismans() -> None:
     )
 
     log.info("talisman_store: seeded 3 default talismans.")
+
+
+
+class TalismanStore:
+    def get(self, talisman_id: str):
+        return _store.get(talisman_id)
+    def all(self) -> dict:
+        return dict(_store)
+    def register(self, talisman) -> None:
+        with _lock:
+            _store[talisman.id] = talisman
+    def remove(self, talisman_id: str) -> None:
+        with _lock:
+            _store.pop(talisman_id, None)
+    def clear(self) -> None:
+        with _lock:
+            _store.clear()

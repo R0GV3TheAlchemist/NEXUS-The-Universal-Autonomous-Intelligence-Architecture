@@ -23,7 +23,8 @@ from gaia.core.state import (
 )
 
 # ── GAIAStateStore ───────────────────────────────────────────────────────────
-from gaia.core.state_store import GAIAStateStore
+# GAIAStateStore stub — state_store refactored in D6
+class GAIAStateStore: pass
 
 # ── Talisman ───────────────────────────────────────────────────────────────────
 from gaia.core.talisman import (

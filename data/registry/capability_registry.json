@@ -1,0 +1,370 @@
+{
+  "read_memory": {
+    "name": "read_memory",
+    "version": "1.0.0",
+    "description": "Read from GAIA session or sovereign memory.",
+    "permission_scope": "read:memory",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "low"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.540213+00:00"
+  },
+  "write_memory": {
+    "name": "write_memory",
+    "version": "1.0.0",
+    "description": "Write or update entries in sovereign memory.",
+    "permission_scope": "write:memory",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "medium"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.541612+00:00"
+  },
+  "read_canon": {
+    "name": "read_canon",
+    "version": "1.0.0",
+    "description": "Retrieve Canon passages for RAG grounding.",
+    "permission_scope": "read:canon",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "low"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.542518+00:00"
+  },
+  "write_canon": {
+    "name": "write_canon",
+    "version": "1.0.0",
+    "description": "Add or modify Canon entries. Requires Gaian approval.",
+    "permission_scope": "write:canon",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "high"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.543398+00:00"
+  },
+  "read_file": {
+    "name": "read_file",
+    "version": "1.0.0",
+    "description": "Read a local file.",
+    "permission_scope": "read:system",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "low"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.544302+00:00"
+  },
+  "write_file": {
+    "name": "write_file",
+    "version": "1.0.0",
+    "description": "Write or overwrite a local file. Requires Gaian approval.",
+    "permission_scope": "write:file",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "high"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.545400+00:00"
+  },
+  "delete_file": {
+    "name": "delete_file",
+    "version": "1.0.0",
+    "description": "Delete a local file. Always requires Gaian approval.",
+    "permission_scope": "delete:file",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.546373+00:00"
+  },
+  "call_llm": {
+    "name": "call_llm",
+    "version": "1.0.0",
+    "description": "Route a prompt to the configured LLM backend.",
+    "permission_scope": "call:llm",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "low"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.547350+00:00"
+  },
+  "call_github": {
+    "name": "call_github",
+    "version": "1.0.0",
+    "description": "Call the GitHub API via MCP.",
+    "permission_scope": "call:github",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "medium"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.548367+00:00"
+  },
+  "web_search": {
+    "name": "web_search",
+    "version": "1.0.0",
+    "description": "Perform a web search.",
+    "permission_scope": "call:web_search",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "low"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.549428+00:00"
+  },
+  "call_external_api": {
+    "name": "call_external_api",
+    "version": "1.0.0",
+    "description": "Generic external API call. Requires Gaian approval.",
+    "permission_scope": "call:external_api",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "high"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.550542+00:00"
+  },
+  "read_biometrics": {
+    "name": "read_biometrics",
+    "version": "1.0.0",
+    "description": "Access Gaian biometric data (HRV, heart rate, etc.).",
+    "permission_scope": "access:biometrics",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.551848+00:00"
+  },
+  "read_location": {
+    "name": "read_location",
+    "version": "1.0.0",
+    "description": "Access Gaian location data.",
+    "permission_scope": "access:location",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.553025+00:00"
+  },
+  "execute_code": {
+    "name": "execute_code",
+    "version": "1.0.0",
+    "description": "Execute arbitrary code in the GAIA runtime. Always requires approval.",
+    "permission_scope": "execute:code",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.554161+00:00"
+  },
+  "modify_policy": {
+    "name": "modify_policy",
+    "version": "1.0.0",
+    "description": "Modify the Trust & Permission Policy Engine configuration.",
+    "permission_scope": "modify:policy",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.555314+00:00"
+  },
+  "halt_system": {
+    "name": "halt_system",
+    "version": "1.0.0",
+    "description": "Halt all GAIA sessions. Requires Gaian approval.",
+    "permission_scope": "halt:system",
+    "schema": {
+      "input_fields": [],
+      "output_fields": [],
+      "required_inputs": [],
+      "description": ""
+    },
+    "fallback_behavior": "raise",
+    "fallback_tool": null,
+    "tags": [
+      "default",
+      "critical"
+    ],
+    "status": "unknown",
+    "last_verified": null,
+    "last_health_check": null,
+    "changelog": [],
+    "registered_at": "2026-06-17T21:55:46.556515+00:00"
+  }
+}

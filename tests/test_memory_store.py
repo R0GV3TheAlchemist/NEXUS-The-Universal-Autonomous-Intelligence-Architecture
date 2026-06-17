@@ -27,8 +27,8 @@ from typing import List
 
 import pytest
 
-from core.memory import (
-    FallbackEmbedder,
+from core.memory.embedder import FallbackEmbedder
+from core.memory.items import (
     MemoryItem,
     MemoryKind,
     MemoryPruner,

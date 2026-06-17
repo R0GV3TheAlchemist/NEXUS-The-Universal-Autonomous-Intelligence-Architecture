@@ -50,3 +50,19 @@ def get_audit_log(db: Session, user_id_hash: str) -> list[dict]:
         }
         for log_entry in logs
     ]
+
+
+class SovereigntyLayer:
+    """Canon C17: Sovereign memory access control wrapper."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def export(self, user_id_hash: str, space_id: str | None = None):
+        return export_records(self.db, user_id_hash, space_id)
+
+    def deletable(self, user_id_hash: str):
+        return deletable_records(self.db, user_id_hash)
+
+    def audit_log(self, user_id_hash: str) -> list[dict]:
+        return get_audit_log(self.db, user_id_hash)
