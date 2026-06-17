@@ -3,6 +3,10 @@
 # Additions: PermissionEnvelope, AuditEntry, AuditTrail, PermissionDeniedError
 # These were referenced by core/ontology/__init__.py and 7 test modules
 # but were never defined here during the ontology refactor.
+#
+# FIX (2026-06-17): PermissionEnvelope now accepts `gaianid` keyword argument
+# (stored as self.gaian_id) to match callers in core/ontology/runtime.py L150
+# and all downstream test fixtures. AuditTrail likewise accepts `gaianid`.
 
 from __future__ import annotations
 
@@ -71,12 +75,6 @@ class PermissionDeniedError(PermissionError):
     """
     Raised when a principal attempts an action that exceeds their
     PermissionTier or lacks the required Capability.
-
-    Attributes:
-        principal:  Identifier of the requesting entity.
-        capability: The Capability that was denied.
-        tier:       The PermissionTier of the requesting principal.
-        context:    Optional dict of additional diagnostic context.
     """
 
     def __init__(
@@ -111,15 +109,6 @@ class PermissionDeniedError(PermissionError):
 class AuditEntry:
     """
     One auditable event in the GAIA permission system.
-
-    Fields:
-        principal:   Who made the request (gaian_id, agent_id, or system label).
-        capability:  Which Capability was exercised or attempted.
-        tier:        The PermissionTier of the principal at the time.
-        granted:     True if the action was permitted, False if denied.
-        resource:    Optional identifier of the resource acted upon.
-        context:     Optional free-form dict for additional metadata.
-        timestamp:   Unix timestamp of the event (defaults to now).
     """
     principal: str
     capability: Capability
@@ -145,18 +134,17 @@ class AuditEntry:
 # AuditTrail — an ordered sequence of AuditEntry records
 # ---------------------------------------------------------------------------
 
-@dataclass
 class AuditTrail:
     """
     An ordered, append-only trail of AuditEntry records.
 
-    Provides:
-        - append()   : add an entry
-        - filter()   : retrieve entries matching criteria
-        - denied()   : shortcut to retrieve all denied entries
-        - to_list()  : serialise to list of dicts
+    Accepts an optional `gaianid` keyword argument so that callers may
+    tag the trail to a specific GAIAN identity.
     """
-    entries: List[AuditEntry] = field(default_factory=list)
+
+    def __init__(self, *, gaianid: Optional[str] = None, **kwargs: Any) -> None:
+        self.gaian_id: Optional[str] = gaianid
+        self.entries: List[AuditEntry] = []
 
     def append(self, entry: AuditEntry) -> None:
         """Append a new AuditEntry to the trail."""
@@ -192,16 +180,28 @@ class AuditTrail:
         principal: Optional[str] = None,
         capability: Optional[Capability] = None,
         granted: Optional[bool] = None,
+        result: Optional[bool] = None,
+        target: Optional[str] = None,
     ) -> List[AuditEntry]:
         """Return entries matching all supplied criteria."""
-        result = self.entries
+        # `result` and `target` are test-facing aliases for `granted` and `resource`
+        effective_granted = granted if granted is not None else result
+        effective_target = target
+
+        res = self.entries
         if principal is not None:
-            result = [e for e in result if e.principal == principal]
+            res = [e for e in res if e.principal == principal]
         if capability is not None:
-            result = [e for e in result if e.capability == capability]
-        if granted is not None:
-            result = [e for e in result if e.granted == granted]
-        return result
+            res = [e for e in res if e.capability == capability]
+        if effective_granted is not None:
+            res = [e for e in res if e.granted == effective_granted]
+        if effective_target is not None:
+            res = [e for e in res if e.resource == effective_target]
+        return res
+
+    def all(self) -> List[AuditEntry]:
+        """Return a shallow copy of all entries."""
+        return list(self.entries)
 
     def denied(self) -> List[AuditEntry]:
         """Return all denied entries."""
@@ -216,26 +216,41 @@ class AuditTrail:
 
 
 # ---------------------------------------------------------------------------
-# PermissionEnvelope — a principal’s complete permission context
+# PermissionEnvelope — a principal's complete permission context
 # ---------------------------------------------------------------------------
 
-@dataclass
 class PermissionEnvelope:
     """
-    The complete permission context for a single principal (GAIAN, agent, or system).
+    The complete permission context for a single principal.
 
-    Bundles together:
-        - The principal’s identifier and trust tier
-        - Their effective capability set (derived from tier + any grants/revocations)
-        - An AuditTrail recording every permission check
+    Accepts a `gaianid` keyword argument (stored as self.gaian_id) so that
+    runtime.py callers such as:
 
-    Immutable after construction except through grant()/revoke().
+        PermissionEnvelope(gaianid=..., tier=..., capabilities=[...])
+
+    work without TypeError.
     """
-    principal: str
-    tier: PermissionTier
-    _extra_grants: set[Capability] = field(default_factory=set, repr=False)
-    _revocations: set[Capability] = field(default_factory=set, repr=False)
-    audit_trail: AuditTrail = field(default_factory=AuditTrail, repr=False)
+
+    def __init__(
+        self,
+        principal: Optional[str] = None,
+        tier: Optional[PermissionTier] = None,
+        *,
+        gaianid: Optional[str] = None,
+        capabilities: Optional[List[Capability]] = None,
+        **kwargs: Any,
+    ) -> None:
+        # gaianid may be provided instead of (or in addition to) principal
+        self.gaian_id: Optional[str] = gaianid
+        self.principal: str = principal or gaianid or ""
+        self.tier: PermissionTier = tier or PermissionTier.GAIAN
+        self._extra_grants: set[Capability] = set()
+        self._revocations: set[Capability] = set()
+        # Allow caller to seed explicit capability list
+        if capabilities:
+            for cap in capabilities:
+                self._extra_grants.add(cap)
+        self.audit_trail: AuditTrail = AuditTrail(gaianid=self.gaian_id)
 
     @property
     def capabilities(self) -> set[Capability]:
@@ -296,6 +311,7 @@ class PermissionEnvelope:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "principal": self.principal,
+            "gaian_id": self.gaian_id,
             "tier": self.tier.name,
             "capabilities": [c.name for c in sorted(self.capabilities, key=lambda c: c.name)],
             "extra_grants": [c.name for c in self._extra_grants],

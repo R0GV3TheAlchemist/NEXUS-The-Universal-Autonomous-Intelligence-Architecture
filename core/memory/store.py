@@ -25,6 +25,11 @@ The sqlite-vec extension is loaded at connection time via:
 If sqlite_vec is not installed, the store falls back to a pure-text
 (no vector search) mode that still persists memories but cannot do
 semantic retrieval -- a warning is emitted at startup.
+
+FIX (2026-06-17): MemoryStore.__init__ now accepts `dbpath` (no underscore)
+as a keyword alias for `db_path` so that test fixtures calling
+  MemoryStore(dbpath=..., embedder=FallbackEmbedder(dim=64))
+work without TypeError.
 """
 
 from __future__ import annotations
@@ -65,6 +70,7 @@ class MemoryStore:
     Parameters
     ----------
     db_path   : Path to the SQLite file.  Created on first use.
+    dbpath    : Alias for db_path (for test-fixture compatibility).
     embedder  : EmbeddingProvider instance.  Defaults to FallbackEmbedder
                 (hash-based, no semantic meaning -- swap in OllamaEmbedder
                 or OpenAIEmbedder for real deployments).
@@ -77,8 +83,14 @@ class MemoryStore:
         db_path:  Path | str               = _DEFAULT_DB_PATH,
         embedder: EmbeddingProvider | None  = None,
         capacity: int                       = _DEFAULT_CAPACITY,
+        *,
+        # Test-fixture alias: MemoryStore(dbpath=..., embedder=...)
+        dbpath:   Path | str | None         = None,
+        **kwargs,
     ) -> None:
-        self._db_path  = Path(db_path)
+        # dbpath keyword takes precedence over the positional db_path default
+        effective_path = dbpath if dbpath is not None else db_path
+        self._db_path  = Path(effective_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._embedder = embedder or FallbackEmbedder()
         self._capacity = capacity
@@ -185,7 +197,6 @@ class MemoryStore:
         """
         now = int(time.time())
         metadata_json = json.dumps(metadata) if metadata else None
-        # Ensure role is never None -- the column has NOT NULL DEFAULT 'user'
         safe_role = role if role is not None else "user"
         cur = self._conn.execute(
             """
@@ -236,14 +247,11 @@ class MemoryStore:
         metadata:    dict | None = None,
     ) -> int:
         """
-        Synchronous wrapper around ``remember()`` -- safe to call from
-        non-async code (e.g. GAIANRuntime.process()).
+        Synchronous wrapper around ``remember()``.
         """
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # Already inside an event loop (e.g. pytest-asyncio); run in
-                # a new thread to avoid "cannot run nested event loops".
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                     fut = ex.submit(
@@ -309,20 +317,7 @@ class MemoryStore:
     ) -> list[RetrievedMemory]:
         """
         Retrieve the top-k most relevant memories for *query*.
-
-        If sqlite-vec is available, performs k-NN vector search then
-        re-ranks by a hybrid score:
-
-            score = (1 - distance)          # cosine similarity proxy
-                    + importance_weight * importance
-                    + recency_weight   * recency_factor
-
-        where recency_factor decays from 1->0 over 30 days.
-
-        Falls back to recency + importance ordering when vectors are
-        unavailable.
         """
-        # Build dynamic WHERE clause for metadata filters
         filters = ["m.user_id = ?", "m.deleted = 0"]
         params: list = [user_id]
 
@@ -361,11 +356,7 @@ class MemoryStore:
         top_k:           int = 20,
         **kwargs,
     ) -> list[MemoryItem]:
-        """
-        Synchronous wrapper around ``retrieve()`` -- returns a plain list of
-        MemoryItem objects (not RetrievedMemory wrappers) for convenience.
-        Safe to call from non-async code.
-        """
+        """Synchronous wrapper around ``retrieve()``."""
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
@@ -398,10 +389,7 @@ class MemoryStore:
         import struct
         vec = await self._embedder.embed(query)
         blob = struct.pack(f"{len(vec)}f", *vec)
-
-        # Fetch a larger candidate set, then re-rank
         candidates = top_k * 3
-
         sql = f"""
             SELECT
                 m.id, m.user_id, m.kind, m.tier, m.role, m.text,
@@ -416,7 +404,6 @@ class MemoryStore:
             ORDER BY v.distance ASC
         """
         rows = self._conn.execute(sql, [blob, candidates, *params]).fetchall()
-
         now = int(time.time())
         results = []
         for row in rows:
@@ -443,8 +430,6 @@ class MemoryStore:
                 deleted     = bool(row["deleted"]),
             )
             results.append(RetrievedMemory(item=item, score=score))
-
-        # Sort by hybrid score and return top_k
         results.sort(key=lambda r: r.score, reverse=True)
         return results[:top_k]
 
@@ -505,10 +490,7 @@ class MemoryStore:
         return cur.rowcount
 
     def hard_delete_soft_deleted(self) -> int:
-        """
-        Permanently erase rows flagged as deleted and remove their
-        embeddings from vec_memory_items.  Returns count erased.
-        """
+        """Permanently erase rows flagged as deleted.  Returns count erased."""
         ids = [
             row[0]
             for row in self._conn.execute(
@@ -533,7 +515,7 @@ class MemoryStore:
     # ------------------------------------------------------------------
 
     def count(self, user_id: str | None = None) -> int:
-        """Return the number of non-deleted memory items for *user_id* (or all users)."""
+        """Return the number of non-deleted memory items."""
         if user_id:
             row = self._conn.execute(
                 "SELECT COUNT(*) FROM memory_items WHERE user_id = ? AND deleted = 0",
