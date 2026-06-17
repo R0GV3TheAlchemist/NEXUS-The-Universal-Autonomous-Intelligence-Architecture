@@ -17,6 +17,21 @@ jobs:
     # Hard cap: kill the whole job after 20 min so it never hangs for hours.
     timeout-minutes: 20
 
+    # ── Service containers ────────────────────────────────────────────────────────
+    # Redis is started before any step runs and torn down automatically afterward.
+    # Tests that use Redis (orchestrator pub-sub, crisis_engine, etc.) connect to
+    # redis://localhost:6379 via the REDIS_URL env var injected in the pytest step.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       # ── 1. Checkout ───────────────────────────────────────────────────────────────
       - name: Checkout repository
@@ -66,8 +81,6 @@ jobs:
           SENTENCE_TRANSFORMERS_HOME: ~/.cache/huggingface/sentence_transformers
 
       # ── 5.5 Ruff lint ──────────────────────────────────────────────────────────────
-      # Hard gate — any ruff violation FAILS the build.
-      # Config: pyproject.toml [tool.ruff] (stable rules only, no preview).
       - name: Lint with ruff
         run: |
           echo '🔍  Running ruff lint...'
@@ -173,9 +186,6 @@ jobs:
           echo '✅  All core/ files compile cleanly'
 
       # ── 7. Pytest ───────────────────────────────────────────────────────────────────
-      # --timeout=60  kills any single test that hangs for > 60 s (requires pytest-timeout).
-      # This surfaces the *specific* test that is blocking rather than
-      # letting the whole job freeze until the 20-min job cap fires.
       - name: Run pytest
         run: |
           python -m pytest tests/ \
@@ -190,3 +200,5 @@ jobs:
           CI: "true"
           HF_HUB_DOWNLOAD_TIMEOUT: "300"
           SENTENCE_TRANSFORMERS_HOME: ~/.cache/huggingface/sentence_transformers
+          # Redis service container is reachable at localhost:6379
+          REDIS_URL: redis://localhost:6379
