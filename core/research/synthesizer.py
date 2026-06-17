@@ -1,16 +1,13 @@
 # core/research/synthesizer.py
 # F821 fix: added missing import for RetrievedSource.
-# All other logic in this file is unchanged.
+# Alias fix: added Synthesizer = ResearchSynthesizer for test compatibility.
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Optional
 
-# F821 fix: RetrievedSource was used in a type annotation at line 151
-# but never imported. Defined here as a lightweight dataclass.
-# If a canonical RetrievedSource exists elsewhere, replace this with
-# the proper import path.
+
 @dataclass
 class RetrievedSource:
     """A single retrieved source document for synthesis."""
@@ -77,3 +74,10 @@ class ResearchSynthesizer:
         if source.source_type == "web":
             return f"Web source {source.source_id} would be falsified by a more recent publication at the same URL."
         return f"Source {source.source_id} would be falsified by direct empirical contradiction."
+
+
+# ---------------------------------------------------------------------------
+# Alias - test suite compatibility
+# Tests import: from core.research.synthesizer import Synthesizer
+# ---------------------------------------------------------------------------
+Synthesizer = ResearchSynthesizer
