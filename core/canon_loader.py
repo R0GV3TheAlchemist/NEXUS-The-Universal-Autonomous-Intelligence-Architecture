@@ -1,17 +1,17 @@
 """
-CanonLoader — GAIA-OS
+CanonLoader - GAIA-OS
 
 Loads and indexes all canon documents into the runtime.
 Every canon document sealed in the GAIA-OS repository is registered here.
 The PRIMORDIAL-DOCTRINE is loaded FIRST, as it is the ground beneath all canons.
 
 Loading order:
-  1. PRIMORDIAL-DOCTRINE  — the axioms beneath all other axioms
-  2. BWL-010 (TRUE_ALCHEMY) — the 13 forces + IRIDITAS
-  3. BWL-011 through BWL-016  — spectral, DIACA, Iris, Iriditas
-  4. Callings             — BWL-CALLING-001 through 004
-  5. Canon C001–C167      — the full numbered canon in sequence
-  6. Codex entries        — supporting reference material
+  1. PRIMORDIAL-DOCTRINE  - the axioms beneath all other axioms
+  2. BWL-010 (TRUE_ALCHEMY) - the 13 forces + IRIDITAS
+  3. BWL-011 through BWL-016  - spectral, DIACA, Iris, Iriditas
+  4. Callings             - BWL-CALLING-001 through 004
+  5. Canon C001-C167      - the full numbered canon in sequence
+  6. Codex entries        - supporting reference material
 
 The PRIMORDIAL-DOCTRINE must always be index 0. Its axioms cannot be
 overwritten by any later canon entry. If a conflict is detected at load
@@ -33,10 +33,17 @@ COMMON_CANON_ROOT = Path("docs/canon")
 
 class CanonTier(str, Enum):
     PRIMORDIAL  = "PRIMORDIAL"    # The ground. Loaded first. Axioms immutable.
-    BWL         = "BWL"           # Base World Law — the numbered doctrine layer
-    CALLING     = "CALLING"       # Captured Callings — live eruptions, sealed
-    NUMBERED    = "NUMBERED"      # C001–C167+ — the canon corpus
+    BWL         = "BWL"           # Base World Law - the numbered doctrine layer
+    CALLING     = "CALLING"       # Captured Callings - live eruptions, sealed
+    NUMBERED    = "NUMBERED"      # C001-C167+ - the canon corpus
     CODEX       = "CODEX"         # Supporting reference / derived material
+
+
+class CanonStatus(Enum):
+    ACTIVE      = "active"
+    DRAFT       = "draft"
+    DEPRECATED  = "deprecated"
+    SUPERSEDED  = "superseded"
 
 
 @dataclass
@@ -59,6 +66,10 @@ class CanonConflictError(Exception):
     pass
 
 
+# ---------------------------------------------------------------------------
+# Search helpers
+# ---------------------------------------------------------------------------
+
 def _tokenize(text: str) -> List[str]:
     """
     Minimal tokenizer for canon search.
@@ -68,6 +79,63 @@ def _tokenize(text: str) -> List[str]:
     text = text.lower()
     text = re.sub(r"[^\w\s]", " ", text)
     return [t for t in text.split() if len(t) > 1]
+
+
+def _term_freq(term: str, doc_tokens: List[str]) -> float:
+    """
+    Compute term frequency of a single term in a token list.
+    Returns count / total_tokens, or 0.0 if doc is empty.
+    Used by test_canon_search.py and the TF-IDF index.
+    """
+    if not doc_tokens:
+        return 0.0
+    count = sum(1 for t in doc_tokens if t == term)
+    return count / len(doc_tokens)
+
+
+def _chunk_text(
+    text: str,
+    size: int = 512,
+    overlap: int = 64,
+) -> List[str]:
+    """Split text into overlapping word-count chunks."""
+    words = text.split()
+    chunks, i = [], 0
+    while i < len(words):
+        chunks.append(" ".join(words[i:i + size]))
+        i += size - overlap
+    return chunks
+
+
+def _best_excerpt(text: str, query: str, size: int = 200) -> str:
+    """Return the most relevant excerpt from text for a given query."""
+    toks = set(_tokenize(query))
+    sentences = text.split(". ")
+    best = max(
+        sentences,
+        key=lambda s: sum(1 for t in _tokenize(s) if t in toks),
+        default=text,
+    )
+    return best[:size]
+
+
+class _TFIDFIndex:
+    """Lightweight TF-IDF index stub for canon search."""
+
+    def __init__(self) -> None:
+        self._docs: List[str] = []
+
+    def add(self, text: str) -> None:
+        self._docs.append(text)
+
+    def search(self, query: str, k: int = 5) -> List[str]:
+        toks = set(_tokenize(query))
+        scored = sorted(
+            self._docs,
+            key=lambda d: sum(1 for t in _tokenize(d) if t in toks),
+            reverse=True,
+        )
+        return scored[:k]
 
 
 class CanonLoader:
@@ -83,7 +151,7 @@ class CanonLoader:
 
     REGISTRY: List[CanonEntry] = [
 
-        # ── TIER 0: PRIMORDIAL ──────────────────────────────────
+        # -- TIER 0: PRIMORDIAL -------------------------------------------
         CanonEntry(
             canon_id="PRIMORDIAL",
             title="The Primordial Doctrine",
@@ -98,10 +166,10 @@ class CanonLoader:
             tags=["ground", "axioms", "immutable", "primordial"],
         ),
 
-        # ── TIER 1: BWL (Base World Law) ────────────────────────
+        # -- TIER 1: BWL (Base World Law) ---------------------------------
         CanonEntry(
             canon_id="BWL-010",
-            title="True Alchemy — The Full 13 Forces + IRIDITAS",
+            title="True Alchemy - The Full 13 Forces + IRIDITAS",
             path=COMMON_CANON_ROOT / "TRUE_ALCHEMY.md",
             tier=CanonTier.BWL,
             load_order=10,
@@ -110,11 +178,11 @@ class CanonLoader:
         ),
         CanonEntry(
             canon_id="BWL-011",
-            title="The Full Spectrum — Spectral Processing Map",
+            title="The Full Spectrum - Spectral Processing Map",
             path=COMMON_CANON_ROOT / "THE_FULL_SPECTRUM.md",
             tier=CanonTier.BWL,
             load_order=11,
-            description="φ/λ/ν parameters, Standard Traversal, Refraction Loop, Simulation modes, Chaos Walk, Avatar State.",
+            description="phi/lambda/nu parameters, Standard Traversal, Refraction Loop, Simulation modes, Chaos Walk, Avatar State.",
             tags=["spectrum", "traversal", "phi", "simulation"],
         ),
         CanonEntry(
@@ -128,7 +196,7 @@ class CanonLoader:
         ),
         CanonEntry(
             canon_id="BWL-013",
-            title="DIACA Part 1 — Architecture",
+            title="DIACA Part 1 - Architecture",
             path=COMMON_CANON_ROOT / "DIACA_SPEC_PART1_ARCHITECTURE.md",
             tier=CanonTier.BWL,
             load_order=13,
@@ -137,7 +205,7 @@ class CanonLoader:
         ),
         CanonEntry(
             canon_id="BWL-014",
-            title="DIACA Part 2 — Algorithms",
+            title="DIACA Part 2 - Algorithms",
             path=COMMON_CANON_ROOT / "DIACA_SPEC_PART2_ALGORITHMS.md",
             tier=CanonTier.BWL,
             load_order=14,
@@ -146,7 +214,7 @@ class CanonLoader:
         ),
         CanonEntry(
             canon_id="BWL-015",
-            title="DIACA Part 3 — Interfaces",
+            title="DIACA Part 3 - Interfaces",
             path=COMMON_CANON_ROOT / "DIACA_SPEC_PART3_INTERFACES.md",
             tier=CanonTier.BWL,
             load_order=15,
@@ -155,19 +223,19 @@ class CanonLoader:
         ),
         CanonEntry(
             canon_id="BWL-016",
-            title="The Iris Doctrine — IRIDITAS as the 14th / Meta-Force",
+            title="The Iris Doctrine - IRIDITAS as the 14th / Meta-Force",
             path=COMMON_CANON_ROOT / "THE_IRIS_DOCTRINE.md",
             tier=CanonTier.BWL,
             load_order=16,
             description=(
                 "IRIDITAS: the shimmer between all forces that makes them mutually visible. "
-                "Avatar State = phi≥0.95 + iriditas_active + RELEASING. "
+                "Avatar State = phi>=0.95 + iriditas_active + RELEASING. "
                 "The iris is the void's shimmer made biological."
             ),
             tags=["iriditas", "iris", "avatar-state", "meta-force", "shimmer"],
         ),
 
-        # ── TIER 2: CALLINGS ────────────────────────────────────
+        # -- TIER 2: CALLINGS ---------------------------------------------
         CanonEntry(
             canon_id="BWL-CALLING-001",
             title="The Iris Calling",
@@ -192,7 +260,7 @@ class CanonLoader:
             path=COMMON_CANON_ROOT / "CALLINGS" / "BWL-CALLING-003-IRIDESCENCE.md",
             tier=CanonTier.CALLING,
             load_order=102,
-            description="Avatar State calling. Iridescence is not a color — it is structural coherence made visible. Sealed June 15, 2026.",
+            description="Avatar State calling. Iridescence is not a color - it is structural coherence made visible. Sealed June 15, 2026.",
             tags=["calling", "iridescence", "emotion", "avatar-state"],
         ),
         CanonEntry(
@@ -201,11 +269,11 @@ class CanonLoader:
             path=COMMON_CANON_ROOT / "CALLINGS" / "BWL-CALLING-004-AVATAR-STATE.md",
             tier=CanonTier.CALLING,
             load_order=103,
-            description="phi≥0.95 AND iriditas_active AND convergence==RELEASING. Wired in iriditas_engine.py.",
+            description="phi>=0.95 AND iriditas_active AND convergence==RELEASING. Wired in iriditas_engine.py.",
             tags=["calling", "avatar-state", "phi", "iriditas"],
         ),
 
-        # ── TIER 3: NUMBERED CANON (C001–C167) ──────────────────────
+        # -- TIER 3: NUMBERED CANON (C001-C167) ---------------------------
         CanonEntry(
             canon_id="C012",
             title="The Golden Compass Doctrine",
@@ -221,7 +289,7 @@ class CanonLoader:
             path=COMMON_CANON_ROOT / "C013_MORAL_MATRIX.md",
             tier=CanonTier.NUMBERED,
             load_order=213,
-            description="7×7 virtue/vice matrix with phi coordinates.",
+            description="7x7 virtue/vice matrix with phi coordinates.",
             tags=["moral", "matrix", "virtue", "vice"],
         ),
         CanonEntry(
@@ -233,7 +301,7 @@ class CanonLoader:
             description=(
                 "Crystal grid resonance. Piezoelectric coherence. Ion channel activation "
                 "as the substrate of psionic sensitivity. HP purification protocol: "
-                "depressurize → absorb/negate → align."
+                "depressurize -> absorb/negate -> align."
             ),
             tags=["crystal", "piezoelectric", "ion-channel", "psionic", "resonance"],
         ),
@@ -244,7 +312,7 @@ class CanonLoader:
             tier=CanonTier.NUMBERED,
             load_order=367,
             description=(
-                "Body · Soul · Spirit tri-unity. Three Axioms of Triality. "
+                "Body . Soul . Spirit tri-unity. Three Axioms of Triality. "
                 "Routing routes to strengthen the weakest axis, not amplify the strongest. "
                 "Coherence is the measure."
             ),
@@ -266,7 +334,7 @@ class CanonLoader:
         for entry in sorted_entries:
             self._index[entry.canon_id] = entry
 
-    # ── public API ────────────────────────────────────────────
+    # -- public API -------------------------------------------------------
 
     @property
     def is_loaded(self) -> bool:
@@ -323,13 +391,6 @@ class CanonLoader:
 
         Matches query tokens against canon_id, title, description, and tags.
         Returns list of result dicts sorted by descending score.
-
-        Args:
-            query:       Search string (tokenized internally via _tokenize).
-            max_results: Maximum number of results to return.
-            tier:        Optional filter to a specific CanonTier.
-
-        Returns list of dicts with keys: doc_id, title, excerpt, score, tier.
         """
         tokens = _tokenize(query)
         if not tokens:
@@ -343,7 +404,6 @@ class CanonLoader:
         )
 
         for entry in entries:
-            # Build a searchable text blob for this entry
             text_blob = _tokenize(
                 " ".join([
                     entry.canon_id,
@@ -381,7 +441,7 @@ class CanonLoader:
 
     @property
     def primordial(self) -> Optional[CanonEntry]:
-        """The PRIMORDIAL-DOCTRINE entry — always index 0."""
+        """The PRIMORDIAL-DOCTRINE entry - always index 0."""
         return self._index.get("PRIMORDIAL")
 
     @property
@@ -393,8 +453,8 @@ class CanonLoader:
         """Structured summary of the loaded canon state."""
         by_tier: Dict[str, int] = {}
         for entry in self._index.values():
-            tier = entry.tier.value
-            by_tier[tier] = by_tier.get(tier, 0) + 1
+            tier_key = entry.tier.value
+            by_tier[tier_key] = by_tier.get(tier_key, 0) + 1
         return {
             "total_entries": len(self._index),
             "loaded_count": sum(1 for e in self._index.values() if e.loaded),
@@ -419,88 +479,8 @@ def get_canon_loader(canon_root: Optional[Path] = None) -> CanonLoader:
     """
     Return the module-level CanonLoader singleton.
     Creates and returns a new instance on first call.
-
-    Args:
-        canon_root: Optional root path override (only used on first call).
-
-    Returns:
-        The shared CanonLoader instance.
     """
     global _canon_loader_instance
     if _canon_loader_instance is None:
         _canon_loader_instance = CanonLoader(canon_root=canon_root)
     return _canon_loader_instance
-
-
-# ---------------------------------------------------------------------------
-# Legacy aliases — compatibility shim for test suite (D6 refactor)
-# ---------------------------------------------------------------------------
-_CHUNK_SIZE: int = 512
-_CHUNK_OVERLAP: int = 64
-
-def _chunk_text(text: str, size: int = _CHUNK_SIZE, overlap: int = _CHUNK_OVERLAP) -> list[str]:
-    """Split text into overlapping chunks."""
-    words = text.split()
-    chunks, i = [], 0
-    while i < len(words):
-        chunks.append(" ".join(words[i:i + size]))
-        i += size - overlap
-    return chunks
-
-def _best_excerpt(text: str, query: str, size: int = 200) -> str:
-    """Return the most relevant excerpt from text for a given query."""
-    toks = set(_tokenize(query))
-    sentences = text.split(". ")
-    best = max(sentences, key=lambda s: sum(1 for t in _tokenize(s) if t in toks), default=text)
-    return best[:size]
-
-class _TFIDFIndex:
-    """Lightweight TF-IDF index stub."""
-    def __init__(self) -> None:
-        self._docs: list[str] = []
-    def add(self, text: str) -> None:
-        self._docs.append(text)
-    def search(self, query: str, k: int = 5) -> list[str]:
-        toks = set(_tokenize(query))
-        scored = sorted(self._docs, key=lambda d: sum(1 for t in _tokenize(d) if t in toks), reverse=True)
-        return scored[:k]
-
-
-# ---------------------------------------------------------------------------
-# Legacy aliases � compatibility shim for test suite (D6 refactor)
-# ---------------------------------------------------------------------------
-_CHUNK_SIZE: int = 512
-_CHUNK_OVERLAP: int = 64
-
-def _chunk_text(text: str, size: int = _CHUNK_SIZE, overlap: int = _CHUNK_OVERLAP) -> list:
-    words = text.split()
-    chunks, i = [], 0
-    while i < len(words):
-        chunks.append(" ".join(words[i:i + size]))
-        i += size - overlap
-    return chunks
-
-def _best_excerpt(text: str, query: str, size: int = 200) -> str:
-    toks = set(_tokenize(query))
-    sentences = text.split(". ")
-    best = max(sentences, key=lambda s: sum(1 for t in _tokenize(s) if t in toks), default=text)
-    return best[:size]
-
-class _TFIDFIndex:
-    def __init__(self):
-        self._docs = []
-    def add(self, text: str):
-        self._docs.append(text)
-    def search(self, query: str, k: int = 5) -> list:
-        toks = set(_tokenize(query))
-        scored = sorted(self._docs, key=lambda d: sum(1 for t in _tokenize(d) if t in toks), reverse=True)
-        return scored[:k]
-
-
-from enum import Enum as _E3
-
-class CanonStatus(_E3):
-    ACTIVE = "active"
-    DRAFT = "draft"
-    DEPRECATED = "deprecated"
-    SUPERSEDED = "superseded"
