@@ -35,7 +35,10 @@ dev = [
   "pytest-mock>=3.14.0",
   "ruff>=0.5.0",
   "mypy>=1.10.0",
-  "pre-commit>=3.7.0"
+  "pre-commit>=3.7.0",
+  # --- deps required by test suite but not by the runtime ---
+  "jsonschema>=4.21.0",   # tests/correspondence/test_crystal_correspondence.py
+  "bcrypt>=4.1.0",        # api/auth.py (password hashing) + test_auth tests
 ]
 # Local/research only — do NOT install in CI (requires ~1-2 GB PyTorch)
 ml = [
@@ -47,16 +50,16 @@ ml = [
 # ---------------------------------------------------------------------------
 # Two source roots:
 #   "."          → core/, api/, gaia/
-#   "src-python" → shadow_engine/, sovereign_memory/, quantum_chemistry/, …
+#   "src-python" → shadow_engine/, sovereign_memory/, quantum_chemistry/,
+#                  crystal_resonance/, wireless_power_sim/, …
 #
-# setuptools supports a LIST for `where`, so both roots are searched in one
-# pass. This is the correct single-block form — no duplicate keys.
-# `pip install -e ".[dev]"` will register ALL packages from both roots so
-# that `import shadow_engine` works without any PYTHONPATH tricks.
+# `pip install -e ".[dev]"` registers ALL packages from both roots so that
+# `import crystal_resonance` and `import wireless_power_sim` work without
+# any PYTHONPATH tricks.
 # ---------------------------------------------------------------------------
 [tool.setuptools.packages.find]
 where = [".", "src-python"]
-include = ["core*", "api*", "gaia*", "shadow_engine*", "sovereign_memory*", "quantum_chemistry*"]
+include = ["core*", "api*", "gaia*", "shadow_engine*", "sovereign_memory*", "quantum_chemistry*", "crystal_resonance*", "wireless_power_sim*"]
 
 # ---------------------------------------------------------------------------
 # Pytest
@@ -91,23 +94,19 @@ testpaths = ["tests"]
 #   - preview = false (default) — stable rules only — preview was silently
 #     activating experimental rules on every Ruff release, causing phantom
 #     violations.
-#   - RUF100: unused noqa directives — ignored globally 2026-06-10. Many noqa
-#     comments are intentional documentation of WHY a rule is suppressed, even
-#     when the rule is also in the global ignore list. Removing them creates
-#     churn without signal. RUF100 was the root cause of the two-day lint loop.
+#   - RUF100: unused noqa directives — intentional documentation of suppression
+#     rationale. Removing causes churn; was the root cause of the two-day lint loop.
 #   - 2026-06-10 (round 2): added SIM102/SIM103/SIM110/SIM114/SIM117/SIM300/
 #     SIM905, PLR1711/PLR1714/PLR1730, PLC0207, RUF005/RUF006/RUF007,
 #     C401/C408/C420, UP041, B007/B027, N802/N803/N814/N815,
 #     S112/S310/S608, F541/F811/F841, E702, PLW1508, PLR0402
-#     to silence all 107 remaining violations without touching source files.
+#     to suppress all remaining violations without touching source files.
 # ============================================================================
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
 # First-party source roots — resolves `from core.xxx import ...` correctly.
-# gaia/ added 2026-06-10: was missing, causing F821/import-classification
-# errors when ruff linted gaia/ files that import from core or gaia itself.
 src = [".", "core", "src-python", "gaia"]
 
 # Dirs never linted (generated, vendored, notebooks, migrations)
@@ -125,208 +124,41 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# Rule sets — signal-ordered for GAIA-OS
-# E/W  — pycodestyle errors/warnings
-# F    — Pyflakes (unused imports, undefined names)
-# I    — isort (import ordering)
-# N    — pep8-naming
-# B    — flake8-bugbear (likely bugs)
-# C4   — flake8-comprehensions
-# SIM  — flake8-simplify
-# UP   — pyupgrade (modernise syntax — selectively ignored below)
-# S    — flake8-bandit (security)
-# RUF  — Ruff-native rules
-# PL   — Pylint-equivalent (complexity, convention, refactor, error)
 select = ["E", "W", "F", "I", "N", "B", "C4", "SIM", "UP", "S", "RUF", "PL"]
 
-# preview = false (default) — stable rules only. Do NOT re-enable without a
-# full triage pass; preview rules activate silently on every Ruff version bump.
-
 ignore = [
-  # ── Style / formatting ──────────────────────────────────────────────
-  "E501",   # line too long — formatter handles; canon docs need the space
-  "E702",   # multiple statements on one line (semicolon) — intentional in
-            # dense lookup tables and query builder helpers
-
-  # ── Unused imports ──────────────────────────────────────────────────
-  # F401: many imports are conditional (try/except), re-exported, or used
-  # at runtime via importlib. Suppressed globally during active refactoring.
-  "F401",
-
-  # ── Redefined / unused variables ─────────────────────────────────────
-  "F811",   # redefinition of unused name — intentional in conditional import
-            # blocks (e.g. `from .transitions import check_regression` inside a
-            # function body that already has it at module level)
-  "F841",   # local variable assigned but never used — suppressed during active
-            # dev; many are placeholders for future telemetry/tracing hooks
-
-  # ── f-strings ────────────────────────────────────────────────────────
-  "F541",   # f-string without placeholders — cosmetic; remove prefix lazily
-
-  # ── Import ordering (isort) ─────────────────────────────────────────
-  # I001: import block sorting — codebase uses intentional grouping with
-  # comments and conditional blocks. Auto-sort would break crypto/optional
-  # import guards. Enable per-module when ready for migration sprint.
+  "E501", "E702",
+  "F401", "F811", "F841", "F541",
   "I001",
-
-  # ── Type annotation modernisation (UP) ──────────────────────────────
-  # Entire codebase uses Python 3.9-era typing. Cosmetic, not bugs.
-  "UP003",  # type() for raising exceptions — cosmetic
-  "UP006",  # List/Dict/Tuple → list/dict/tuple
-  "UP007",  # Optional[X]/Union[X,Y] → X|None / X|Y
-  "UP015",  # unnecessary open() mode argument — cosmetic
-  "UP017",  # timezone.utc → datetime.UTC  (hundreds of instances)
-  "UP035",  # typing imports deprecated in 3.9+
-  "UP037",  # quoted type annotations
-  # UP038 removed from ruff 0.4.x — dropped 2026-06-10
-  "UP041",  # asyncio.TimeoutError → builtin TimeoutError — cosmetic alias;
-            # both are identical since Python 3.11 but renaming adds noise
-  "UP042",  # class X(str, Enum) → StrEnum  (suppress until migration sprint)
-  "UP045",  # Optional[X] → X|None  (~800 instances)
-
-  # ── Annotation rules ────────────────────────────────────────────────
-  # ANN101/ANN102 removed from ruff 0.2.x — dropped 2026-06-10
+  "UP003", "UP006", "UP007", "UP015", "UP017", "UP035", "UP037",
+  "UP041", "UP042", "UP045",
   "ANN001", "ANN002", "ANN003",
   "ANN201", "ANN202", "ANN204", "ANN205", "ANN206",
-
-  # ── Naming ──────────────────────────────────────────────────────────
-  # N806: uppercase variable in function — physics/cache constants intentional
-  # N818: exception names — domain names like ConstitutionViolation intentional
-  "N802",   # function name should be lowercase — test methods using camelCase
-            # suffixes (e.g. test_case_13_T050_no_CD) and fallback stubs (Field)
-            # are intentional; renaming would break test discovery contracts
-  "N803",   # argument name should be lowercase — physics arguments like
-            # `mass_eV`, `T`, `H` are scientific notation, not style errors
-  "N806",
-  "N814",   # camelcase imported as constant — e.g. SettlingState as _SS is a
-            # deliberate compact alias inside a function to avoid circular import
-  "N815",   # mixedCase class variable — Pydantic models with camelCase fields
-            # (surfaceId, yPercent, placedAt) must match the JSON API contract;
-            # renaming would break the REST API schema
-  "N818",
-
-  # ── Bugbear ─────────────────────────────────────────────────────────
-  "B007",   # loop control variable unused — `for peer_id, ws in ...` where
-            # peer_id is kept for readability/future logging; `for fut in done`
-            # where pass is intentional. Renaming to _ adds no real value.
-  "B008",   # Depends() in default args — standard FastAPI dependency injection
-  "B027",   # empty method in abstract base class without @abstractmethod —
-            # warmup/teardown on BaseSource are intentional optional hooks;
-            # forcing @abstractmethod would break all concrete subclasses
-  "B904",   # raise X inside except without `from` — suppressed during active dev
-  "B905",   # zip() without strict= — too noisy during rapid iteration
-
-  # ── Comprehensions ───────────────────────────────────────────────────
-  "C401",   # unnecessary generator (use set comprehension) — cosmetic
-  "C408",   # unnecessary dict() call — cosmetic; `dict(k=v)` used for
-            # readability in long keyword-argument blocks
-  "C420",   # unnecessary dict comprehension for iterable — cosmetic;
-            # `dict.fromkeys` is equivalent but less explicit in intent
-
-  # ── Simplify ────────────────────────────────────────────────────────
-  "SIM102", # nested if → single if with `and` — soul-layer code uses nested
-            # ifs to express *layered* conditions; collapsing loses intent
-  "SIM103", # return condition directly — multi-step guard clauses are more
-            # readable than a single compound return in safety-critical paths
-  "SIM105", # contextlib.suppress — try/except/pass is explicit and intentional
-  "SIM108", # ternary vs if-else — explicit form clearer in multi-branch logic
-  "SIM110", # use any()/all() instead of for loop — suppressed; loop form is
-            # often clearer in domain code with non-trivial bodies
-  "SIM114", # combine if branches with or — explicit separate branches document
-            # distinct semantic conditions; merging loses that clarity
-  "SIM117", # nested with → single with — async with client.stream() nesting
-            # is intentional to scope both the client and the stream response
-  "SIM300", # Yoda condition — pytest.approx assertions follow pytest idiom;
-            # ruff's rewrite suggestion flips the operand order incorrectly
-  "SIM905", # str.split() → list literal — frozenset(_STOP.split()) is a
-            # common, readable Python idiom; replacing with a literal is noisy
-
-  # ── Security ────────────────────────────────────────────────────────
-  "S101",   # assert — soul-layer runtime guards use assert intentionally
-  "S104",   # bind to all interfaces — intentional in CLI serve command
-  "S105",   # hardcoded password — false positives on "bearer", token field names
-  "S106",   # hardcoded password argument — false positives on token_type="bearer"
-  "S108",   # /tmp usage — default path overridable via env var GAIA_HALT_AUDIT_FILE
-  "S110",   # try/except/pass — suppressed globally; matches SIM105 intent
-  "S112",   # try/except/continue without logging — malformed-file skip loops
-            # are intentional; the `# S112` comment documents the decision
-  "S311",   # random — field modelling, not cryptography
-  "S310",   # urlopen with file: scheme — all urlopen calls in this codebase use
-            # http/https URLs; ruff cannot statically verify the scheme so flags
-            # conservatively. The `# type: ignore` comments confirm intentionality.
-  "S608",   # possible SQL injection via f-string — all parameterised queries use
-            # `?` placeholders for user-supplied values; only structural clauses
-            # (column names, WHERE fragments built from validated enums) are
-            # interpolated. True injection risk has been audited and is absent.
-
-  # ── Ruff-native ─────────────────────────────────────────────────────
-  "RUF001", # ambiguous unicode in strings (EN DASH) — intentional in UX copy
-  "RUF002", # ambiguous unicode in docstrings — intentional in documentation
-  "RUF003", # ambiguous unicode in comments — intentional in physics/UX code
-  "RUF005", # list concatenation instead of unpacking — [a] + list(b) is
-            # explicit; unpacking form [*a, *b] is equivalent but less readable
-            # in cases where one side is a slice expression
-  "RUF006", # store reference to create_task — fire-and-forget pulse tasks are
-            # intentional; the task is broadcast-only and loss is acceptable
-  "RUF007", # zip() → itertools.pairwise() — cosmetic; zip(v, v[1:]) is a
-            # well-understood Python idiom; pairwise() import adds a dependency
-  "RUF012", # mutable class-var annotation — intentional in engine state containers
-  "RUF013", # implicit Optional (e.g. x: str = None) — suppress until typing migration
-  "RUF021", # ambiguous and/or chaining — explicit form preferred in soul-layer logic
-  "RUF022", # __all__ not sorted — section comments make ordering intentional
-  "RUF059", # unpacked variable unused — too noisy in router pattern matching
-  # RUF100: unused noqa directives — intentional documentation of suppression
-  # rationale. Removing causes churn; was the root cause of two-day lint loop.
-  "RUF100",
-
-  # ── Pylint: import placement ─────────────────────────────────────────
-  # PLC0415: import inside function — used for lazy/conditional loading
-  "PLC0415",
-  "PLC0207", # string split more times than necessary — passing maxsplit=1 is a
-             # micro-optimisation with no correctness impact; suppressed globally
-
-  # ── Pylint complexity ────────────────────────────────────────────────
-  "PLR0402", # use `from x import y` instead of import alias — suppressed in
-             # test files where `import module as module` is used for is-not-None
-             # assertions; ruff's rewrite would change semantics
-  "PLR0911", # too many return statements — soul-layer waterfall functions
-  "PLR0912", # too many branches
-  "PLR0913", # too many arguments
-  "PLR0915", # too many statements
-  "PLR1711", # useless return at end of function — `return None` is explicit
-             # documentation of intent in router functions; cosmetic
-  "PLR1714", # merge multiple comparisons — `a != x and a != y` is more readable
-             # than `a not in (x, y)` in condition-heavy logic
-  "PLR1730", # replace if with max/min call — explicit if form is clearer in
-             # stateful update patterns; max() call form is a micro-optimisation
-  "PLR2004", # magic value comparison — physics/resonance constants are fine
-  "PLW0603", # global statement — used in singleton engine patterns
-  "PLW1508", # invalid type for env var default — `os.environ.get("X", 52000)`
-             # with an int default is intentional; int() wraps the result anyway
-  "PLW2901", # for-loop variable overwrite — intentional strip/rstrip patterns
+  "N802", "N803", "N806", "N814", "N815", "N818",
+  "B007", "B008", "B027", "B904", "B905",
+  "C401", "C408", "C420",
+  "SIM102", "SIM103", "SIM105", "SIM108", "SIM110",
+  "SIM114", "SIM117", "SIM300", "SIM905",
+  "S101", "S104", "S105", "S106", "S108", "S110",
+  "S112", "S311", "S310", "S608",
+  "RUF001", "RUF002", "RUF003", "RUF005", "RUF006", "RUF007",
+  "RUF012", "RUF013", "RUF021", "RUF022", "RUF059", "RUF100",
+  "PLC0415", "PLC0207",
+  "PLR0402", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "PLR1711", "PLR1714", "PLR1730", "PLR2004",
+  "PLW0603", "PLW1508", "PLW2901",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# ── Init files: wildcard re-exports are intentional ─────────────────────────
 "**/__init__.py" = ["F401", "F403", "F811"]
-
-# ── Test files: asserts required, bandit too strict for fixtures ─────────────
 "tests/**/*.py"                = ["S101", "S105", "S106", "S311", "ANN", "D", "N802", "F401", "SIM300", "PLR0402"]
 "tests/soul_mirror/**/*.py"    = ["S101", "S105", "S106", "S311", "ANN", "D", "N802", "F401"]
 "tests/governance/**/*.py"     = ["S101", "S105", "S106", "S311", "ANN", "D", "N802", "F401"]
 "src-python/tests/**/*.py"     = ["S101", "S105", "S106", "S311", "ANN", "D", "N802", "F401", "SIM300", "PLR0402"]
-
-# ── Quantum chemistry: research code, pyscf/qiskit imports are conditional ───
 "src-python/quantum_chemistry/**/*.py" = ["F401", "F811", "S101", "N803", "N806"]
 "src-python/sovereign_memory/**/*.py" = ["F401", "F811"]
 "src-python/**/__init__.py"           = ["F401", "F403", "F811"]
-
-# ── API layer: re-exports + conditional imports are intentional ──────────────
 "api/**/*.py" = ["F401"]
-
-# ── Core compatibility shim files (wildcard re-export bridges) ───────────────
-# These files intentionally use `from x import *` to re-export entire modules
-# under legacy names. F401/F403 are correct here and must not be removed.
 "core/rate_limiter.py"     = ["F401", "F403"]
 "core/memory_store.py"     = ["F401", "F403"]
 "core/server_state.py"     = ["F401", "F403"]
@@ -341,24 +173,13 @@ ignore = [
 "core/collective_signal_layer.py" = ["F401", "F403"]
 "core/phase_state_monitor.py"   = ["F401", "F403"]
 "core/system_health_engine.py"  = ["F401", "F403"]
-
-# ── Core modules with conditional/guarded imports ───────────────────────────
 "core/codex_stage_engine.py"        = ["F401"]
 "core/crystal_mineral_database.py"  = ["F401"]
 "core/gcp_sensor.py"                = ["F401"]
 "core/governance/explainability.py" = ["F401"]
 "core/governance/halt_controller.py" = ["F401"]
-
-# ── Quantum operators: intentional compact matrix style ──────────────────────
-# One-liners and semicolons are domain convention for dense matrix algebra.
 "core/quantum/operators.py" = ["E701", "E702"]
-
-# ── Identity / auth: "bearer" is an OAuth standard value, not a password ─────
 "core/identity/auth.py" = ["S105", "S106"]
-
-# ── Soul-layer / consciousness / resonance engines ───────────────────────────
-# Multi-branch state machines, emotional arc logic, symbolic pattern matching.
-# High McCabe complexity is intentional, not a bug.
 "core/soul_mirror_engine.py"     = ["C901", "PLR0912", "PLR0915"]
 "core/shadow_integration.py"     = ["C901", "PLR0912", "PLR0915"]
 "core/shadow_engine.py"          = ["C901", "PLR0912", "PLR0915"]
@@ -383,7 +204,6 @@ ignore = [
 "core/inference_router.py"       = ["C901", "PLR0912", "PLR0915"]
 
 [tool.ruff.lint.mccabe]
-# Default 10 → raised to 15. Soul-layer modules exempted further above.
 max-complexity = 15
 
 [tool.ruff.lint.isort]
