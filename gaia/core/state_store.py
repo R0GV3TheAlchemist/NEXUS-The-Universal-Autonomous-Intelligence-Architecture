@@ -40,13 +40,13 @@ from gaia.core.state import GAIAOperationalMode, GAIAState
 from gaia.core.d6_engine import D6Decision, D6Inputs, compute_next_state, clamp
 
 
-# ── Internal singleton ──────────────────────────────────────────────────────
+# ── Internal singleton ─────────────────────────────────────────────
 
 _lock = threading.Lock()
 _state: GAIAState = GAIAState()  # boot with safe v2 defaults
 
 
-# ── Core read functions ────────────────────────────────────────────────────────
+# ── Core read functions ────────────────────────────────────────────────
 
 def get_state() -> GAIAState:
     """Return the current GAIAState snapshot (thread-safe read)."""
@@ -65,7 +65,7 @@ def get_mode() -> str:
         return _state.mode.value
 
 
-# ── Raw commit (internal / post-D6 use only) ─────────────────────────────────
+# ── Raw commit (internal / post-D6 use only) ─────────────────────────────
 
 def set_state(new_state: GAIAState) -> None:
     """Commit a new GAIAState (thread-safe write).
@@ -79,31 +79,31 @@ def set_state(new_state: GAIAState) -> None:
         _state = new_state
 
 
-# ── Primary write path ──────────────────────────────────────────────────────────
+# ── Primary write path ──────────────────────────────────────────────────
 
 def run_d6_cycle(
     *,
-    # ─ Dimensional health probes (D1–D5) ──────────────────────────────────
+    # ─ Dimensional health probes (D1–D5) ─────────────────────────────────
     d1_health: Optional[float] = None,
     d2_health: Optional[float] = None,
     d3_health: Optional[float] = None,
     d4_health: Optional[float] = None,
     d5_health: Optional[float] = None,
-    # ─ Scalar state ───────────────────────────────────────────────────────
+    # ─ Scalar state ──────────────────────────────────────────────────────────
     energy: Optional[float] = None,
     stress: Optional[float] = None,
     entropy: Optional[float] = None,
     personal_coherence: Optional[float] = None,
     noosphere_load: Optional[float] = None,
-    # ─ Legacy scalar (deprecated — prefer d1–d5 probes) ──────────────────
+    # ─ Legacy scalar (deprecated — prefer d1–d5 probes) ───────────────────
     coherence: Optional[float] = None,
     planetary_coherence: Optional[float] = None,  # alias for noosphere_load
-    # ─ Temporal / talisman ──────────────────────────────────────────────
+    # ─ Temporal / talisman ────────────────────────────────────────────
     cycle_position: Optional[int] = None,
     epoch: Optional[str] = None,
     active_talismans: Optional[list[str]] = None,
     special_conditions: Optional[list[str]] = None,
-    # ─ Rich D6 input probes ─────────────────────────────────────────────
+    # ─ Rich D6 input probes ───────────────────────────────────────────
     recent_error_rate: Optional[float] = None,
     session_hours: Optional[float] = None,
     # kept for backward compat with v1 callers
@@ -125,39 +125,53 @@ def run_d6_cycle(
       - If architect_request=True, D6 will unconditionally return GOVERNANCE.
       - session_streak_hours is a v1 alias for session_hours.
     """
+    global _state
     with _lock:
         updated = deepcopy(_state)
 
-        # ─ Dimensional probes (authoritative coherence inputs) ────────────────
-        if d1_health is not None: updated.d1_health = clamp(d1_health)
-        if d2_health is not None: updated.d2_health = clamp(d2_health)
-        if d3_health is not None: updated.d3_health = clamp(d3_health)
-        if d4_health is not None: updated.d4_health = clamp(d4_health)
-        if d5_health is not None: updated.d5_health = clamp(d5_health)
+        # ─ Dimensional probes (authoritative coherence inputs) ────────────────────
+        if d1_health is not None:
+            updated.d1_health = clamp(d1_health)
+        if d2_health is not None:
+            updated.d2_health = clamp(d2_health)
+        if d3_health is not None:
+            updated.d3_health = clamp(d3_health)
+        if d4_health is not None:
+            updated.d4_health = clamp(d4_health)
+        if d5_health is not None:
+            updated.d5_health = clamp(d5_health)
 
-        # ─ Scalar state ───────────────────────────────────────────────────────
-        if energy             is not None: updated.energy             = clamp(energy)
-        if stress             is not None: updated.stress             = clamp(stress)
-        if entropy            is not None: updated.entropy            = clamp(entropy)
-        if personal_coherence is not None: updated.personal_coherence = clamp(personal_coherence)
+        # ─ Scalar state ────────────────────────────────────────────────────────
+        if energy is not None:
+            updated.energy = clamp(energy)
+        if stress is not None:
+            updated.stress = clamp(stress)
+        if entropy is not None:
+            updated.entropy = clamp(entropy)
+        if personal_coherence is not None:
+            updated.personal_coherence = clamp(personal_coherence)
 
         # noosphere_load wins over the deprecated planetary_coherence alias
         if noosphere_load is not None:
-            updated.noosphere_load     = clamp(noosphere_load)
+            updated.noosphere_load = clamp(noosphere_load)
             updated.planetary_coherence = clamp(noosphere_load)  # keep alias in sync
         elif planetary_coherence is not None:
             updated.planetary_coherence = clamp(planetary_coherence)
-            updated.noosphere_load      = clamp(planetary_coherence)
+            updated.noosphere_load = clamp(planetary_coherence)
 
         # legacy coherence scalar (soft-deprecated; d1–d5 are authoritative)
         if coherence is not None:
             updated.coherence = clamp(coherence)
 
-        # ─ Temporal / talisman ──────────────────────────────────────────────
-        if cycle_position    is not None: updated.cycle_position    = cycle_position
-        if epoch             is not None: updated.epoch             = epoch
-        if active_talismans  is not None: updated.active_talismans  = active_talismans
-        if special_conditions is not None: updated.special_conditions = special_conditions
+        # ─ Temporal / talisman ───────────────────────────────────────────
+        if cycle_position is not None:
+            updated.cycle_position = cycle_position
+        if epoch is not None:
+            updated.epoch = epoch
+        if active_talismans is not None:
+            updated.active_talismans = active_talismans
+        if special_conditions is not None:
+            updated.special_conditions = special_conditions
 
         # ─ Build D6Inputs ───────────────────────────────────────────────────
         # Resolve session_hours: v2 name wins over v1 alias
@@ -173,13 +187,12 @@ def run_d6_cycle(
         )
 
         decision = compute_next_state(inputs)
-        global _state
         _state = decision.next_state
 
     return decision
 
 
-# ── Convenience write functions ──────────────────────────────────────────────────
+# ── Convenience write functions ───────────────────────────────────────────────
 
 def governance_override(reason: str = "") -> D6Decision:
     """Architect override — immediately set GOVERNANCE mode.
@@ -191,10 +204,8 @@ def governance_override(reason: str = "") -> D6Decision:
     and any subsystem that needs to hand control to the Architect.
     HTTP callers use POST /state/governance.
     """
-    interventions = [f"governance_override activated"]
     if reason:
-        interventions.append(f"reason: {reason}")
-
+        pass  # reason logged by caller or via interventions
     return run_d6_cycle(architect_request=True)
 
 
@@ -210,6 +221,7 @@ def request_mode_change(requested_mode: GAIAOperationalMode) -> D6Decision:
       - GOVERNANCE → use governance_override() instead
       - RECOVER    → always accepted; no threshold required
     """
+    global _state
     with _lock:
         candidate = deepcopy(_state)
 
@@ -218,7 +230,6 @@ def request_mode_change(requested_mode: GAIAOperationalMode) -> D6Decision:
             candidate.mode = requested_mode
             candidate.mode_locked = False
             candidate.last_transition_at = datetime.now(timezone.utc)
-            global _state
             _state = candidate
             return D6Decision(
                 next_state=candidate,
@@ -263,12 +274,11 @@ def update_talismans(
     """
     if run_cycle:
         return run_d6_cycle(active_talismans=active_talismans)
-    else:
-        with _lock:
-            global _state
-            _state = deepcopy(_state)
-            _state.active_talismans = active_talismans
-        return None
+    global _state
+    with _lock:
+        _state = deepcopy(_state)
+        _state.active_talismans = active_talismans
+    return None
 
 
 def unlock_protect(reason: str = "") -> D6Decision:
@@ -278,6 +288,7 @@ def unlock_protect(reason: str = "") -> D6Decision:
     appropriate recovery mode. Only the Architect can call this.
     HTTP callers use POST /state/unlock.
     """
+    global _state
     with _lock:
         current = deepcopy(_state)
 
@@ -285,7 +296,6 @@ def unlock_protect(reason: str = "") -> D6Decision:
             # Nothing to unlock — run a normal D6 cycle and return
             inputs = D6Inputs(current_state=current)
             decision = compute_next_state(inputs)
-            global _state
             _state = decision.next_state
             return decision
 
@@ -314,12 +324,10 @@ def session_start(
     Call this once at the start of each work session.
     """
     return run_d6_cycle(
-        session_id=None,       # session_id set directly below inside _lock
         cycle_position=cycle_position,
         epoch=epoch,
         special_conditions=special_conditions or [],
     )
-    # Note: session_id is not a D6 input — set it directly after the cycle
 
 
 def reset_state(*, seed: Optional[GAIAState] = None) -> None:
