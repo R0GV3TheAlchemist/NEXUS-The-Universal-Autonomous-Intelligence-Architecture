@@ -85,6 +85,10 @@ _numerology_router     = _try_import("api.routes.numerology", "router")
 _emrys_router          = _try_import("emrys_engine.router", "emrys_router")
 _init_emrys            = _try_import("emrys_engine.router", "init_emrys_engine")
 
+# ── Queue 4 — GAIAState + Talisman routers (optional, same safety pattern) ───
+_gaia_state_router     = _try_import("api.gaia_state", "router")
+_talisman_router       = _try_import("api.talisman", "router")
+
 
 # ── Graceful shutdown ─────────────────────────────────────────────────────────
 
@@ -227,6 +231,25 @@ async def lifespan(application: FastAPI):
         _SUBSYSTEM_STATUS["zodiac"] = False
         log.warning(f"[GAIA] ZodiacEngine skipped: {e}")
 
+    # GAIAState + Talisman subsystems
+    try:
+        from gaia.core.state_store import get_state
+        get_state()  # warm-up: initialises singleton
+        _SUBSYSTEM_STATUS["gaia_state"] = True
+        log.info("[GAIA] ✓ GAIAState ready")
+    except Exception as e:
+        _SUBSYSTEM_STATUS["gaia_state"] = False
+        log.warning(f"[GAIA] GAIAState init skipped: {e}")
+
+    try:
+        from gaia.core.talisman_store import seed_default_talismans
+        seed_default_talismans()
+        _SUBSYSTEM_STATUS["talismans"] = True
+        log.info("[GAIA] ✓ Talisman store seeded")
+    except Exception as e:
+        _SUBSYSTEM_STATUS["talismans"] = False
+        log.warning(f"[GAIA] Talisman store skipped: {e}")
+
     routing_mode = os.environ.get("GAIA_ROUTING_MODE", "local-first")
     log.info(f"[GAIA] LLM routing mode: {routing_mode}")
     log.info("[GAIA] ✨ GAIA is alive. Twin API ready at /twin/*")
@@ -294,6 +317,12 @@ _mount(_safety_router,                                                          
 _mount(_numerology_router,     prefix="/api/v1",       tags=["Numerology"],      label="numerology")
 _mount(_emrys_router,          prefix="/api/emrys",    tags=["Emrys"],           label="emrys")
 
+# ── Queue 4 — GAIAState + Talisman (prefix already set on routers) ────────────
+# api.gaia_state  → prefix /gaia/state  (set in router definition)
+# api.talisman    → prefix /gaia/talismans (set in router definition)
+_mount(_gaia_state_router,                             tags=["GAIAState"],       label="gaia_state")
+_mount(_talisman_router,                               tags=["Talismans"],       label="talisman")
+
 
 # ── Core endpoints ────────────────────────────────────────────────────────────
 
@@ -302,7 +331,6 @@ async def health():
     uptime = round(time.time() - _START_TIME, 1)
     ollama = await _check_ollama()
 
-    # Core Twin API is always up if we got here
     core_ready = _SUBSYSTEM_STATUS.get("twin_memory", True)
 
     payload = {
@@ -312,7 +340,6 @@ async def health():
         "uptime": uptime,
         "routing_mode": os.environ.get("GAIA_ROUTING_MODE", "local-first"),
         "subsystems": _SUBSYSTEM_STATUS,
-        # Ollama is optional — presence of cloud LLM keys replaces it
         "ollama": {
             "ready": ollama["ready"],
             "model": ollama["model"],

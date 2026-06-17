@@ -1,12 +1,18 @@
 """
 gaia/core/talisman_store.py
 
-In-memory Talisman store for Queue 4.
+In-memory Talisman store — Queue 4.
+
+FIX (wiring pass): activate_talisman now applies RELATIVE deltas
+against current GAIAState values before running a D6 cycle, rather
+than passing the raw delta as an absolute probe value.  This ensures
+activation semantics are: "nudge from current state, then let D6
+decide" — not "override state to delta value".
 
 v1 scope:
-  - CRUD-lite (create/list/get)
-  - activate/deactivate
-  - activation feeds GAIAState through run_d6_cycle()
+  - CRUD-lite (create / list / get)
+  - activate / deactivate
+  - activation feeds clamped-delta state into D6 via run_d6_cycle()
 
 Future:
   - persist to DB
@@ -19,7 +25,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from threading import Lock
 
-from gaia.core.state_store import run_d6_cycle
+from gaia.core.state_store import get_state, run_d6_cycle
 from gaia.core.talisman import Talisman, TalismanEffect, TalismanStatus
 
 _lock = Lock()
@@ -65,16 +71,31 @@ def create_talisman(
 
 
 def activate_talisman(talisman_id: str):
+    """
+    Activate a talisman.
+
+    FIX: compute absolute probe values from current state + relative
+    deltas, clamp to [0, 1], then run a D6 cycle so the engine
+    evaluates the NUDGED state rather than the raw delta.
+    """
     with _lock:
         talisman = _talismans[talisman_id]
         talisman.status = TalismanStatus.ACTIVE
         talisman.last_activated_at = datetime.now(timezone.utc)
 
+    current = get_state()
+    fx = talisman.effect
+
+    new_coherence = max(0.0, min(1.0, current.coherence + fx.coherence_delta))
+    new_energy    = max(0.0, min(1.0, current.energy    + fx.energy_delta))
+    new_stress    = max(0.0, min(1.0, current.stress    + fx.stress_delta))
+    new_entropy   = max(0.0, min(1.0, current.entropy   + fx.entropy_delta))
+
     decision = run_d6_cycle(
-        coherence=max(0.0, talisman.effect.coherence_delta),
-        energy=max(0.0, talisman.effect.energy_delta),
-        stress=0.0 if talisman.effect.stress_delta < 0 else talisman.effect.stress_delta,
-        entropy=0.0 if talisman.effect.entropy_delta < 0 else talisman.effect.entropy_delta,
+        coherence=new_coherence,
+        energy=new_energy,
+        stress=new_stress,
+        entropy=new_entropy,
     )
     return talisman, decision
 
