@@ -1,6 +1,6 @@
 """
 api/noosphere.py
-Canon: C48 (GAIA_Autopoiesis_Doctrine), C50 (Six_Dimensional_Architecture)
+Canon: C48 (GAIA_Autopoiesis_Doctrine), C50 (Prism_Cube_Doctrine)
 
 FastAPI router: /noosphere/*
 
