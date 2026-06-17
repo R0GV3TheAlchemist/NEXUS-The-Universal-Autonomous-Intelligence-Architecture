@@ -14,6 +14,8 @@ jobs:
   lint-and-test:
     name: Lint + Type + Security + Syntax + Manifest + Pytest
     runs-on: ubuntu-latest
+    # Hard cap: kill the whole job after 20 min so it never hangs for hours.
+    timeout-minutes: 20
 
     steps:
       # ── 1. Checkout ───────────────────────────────────────────────────────────────
@@ -42,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e ".[dev]"
-          pip install pytest-cov pytest-mock mypy bandit[toml]
+          pip install pytest-cov pytest-mock pytest-timeout mypy bandit[toml]
 
       # ── 5. Pre-download embedding model ─────────────────────────────────────────────
       - name: Pre-download HuggingFace embedding model
@@ -66,12 +68,6 @@ jobs:
       # ── 5.5 Ruff lint ──────────────────────────────────────────────────────────────
       # Hard gate — any ruff violation FAILS the build.
       # Config: pyproject.toml [tool.ruff] (stable rules only, no preview).
-      # NOTE: --output-format=github intentionally REMOVED. That flag emits
-      # ::notice:: annotations for every finding even on a passing run,
-      # flooding the Actions UI with yellow warnings that look like errors.
-      # Plain text output: green = green, red = red, no ghost annotations.
-      # src-python/ added 2026-06-10: was missing from targets, leaving
-      # quantum_chemistry and sovereign_memory modules unlinted in CI.
       - name: Lint with ruff
         run: |
           echo '🔍  Running ruff lint...'
@@ -177,11 +173,15 @@ jobs:
           echo '✅  All core/ files compile cleanly'
 
       # ── 7. Pytest ───────────────────────────────────────────────────────────────────
+      # --timeout=60  kills any single test that hangs for > 60 s (requires pytest-timeout).
+      # This surfaces the *specific* test that is blocking rather than
+      # letting the whole job freeze until the 20-min job cap fires.
       - name: Run pytest
         run: |
           python -m pytest tests/ \
             --tb=short \
             --asyncio-mode=auto \
+            --timeout=60 \
             --cov=core \
             --cov-report=term-missing \
             -v
