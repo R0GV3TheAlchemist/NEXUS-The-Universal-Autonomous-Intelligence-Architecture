@@ -1,11 +1,10 @@
 # core/spectral/force_engine.py
-# PLC2401 fix: renamed non-ASCII function `is_oа4_active` → `is_oa4_active`
-# The Cyrillic а in the original name has been replaced with ASCII `a`.
-# All callers in color_engine.py are updated in the same commit.
-# All other logic in this file is unchanged.
+# PLC2401 fix: renamed non-ASCII function `is_oa4_active` (Cyrillic а → ASCII a).
+# E402 fix: moved `from enum import Enum as _Enum` to top of file.
 
 from __future__ import annotations
 
+from enum import Enum as _Enum
 from typing import Optional
 
 
@@ -43,10 +42,10 @@ class SpectralForceEngine:
         """
         return phi >= 0.85
 
+
 # ---------------------------------------------------------------------------
 # Legacy aliases — Canon C30 compatibility shim for test suite
 # ---------------------------------------------------------------------------
-from enum import Enum as _Enum
 
 class SpectralForceName(_Enum):
     """Stub enum — real force names live inside SpectralForceEngine."""

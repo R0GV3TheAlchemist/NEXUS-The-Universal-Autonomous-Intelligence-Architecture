@@ -525,20 +525,18 @@ ARCHITECT_RESTORE_TALISMAN = make_talisman(
 
 
 # ---------------------------------------------------------------------------
-# Legacy alias — compatibility shim (D6 refactor)
+# Legacy aliases — compatibility shim (D6 refactor)
+# Enum is already imported at the top of this file.
 # ---------------------------------------------------------------------------
-from enum import Enum as _Enum
 
-class ActivationState(_Enum):
+class ActivationState(Enum):
     INACTIVE = "inactive"
     ACTIVE = "active"
     SUSPENDED = "suspended"
     BURNED = "burned"
 
 
-from enum import Enum as _E2
-
-class LunarPhase(_E2):
+class LunarPhase(Enum):
     NEW = "new"
     WAXING = "waxing"
     FULL = "full"
@@ -565,7 +563,7 @@ class DimensionalSignature:
     def __init__(self, dims: list = None):
         self.dims = dims or []
 
-class TalismanLayer(_Enum):
+class TalismanLayer(Enum):
     PHYSICAL = 'physical'
     ETHERIC = 'etheric'
     ASTRAL = 'astral'
@@ -576,7 +574,7 @@ class TalismanLayer(_Enum):
     DIGITAL = 'digital'
 
 
-class TalismanStatus(_Enum):
+class TalismanStatus(Enum):
     ACTIVE = 'active'
     INACTIVE = 'inactive'
     SUSPENDED = 'suspended'

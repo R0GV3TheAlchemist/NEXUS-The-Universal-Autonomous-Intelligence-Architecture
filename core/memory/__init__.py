@@ -22,12 +22,10 @@ from .shared import SharedMemoryStore
 from .shadow_registry import ShadowRegistry, ShadowEntry, ShadowPattern
 from .retrieval import MemoryRetrievalEngine, RetrievalQuery, RankedMemory
 from .manager import MemoryManager
-
-# ---------------------------------------------------------------------------
-# FallbackEmbedder — re-exported from embedder.py
-# Tests and consumers import: from core.memory import FallbackEmbedder
-# ---------------------------------------------------------------------------
-from .embedder import FallbackEmbedder
+from .embedder import FallbackEmbedder  # noqa: F401
+from .memory_store import MemoryStore, MemoryTier  # noqa: F401
+from .items import MemoryItem, MemoryKind, RetrievedMemory  # noqa: F401
+from .pruner import MemoryPruner  # noqa: F401
 
 
 # ---------------------------------------------------------------------------
@@ -42,9 +40,6 @@ def build_default_router(
 ) -> MemoryManager:
     """
     Build and return a MemoryManager with all default memory layers.
-
-    This is the primary entry point for application code that needs a
-    fully configured memory system without manual wiring.
 
     Args:
         gaian_id:   The Gaian Twin identifier for this memory context.
@@ -74,16 +69,12 @@ __all__ = [
     "RetrievalQuery",
     "RankedMemory",
     "MemoryManager",
-    # New in this fix
     "FallbackEmbedder",
     "build_default_router",
+    "MemoryStore",
+    "MemoryTier",
+    "MemoryItem",
+    "MemoryKind",
+    "RetrievedMemory",
+    "MemoryPruner",
 ]
-
-
-# ---------------------------------------------------------------------------
-# Memory store / item exports — required by tests/test_memory_store.py
-# ---------------------------------------------------------------------------
-from .memory_store import MemoryStore          # noqa: F401
-from .items import MemoryItem, MemoryKind, RetrievedMemory          # noqa: F401
-from .memory_store import MemoryTier                                  # noqa: F401
-from .pruner import MemoryPruner                                      # noqa: F401
