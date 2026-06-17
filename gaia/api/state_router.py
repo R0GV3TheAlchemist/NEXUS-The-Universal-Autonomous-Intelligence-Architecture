@@ -3,7 +3,7 @@ gaia/api/state_router.py
 ========================
 GAIA State API — FastAPI Router
 Canon reference: C52, GAIA_D6_META_COHERENCE_ENGINE.md
-Issues: #576, #571
+Issues: #576, #571, #589
 
 Exposes GAIAState and D6Engine via REST + WebSocket.
 The Tauri frontend connects to these endpoints for the State HUD.
@@ -14,10 +14,16 @@ Endpoints:
   POST /state/mode         — manually set mode
   POST /state/reset        — reset to default healthy state
   GET  /state/health       — full D6Engine health report (HUD payload)
+  POST /state/evaluate     — run D6 evaluation with probes, broadcast result
   GET  /state/interventions — recent intervention log
   POST /state/talisman/activate   — activate a talisman
   POST /state/talisman/deactivate — deactivate a talisman
   WS   /state/ws           — real-time state stream
+
+Wire 1 (Issue #589):
+  D6Engine.on_intervention → _on_d6_intervention() → WebSocket broadcast
+  Every mode change decision is now emitted as an INTERVENTION_EVENT
+  to all connected frontend clients in real time.
 """
 
 from __future__ import annotations
@@ -31,22 +37,19 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
 from gaia.core.state import GAIAState, GAIAMode, default_state
-from gaia.core.d6_engine import D6Engine, EngineProbes
+from gaia.core.d6_engine import D6Engine, EngineProbes, InterventionEvent
 from gaia.core.talisman import Talisman, TalismanEngine, make_talisman
 
 
 # ---------------------------------------------------------------------------
-# Router and shared instances
-# (In production these would be injected via dependency injection;
-#  for v0.x a module-level singleton is fine.)
+# Router
 # ---------------------------------------------------------------------------
 
 router = APIRouter(prefix="/state", tags=["state"])
 
-# Singleton state and engine for this session
-# In a multi-GAIAN deployment, these would be keyed by gaian_id/session_id
+# Singleton state and engines for this session.
+# In a multi-GAIAN deployment these are keyed by gaian_id/session_id.
 _state: GAIAState = default_state()
-_engine: D6Engine = D6Engine(auto_apply=False)
 _talisman_engine: TalismanEngine = TalismanEngine()
 _talismans: Dict[str, Talisman] = {}  # id -> Talisman
 
@@ -54,8 +57,62 @@ _talismans: Dict[str, Talisman] = {}  # id -> Talisman
 _ws_connections: List[WebSocket] = []
 
 
-async def _broadcast_state():
-    """Push current state snapshot to all connected WebSocket clients."""
+# ---------------------------------------------------------------------------
+# Wire 1 — D6Engine.on_intervention callback (Issue #589)
+# ---------------------------------------------------------------------------
+
+def _on_d6_intervention(event: InterventionEvent) -> None:
+    """
+    Callback fired by D6Engine on every intervention event.
+
+    Bridges the synchronous D6Engine into the async WebSocket broadcast loop.
+    Uses asyncio.run_coroutine_threadsafe() so it is safe to call from any
+    thread (the D6 evaluation may run outside the event loop thread).
+
+    Wire 1 — Issue #589, Phase 1.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        return  # no event loop running — skip (e.g. during unit tests)
+
+    payload = json.dumps({
+        "type": "INTERVENTION_EVENT",
+        "event": event.to_dict(),
+        "t": time.time(),
+    })
+
+    async def _send_all(p: str) -> None:
+        dead: List[WebSocket] = []
+        for ws in list(_ws_connections):
+            try:
+                await ws.send_text(p)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            if ws in _ws_connections:
+                _ws_connections.remove(ws)
+
+    if loop.is_running():
+        asyncio.run_coroutine_threadsafe(_send_all(payload), loop)
+    else:
+        loop.run_until_complete(_send_all(payload))
+
+
+# D6Engine instantiated WITH the on_intervention callback — Wire 1 is live.
+# auto_apply=True: D6 decisions are applied directly to _state.
+_engine: D6Engine = D6Engine(
+    auto_apply=True,
+    on_intervention=_on_d6_intervention,  # ← Wire 1
+)
+
+
+# ---------------------------------------------------------------------------
+# Internal broadcast helpers
+# ---------------------------------------------------------------------------
+
+async def _broadcast_state() -> None:
+    """Push the current GAIAState snapshot to all connected WebSocket clients."""
     if not _ws_connections:
         return
     payload = json.dumps({
@@ -63,14 +120,15 @@ async def _broadcast_state():
         "state": _state.to_dict(include_history=False),
         "t": time.time(),
     })
-    dead = []
-    for ws in _ws_connections:
+    dead: List[WebSocket] = []
+    for ws in list(_ws_connections):
         try:
             await ws.send_text(payload)
         except Exception:
             dead.append(ws)
     for ws in dead:
-        _ws_connections.remove(ws)
+        if ws in _ws_connections:
+            _ws_connections.remove(ws)
 
 
 # ---------------------------------------------------------------------------
@@ -104,8 +162,8 @@ class ProbesRequest(BaseModel):
 
 
 class TalismanActivateRequest(BaseModel):
-    talisman_id: Optional[str] = None   # activate existing by ID
-    talisman_data: Optional[Dict[str, Any]] = None  # or create+activate inline
+    talisman_id: Optional[str] = None
+    talisman_data: Optional[Dict[str, Any]] = None
     activated_by: Optional[str] = None
 
 
@@ -166,13 +224,44 @@ async def reset_state() -> Dict[str, Any]:
     return _state.to_dict(include_history=False)
 
 
-@router.get("/health", summary="D6Engine full health report")
-async def get_health(probes: Optional[ProbesRequest] = None) -> Dict[str, Any]:
-    """Full D6 Meta-Coherence Engine health report — primary HUD payload."""
-    probe_obj = EngineProbes(
-        **(probes.model_dump() if probes else {})
-    ) if probes else EngineProbes()
-    return _engine.health_report(_state, probe_obj)
+@router.get("/health", summary="D6Engine full health report (HUD payload)")
+async def get_health() -> Dict[str, Any]:
+    """
+    Full D6 Meta-Coherence Engine health report — the primary HUD payload.
+
+    Returns the current state's dimensional health, recommended mode,
+    active talisman effects, and recent intervention log.
+    No probes are applied — this is a pure READ of current state.
+    To evaluate WITH probes, use POST /state/evaluate.
+    """
+    return _engine.health_report(_state, EngineProbes())
+
+
+@router.post("/evaluate", summary="Run D6 evaluation with probes, broadcast result")
+async def evaluate_with_probes(body: ProbesRequest) -> Dict[str, Any]:
+    """
+    Run a full D6 evaluation cycle with external probe values.
+
+    Wire 1 (Issue #589): the D6Engine.on_intervention callback fires
+    automatically during this call, broadcasting the InterventionEvent
+    to all connected WebSocket clients in real time.
+
+    Use this endpoint when:
+    - Biometric data arrives from EmbodiedSensorBridge (Wire 2)
+    - Noosphere load updates from MotherThread (Wire 3)
+    - The frontend HUD polls on a timer (e.g. every 60 seconds)
+    - Any subsystem wants to push probe data and trigger a D6 decision
+    """
+    probes = EngineProbes(**body.model_dump())
+    event = _engine.evaluate(_state, probes)
+    # If D6 changed the mode (auto_apply=True), broadcast the new state
+    if event.auto_applied:
+        await _broadcast_state()
+    return {
+        "event": event.to_dict(),
+        "state": _state.to_dict(include_history=False),
+        "health": _engine.health_report(_state, probes),
+    }
 
 
 @router.get("/interventions", summary="Recent D6 intervention log")
@@ -202,6 +291,9 @@ async def activate_talisman(body: TalismanActivateRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="Provide talisman_id or talisman_data.")
 
     event = _talisman_engine.activate(talisman, _state, activated_by=body.activated_by)
+    # Re-evaluate D6 after talisman activation so coherence boost is reflected
+    # This fires _on_d6_intervention → WebSocket broadcast automatically
+    _engine.evaluate(_state)
     await _broadcast_state()
     return {"event": event, "state": _state.to_dict(include_history=False)}
 
@@ -213,6 +305,8 @@ async def deactivate_talisman(body: TalismanDeactivateRequest) -> Dict[str, Any]
     if not talisman:
         raise HTTPException(status_code=404, detail=f"Talisman '{body.talisman_id}' not found.")
     event = _talisman_engine.deactivate(talisman, _state, deactivated_by=body.deactivated_by)
+    # Re-evaluate D6 after talisman deactivation
+    _engine.evaluate(_state)
     await _broadcast_state()
     return {"event": event, "state": _state.to_dict(include_history=False)}
 
@@ -224,23 +318,42 @@ async def deactivate_talisman(body: TalismanDeactivateRequest) -> Dict[str, Any]
 @router.websocket("/ws")
 async def state_websocket(websocket: WebSocket):
     """
-    Real-time state stream for the Tauri frontend.
+    Real-time state stream for the Tauri frontend State HUD.
 
-    On connect: immediately sends current state snapshot.
-    Listens for JSON messages:
-      { "type": "UPDATE", "fields": { ... } }  → partial state update
-      { "type": "MODE", "mode": "BUILD" }       → mode override
+    On connect:
+      1. Sends STATE_INIT with current state snapshot
+      2. Sends HEALTH_INIT with current D6 health report
+
+    Receives JSON messages:
+      { "type": "UPDATE", "fields": { ... } }  → partial state update + D6 eval
+      { "type": "MODE",   "mode": "BUILD" }    → mode override
+      { "type": "PROBE",  "probes": { ... } }  → D6 evaluation with probes
       { "type": "PING" }                        → { "type": "PONG" }
 
-    Broadcasts STATE_UPDATE to all connected clients on any change.
+    Emits:
+      STATE_INIT         — initial snapshot on connect
+      HEALTH_INIT        — initial health report on connect
+      STATE_UPDATE       — full state snapshot on any change
+      INTERVENTION_EVENT — D6 decision event (via _on_d6_intervention, Wire 1)
+      PONG               — response to PING
+      ERROR              — malformed message
+
+    Wire 1 (Issue #589): INTERVENTION_EVENT messages are now emitted
+    automatically by _on_d6_intervention() on every D6 evaluation,
+    independent of the message handler below. The HUD is live.
     """
     await websocket.accept()
     _ws_connections.append(websocket)
 
-    # Send initial state snapshot
+    # Send initial snapshots
     await websocket.send_text(json.dumps({
         "type": "STATE_INIT",
         "state": _state.to_dict(include_history=False),
+        "t": time.time(),
+    }))
+    await websocket.send_text(json.dumps({
+        "type": "HEALTH_INIT",
+        "health": _engine.health_report(_state, EngineProbes()),
         "t": time.time(),
     }))
 
@@ -263,6 +376,8 @@ async def state_websocket(websocket: WebSocket):
                 if updates:
                     try:
                         _state.update(**updates)
+                        # Wire 1: evaluate triggers _on_d6_intervention → broadcast
+                        _engine.evaluate(_state)
                         await _broadcast_state()
                     except (ValueError, AttributeError) as e:
                         await websocket.send_text(json.dumps({"type": "ERROR", "detail": str(e)}))
@@ -271,12 +386,25 @@ async def state_websocket(websocket: WebSocket):
                 try:
                     mode = GAIAMode(msg.get("mode", ""))
                     _state.update(mode=mode)
+                    _engine.evaluate(_state)
                     await _broadcast_state()
                 except ValueError:
                     await websocket.send_text(json.dumps({
                         "type": "ERROR",
                         "detail": f"Invalid mode: {msg.get('mode')}"
                     }))
+
+            elif msg_type == "PROBE":
+                # Wire 1+2+3: frontend can push probe data directly over WS
+                # D6 evaluates immediately, _on_d6_intervention broadcasts result
+                try:
+                    probe_data = msg.get("probes", {})
+                    probes = EngineProbes(**{k: v for k, v in probe_data.items() if v is not None})
+                    event = _engine.evaluate(_state, probes)
+                    if event.auto_applied:
+                        await _broadcast_state()
+                except Exception as e:
+                    await websocket.send_text(json.dumps({"type": "ERROR", "detail": str(e)}))
 
             else:
                 await websocket.send_text(json.dumps({
