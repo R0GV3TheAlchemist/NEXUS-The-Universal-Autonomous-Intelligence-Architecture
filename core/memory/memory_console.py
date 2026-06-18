@@ -10,21 +10,31 @@ This is the runtime implementation of C-SENTINEL Article 4 (Memory Sovereignty):
 
 Canon Reference: C01 (Gaian Sovereignty), C-SENTINEL Article 4
 Issue:          #213
-Version:        1.0.0
+Version:        1.1.0
+
+Changelog v1.1.0:
+  - Bug 1 fixed: browse() sort now handles updated_at=None (uses created_at as fallback)
+  - Bug 2 fixed: store() no longer sets non-existent entry.explanation field
+  - Bug 3 fixed: _build_explanation() ProvenanceSource map aligned to actual enum values
+  - Bug 4 fixed: read() and export_all() now use _entry_to_dict() helper instead of
+                 the non-existent entry.to_dict(); dict includes key, value, id,
+                 confidence, source, created_at as required by tests
 """
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from core.memory.memory_store import (
     MemoryCategory,
     MemoryEntry,
     MemoryTier,
+    MemoryProvenance,
     ProvenanceSource,
     SessionState,
 )
@@ -81,12 +91,12 @@ class ExplanationResult:
     Answers "Why am I seeing this?" for a recalled memory.
     Acceptance Criterion: A "why am I seeing this?" explanation is visible for active context.
     """
-    memory_id:    str
-    key:          str
-    value:        str
-    explanation:  str                   # Plain-language reason this memory is active
-    confidence:   float
-    last_used_at: Optional[datetime]
+    memory_id:         str
+    key:               str
+    value:             str
+    explanation:       str
+    confidence:        float
+    last_used_at:      Optional[datetime]
     last_used_context: Optional[str]
 
 
@@ -121,6 +131,40 @@ class MemoryConsole:
         self._session_state: Optional[SessionState] = None
 
     # ------------------------------------------------------------------
+    # Internal serialisation helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _entry_to_dict(entry: MemoryEntry) -> dict:
+        """
+        Serialise a MemoryEntry to a flat, human-readable dict.
+
+        The dict flattens the nested MemoryProvenance fields so that
+        'confidence' and 'source' are top-level keys, as required by
+        the export and read tests.
+        """
+        d = dataclasses.asdict(entry)
+        # Flatten provenance sub-dict to top level
+        provenance = d.pop("provenance", {})
+        d["confidence"]      = provenance.get("confidence")
+        d["source"]          = provenance.get("source")
+        d["origin_context"]  = provenance.get("origin_context")
+        d["recorded_at"]     = provenance.get("recorded_at")
+        # Serialise datetime fields to ISO strings
+        for k in ("created_at", "updated_at", "last_used_at", "recorded_at"):
+            v = d.get(k)
+            if isinstance(v, datetime):
+                d[k] = v.isoformat()
+        # Serialise enum fields to their values
+        if d.get("tier") is not None:
+            d["tier"] = d["tier"] if isinstance(d["tier"], str) else d["tier"].value if hasattr(d["tier"], "value") else str(d["tier"])
+        if d.get("category") is not None:
+            d["category"] = d["category"] if isinstance(d["category"], str) else d["category"].value if hasattr(d["category"], "value") else str(d["category"])
+        if d.get("source") is not None:
+            d["source"] = d["source"] if isinstance(d["source"], str) else d["source"].value if hasattr(d["source"], "value") else str(d["source"])
+        return d
+
+    # ------------------------------------------------------------------
     # Storage
     # ------------------------------------------------------------------
 
@@ -132,11 +176,11 @@ class MemoryConsole:
         """
         existing = self._find_by_key(entry.key, entry.tier)
         if existing:
-            existing.value          = entry.value
-            existing.provenance     = entry.provenance
-            existing.updated_at     = datetime.now(timezone.utc)
-            existing.tags           = entry.tags
-            existing.explanation    = entry.explanation
+            existing.value       = entry.value
+            existing.provenance  = entry.provenance
+            existing.updated_at  = datetime.now(timezone.utc)
+            existing.tags        = entry.tags
+            # NOTE: do NOT copy entry.explanation — MemoryEntry has no such field.
             logger.info("[MemoryConsole] gaian=%s updated memory key=%s id=%s",
                         self.gaian_id, entry.key, existing.id)
             return ConsoleResult(
@@ -173,14 +217,14 @@ class MemoryConsole:
             status=ConsoleStatus.OK,
             message=f"Memory '{entry.key}' retrieved.",
             entry=entry,
-            data=entry.to_dict(),
+            data=self._entry_to_dict(entry),
         )
 
     def browse(
         self,
-        tier: Optional[MemoryTier]     = None,
+        tier: Optional[MemoryTier]         = None,
         category: Optional[MemoryCategory] = None,
-        tag: Optional[str]             = None,
+        tag: Optional[str]                 = None,
     ) -> list[MemoryEntry]:
         """
         Return all memory entries matching the given filters.
@@ -201,7 +245,12 @@ class MemoryConsole:
         if tag is not None:
             results = [e for e in results if tag in e.tags]
 
-        return sorted(results, key=lambda e: e.updated_at, reverse=True)
+        # BUG 1 FIX: updated_at is Optional — fall back to created_at so None never
+        # causes a TypeError in the comparator.
+        def _sort_key(e: MemoryEntry) -> datetime:
+            return e.updated_at if e.updated_at is not None else e.created_at
+
+        return sorted(results, key=_sort_key, reverse=True)
 
     # ------------------------------------------------------------------
     # Edit
@@ -225,8 +274,8 @@ class MemoryConsole:
                 entry=entry,
             )
 
-        old_value       = entry.value
-        entry.value     = new_value
+        old_value        = entry.value
+        entry.value      = new_value
         entry.updated_at = datetime.now(timezone.utc)
         # When Gaian edits a memory, provenance upgrades to GAIAN_EXPLICIT
         entry.provenance.source     = ProvenanceSource.GAIAN_EXPLICIT
@@ -323,8 +372,7 @@ class MemoryConsole:
                 message=f"No memory found with id '{memory_id}'.",
             )
 
-        explanation = self._build_explanation(entry, active_response)
-        entry.explanation       = explanation
+        explanation             = self._build_explanation(entry, active_response)
         entry.last_used_at      = datetime.now(timezone.utc)
         entry.last_used_context = active_response
 
@@ -360,7 +408,7 @@ class MemoryConsole:
         C-SENTINEL Article 4: "Memory exports must be complete, human-readable,
         and available on demand."
         """
-        return [entry.to_dict() for entry in self._store.values()]
+        return [self._entry_to_dict(entry) for entry in self._store.values()]
 
     # ------------------------------------------------------------------
     # Session State
@@ -396,17 +444,20 @@ class MemoryConsole:
     def _build_explanation(self, entry: MemoryEntry, active_response: Optional[str]) -> str:
         """
         Build a plain-language explanation of why a memory is active.
+
+        BUG 3 FIX: source_map keys are aligned to the actual ProvenanceSource
+        enum values (GAIAN_EXPLICIT, GAIAN_INFERRED, SYSTEM, IMPORTED) rather
+        than the stale names that were removed from the enum.
         """
         source_map = {
-            ProvenanceSource.GAIAN_EXPLICIT:    "you told me this directly",
-            ProvenanceSource.GAIAN_IMPLICIT:    "I inferred this from something you said or did",
-            ProvenanceSource.SENTINEL_INFERRED: "I observed this pattern over time",
-            ProvenanceSource.SYSTEM_GENERATED:  "this was recorded automatically by the system",
-            ProvenanceSource.IMPORTED:          "this was imported with your consent",
+            ProvenanceSource.GAIAN_EXPLICIT: "you told me this directly",
+            ProvenanceSource.GAIAN_INFERRED: "I inferred this from something you said or did",
+            ProvenanceSource.SYSTEM:         "this was recorded automatically by the system",
+            ProvenanceSource.IMPORTED:       "this was imported with your consent",
         }
-        source_desc  = source_map.get(entry.provenance.source, "this was recorded")
+        source_desc    = source_map.get(entry.provenance.source, "this was recorded")
         confidence_pct = int(entry.provenance.confidence * 100)
-        tier_desc    = "a lasting memory" if entry.tier == MemoryTier.DURABLE else "a session note"
+        tier_desc      = "a lasting memory" if entry.tier == MemoryTier.DURABLE else "a session note"
 
         base = (
             f"This is {tier_desc}: '{entry.key} = {entry.value}'. "
