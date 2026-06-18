@@ -1,11 +1,11 @@
 """
 core/memory/tiers/working.py
 
-WorkingMemoryStore — in-process dict, session-scoped.
-Evicted in full at session end (TTL = 0 hours conceptually).
-Issue: #213
-"""
+WORKING tier — in-process dict, session-scoped.
+All entries are evicted on session end (evict_expired flushes everything).
 
+Canon: C34 (Memory Sovereignty)  Issue: #213
+"""
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -14,39 +14,66 @@ from core.memory.hierarchy import MemoryQuery, MemoryStore
 
 
 class WorkingMemoryStore(MemoryStore):
+    """
+    Ultra-fast, in-process working memory.
+
+    Keys are scoped by (gaian_id, key); gaian_id defaults to the
+    special sentinel '__global__' when not provided.
+    """
+
+    _GLOBAL = "__global__"
+
     def __init__(self) -> None:
-        self._data: dict[str, tuple[Any, Optional[str]]] = {}  # key -> (value, gaian_id)
+        # {(gaian_id, key): value}
+        self._store: dict[tuple[str, str], Any] = {}
 
-    def __len__(self) -> int:
-        return len(self._data)
+    # ------------------------------------------------------------------ #
+    # MemoryStore ABC
+    # ------------------------------------------------------------------ #
 
-    async def write(self, key: str, value: Any, gaian_id: Optional[str] = None, **kwargs) -> None:
-        self._data[key] = (value, gaian_id)
+    async def write(
+        self, key: str, value: Any,
+        gaian_id: Optional[str] = None, **kwargs
+    ) -> None:
+        self._store[(gaian_id or self._GLOBAL, key)] = value
 
-    async def read(self, key: str, gaian_id: Optional[str] = None) -> Optional[Any]:
-        entry = self._data.get(key)
-        if entry is None:
-            return None
-        val, gid = entry
-        if gaian_id and gid and gid != gaian_id:
-            return None
-        return val
+    async def read(
+        self, key: str, gaian_id: Optional[str] = None
+    ) -> Optional[Any]:
+        return self._store.get((gaian_id or self._GLOBAL, key))
 
     async def search(self, query: MemoryQuery) -> list[dict]:
+        gid = query.gaian_id or self._GLOBAL
         text = query.text.lower()
         results = []
-        for key, (value, _) in self._data.items():
-            if text in str(value).lower() or text in key.lower():
-                results.append({"key": key, "value": value, "_relevance": 0.5, "_recency": 0.8})
+        for (g, k), v in self._store.items():
+            if g != gid:
+                continue
+            haystack = f"{k} {v}".lower()
+            relevance = 0.9 if text in haystack else 0.1
+            results.append({
+                "key": k, "value": v,
+                "_relevance": relevance, "_recency": 1.0,
+                "_tier": "working",
+            })
         return results
 
     async def evict_expired(self) -> int:
-        count = len(self._data)
-        self._data.clear()
+        """Working memory has no TTL — evict *all* entries."""
+        count = len(self._store)
+        self._store.clear()
         return count
 
+    # ------------------------------------------------------------------ #
+    # Extras
+    # ------------------------------------------------------------------ #
+
     async def evict_for_gaian(self, gaian_id: str) -> int:
-        keys = [k for k, (_, gid) in self._data.items() if gid == gaian_id]
+        """Remove all entries belonging to a specific Gaian."""
+        keys = [k for k in self._store if k[0] == gaian_id]
         for k in keys:
-            del self._data[k]
+            del self._store[k]
         return len(keys)
+
+    def __len__(self) -> int:
+        return len(self._store)
