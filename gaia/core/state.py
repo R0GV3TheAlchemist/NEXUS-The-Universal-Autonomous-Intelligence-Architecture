@@ -70,6 +70,7 @@ class GAIAState:
       D5 Soul        → (qualitative — read from interaction, not scalar)
       D6 Unity       → emergent from field combination + mode
       Cross-dim      → entropy, mode
+      Biometric      → personal_coherence (Issue #153, C135)
     """
 
     # --- D1 Physical ---
@@ -133,6 +134,16 @@ class GAIAState:
     Determines which dimensions are primary and which engine behaviors activate.
     """
 
+    # --- Biometric / personal coherence (Issue #153, C135 telemetry) ---
+    personal_coherence: float = 0.0
+    """
+    Biometric coherence signal from the Operator's body field.
+    Sourced from BiometricCoherenceEngine (Issue #153).
+    0.0 = no biometric input / baseline
+    1.0 = maximum personal coherence (HRV-derived, Schumann-aligned)
+    Does not affect _validate() scalar bounds — already in [0.0, 1.0].
+    """
+
     # --- Metadata ---
     session_id: Optional[str] = None
     gaian_id: Optional[str] = None
@@ -150,7 +161,8 @@ class GAIAState:
         """Enforce canonical field bounds."""
         scalar_fields = [
             "energy", "coherence", "stress", "learning_rate",
-            "exploration_rate", "conservation_rate", "entropy"
+            "exploration_rate", "conservation_rate", "entropy",
+            "personal_coherence",
         ]
         for fname in scalar_fields:
             v = getattr(self, fname)
@@ -315,6 +327,7 @@ class GAIAState:
             "exploration_rate": self.exploration_rate,
             "conservation_rate": self.conservation_rate,
             "entropy": self.entropy,
+            "personal_coherence": self.personal_coherence,
             "mode": self.mode.value,
             "session_id": self.session_id,
             "gaian_id": self.gaian_id,
@@ -339,6 +352,7 @@ class GAIAState:
             exploration_rate=data.get("exploration_rate", 0.5),
             conservation_rate=data.get("conservation_rate", 0.3),
             entropy=data.get("entropy", 0.2),
+            personal_coherence=data.get("personal_coherence", 0.0),
             mode=mode,
             session_id=data.get("session_id"),
             gaian_id=data.get("gaian_id"),
@@ -352,6 +366,7 @@ class GAIAState:
             f"GAIAState(mode={self.mode.value}, "
             f"coherence={self.coherence:.2f}, energy={self.energy:.2f}, "
             f"stress={self.stress:.2f}, entropy={self.entropy:.2f}, "
+            f"personal_coherence={self.personal_coherence:.2f}, "
             f"flags=[{flags}])"
         )
 
@@ -371,6 +386,7 @@ def default_state(gaian_id: Optional[str] = None,
         exploration_rate=0.5,
         conservation_rate=0.3,
         entropy=0.2,
+        personal_coherence=0.0,
         mode=GAIAMode.BUILD,
         gaian_id=gaian_id,
         session_id=session_id,
@@ -387,6 +403,7 @@ def depleted_state(gaian_id: Optional[str] = None) -> GAIAState:
         exploration_rate=0.1,
         conservation_rate=0.9,
         entropy=0.7,
+        personal_coherence=0.0,
         mode=GAIAMode.RECOVER,
         gaian_id=gaian_id,
     )
@@ -402,6 +419,7 @@ def integrate_state(gaian_id: Optional[str] = None) -> GAIAState:
         exploration_rate=0.75,
         conservation_rate=0.2,
         entropy=0.05,
+        personal_coherence=0.0,
         mode=GAIAMode.INTEGRATE,
         gaian_id=gaian_id,
     )

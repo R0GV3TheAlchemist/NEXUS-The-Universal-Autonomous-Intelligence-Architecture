@@ -4,9 +4,10 @@
 # These were referenced by core/ontology/__init__.py and 7 test modules
 # but were never defined here during the ontology refactor.
 #
-# FIX (2026-06-17): PermissionEnvelope now accepts `gaianid` keyword argument
-# (stored as self.gaian_id) to match callers in core/ontology/runtime.py L150
-# and all downstream test fixtures. AuditTrail likewise accepts `gaianid`.
+# FIX (2026-06-17): PermissionEnvelope now accepts both `gaianid` AND `gaian_id`
+# keyword arguments (stored as self.gaian_id) to match callers in
+# core/ontology/runtime.py L150, test fixtures using gaian_id=..., and all
+# downstream session integration tests. AuditTrail likewise accepts both forms.
 
 from __future__ import annotations
 
@@ -138,12 +139,13 @@ class AuditTrail:
     """
     An ordered, append-only trail of AuditEntry records.
 
-    Accepts an optional `gaianid` keyword argument so that callers may
-    tag the trail to a specific GAIAN identity.
+    Accepts `gaianid` or `gaian_id` keyword argument so that callers may
+    tag the trail to a specific GAIAN identity using either form.
     """
 
-    def __init__(self, *, gaianid: Optional[str] = None, **kwargs: Any) -> None:
-        self.gaian_id: Optional[str] = gaianid
+    def __init__(self, *, gaianid: Optional[str] = None, gaian_id: Optional[str] = None, **kwargs: Any) -> None:
+        # Accept both gaianid and gaian_id; gaian_id takes precedence if both supplied
+        self.gaian_id: Optional[str] = gaian_id or gaianid
         self.entries: List[AuditEntry] = []
 
     def append(self, entry: AuditEntry) -> None:
@@ -223,12 +225,11 @@ class PermissionEnvelope:
     """
     The complete permission context for a single principal.
 
-    Accepts a `gaianid` keyword argument (stored as self.gaian_id) so that
-    runtime.py callers such as:
+    Accepts both `gaianid` and `gaian_id` keyword arguments (stored as
+    self.gaian_id) so that all callers work without TypeError:
 
         PermissionEnvelope(gaianid=..., tier=..., capabilities=[...])
-
-    work without TypeError.
+        PermissionEnvelope(gaian_id=..., tier=..., capabilities=[...])
     """
 
     def __init__(
@@ -237,12 +238,14 @@ class PermissionEnvelope:
         tier: Optional[PermissionTier] = None,
         *,
         gaianid: Optional[str] = None,
+        gaian_id: Optional[str] = None,
         capabilities: Optional[List[Capability]] = None,
         **kwargs: Any,
     ) -> None:
-        # gaianid may be provided instead of (or in addition to) principal
-        self.gaian_id: Optional[str] = gaianid
-        self.principal: str = principal or gaianid or ""
+        # gaian_id (underscore) takes precedence over gaianid if both provided
+        resolved_gaian_id = gaian_id or gaianid
+        self.gaian_id: Optional[str] = resolved_gaian_id
+        self.principal: str = principal or resolved_gaian_id or ""
         self.tier: PermissionTier = tier or PermissionTier.GAIAN
         self._extra_grants: set[Capability] = set()
         self._revocations: set[Capability] = set()
@@ -250,7 +253,7 @@ class PermissionEnvelope:
         if capabilities:
             for cap in capabilities:
                 self._extra_grants.add(cap)
-        self.audit_trail: AuditTrail = AuditTrail(gaianid=self.gaian_id)
+        self.audit_trail: AuditTrail = AuditTrail(gaian_id=self.gaian_id)
 
     @property
     def capabilities(self) -> set[Capability]:

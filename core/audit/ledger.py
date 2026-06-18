@@ -45,6 +45,7 @@ class EventType(str, Enum):
     ALIGNMENT_CHECK     = "alignment_check"
     SAFETY_INTERVENTION = "safety_intervention"
     CANON_INVOCATION    = "canon_invocation"
+    SYSTEM_EVENT        = "system_event"
     ERROR               = "error"
     CUSTOM              = "custom"
 
