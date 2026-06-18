@@ -126,7 +126,7 @@ def _chunk_text(
     """
     Split text into overlapping word-count chunks.
     Returns list of (chunk_text, word_offset) tuples.
-    Empty string returns [("" , 0)].
+    Empty string returns [("", 0)].
     """
     if not text or not text.strip():
         return [("", 0)]
@@ -321,6 +321,9 @@ class CanonLoader:
     Search:
         loader.search("sovereignty canon", max_results=5)
         loader.search_v2("sovereignty", min_score=0.1)
+
+    Enumerate:
+        loader.list_ids()          # sorted list of all registered canon_ids
     """
 
     REGISTRY: List[CanonEntry] = [
@@ -568,6 +571,15 @@ class CanonLoader:
             self._index.build(self._documents)
 
         self._is_loaded = True
+
+    def list_ids(self) -> List[str]:
+        """
+        Return a sorted list of all registered canon_ids.
+
+        Consistent with canon_loader_v2.py. Used by CanonIngestor and
+        canon coverage tests to enumerate the full registered canon.
+        """
+        return sorted(self._index_registry.keys())
 
     def search(
         self,
