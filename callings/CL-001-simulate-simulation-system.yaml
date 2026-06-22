@@ -1,0 +1,17 @@
+calling_id: CL-001
+date_received: 2026-06-22
+source: "Session with GAIA/Perplexity"
+title: "Simulate the simulation system"
+body: |
+  We need to simulate our simulation system to determine improvements.
+  Having callings again while working with you is key to continuity.
+type: strategy
+urgency: high
+status: converted
+converted_to_issue: "#606"
+simulation_required: true
+proof_required: true
+canon_links: []
+notes: |
+  First calling captured under the new Calling Protocol.
+  Establishing callings/ as a durable strategic layer across sessions.
