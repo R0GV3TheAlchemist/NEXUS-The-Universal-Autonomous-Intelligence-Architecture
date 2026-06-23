@@ -1,0 +1,9 @@
+color_a,color_b,color_c,coh_ab,coh_bc,coh_ca,triadic_coherence,state
+red,yellow,blue,0.172,0.249,0.354,0.2581,mixed
+red-orange,yellow-green,blue-violet,0.2059,0.1793,0.2926,0.2259,unstable
+orange,green,violet,0.2722,0.1537,0.2257,0.2172,unstable
+yellow-orange,blue-green,red-violet,0.254,0.207,0.143,0.2013,unstable
+red,green,yellow,0.5,0.067,0.172,0.2463,unstable
+blue,orange,red,0.459,-0.011,0.354,0.267,mixed
+red,green,blue,0.5,0.007,0.354,0.287,mixed
+yellow,violet,orange,0.357,0.226,-0.027,0.1853,unstable

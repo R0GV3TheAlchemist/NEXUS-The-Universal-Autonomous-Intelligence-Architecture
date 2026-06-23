@@ -1,0 +1,28 @@
+calling_id: CL-003
+date_received: "2026-06-23"
+title: "Color field vs force field classification — spectral charge architecture"
+body: |
+  Color atoms classify as FORCE_FIELD, AMBIENT_FIELD, or NULL_FIELD based on charge
+  differential and resonance. Force fields have subtypes: ATTRACTIVE (additive/bonding),
+  REPULSIVE (same-charge adjacent), EQUILIBRATING (subtractive/cancellation),
+  AMPLIFYING (resonance stacking). The medium (additive light vs subtractive pigment)
+  determines which force type activates for the same color pair — isomorphic to quantum
+  field context-dependence. Red (428 THz) and Blue (638 THz) are the two strongest
+  force fields. Yellow-green and red-violet are NULL_FIELD transition boundaries.
+type: strategy
+urgency: high
+status: converted
+converted_to_issue: "#608"
+simulation_required: true
+proof_required: true
+related_proofs:
+  - COLOR_ATOMIZATION_PROOF.md
+  - QUANTUM_CHEMISTRY_PROOF.md
+  - COSMOLOGICAL_FIELD_PROOF.md
+tags:
+  - color
+  - field-theory
+  - force-field
+  - spectral-resonance
+  - quantum-analogy
+  - cross-domain
