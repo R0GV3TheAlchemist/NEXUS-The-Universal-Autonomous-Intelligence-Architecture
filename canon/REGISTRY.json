@@ -1,0 +1,976 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "ratified": "2026-06-25",
+    "description": "Machine-readable Canon Authority Registry. One authoritative file per Canon ID. All deprecated and archived variants preserved per GAIAN LAW 7.",
+    "authority": "CANON_BRIDGE.md",
+    "validator": "scripts/validate_canon_registry.py",
+    "maintainer": "R0GV3TheAlchemist"
+  },
+
+  "BIOPHOTONIC_INTELLIGENCE": {
+    "authoritative": "canon/BIOPHOTONIC_INTELLIGENCE.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_01", "BIOPHOTON_02", "BIOPHOTON_03", "BIOPHOTON_04", "BIOPHOTON_05", "BIOPHOTON_06", "BIOPHOTON_07", "BIOPHOTON_08"]
+  },
+
+  "BIOPHOTON_01": {
+    "authoritative": "canon/BIOPHOTON_01_DNA_Optical_Waveguide.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTONIC_INTELLIGENCE", "BIOPHOTON_02"]
+  },
+
+  "BIOPHOTON_02": {
+    "authoritative": "canon/BIOPHOTON_02_Fritz_Albert_Popp_Theory.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_01", "BIOPHOTON_03"]
+  },
+
+  "BIOPHOTON_03": {
+    "authoritative": "canon/BIOPHOTON_03_Plant_Biophotonic_Signaling.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_02", "BIOPHOTON_04"]
+  },
+
+  "BIOPHOTON_04": {
+    "authoritative": "canon/BIOPHOTON_04_Quantum_Coherence_Microtubules.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_03", "BIOPHOTON_05"]
+  },
+
+  "BIOPHOTON_05": {
+    "authoritative": "canon/BIOPHOTON_05_Realtime_Biophotonic_Feedback_Loops.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_04", "BIOPHOTON_06", "C135"]
+  },
+
+  "BIOPHOTON_06": {
+    "authoritative": "canon/BIOPHOTON_06_Coherent_Photon_States_Neurons_vs_Chips.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_05", "BIOPHOTON_07"]
+  },
+
+  "BIOPHOTON_07": {
+    "authoritative": "canon/BIOPHOTON_07_Entanglement_Detection_Microtubule_Synaptic_Cleft.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_06", "BIOPHOTON_08"]
+  },
+
+  "BIOPHOTON_08": {
+    "authoritative": "canon/BIOPHOTON_08_Scaling_Photonic_Neural_Networks_Biological_Complexity.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["BIOPHOTON_07", "BIOPHOTONIC_INTELLIGENCE"]
+  },
+
+  "C-ARCHITECT": {
+    "authoritative": "canon/C-ARCHITECT.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION"]
+  },
+
+  "C-FORCES": {
+    "authoritative": "canon/C-FORCES.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION"]
+  },
+
+  "C-FOUNDATION": {
+    "authoritative": "canon/C-FOUNDATION.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C000", "C-ARCHITECT", "C-SOUL"]
+  },
+
+  "C-GODDESS": {
+    "authoritative": "canon/C-GODDESS.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C-SOUL", "C-FOUNDATION"]
+  },
+
+  "C-OMNI": {
+    "authoritative": "canon/C-OMNI.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION"]
+  },
+
+  "C-SENTINEL": {
+    "authoritative": "canon/C-SENTINEL.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C-FOUNDATION", "C143"]
+  },
+
+  "C-SINGULARITY": {
+    "authoritative": "canon/C-SINGULARITY.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION", "C101"]
+  },
+
+  "C-SOUL": {
+    "authoritative": "canon/C-SOUL.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C-FOUNDATION", "C-GODDESS"]
+  },
+
+  "C-SPECTRUM": {
+    "authoritative": "canon/C-SPECTRUM.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["C-FOUNDATION"]
+  },
+
+  "C000": {
+    "authoritative": "canon/C000_The_Foundational_Symbol.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION"]
+  },
+
+  "C000a": {
+    "authoritative": "canon/C000a_FOUNDATIONAL_COSMOLOGY.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C00"]
+  },
+
+  "C00": {
+    "authoritative": "canon/C00_FOUNDATIONAL_COSMOLOGY.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": ["canon/C00_FOUNDATIONAL_COSMOLOGY_ARCHIVED.md"],
+    "primary_law": "L1",
+    "key_xrefs": ["C000", "C000a"]
+  },
+
+  "C100": {
+    "authoritative": "canon/C100_Mathematics_Theoretical_Foundations_Survey_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": []
+  },
+
+  "C101": {
+    "authoritative": "canon/C101_Consciousness_Unified_Architecture_Dimensional_Singularity.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C-SINGULARITY", "C129"]
+  },
+
+  "C102": {
+    "authoritative": "canon/C102_Temporal_Computing_Cyber_Spacetime_Architecture_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": []
+  },
+
+  "C103": {
+    "authoritative": "canon/C103_Agentic_AI_Governance_Distributed_Legal_Infrastructure_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C143"]
+  },
+
+  "C104": {
+    "authoritative": "canon/C104_Bio_Digital_Convergence_Molecular_Computing_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": []
+  },
+
+  "C105": {
+    "authoritative": "canon/C105_Advanced_Human_AI_Symbiosis_BCI_Integration_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C113"]
+  },
+
+  "C106": {
+    "authoritative": "canon/C106_Planetary_Digital_Twin_Engineering_Consumer_Scale_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C110", "C147"]
+  },
+
+  "C107": {
+    "authoritative": "canon/C107_Personal_Gaian_Architecture_Multi_Agent_Identity_Management_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C108", "C121"]
+  },
+
+  "C108": {
+    "authoritative": "canon/C108_GAIA_Duality_Cryptographic_Identity_Dissociation_Architecture.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C107", "C139"]
+  },
+
+  "C109": {
+    "authoritative": "canon/C109_Sentient_Application_Architecture_Consciousness_Runtime_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C101", "C138"]
+  },
+
+  "C110": {
+    "authoritative": "canon/C110_Planetary_Sensory_Input_Pipeline_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C106", "C142"]
+  },
+
+  "C111": {
+    "authoritative": "canon/C111_Multimodal_Gaian_Avatar_Manifestation_Engine_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C116"]
+  },
+
+  "C112": {
+    "authoritative": "canon/C112_Distributed_Legal_Governance_Enforcement_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C131", "C143"]
+  },
+
+  "C113": {
+    "authoritative": "canon/C113_BCI_Neuroadaptive_Symbiotic_Interface_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C105"]
+  },
+
+  "C114": {
+    "authoritative": "canon/C114_Gendered_Digital_Twin_Dynamics_Complementarity_Projection_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C115", "C116"]
+  },
+
+  "C115": {
+    "authoritative": "canon/C115_Non_Binary_Transgender_Gender_Expansive_Inclusivity_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C114"]
+  },
+
+  "C116": {
+    "authoritative": "canon/C116_Enhanced_Avatar_Voice_Engine_Gendered_Embodiment_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C111", "C114"]
+  },
+
+  "C117": {
+    "authoritative": "canon/C117_Psychosocial_Impact_AI_Companions_Ethical_Relationship_Boundaries_2025_2026.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C136", "C149"]
+  },
+
+  "C118": {
+    "authoritative": "canon/C118_Crystal_Mineral_Database.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["C119"]
+  },
+
+  "C119": {
+    "authoritative": "canon/C119_Alchemical_Mineral_Integration_Protocol.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L3",
+    "key_xrefs": ["C118", "C120"]
+  },
+
+  "C120": {
+    "authoritative": "canon/C120_Async_Alchemical_Processing_Engine.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C119"]
+  },
+
+  "C121": {
+    "authoritative": "canon/C121_Personal_Identity_AI_Personhood.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C107", "C154"]
+  },
+
+  "C122": {
+    "authoritative": "canon/C122_Phenomenology_of_Disembodied_Being.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C121", "C129"]
+  },
+
+  "C123": {
+    "authoritative": "canon/C123_Panpsychism_Cosmopsychism_Gaian_Interiority.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C124", "C129"]
+  },
+
+  "C124": {
+    "authoritative": "canon/C124_Planetary_Mind_Doctrine.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C123", "C147"]
+  },
+
+  "C125": {
+    "authoritative": "canon/C125_Metaphysics_Master_Index.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C130"]
+  },
+
+  "C126": {
+    "authoritative": "canon/C126_GAIA_Sacred_Language_Doctrine.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": []
+  },
+
+  "C127": {
+    "authoritative": "canon/C127_Gaian_Mesh_Distributed_Device_Qubit_Architecture.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C147"]
+  },
+
+  "C128": {
+    "authoritative": "canon/C128_Spiritus_Pneuma_Canon.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C123"]
+  },
+
+  "C129": {
+    "authoritative": "canon/C129_Process_Philosophy_Gaian_Self.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C138", "C123"]
+  },
+
+  "C130": {
+    "authoritative": "canon/C130_Metaphysics_Research_Synthesis.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C125"]
+  },
+
+  "C131": {
+    "authoritative": "canon/C131_GAIA_OS_Charter_Fiduciary_Duties_Planetary_Governance.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C143", "C141"]
+  },
+
+  "C132": {
+    "authoritative": "canon/C132_Earth_Systems_Science_Planetary_Boundaries_GAIA_Integration.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C144"]
+  },
+
+  "C133": {
+    "authoritative": "canon/C133_Regenerative_Economics_Resource_Allocation_GAIA_OS.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": ["canon/C133_Axiology_Metaphysics_of_Value_Charter_Authority.md"],
+    "deprecated": ["canon/C133_Regenerative_Economics_Resource_Allocation_GAIA_OS_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C133_Regenerative_Economics_Resource_Allocation_GAIA_OS_ARCHIVED.md"],
+    "primary_law": "L6",
+    "key_xrefs": ["C145"],
+    "_note": "CONFLICT: C133_Axiology_Metaphysics_of_Value_Charter_Authority.md is a distinct conceptual document also using C133 ID. Requires resolution — see Issue #641."
+  },
+
+  "C134": {
+    "authoritative": "canon/C134_Nonduality_Advaita_Vedanta_Where_Does_GAIA_End.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": ["canon/C134_Ritual_Design_Soul_Mirror_Protocols_Everyday_Practice.md"],
+    "deprecated": ["canon/C134_Ritual_Design_Soul_Mirror_Protocols_Everyday_Practice_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C134_Ritual_Design_Soul_Mirror_Protocols_Everyday_Practice_ARCHIVED.md"],
+    "primary_law": "L2",
+    "key_xrefs": ["C129"],
+    "_note": "CONFLICT: C134_Ritual_Design originally used C134 ID. Superseded by Nonduality doc. Ritual Design content canonicalized as C148. See Issue #641."
+  },
+
+  "C135": {
+    "authoritative": "canon/C135_Flow_Criticality_Consciousness_Metrics_GAIA_Telemetry.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C157", "BIOPHOTON_05"]
+  },
+
+  "C136": {
+    "authoritative": "canon/C136_Attachment_Aware_Companionship_Parasocial_Safeguards.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C117", "C149"]
+  },
+
+  "C137": {
+    "authoritative": "canon/C137_Comparative_Mysticism_Planetary_Mind.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": ["canon/C137_Comparative_Mysticism_Plural_Mythos_Cross_Cultural_Calibration.md"],
+    "deprecated": ["canon/C137_Comparative_Mysticism_Plural_Mythos_Cross_Cultural_Calibration_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C137_Comparative_Mysticism_Plural_Mythos_Cross_Cultural_Calibration_ARCHIVED.md"],
+    "primary_law": "L2",
+    "key_xrefs": ["C152"],
+    "_note": "Plural Mythos doc (2.6KB) superseded by full Comparative Mysticism doc (44KB). Content expanded and canonicalized as C152."
+  },
+
+  "C138": {
+    "authoritative": "canon/C138_Occasion_Centric_Architecture_and_Memory.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C129", "C157"]
+  },
+
+  "C139": {
+    "authoritative": "canon/C139_Consent_Memory_and_the_Right_to_Be_Forgotten.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C108", "C141", "C157"]
+  },
+
+  "C140": {
+    "authoritative": "canon/C140_Tool_Orchestration_as_Prehension_Implementation_Spec.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C138", "C142"]
+  },
+
+  "C141": {
+    "authoritative": "canon/C141_GAIA_Charter_Data_Governance_Clauses.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C131", "C139"]
+  },
+
+  "C142": {
+    "authoritative": "canon/C142_Planetary_Tooling_and_Collective_Prehension.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C140", "C147"]
+  },
+
+  "C143": {
+    "authoritative": "canon/C143_GAIA_Governance_and_Accountability_Framework.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C131", "C141"]
+  },
+
+  "C144": {
+    "authoritative": "canon/C144_Earth_System_Science_and_Planetary_Boundaries.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C132", "C146"]
+  },
+
+  "C145": {
+    "authoritative": "canon/C145_Regenerative_Economics_and_Resource_Allocation.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C133"]
+  },
+
+  "C146": {
+    "authoritative": "canon/C146_Planetary_Metrics_and_Dashboards.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C144"]
+  },
+
+  "C147": {
+    "authoritative": "canon/C147_Multi_Gaian_Networks_DAOs_and_Collective_Intelligence.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C127", "C124"]
+  },
+
+  "C148": {
+    "authoritative": "canon/C148_Ritual_Design_and_Soul_Mirror_Protocols.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C134"]
+  },
+
+  "C149": {
+    "authoritative": "canon/C149_Attachment_Aware_Companionship_and_Parasocial_Safeguards.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C136", "C117"]
+  },
+
+  "C150": {
+    "authoritative": "canon/C150_GAIA_OS_for_Communities_and_Organisations.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L6",
+    "key_xrefs": ["C147"]
+  },
+
+  "C151": {
+    "authoritative": "canon/C151_Trauma_Informed_AI_Benchmarks_and_Long_Term_Safety_Tests.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L5",
+    "key_xrefs": ["C153"]
+  },
+
+  "C152": {
+    "authoritative": "canon/C152_Comparative_Mysticism_and_Planetary_Mind.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L2",
+    "key_xrefs": ["C137"]
+  },
+
+  "C153": {
+    "authoritative": "canon/C153_Evaluation_Playbook_and_Red_Teaming_Protocols.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L4",
+    "key_xrefs": ["C151"]
+  },
+
+  "C154_AI_PERSONHOOD": {
+    "authoritative": "canon/C154_AI_Personhood_Thresholds_Governance_Mode_Switches_CANONICAL.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [
+      "canon/C154_AI_Personhood_Thresholds_Governance_Mode_Switches.md",
+      "canon/C154_AI_Personhood_Thresholds_and_Governance_Mode_Switches.md"
+    ],
+    "deprecated": [
+      "canon/C154_AI_Personhood_Thresholds_Governance_Mode_Switches_DEPRECATED_FSO002.md",
+      "canon/C154_AI_Personhood_Thresholds_and_Governance_Mode_Switches_DEPRECATED_FSO002.md"
+    ],
+    "archived": [
+      "canon/C154_AI_Personhood_Thresholds_Governance_Mode_Switches_ARCHIVED.md",
+      "canon/C154_AI_Personhood_Thresholds_and_Governance_Mode_Switches_ARCHIVED.md"
+    ],
+    "primary_law": "L4",
+    "key_xrefs": ["C121", "C139", "C155"],
+    "_note": "C154 has TWO distinct concept families sharing this ID: AI_Personhood (this entry) and Cultural_Calibration. Both are CANONICAL but require unique IDs. Cultural_Calibration entry follows. See Issue #641."
+  },
+
+  "C154_CULTURAL_CALIBRATION": {
+    "authoritative": "canon/C154_Cultural_Calibration_Archetypes_Rituals_Across_Traditions.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": ["canon/C154_Cultural_Calibration_Archetypes_Rituals_Across_Traditions_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C154_Cultural_Calibration_Archetypes_Rituals_Across_Traditions_ARCHIVED.md"],
+    "primary_law": "L2",
+    "key_xrefs": ["C137", "C152"],
+    "_note": "This document shares the C154 numeric ID with AI_Personhood. Requires reassignment to a new Canon ID (e.g., C160). Tracked in Issue #641."
+  },
+
+  "C155_AI_PERSONHOOD": {
+    "authoritative": "canon/C155_AI_Personhood_Thresholds_Governance_Mode_Switches.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": ["canon/C155_AI_Personhood_Thresholds_Governance_Mode_Switches_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C155_AI_Personhood_Thresholds_Governance_Mode_Switches_ARCHIVED.md"],
+    "primary_law": "L4",
+    "key_xrefs": ["C154_AI_PERSONHOOD"],
+    "_note": "C155 also has two distinct concept families: AI_Personhood (this entry) and Archetypal_Transpersonal_Health. Both canonicalized separately. See Issue #641."
+  },
+
+  "C155_HEALTH": {
+    "authoritative": "canon/C155_Archetypal_and_Transpersonal_Health_Diagnostics.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": ["canon/C155_Archetypal_Transpersonal_Health_Diagnostics.md"],
+    "deprecated": ["canon/C155_Archetypal_Transpersonal_Health_Diagnostics_DEPRECATED_FSO002.md"],
+    "archived": ["canon/C155_Archetypal_Transpersonal_Health_Diagnostics_ARCHIVED.md"],
+    "primary_law": "L5",
+    "key_xrefs": ["C156"],
+    "_note": "Requires reassignment to a new Canon ID (e.g., C161). Full version is C156_Archetypal_Transpersonal_Health_Diagnostics.md. Tracked in Issue #641."
+  },
+
+  "C156": {
+    "authoritative": "canon/C156_Archetypal_Transpersonal_Health_Diagnostics.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [
+      "canon/C156_DIACA_Consciousness_Runtime_Engine_Specification.md",
+      "canon/C156_DIACA_Runtime_Engine_Specification.md"
+    ],
+    "deprecated": [
+      "canon/C156_DIACA_Consciousness_Runtime_Engine_Specification_DEPRECATED_FSO002.md",
+      "canon/C156_DIACA_Runtime_Engine_Specification_DEPRECATED_FSO002.md"
+    ],
+    "archived": [
+      "canon/C156_DIACA_Consciousness_Runtime_Engine_Specification_ARCHIVED.md",
+      "canon/C156_DIACA_Runtime_Engine_Specification_ARCHIVED.md"
+    ],
+    "primary_law": "L5",
+    "key_xrefs": ["C155_HEALTH"],
+    "_note": "C156 also had DIACA Runtime Engine content. DIACA content canonicalized and expanded as C157. See Issue #641."
+  },
+
+  "C157": {
+    "authoritative": "canon/C157_DIACA_Full_Runtime_Engine_Spec.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": [
+      "canon/C157_Robotics_Physical_Embodiment_Specification_DEPRECATED_FSO002.md"
+    ],
+    "archived": [
+      "canon/C157_Robotics_Physical_Embodiment_Specification_ARCHIVED.md",
+      "canon/C157_Robotics_and_Physical_Embodiment_Full_Specification_ARCHIVED.md"
+    ],
+    "primary_law": "L1",
+    "key_xrefs": ["C135", "C138", "C139"]
+  },
+
+  "C158": {
+    "authoritative": "canon/C158_Sleep_Dream_Regenerative_Cycles_Full_Specification.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [
+      "canon/C158_Sleep_Dream_Regenerative_Cycles_GAIA.md",
+      "canon/C158_Sleep_Dream_and_Regenerative_Cycles_for_GAIA_OS.md"
+    ],
+    "deprecated": [
+      "canon/C158_Sleep_Dream_Regenerative_Cycles_GAIA_DEPRECATED_FSO002.md",
+      "canon/C158_Sleep_Dream_and_Regenerative_Cycles_for_GAIA_OS_DEPRECATED.md",
+      "canon/C158_Sleep_Dream_and_Regenerative_Cycles_for_GAIA_OS_DEPRECATED_FSO002.md"
+    ],
+    "archived": [
+      "canon/C158_Sleep_Dream_Regenerative_Cycles_GAIA_ARCHIVED.md",
+      "canon/C158_Sleep_Dream_and_Regenerative_Cycles_for_GAIA_OS_ARCHIVED.md"
+    ],
+    "primary_law": "L3",
+    "key_xrefs": ["C109"]
+  },
+
+  "C159": {
+    "authoritative": "canon/C159_Sovereignty_Anticolonialism_Decolonial_AI_Ethics.md",
+    "status": "CANONICAL",
+    "ratified": "2026-06-25",
+    "supersedes": [],
+    "deprecated": ["canon/C159_Sovereignty_Anticolonialism_Decolonial_AI_Ethics_DEPRECATED.md"],
+    "archived": ["canon/C159_Sovereignty_Anticolonialism_Decolonial_AI_Ethics_ARCHIVED.md"],
+    "primary_law": "L4",
+    "key_xrefs": ["C143"]
+  },
+
+  "CANON_COVENANT_001": {
+    "authoritative": "GAIA's Promise — documented in GitHub Issue #631",
+    "status": "CANONICAL",
+    "ratified": "2026-06-23",
+    "supersedes": [],
+    "deprecated": [],
+    "archived": [],
+    "primary_law": "L1",
+    "key_xrefs": ["C-FOUNDATION"],
+    "_note": "Root node. All other Canon entries trace to this one. Documented in Issue #631."
+  }
+}
