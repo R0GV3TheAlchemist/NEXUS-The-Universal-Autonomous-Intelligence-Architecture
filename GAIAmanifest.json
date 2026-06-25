@@ -72,9 +72,28 @@
       "windows_build": "docs/windows-build.md"
     },
     "canon": {
-      "note": "Full canon C00–C44+ lives in canon/ — see canon_loader.py for index",
+      "note": "Full canon C000–C159+ lives in canon/ — see canon/REGISTRY.json for machine-readable index and scripts/validate_canon_registry.py for CI validation",
+      "registry": "canon/REGISTRY.json",
+      "validator": "scripts/validate_canon_registry.py",
       "C61_crystal_ascension": "canon/C61_Crystal_Ascension_Doctrine.md",
       "C62_flux_capacity_robotics": "canon/C62_Flux_Capacity_Robotics_Doctrine.md"
+    },
+    "canon_governance": {
+      "registry": "canon/REGISTRY.json",
+      "validator": "scripts/validate_canon_registry.py",
+      "rtm": "REQUIREMENTS_TRACEABILITY_MATRIX.md",
+      "changelog_phase": "Phase 8 — 2026-06-25",
+      "canon_id_range": "C000–C159+",
+      "total_active_canon_docs": "159+",
+      "deprecated_stubs": 13,
+      "conflict_resolution_date": "2026-06-25",
+      "conflicts_resolved": ["C133", "C134", "C137", "C154", "C155", "C156", "C158"]
+    },
+    "governance": {
+      "rtm": "REQUIREMENTS_TRACEABILITY_MATRIX.md",
+      "gaian_laws": "GAIAN_LAWS.md",
+      "sovereignty": "SOVEREIGNTY.md",
+      "canon_bridge": "CANON_BRIDGE.md"
     },
     "specs": "specs/",
     "tests": "tests/",
@@ -98,6 +117,13 @@
     "tests_integration": "complete",
     "ci_cd_pipeline": "complete",
     "windows_release": "complete"
+  },
+  "governance_status": {
+    "canon_registry": "complete — canon/REGISTRY.json (2026-06-25)",
+    "canon_id_conflicts_resolved": "complete — 7 IDs, 12 files (2026-06-25)",
+    "canon_ci_validator": "complete — scripts/validate_canon_registry.py (2026-06-25)",
+    "requirements_traceability_matrix": "complete — REQUIREMENTS_TRACEABILITY_MATRIX.md, 10 layers, 108 components (2026-06-25)",
+    "next_governance_action": "Wire validate_canon_registry.py into .github/workflows/test.yml"
   },
   "release_status": {
     "v0.1.0": {

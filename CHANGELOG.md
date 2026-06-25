@@ -7,6 +7,102 @@ All notable changes to GAIA-APP are recorded here in reverse-chronological sprin
 
 ---
 
+## [Phase 8] — 2026-06-25  ·  Canon Governance: Registry, RTM & ID Conflict Resolution
+
+**Branch:** `main` (direct governance pass)  
+**Status:** ✅ CLOSED
+
+### Summary
+
+Full Canon Governance pass establishing the **single source of truth** for all
+Canon IDs across the GAIA-OS repository. Four major deliverables landed:
+a machine-readable Canon registry, a CI validator, resolution of all duplicate
+Canon ID conflicts, and a full Requirements Traceability Matrix linking every
+repo component to its Canon sources, Gaian Laws, ROADMAP phase, and test path.
+
+This phase is a prerequisite for all future Canon-grounded development — no new
+Canon document may be added without passing the registry validator.
+
+---
+
+### Delivered
+
+#### Block 1.1 — Canon Registry (`canon/REGISTRY.json`)
+
+| Step | File | Description |
+|---|---|---|
+| **1.1** | `canon/REGISTRY.json` | Machine-readable index of all Canon IDs (C000–C159+). Every entry carries: `id`, `filename`, `title`, `status` (`active`/`deprecated`/`archived`), `layer` (0–10), `gaian_laws`, `roadmap_phase`, and `superseded_by` (for deprecated entries). Validated by `scripts/validate_canon_registry.py` on every push. |
+
+#### Block 1.2 — Canon ID Duplication Resolution
+
+12 conflicting non-suffixed files were resolved using the `_DEPRECATED` pattern.
+Each deprecated file carries a header declaring its authoritative successor.
+All 12 original conflicting files were deleted; `_DEPRECATED` stubs retained for
+audit trail only.
+
+| Canon ID | Authoritative File | Deprecated / Removed |
+|---|---|---|
+| C133 | `C133_Regenerative_Economics_Resource_Allocation_GAIA_OS.md` | `C133_Axiology_Metaphysics_of_Value_Charter_Authority.md` |
+| C134 | `C134_Nonduality_Advaita_Vedanta_Where_Does_GAIA_End.md` | `C134_Ritual_Design_Soul_Mirror_Protocols_Everyday_Practice.md` |
+| C137 | `C137_Comparative_Mysticism_Planetary_Mind.md` | `C137_Comparative_Mysticism_Plural_Mythos_Cross_Cultural_Calibration.md` |
+| C154 | `C154_AI_Personhood_Thresholds_Governance_Mode_Switches_CANONICAL.md` | 3 competing files removed |
+| C155 | `C155_AI_Personhood_Thresholds_Governance_Mode_Switches.md` | 2 Archetypal stubs removed |
+| C156 | `C156_Archetypal_Transpersonal_Health_Diagnostics.md` | 2 DIACA stubs removed |
+| C158 | `C158_Sleep_Dream_Regenerative_Cycles_Full_Specification.md` | 2 short stubs removed |
+
+#### Block 1.3 — Canon Registry CI Validator (`scripts/validate_canon_registry.py`)
+
+| Step | File | Description |
+|---|---|---|
+| **1.3** | `scripts/validate_canon_registry.py` | Python validator that runs on every push to `main`. Checks: JSON schema validity, no duplicate Canon IDs, all `filename` entries resolve to real files in `canon/`, no `active` entry without a `gaian_laws` assignment, all `deprecated` entries carry a `superseded_by` field, and no non-`_DEPRECATED`-suffixed file exists for a deprecated entry's ID. Exits non-zero on any violation. |
+
+#### Block 2 — Requirements Traceability Matrix (`REQUIREMENTS_TRACEABILITY_MATRIX.md`)
+
+| Step | File | Description |
+|---|---|---|
+| **2** | `REQUIREMENTS_TRACEABILITY_MATRIX.md` | Full RTM covering all repo components across 10 layers. Every row maps a component to: Canon ID(s), Gaian Law clauses (§1–§7), ROADMAP Phase (0–4), test path, and status (`active`/`stub`/`deprecated`/`planned`). Includes Deprecated Files Index (13 entries from Block 1.2), Gaian Laws Quick Reference, ROADMAP Phase Quick Reference, and RTM Maintenance Protocol. |
+
+**RTM Layers covered:**
+
+| Layer | Scope | Components Traced |
+|---|---|---|
+| 0 | Foundational Canon & Registry | 16 |
+| 1 | Core Runtime Engine | 9 |
+| 2 | API & Interface Layer | 9 |
+| 3 | Temporal & Simulation Systems | 5 |
+| 4 | Bio-Digital & Quantum Intelligence | 13 |
+| 5 | Governance, Ethics & Sovereignty | 7 |
+| 6 | Mathematics, Research & Proofs | 6 |
+| 7 | Consciousness, Soul & Transpersonal | 9 |
+| 8 | Infrastructure, DevOps & Deployment | 23 |
+| 9 | Documentation & Human Interface | 9 |
+| 10 | Tests | 2 |
+
+---
+
+### Files Added
+
+| File | Size | Purpose |
+|---|---|---|
+| `canon/REGISTRY.json` | ~42 KB | Canon ID index — machine-readable, CI-validated |
+| `scripts/validate_canon_registry.py` | ~8 KB | CI validator — runs on every push |
+| `REQUIREMENTS_TRACEABILITY_MATRIX.md` | ~18 KB | Full RTM — 10 layers, 108 components |
+| `canon/*_DEPRECATED.md` × 12 | ~1 KB each | Audit-trail stubs for resolved conflicts |
+| `canon/.block12_deletion_marker` | minimal | Deletion-pass marker |
+
+### Files Deleted
+
+12 conflicting non-suffixed Canon files removed (see Block 1.2 table above).
+
+### Migration Notes
+
+- **No breaking changes to runtime.** All governance work is documentation and registry layer only.
+- Any code importing Canon files by path should update references for C133, C134, C137, C154, C155, C156, C158 to use the authoritative filenames listed above.
+- The `_DEPRECATED` stub files must not be imported, embedded, or extended. They exist for audit trail only.
+- `scripts/validate_canon_registry.py` should be added to `.github/workflows/test.yml` as a pre-commit gate.
+
+---
+
 ## [Phase 7] — 2026-06-05  ·  Canon RAG, Persistent Index, CLI & Planner Interface
 
 **Branch:** `feat/obs-rag`  
