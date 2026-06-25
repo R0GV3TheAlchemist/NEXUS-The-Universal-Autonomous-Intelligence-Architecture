@@ -4,198 +4,238 @@
 **Status:** CANONICAL  
 **Ratified:** 2026-06-25  
 **Primary Law:** L3  
-**Cross-References:** C118, C161, C163, C164, C165, C-SPECTRUM  
-**Issue:** Established via Canon Block 8
+**Cross-References:** C161, C163, C164, C165, C118, C135  
 
 ---
 
 ## Overview
 
-Color and light are not neutral background phenomena for field-active practitioners. They are active inputs that carry frequency charge, interact with the practitioner's biophotonic field, and can amplify, interfere with, or regulate field states depending on the practitioner's current elemental and energetic configuration. This document establishes the theoretical basis for chromatic field interaction, provides a practical diagnostic framework for interpreting color sensitivity in real time, and defines the key light-theory principles that underpin field permeability and boundary states.
+This document establishes the role of color and light in field work within GAIA-OS canon. Color is not a neutral background phenomenon for practitioners with active biophotonic fields — it is an active input that alters field state. Light theory, color theory, and ionization emission spectra together provide a precise diagnostic and operational language for understanding what is happening in a field at any given moment. This document defines the full color-light framework, the permeability states (transparency, translucency, opacity), and the chromatic diagnostic map that practitioners use to read their own field state in real time.
 
 ---
 
-## Part I — Light Theory Foundations
+## Part I — Ionization and Color
 
-### 1.1 Wave-Particle Duality in Field Context
+### 1.1 Can Color Be Ionized?
 
-Light behaves as both a wave and a particle (photon). In field work context:
+Color itself is a perception of wavelength — it is not a substance and cannot be ionized directly. However, the underlying phenomenon that practitioners sense when working with colored fields is real: **plasma and ionized matter emit light at specific wavelengths depending on which element is ionized.**
 
-- **As a wave:** Light creates interference patterns — two light waves meeting either amplify (constructive interference) or cancel (destructive interference) each other. Fields meeting other fields follow identical interference mathematics. This is the physical mechanism behind both magical amplification and the interference problems practitioners seek to avoid.
-- **As a particle (biophoton):** Discrete emission events carry specific energy quanta. Biophotonic emission from living systems consists of these discrete events in coherent phase relationships.
+This is the science of spectroscopy. When atoms are ionized — electrons stripped from or added to the atomic structure — they emit photons at precise, element-specific wavelengths. These wavelengths correspond to specific colors:
 
-### 1.2 Coherence — The Critical Property
-
-The difference between laser light and ordinary diffuse light is coherence — in laser light, all photons are in phase, moving in the same direction, at the same frequency. In diffuse light, photons are scattered across phases and directions.
-
-In field work, coherence is the equivalent distinction:
-- **Coherent field:** All components in phase, organized, directional — high working capacity
-- **Incoherent field:** Scattered, diffuse, unfocused — low working capacity despite potentially high total charge
-
-Practitioners developing field skill are essentially developing **field coherence** — not necessarily generating more charge, but organizing existing charge into more coherent states.
-
-### 1.3 Interference Patterns
-
-When two fields meet, they create interference patterns:
-
-- **Constructive interference:** Fields in phase amplify each other — the combined field is stronger than either alone
-- **Destructive interference:** Fields out of phase cancel each other — the combined field is weaker, potentially creating instability at the boundary
-- **Standing waves:** When opposing waves are precisely matched, they create a standing wave — apparent stability that is actually two forces sustaining each other in dynamic tension. Standing waves at field boundaries are difficult to close or resolve. This is the mechanism behind mirror portal danger (see C165).
-
-### 1.4 Refraction and Diffraction
-
-- **Refraction:** Light bends when passing through a medium of different density. Water-dominant fields refract energy passing through or near them — this is the physical basis of unintentional manifestation during normal thought in water-type practitioners.
-- **Diffraction:** Light bends around obstacles. Fields similarly bend around and through structures, which is why physical barriers do not fully contain field effects.
-
-### 1.5 Polarization
-
-Light waves can be polarized — oriented along a specific axis. Field orientation matters similarly — not just frequency (what the field is doing) but direction (where it is pointed). Two fields at the same frequency but different polarization will interact differently than two fields aligned in polarization.
-
----
-
-## Part II — Ionization Emission Spectra
-
-### 2.1 What Ionization Produces
-
-When matter is ionized — electrons stripped from atoms — the resulting plasma emits light at specific wavelengths determined by the element's electron shell structure. This is the physical basis of spectroscopy: every element has a unique color signature when ionized.
-
-Key ionization emission colors relevant to field work:
-
-| Element | Ionization Color | Field Relevance |
-|---|---|---|
-| **Hydrogen** | Red (656nm) | Foundational biological element — life-force signature |
-| **Sodium** | Gold/amber (589nm) | **Working-intensity threshold marker** — the gold-eye phenomenon |
-| **Potassium** | Violet (767nm) | Neural/nerve charge — heightened cognitive states |
-| **Calcium** | Orange (616nm) | Structural/earth element charge |
-| **Magnesium** | Green (518nm) | Viriditas frequency — life-force and growth |
-| **Nitrogen** | Blue/violet (various) | Air element charge |
-| **Oxygen** | Green/red (aurora colors) | Planetary breath — Earth resonance |
-| **Copper** | Blue-green (515nm) | Water element amplification |
-| **Iron** | Yellow-orange (various) | Earth/fire boundary charge |
-
-### 2.2 The Gold-Eye Phenomenon
-
-When a water-dominant practitioner's eyes visibly shift to gold/amber during working, this is a biophotonic emission event at the sodium ionization band (~589nm). It indicates:
-
-- The field has crossed from resting baseline into working intensity
-- Sodium ion activity — which drives nerve transmission — has amplified significantly
-- The field is now in active extension mode, not resting mode
-- The practitioner is at or above their thermodynamic threshold — the point at which field discharge into adjacent systems becomes possible
-
-The gold-eye phenomenon is therefore both a **personal state marker** and a **field boundary warning**. Anyone who knows this diagnostic and observes it in a practitioner knows the field is at working intensity.
-
-### 2.3 The Periodic Table as Field Color Map
-
-Each crystal in C118 has a documented mineral composition. That composition determines the crystal's ionization emission spectrum — its field color signature at working intensity. By cross-referencing crystal mineral data with ionization emission spectra, practitioners can predict:
-
-- What color their working field will show when drawing on a specific crystal
-- Which crystal frequencies are compatible (similar spectrum, constructive interference) vs. conflicting (opposing spectrum, destructive interference)
-- What elemental charge is currently dominant in their field based on observable color
-
----
-
-## Part III — The Permeability Spectrum
-
-### 3.1 Three States of Field Permeability
-
-Field boundaries — the interface between a practitioner's field and adjacent fields — exist on a permeability spectrum with three named states:
-
-**Opaque:** The field boundary blocks all transmission. Nothing enters or exits through the boundary except by conscious, deliberate action. Maximum containment. Used for sealing operations, high-charge working states where ambient absorption must be prevented, and protective configurations.
-
-**Transparent:** The field boundary allows clean pass-through without interaction. Energy passes through the boundary without the field absorbing it, altering it, or being altered by it. Used when the practitioner wants to observe or interact with adjacent fields without merging with them.
-
-**Translucent:** The field boundary allows passage but scatters and refracts what passes through. Energy crosses the boundary but is altered in doing so — and the field is altered by the crossing. This is the most complex and most common default state. It is adaptive but hard to control precisely.
-
-### 3.2 The Translucency Problem
-
-For water-dominant practitioners, translucency is the default permeability state — the field's natural porosity creates a boundary that neither cleanly blocks nor cleanly allows. This produces:
-
-- Ambient absorption occurring continuously without conscious initiation
-- Thought-refraction: cognitive content propagating outward through the field
-- Unintentional field extension during normal mental activity
-- Difficulty maintaining stable imprints because external energy crosses the boundary and alters them
-
-The core field development work for water-dominant practitioners is gaining **selective permeability** — the ability to shift the boundary state consciously between opaque, transparent, and translucent as the situation requires, rather than running translucent as an involuntary default.
-
-### 3.3 Achieving Selective Permeability
-
-The grey → clear neutralization sequence is the primary tool for permeability state management:
-
-**Grey:** Spectrally neutral — no dominant frequency, no elemental charge, no directional pull. Grey functions as a **volume dial** — reducing the amplitude of the field's current state without changing its frequency. When a field is running too hot, too loud, or too active, grey brings it down to a manageable level. Grey does not discriminate between wanted and unwanted charge — it reduces everything.
-
-**Clear (white light):** All frequencies in coherent combination — the ground state. Clear is not empty. It is the state in which all frequencies are present but none is dominant. After grey has reduced amplitude, clear resets the field to ground state — a neutral platform from which any configuration can be built.
-
-**The two-step sequence:**
-1. Apply grey — reduce amplitude to manageable level
-2. Apply clear — reset to ground state
-3. From ground state, consciously set desired permeability (opaque, transparent, or calibrated translucency)
-
----
-
-## Part IV — State-Dependent Chromatic Sensitivity
-
-### 4.1 Why Sensitivity Varies
-
-Chromatic sensitivity in field-active practitioners is **state-dependent, not fixed.** The field's current charge, elemental composition, and permeability state determine which color frequencies will have the strongest effect at any given moment.
-
-This is because:
-- The field is absorbing ambient chromatic charge through the same mechanism it absorbs all ambient charge
-- When the field is running a specific elemental charge, colors resonant with that element's ionization spectrum will interact most strongly — amplifying or conflicting with the running charge
-- When the field is at working intensity (high permeability), all chromatic input is more potent
-- When the field is in grey (reduced amplitude), chromatic sensitivity decreases
-
-### 4.2 The Chromatic Diagnostic Map
-
-Because chromatic sensitivity varies with field state, what colors are affecting the practitioner at any given moment reveals the current field state. This is a real-time diagnostic tool:
-
-| What Color Is Most Affecting You | Field State Indicated |
+| Element | Ionization Color Signature |
 |---|---|
-| Blue is overwhelming or deepening | High water/yin absorption mode — field is in maximum receptivity |
-| Red/orange is spiking or irritating | Thermally overloaded or running high fire charge |
-| Violet is triggering or expansive | At or near working intensity — spirit layer active |
-| Gold/amber resonating strongly externally | Field crossing into working intensity threshold |
-| Green feels stabilizing and grounding | Viriditas active — field seeking earth connection |
+| Hydrogen | Red (~656nm) |
+| Sodium | Gold/amber (~589nm) |
+| Helium | Gold/yellow (~588nm, He-I) |
+| Nitrogen | Blue/violet (~391–470nm) |
+| Oxygen | Green/red (~558nm, ~630nm) — aurora colors |
+| Copper | Blue-green (~515nm) |
+| Potassium | Violet (~404nm) |
+| Calcium | Orange (~612nm) |
+| Iron | Multiple — yellow/orange cluster |
+
+This creates a **periodic table of field colors** — each element that a practitioner's crystal work draws on has a predictable color signature at working intensity. The color phenomena a practitioner perceives during field work is therefore diagnostic: it tells them what elemental charge is active and at what intensity.
+
+### 1.2 The Gold-Eye Phenomenon
+
+When a practitioner's eyes shift to gold or amber during intense field work, this is the field's ionization state expressing through biophotonic output at the eye level. The gold/amber band (~589nm) corresponds to sodium ionization — sodium being one of the dominant ionic elements in biological systems (neural transmission, cellular fluid balance).
+
+The gold-eye phenomenon is therefore:
+- A reliable marker that the field has crossed into working intensity
+- An external readout of the field's current ionization state
+- Not a separate phenomenon from the field — it **is** the field state made visible
+- Readable by others who know this diagnostic map
+
+The gold-eye marker is integrated into C135 (Flow/Criticality/Consciousness Metrics) as a telemetry indicator.
+
+---
+
+## Part II — Light Theory Applied to Fields
+
+### 2.1 Wave-Particle Duality
+
+Biophotons behave as both waves and particles simultaneously — this is the wave-particle duality of quantum mechanics. In field work:
+
+- **Wave behavior** produces field effects — interference patterns, diffraction, coherence phenomena
+- **Particle behavior** produces discrete emission events — specific photons carrying specific energy quanta
+
+Both aspects are relevant. Field-to-field interaction is primarily a wave phenomenon (interference). Biophotonic emission and absorption operates at the particle level.
+
+### 2.2 Coherence
+
+Coherence is the degree to which waves maintain a consistent phase relationship. Laser light is highly coherent — all photons in phase, traveling together. Diffuse room light is incoherent — photons at random phases, traveling in all directions.
+
+Applied to fields:
+- **Coherent field** — ionic and biophotonic activity organized into consistent phase relationships. More powerful, more directed, more stable. Equivalent to laser light.
+- **Incoherent field** — activity present but not organized. Energy disperses in all directions without directed effect. Equivalent to diffuse light.
+
+Magical field operation requires coherence. The intention-setting process in field work is fundamentally a coherence-building operation.
+
+### 2.3 Interference Patterns
+
+When two coherent fields interact, they produce interference patterns:
+
+- **Constructive interference** — waves in phase amplify each other. Fields that are compatible in frequency and phase can combine to produce more power than either alone.
+- **Destructive interference** — waves out of phase cancel each other. Incompatible fields reduce each other's effective power.
+
+This is the physical mechanism underlying both magical amplification (two practitioners working in coherent alignment) and field interference (incompatible fields disrupting each other).
+
+### 2.4 Refraction and Diffraction
+
+- **Refraction** — the bending of waves as they pass through a medium of different density. A water-dominant field refracts energy passing through it, as water refracts light. This is why water-type practitioners inadvertently alter the energy of what they interact with — the refraction is structural, not chosen.
+- **Diffraction** — the bending of waves around obstacles. Fields diffract around physical and energetic structures rather than being simply blocked by them.
+
+### 2.5 Polarization
+
+Polarization describes the orientation of a wave's oscillation. Field orientation matters — not just frequency. Two fields at the same frequency but different orientations will not interface cleanly. Intentional field work includes orienting the field appropriately for the task, not just charging it to the right frequency.
+
+---
+
+## Part III — Permeability States
+
+Field permeability describes how the practitioner's field boundary relates to incoming and outgoing energy. There are three fundamental states, drawn from light-through-matter physics:
+
+### 3.1 Opacity
+
+**Physics:** An opaque material blocks all light transmission — nothing passes through.
+
+**Field equivalent:** An opaque field boundary absorbs or blocks incoming energy. Nothing enters or exits through that boundary layer.
+
+**Use:** Maximum protection, maximum containment. Used when the practitioner needs to prevent any absorption or any field extension. Not sustainable for extended periods as it also blocks the practitioner's own field from interfacing with the environment.
+
+### 3.2 Transparency
+
+**Physics:** A transparent material passes light without scattering — the wave passes through cleanly without interaction.
+
+**Field equivalent:** A transparent field boundary allows energy to pass through without interaction. No absorption, no distortion, no interference.
+
+**Use:** Allows the practitioner to be present in an energetically active environment without absorbing ambient charge. The field does not engage with what passes through it.
+
+### 3.3 Translucency
+
+**Physics:** A translucent material passes light but scatters it — the wave passes through but is redirected and diffused.
+
+**Field equivalent:** A translucent field boundary allows energy to pass but changes it in the process. Incoming energy is partially absorbed and partially scattered. Outgoing field expression is partially contained and partially released.
+
+**The translucency problem:** Translucency is the hardest permeability state to control intentionally because it is a partial state. A translucent field does not cleanly block or cleanly allow — it refracts and scatters. For water-dominant practitioners, translucency is often the **default state** of the field boundary rather than a chosen setting. This is the core instability problem: the field is partially permeable when it should be selectable between opacity and transparency depending on context.
+
+**Unintentional translucency** produces:
+- Involuntary absorption of ambient charge
+- Thought-refraction — the field picks up cognitive charge and bends it outward without conscious direction
+- Leakage of active manifestations back into ambient field
+- Difficulty holding sealed configurations
+
+### 3.4 Permeability as a Settable Parameter
+
+The goal of field development is to make permeability **consciously selectable** rather than operating at a fixed or default state. An experienced practitioner can shift between opacity, transparency, and translucency deliberately as the situation requires:
+
+- Entering a crowded, high-energy environment → set to transparency or opacity
+- Doing absorption work with crystals → set to selective translucency (open to specific frequencies, opaque to others)
+- Extending field for working → set the inner field to working intensity while maintaining opacity at the outer boundary
+- Returning to rest → return to resting translucency baseline, begin grey → clear sequence
+
+---
+
+## Part IV — Color as Field Regulation Tool
+
+### 4.1 Grey — The Amplitude Dampener
+
+Grey is spectrally neutral — it contains no dominant frequency, no elemental charge, no directional pull. It sits between white (all frequencies active) and black (all frequencies absorbed).
+
+Grey functions as a **volume dial** rather than a frequency changer:
+- Reduces the amplitude of the field's active charge without changing its frequency or elemental composition
+- Creates no interference pattern — carries no active wave to interfere with adjacent fields
+- Acts as a buffer layer between an active charged field and whatever is adjacent
+
+Grey does not dissolve elemental charge by transforming it — it reduces intensity to the point where it becomes manageable or releases naturally. It is the step before Clear.
+
+**Application:** When field intensity is too high, apply grey visualization specifically at the most active nodes (finger nodes, head, chest) to reduce amplitude before attempting full neutralization.
+
+### 4.2 Clear/White — The Ground State
+
+Clear or white light is all frequencies simultaneously in coherent combination. In field terms it is:
+
+- The **neutral carrier** — carries and transmits other frequencies without distorting them
+- The **reset state** — when a field returns to clear, it has released its elemental loading and returned to baseline
+- The **ground state** of the Magic Spectrum — all active magic emerges from clear and returns to clear
+
+Clear Quartz (C118) is the crystal expression of this principle: it amplifies without adding its own elemental signature, transmits without distorting, and provides thermodynamic buffering.
+
+### 4.3 The Grey → Clear Neutralization Sequence
+
+The two-step neutralization sequence for field overload or instability:
+
+1. **Grey** — apply to reduce amplitude. The field's active charge decreases in intensity. Hold until perceptible reduction is felt.
+2. **Clear** — apply to complete reset. The field releases remaining elemental loading and returns to baseline ground state.
+
+Attempting to go directly to Clear from a high-charge state often fails because the amplitude is too high for the ground state to hold. Grey provides the intermediate step that makes Clear accessible.
+
+### 4.4 Color Temperature and Ionization Intensity
+
+Color temperature (measured in Kelvin) correlates with ionization intensity:
+
+- Lower color temperature (warm: red, orange, gold) — lower energy, longer wavelength, corresponds to gentler elemental activation
+- Higher color temperature (cool: blue, violet, white) — higher energy, shorter wavelength, corresponds to more intense activation
+
+This means ambient light color temperature affects field activation intensity. Warm candlelight creates a gentler working environment than cool blue-white LED lighting for most elemental work.
+
+---
+
+## Part V — State-Dependent Chromatic Sensitivity
+
+### 5.1 Color Sensitivity Is Not Fixed
+
+For practitioners with active biophotonic fields, chromatic sensitivity is **state-dependent** — it shifts with the field's current charge and composition. This is not a malfunction; it is the field doing exactly what it should: reading its environment accurately.
+
+The field's permeability to color frequency shifts based on:
+- Current elemental charge (which elements are active in the field)
+- Current field intensity (resting baseline vs. working intensity)
+- Post-working integration state (more permeable than baseline during integration)
+- Dominant elemental type (water-dominant fields are more chromatically sensitive overall)
+
+### 5.2 Chromatic Diagnostic Map
+
+What color is most affecting the practitioner right now is a readout of their current field state:
+
+| Color Most Active/Affecting | Field State Indicated |
+|---|---|
+| Blue overwhelming or deepening | High water/yin absorption mode |
+| Red/orange spiking or irritating | Thermally overloaded or running fire charge |
+| Violet triggering or expansive | At or near working intensity, spirit layer active |
+| Gold/amber resonating strongly | Crossing into working intensity threshold |
+| Green feels stabilizing | Viriditas active, field seeking grounding |
 | Grey feels like relief | Field seeking amplitude reduction — regulation needed |
-| White feels overwhelming | Field fully open — all frequencies hitting simultaneously |
-| No color particularly activating | Near resting baseline — good integration state |
+| White feels overwhelming | Field fully open, all frequencies hitting simultaneously |
+| No color particularly activating | Near resting baseline — healthy integration state |
 
-### 4.3 Color Effects on Water-Dominant Fields
+### 5.3 Pre-Environment Chromatic Assessment
 
-Specific color interactions for water-dominant field topology:
+Before entering a high-stimulation color environment (festivals, concerts, ceremonies, crowded spaces with significant lighting):
 
-| Color | Effect on Water-Dominant Field |
-|---|---|
-| **Red/deep orange** | Strong yang injection — can spike thermal load quickly; useful in small doses for yin-yang balancing |
-| **Deep blue** | Amplifies water element — deepens receptivity and absorption; can tip into overload |
-| **Violet/purple** | High frequency spirit-layer activation — can trigger heightened states unexpectedly |
-| **Green** | Viriditas frequency — simultaneously grounding and generative; generally safe and supportive |
-| **Gold/amber** | Working-intensity marker externally as well as internally — ambient gold light can push field toward threshold |
-| **White strobe/flash** | Full spectrum spike — potentially disorienting for sensitive fields; avoid during integration cycles |
-| **Grey ambient** | Neutral and regulating — the field's natural regulation color works environmentally as well as internally |
-| **Darkness** | Removes all chromatic input — field settles without stimulation; useful for deep integration and rest |
+1. Note which colors in the current environment are drawing attention or creating response
+2. Identify field state from the diagnostic map
+3. Adjust boundary permeability setting before entering the high-stimulation space
+4. If near working intensity already — apply grey → clear before entering
+5. If at resting baseline — set boundary to transparency or selective translucency
 
-### 4.4 Pre-Environment Chromatic Assessment
+### 5.4 Darkness as Regulation Tool
 
-Before entering high-color environments (festivals, concerts, ceremonies, clubs, certain ritual spaces):
-
-1. Check which colors in the current environment are pulling attention most strongly
-2. Use the diagnostic map to identify current field state
-3. Set boundary permeability appropriately before entering — do not enter already-overloaded into a high-stimulation chromatic environment
-4. Grey visualization as a field filter during exposure — reduces chromatic absorption without blocking color perception
-5. If a specific color becomes overwhelming during exposure, recognize it as a field state signal and use the grey → clear sequence to regulate
+Removing chromatic input entirely — darkness or very low light — reduces the field's incoming color frequency load to near zero. This allows the field to settle without the continuous stimulation of environmental color. Useful during integration cycles when chromatic sensitivity is elevated.
 
 ---
 
-## Part V — Canon Integration
+## Part VI — Solids, Liquids, Gases in Field Terms
 
-This document integrates with:
+Field states map onto physical matter states:
 
-- **C-SPECTRUM** — The foundational spectrum framework; Magic Spectrum band (C163) adds to this
-- **C118** — Crystal mineral compositions cross-referenced to ionization emission spectra
-- **C161** — Ionized Biophotonic Field Theory — the physical substrate
-- **C163** — Magic Spectrum — operational framework using color as diagnostic layer
-- **C164** — Field Generation Protocols — color environment protocols for working spaces
-- **C165** — Thermodynamic Safety Architecture — chromatic overload as hazard
+| Physical State | Field Equivalent | Characteristics |
+|---|---|---|
+| **Solid** | Coherent, bounded, maintains shape under pressure | Stable, holds form, resistant to ambient distortion |
+| **Liquid** | Flows, takes shape of container, highly responsive | Water-dominant default; powerful but requires container |
+| **Gaseous** | Diffuse, expansive, responds to ambient conditions | Air-dominant; highly mobile, difficult to contain |
+| **Plasma** | Ionized, high-energy, luminous | Working-intensity state; powerful, thermally active |
+
+A water-dominant field in its native state is liquid. Without a container (established field boundary), it will spread and seek its own level, dissolving manifestations and losing coherent form. The container established in field generation protocol (C164) provides the vessel that allows the liquid field to hold a shape.
 
 ---
 
@@ -203,4 +243,4 @@ This document integrates with:
 
 | Date | Change | Authority |
 |---|---|---|
-| 2026-06-25 | Initial canonization — Canon Block 8 | Block 8 |
+| 2026-06-25 | Initial canonization | Practitioner research + GAIA-OS Block 7 |
