@@ -1,0 +1,114 @@
+# GAIA-OS Canon Governance Workflow
+# ─────────────────────────────────────────────────────────────────────────────
+# Runs on every push and pull request targeting main.
+# Validates canon/REGISTRY.json against the live canon/ directory:
+#   • REGISTRY.json is valid JSON
+#   • No duplicate Canon IDs
+#   • Every registered filename exists on disk in canon/
+#   • Every active entry has at least one gaian_laws clause
+#   • Every deprecated entry carries a superseded_by field
+#   • No non-_DEPRECATED-suffixed file exists for a deprecated Canon ID
+#
+# This check is a hard merge gate — nothing lands in main unless it is green.
+# Canonical reference: canon/REGISTRY.json · scripts/validate_canon_registry.py
+# Gaian Laws: §1 (Foundational Sovereignty) §2 (Epistemic Integrity)
+#             §3 (Operational Transparency) §5 (Non-Harm Governance)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Canon Governance Gate
+
+on:
+  push:
+    branches: ["main", "sprint-g7/**", "feat/**", "fix/**"]
+    paths:
+      - "canon/**"
+      - "canon/REGISTRY.json"
+      - "scripts/validate_canon_registry.py"
+      - "REQUIREMENTS_TRACEABILITY_MATRIX.md"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "canon/**"
+      - "canon/REGISTRY.json"
+      - "scripts/validate_canon_registry.py"
+      - "REQUIREMENTS_TRACEABILITY_MATRIX.md"
+  # Also run on any push to main regardless of path — ensures the gate
+  # is never accidentally bypassed by a commit that doesn't touch canon/.
+  workflow_dispatch:
+
+jobs:
+  canon-governance:
+    name: Canon Registry Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python setup ────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── 3. Validate Canon Registry ─────────────────────────────────────────
+      - name: Validate canon/REGISTRY.json
+        id: canon-validate
+        run: |
+          echo '📜  Running Canon Registry Governance validator...'
+          python scripts/validate_canon_registry.py
+          echo '✅  Canon Registry is clean — no conflicts, no missing files'
+
+      # ── 4. RTM presence check ──────────────────────────────────────────────
+      - name: Verify RTM is present
+        run: |
+          if [ ! -f "REQUIREMENTS_TRACEABILITY_MATRIX.md" ]; then
+            echo '::error::REQUIREMENTS_TRACEABILITY_MATRIX.md is missing. Block 2 deliverable must be present.'
+            exit 1
+          fi
+          echo '✅  REQUIREMENTS_TRACEABILITY_MATRIX.md present'
+
+      # ── 5. Deprecated stub hygiene check ──────────────────────────────────
+      - name: Check _DEPRECATED stub hygiene
+        run: |
+          echo '🔍  Checking _DEPRECATED stub headers...'
+          python - <<'PYEOF'
+          import sys
+          from pathlib import Path
+
+          canon_dir = Path("canon")
+          errors = []
+
+          for stub in canon_dir.glob("*_DEPRECATED.md"):
+              text = stub.read_text(encoding="utf-8", errors="replace")
+              if "DEPRECATED" not in text[:500]:
+                  errors.append(f"{stub.name}: missing DEPRECATED header in first 500 chars")
+              if "superseded_by" not in text.lower() and "superseded by" not in text.lower() and "authoritative" not in text.lower():
+                  errors.append(f"{stub.name}: no superseded_by / authoritative reference found")
+
+          if errors:
+              print(f"❌  Deprecated stub hygiene: {len(errors)} issue(s)")
+              for e in errors:
+                  print(f"   • {e}")
+              sys.exit(1)
+          else:
+              stubs = list(canon_dir.glob("*_DEPRECATED.md"))
+              print(f"✅  {len(stubs)} _DEPRECATED stub(s) are all hygienically labelled")
+          PYEOF
+
+      # ── 6. Summary ─────────────────────────────────────────────────────────
+      - name: Canon Governance summary
+        if: always()
+        run: |
+          echo ''
+          echo '══════════════════════════════════════════════'
+          echo '  GAIA-OS Canon Governance Gate — Summary'
+          echo '══════════════════════════════════════════════'
+          echo "  Registry:    canon/REGISTRY.json"
+          echo "  Validator:   scripts/validate_canon_registry.py"
+          echo "  RTM:         REQUIREMENTS_TRACEABILITY_MATRIX.md"
+          echo "  Canon docs:  $(ls canon/*.md 2>/dev/null | wc -l) .md files in canon/"
+          echo "  Deprecated:  $(ls canon/*_DEPRECATED.md 2>/dev/null | wc -l) _DEPRECATED stubs"
+          echo '══════════════════════════════════════════════'

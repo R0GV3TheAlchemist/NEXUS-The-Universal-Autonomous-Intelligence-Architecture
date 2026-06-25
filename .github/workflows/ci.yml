@@ -1,5 +1,5 @@
 # GAIA-OS CI — runs on every push and PR targeting main
-# Gate: ruff → mypy → bandit → py_compile → manifest-validate → pytest
+# Gate: ruff → mypy → bandit → py_compile → manifest-validate → canon-governance → pytest
 # Nothing merges to main unless this workflow is green.
 
 name: GAIA-OS CI
@@ -12,7 +12,7 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint + Type + Security + Syntax + Manifest + Pytest
+    name: Lint + Type + Security + Syntax + Manifest + Canon + Pytest
     runs-on: ubuntu-latest
     # Hard cap: kill the whole job after 20 min so it never hangs for hours.
     timeout-minutes: 20
@@ -174,6 +174,36 @@ jobs:
           else:
               print(f"✅  CANON_MANIFEST.json valid — {len(documents)} documents")
           PYEOF
+
+      # ── 5.9 Canon Registry Governance gate ──────────────────────────────────────
+      # Hard gate: blocks merge if REGISTRY.json has duplicate IDs, missing files,
+      # deprecated entries without superseded_by, or is malformed JSON.
+      # Canonical law: GAIAN_LAWS.md §1 §2 §3 §5
+      # Reference: canon/REGISTRY.json · scripts/validate_canon_registry.py
+      - name: Canon Registry Governance gate
+        run: |
+          echo '📜  Running Canon Registry Governance gate (§1 §2 §3 §5)...'
+          if [ ! -f "scripts/validate_canon_registry.py" ]; then
+            echo '::error::scripts/validate_canon_registry.py is missing. Block 1.3 deliverable must be present.'
+            exit 1
+          fi
+          if [ ! -f "canon/REGISTRY.json" ]; then
+            echo '::error::canon/REGISTRY.json is missing. Block 1.1 deliverable must be present.'
+            exit 1
+          fi
+          python scripts/validate_canon_registry.py
+          echo '✅  Canon Registry Governance gate: PASSED'
+
+      # ── 5.10 RTM presence gate ───────────────────────────────────────────────────
+      # Ensures the Requirements Traceability Matrix (Block 2) is never accidentally
+      # deleted without a deliberate governance decision.
+      - name: RTM presence gate
+        run: |
+          if [ ! -f "REQUIREMENTS_TRACEABILITY_MATRIX.md" ]; then
+            echo '::error::REQUIREMENTS_TRACEABILITY_MATRIX.md is missing. Block 2 deliverable must be present. Restore or regenerate before merging.'
+            exit 1
+          fi
+          echo '✅  REQUIREMENTS_TRACEABILITY_MATRIX.md present'
 
       # ── 6. Syntax check ───────────────────────────────────────────────────────────────
       - name: Syntax check (py_compile)
