@@ -4,7 +4,7 @@
  * Canon: C90, C-OB01, GAIAN_TWIN_DOCTRINE
  *
  * Navigation architecture (three principals):
- *   HUMAN  tier → My Gaian · Memory · Goals · Settings
+ *   HUMAN  tier → My Gaian · Memory · Goals · Shadow · Settings
  *   GAIA   tier → Ask GAIA · World Feed · Deep Compute · Analysis
  *   GAIAN  tier → Companion · Mood · Bond · Vitality
  *
@@ -17,6 +17,7 @@
  * Companion slot:
  *   'companion' nav ID renders TwinInterface (Diamond architecture).
  *   'ask' / 'chat' render GaiaChat (search/world layer).
+ *   'shadow' renders ShadowPanel — archetype/intensity evaluation for the principal.
  *
  * Mode broadcast:
  *   ShellMain emits 'gaia:mode' via Tauri event API whenever gaiaMode
@@ -40,6 +41,7 @@ import { EmrysPanel }        from '../crystal-view';
 import { AwakeningScreen }   from './AwakeningScreen';
 import { GaiaPresenceBar, useGaiaMode } from './GaiaPresenceBar';
 import { TwinInterface }     from '../components/TwinInterface';
+import { ShadowPanel }       from '../components/ShadowPanel/ShadowPanel';
 import type { GaiaMode }     from './GaiaPresenceBar';
 import {
   useOnboardingStore,
@@ -97,6 +99,13 @@ const NAV: NavItem[] = [
     tier: 'human',
     tooltip: 'Tasks and goals you have set for GAIA to work on',
     icon: 'M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+  },
+  {
+    id: 'shadow',
+    label: 'Shadow',
+    tier: 'human',
+    tooltip: 'Your shadow archetype evaluation — intensity, integration, and activation state',
+    icon: 'M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 2a7 7 0 0 1 5.292 11.583C16.22 14.772 14.23 14 12 14s-4.22.772-5.292 2.583A7 7 0 0 1 12 5zm0 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
   },
   {
     id: 'settings',
@@ -466,6 +475,16 @@ const ShellMain: React.FC<{
           sessionId={twinSessionIdRef.current}
           humanName={humanName}
           onGaiaModeChange={handleTwinModeChange}
+        />
+      );
+    }
+
+    // ◆ SHADOW — Archetype / intensity evaluation for the authenticated principal.
+    if (activeId === 'shadow') {
+      return (
+        <ShadowPanel
+          principalId={humanId}
+          pollMs={60_000}
         />
       );
     }
