@@ -63,7 +63,7 @@ def _try_import(module_path: str, attr: str | None = None):
         return None
 
 
-# ── Core router imports (always required — crash if missing) ──────────────────
+# ── Core router imports (always required — crash if missing) ──────────────
 
 from api.twin import router as twin_router          # /twin/* — core product
 from api.auth import router as auth_router          # /auth/*
@@ -84,6 +84,7 @@ _safety_router         = _try_import("core.safety.router", "router")
 _numerology_router     = _try_import("api.routes.numerology", "router")
 _emrys_router          = _try_import("emrys_engine.router", "emrys_router")
 _init_emrys            = _try_import("emrys_engine.router", "init_emrys_engine")
+_shadow_router         = _try_import("shadow_engine.router", "router")
 
 # ── Queue 4 — GAIAState + Talisman router (same safe pattern) ───────────────
 _state_router          = _try_import("src.core.state_router", "router")
@@ -230,6 +231,16 @@ async def lifespan(application: FastAPI):
         _SUBSYSTEM_STATUS["zodiac"] = False
         log.warning(f"[GAIA] ZodiacEngine skipped: {e}")
 
+    # Shadow Engine — archetypal processing layer
+    try:
+        from shadow_engine.engine import get_shadow_engine
+        get_shadow_engine()
+        _SUBSYSTEM_STATUS["shadow_engine"] = True
+        log.info("[GAIA] ✓ ShadowEngine ready (7 archetypes active)")
+    except Exception as e:
+        _SUBSYSTEM_STATUS["shadow_engine"] = False
+        log.warning(f"[GAIA] ShadowEngine skipped: {e}")
+
     # ── Queue 4 — GAIAState + Talisman warm-up ─────────────────────────────
     try:
         from src.core.state import GAIAStateStore
@@ -258,7 +269,7 @@ async def lifespan(application: FastAPI):
             ))
             _engine.register(Talisman(
                 name="Build Focus",
-                intent="Channel GAIA’s BUILD mode — clear mind, high energy, low entropy.",
+                intent="Channel GAIA's BUILD mode — clear mind, high energy, low entropy.",
                 field_effect=TalismanFieldEffect(
                     coherence_delta=0.05,
                     energy_delta=0.10,
@@ -349,6 +360,7 @@ _mount(_crypto_router,                                                          
 _mount(_safety_router,                                                            label="safety")
 _mount(_numerology_router,     prefix="/api/v1",       tags=["Numerology"],      label="numerology")
 _mount(_emrys_router,          prefix="/api/emrys",    tags=["Emrys"],           label="emrys")
+_mount(_shadow_router,                                 tags=["Shadow"],          label="shadow")
 
 # ── Queue 4 — GAIAState + Talisman (router owns /api/* prefix) ──────────────
 # state_router defines prefix="/api" internally; covers:
