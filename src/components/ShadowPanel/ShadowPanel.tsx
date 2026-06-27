@@ -15,6 +15,8 @@
  * When onArchetypeClick is omitted the panel manages its own ArchetypeDrawer
  *   internally so it works standalone with zero wiring in the parent.
  *
+ * ReflectDialog is always managed internally — it is not a concern of the parent.
+ *
  * Canon: Shadow Engine — 7-Archetype Integration Layer
  */
 
@@ -26,6 +28,7 @@ import {
   ACTIVATION_THRESHOLD,
 } from '../../shared/shadowTypes';
 import { ArchetypeDrawer } from './ArchetypeDrawer';
+import { ReflectDialog }  from './ReflectDialog';
 import './shadow-panel.css';
 
 // ── Archetype metadata ─────────────────────────────────────────────────────
@@ -95,7 +98,9 @@ function ArchetypeBar({ name, score, isDominant, onClick }: ArchetypeBarProps) {
           onClick(name);
         }
       }}
-      aria-label={`${name}: ${pct}%${isDominant ? ' — dominant archetype' : ''}${onClick ? '. Press to view details.' : ''}`}
+      aria-label={`${name}: ${pct}%${
+        isDominant ? ' — dominant archetype' : ''
+      }${onClick ? '. Press to view details.' : ''}`}
     >
       <span className="shadow-panel__archetype-glyph" aria-hidden>{glyph}</span>
       <span className="shadow-panel__archetype-name">{name}</span>
@@ -147,8 +152,8 @@ function SkeletonLoader() {
 // ── Props ─────────────────────────────────────────────────────────────────
 
 export interface ShadowPanelProps {
-  principalId:      string;
-  pollMs?:          number;
+  principalId:       string;
+  pollMs?:           number;
   onArchetypeClick?: (name: ShadowArchetypeName) => void;
 }
 
@@ -161,21 +166,20 @@ export function ShadowPanel({
 }: ShadowPanelProps) {
   const shadow = useShadow(principalId, { pollMs });
 
-  // Internal drawer state — used when no onArchetypeClick prop is provided.
-  // When onArchetypeClick IS provided, the parent owns the drawer.
+  // ── Drawer state (self-managed when parent has not taken control) ────────
   const [internalSelected, setInternalSelected] = useState<ShadowArchetypeName | null>(null);
   const isExternallyControlled = Boolean(onArchetypeClick);
 
   const handleBarClick = useCallback(
     (name: ShadowArchetypeName) => {
-      if (isExternallyControlled) {
-        onArchetypeClick!(name);
-      } else {
-        setInternalSelected(name);
-      }
+      if (isExternallyControlled) onArchetypeClick!(name);
+      else setInternalSelected(name);
     },
     [isExternallyControlled, onArchetypeClick],
   );
+
+  // ── Reflect dialog state (always internal — parent never owns this) ─────
+  const [reflectOpen, setReflectOpen] = useState(false);
 
   // ── Loading ────────────────────────────────────────────────────────
 
@@ -185,31 +189,24 @@ export function ShadowPanel({
 
   if (!shadow.record && !shadow.error) {
     return (
-      <>
-        <div className="shadow-panel shadow-panel--empty">
-          <div className="shadow-panel__empty-glyph" aria-hidden>◯</div>
-          <h3 className="shadow-panel__empty-title">Shadow not yet mapped</h3>
-          <p className="shadow-panel__empty-body">
-            Run an evaluation to reveal the archetype pattern underlying your current state.
-          </p>
-          <button
-            className="shadow-panel__evaluate-btn"
-            onClick={() => shadow.evaluate()}
-            disabled={shadow.loading}
-          >
-            {shadow.loading ? 'Evaluating…' : 'Begin Shadow Evaluation'}
-          </button>
-        </div>
-        {!isExternallyControlled && (
-          <ArchetypeDrawer
-            archetype={internalSelected}
-            record={shadow.record ?? null}
-            onClose={() => setInternalSelected(null)}
-          />
-        )}
-      </>
+      <div className="shadow-panel shadow-panel--empty">
+        <div className="shadow-panel__empty-glyph" aria-hidden>◯</div>
+        <h3 className="shadow-panel__empty-title">Shadow not yet mapped</h3>
+        <p className="shadow-panel__empty-body">
+          Run an evaluation to reveal the archetype pattern underlying your current state.
+        </p>
+        <button
+          className="shadow-panel__evaluate-btn"
+          onClick={() => shadow.evaluate()}
+          disabled={shadow.loading}
+        >
+          {shadow.loading ? 'Evaluating…' : 'Begin Shadow Evaluation'}
+        </button>
+      </div>
     );
   }
+
+  // ── Main render ─────────────────────────────────────────────────────
 
   const {
     record,
@@ -223,7 +220,9 @@ export function ShadowPanel({
     error,
   } = shadow;
 
-  const dominantColor = dominantArchetype ? ARCHETYPE_HUES[dominantArchetype] : 'var(--color-text-faint)';
+  const dominantColor = dominantArchetype
+    ? ARCHETYPE_HUES[dominantArchetype]
+    : 'var(--color-text-faint)';
 
   return (
     <>
@@ -362,7 +361,9 @@ export function ShadowPanel({
             </span>
             {record.recorded_at && (
               <span className="shadow-panel__meta-item shadow-panel__meta-item--right">
-                Updated {new Date(record.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                Updated {new Date(record.recorded_at).toLocaleTimeString([], {
+                  hour: '2-digit', minute: '2-digit',
+                })}
               </span>
             )}
           </div>
@@ -370,13 +371,14 @@ export function ShadowPanel({
 
         {/* ── Actions ── */}
         <div className="shadow-panel__actions">
+          {/* Reflect now opens the confirmation dialog instead of firing directly */}
           <button
             className="shadow-panel__reflect-btn"
-            onClick={() => shadow.reflect()}
+            onClick={() => setReflectOpen(true)}
             disabled={shadow.loading || !record}
             title="Record a reflection session (+5% integration)"
           >
-            {shadow.loading ? '⋯' : '◎  Reflect'}
+            ◎&ensp;Reflect
           </button>
           <button
             className="shadow-panel__evaluate-btn shadow-panel__evaluate-btn--secondary"
@@ -384,13 +386,13 @@ export function ShadowPanel({
             disabled={shadow.loading}
             title="Re-run full archetype evaluation"
           >
-            {shadow.loading ? '⋯' : '⟳  Evaluate'}
+            {shadow.loading ? '⋯' : '⟳ Evaluate'}
           </button>
         </div>
 
       </section>
 
-      {/* Internal drawer — only rendered when parent has not taken control */}
+      {/* ── ArchetypeDrawer (self-managed when parent has not taken control) ── */}
       {!isExternallyControlled && (
         <ArchetypeDrawer
           archetype={internalSelected}
@@ -398,6 +400,15 @@ export function ShadowPanel({
           onClose={() => setInternalSelected(null)}
         />
       )}
+
+      {/* ── ReflectDialog (always internal) ── */}
+      <ReflectDialog
+        open={reflectOpen}
+        integrationPct={integrationPct}
+        dominantArchetype={dominantArchetype}
+        onConfirm={shadow.reflect}
+        onClose={() => setReflectOpen(false)}
+      />
     </>
   );
 }

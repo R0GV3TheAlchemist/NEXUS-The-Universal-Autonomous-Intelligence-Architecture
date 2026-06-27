@@ -1,0 +1,365 @@
+/**
+ * src/components/ShadowPanel/reflect-dialog.css
+ * GAIA-OS — Reflect Confirmation Dialog styles
+ *
+ * Custom properties consumed:
+ *   --sp-hue      archetype accent colour (hex) — set on <dialog>
+ *   --sp-pct      integration bar current fill width
+ *   --sp-start    delta bar start position
+ *   --sp-width    delta bar width
+ *
+ * Phases: rd--idle | rd--pending | rd--done
+ * All share the same card shell; inner content is conditionally rendered by React.
+ */
+
+/* ── Backdrop ───────────────────────────────────────────────────────── */
+
+.rd::backdrop {
+  background: oklch(0.06 0 0 / 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: rd-backdrop-in 200ms ease forwards;
+}
+
+@keyframes rd-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Dialog root ───────────────────────────────────────────────────── */
+
+.rd {
+  /* Override browser defaults: make the dialog a full-screen clickable area
+     so backdrop clicks (on .rd itself) can be detected */
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd:not([open]) {
+  display: none;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────── */
+
+.rd__card {
+  width: min(440px, calc(100vw - 2rem));
+  background: var(--color-surface, #1c1b19);
+  border: 1px solid oklch(from var(--color-text, #cdccca) l c h / 0.08);
+  border-radius: var(--radius-xl, 1rem);
+  box-shadow:
+    0 2px 6px oklch(0 0 0 / 0.2),
+    0 16px 48px oklch(0 0 0 / 0.45);
+  padding: var(--space-8, 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4, 1rem);
+  animation: rd-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Stop clicks on the card bubbling up to the backdrop handler */
+  position: relative;
+  pointer-events: auto;
+}
+
+/* Intercept clicks on the card so they don’t bubble to the <dialog> backdrop handler */
+.rd__card { isolation: isolate; }
+.rd__card * { pointer-events: auto; }
+
+@keyframes rd-card-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd__card   { animation: none; }
+  .rd::backdrop { animation: none; }
+}
+
+/* ── Archetype glyph ────────────────────────────────────────────────── */
+
+.rd__glyph {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  filter: drop-shadow(0 0 10px oklch(from var(--sp-hue, #4f98a3) l c h / 0.5));
+  margin-bottom: var(--space-1, 0.25rem);
+}
+
+/* ── Title ───────────────────────────────────────────────────────────── */
+
+.rd__title {
+  font-family: var(--font-display, sans-serif);
+  font-size: var(--text-xl, clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem));
+  font-weight: 600;
+  color: var(--color-text, #cdccca);
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* ── Instruction text ───────────────────────────────────────────────── */
+
+.rd__instruction {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-muted, #797876);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Reflective prompt blockquote ──────────────────────────────────── */
+
+.rd__prompt {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-4, 1rem) var(--space-5, 1.25rem);
+  border-left: 3px solid var(--sp-hue, var(--color-primary, #4f98a3));
+  background: oklch(from var(--sp-hue, #4f98a3) l c h / 0.07);
+  border-radius: 0 var(--radius-md, 0.5rem) var(--radius-md, 0.5rem) 0;
+  color: var(--color-text, #cdccca);
+  font-style: italic;
+  font-size: var(--text-base, 1rem);
+  line-height: 1.65;
+  text-align: left;
+}
+
+/* ── Effect line ──────────────────────────────────────────────────────── */
+
+.rd__effect {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-muted, #797876);
+  text-align: center;
+  margin: 0;
+}
+
+.rd__effect strong {
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  font-weight: 600;
+}
+
+/* ── Integration progress preview ───────────────────────────────────── */
+
+.rd__progress-preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.rd__progress-track {
+  position: relative;
+  height: 8px;
+  background: oklch(from var(--color-text, #cdccca) l c h / 0.08);
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+}
+
+.rd__progress-before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sp-pct, 0%);
+  background: oklch(from var(--sp-hue, #4f98a3) l c h / 0.5);
+  border-radius: var(--radius-full, 9999px);
+}
+
+.rd__progress-delta {
+  position: absolute;
+  left: var(--sp-start, 0%);
+  top: 0;
+  bottom: 0;
+  width: var(--sp-width, 5%);
+  background: var(--sp-hue, var(--color-primary, #4f98a3));
+  border-radius: var(--radius-full, 9999px);
+  box-shadow: 0 0 8px oklch(from var(--sp-hue, #4f98a3) l c h / 0.6);
+  animation: rd-delta-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes rd-delta-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd__progress-delta { animation: none; }
+}
+
+.rd__progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted, #797876);
+}
+
+.rd__progress-plus {
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  font-weight: 600;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────── */
+
+.rd__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3, 0.75rem);
+  width: 100%;
+  margin-top: var(--space-2, 0.5rem);
+}
+
+.rd__actions--single {
+  grid-template-columns: 1fr;
+}
+
+.rd__cancel {
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid oklch(from var(--color-text, #cdccca) l c h / 0.12);
+  background: transparent;
+  color: var(--color-text-muted, #797876);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.rd__cancel:hover {
+  background: oklch(from var(--color-text, #cdccca) l c h / 0.06);
+  color: var(--color-text, #cdccca);
+  border-color: oklch(from var(--color-text, #cdccca) l c h / 0.2);
+}
+
+.rd__cancel:focus-visible {
+  outline: 2px solid var(--color-primary, #4f98a3);
+  outline-offset: 2px;
+}
+
+.rd__confirm {
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid oklch(from var(--sp-hue, #4f98a3) l c h / 0.35);
+  background: oklch(from var(--sp-hue, #4f98a3) l c h / 0.15);
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.rd__confirm:hover {
+  background: oklch(from var(--sp-hue, #4f98a3) l c h / 0.25);
+  border-color: oklch(from var(--sp-hue, #4f98a3) l c h / 0.55);
+  box-shadow: 0 0 12px oklch(from var(--sp-hue, #4f98a3) l c h / 0.25);
+}
+
+.rd__confirm:focus-visible {
+  outline: 2px solid var(--sp-hue, var(--color-primary, #4f98a3));
+  outline-offset: 2px;
+}
+
+.rd__confirm:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── Pending phase ───────────────────────────────────────────────────── */
+
+.rd__pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4, 1rem);
+  padding: var(--space-4, 1rem) 0;
+}
+
+.rd__spinner {
+  width: 36px;
+  height: 36px;
+  border: 2.5px solid oklch(from var(--sp-hue, #4f98a3) l c h / 0.2);
+  border-top-color: var(--sp-hue, var(--color-primary, #4f98a3));
+  border-radius: 50%;
+  animation: rd-spin 700ms linear infinite;
+}
+
+@keyframes rd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd__spinner { animation: none; border-color: var(--sp-hue, var(--color-primary)); }
+}
+
+.rd__pending-label {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-muted, #797876);
+  font-style: italic;
+}
+
+/* ── Done phase ───────────────────────────────────────────────────────── */
+
+.rd__done-glyph {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  filter: drop-shadow(0 0 12px oklch(from var(--sp-hue, #4f98a3) l c h / 0.6));
+  animation: rd-done-pop 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes rd-done-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd__done-glyph { animation: none; }
+}
+
+.rd__done-body {
+  font-size: var(--text-base, 1rem);
+  color: var(--color-text-muted, #797876);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.rd__done-body strong {
+  color: var(--sp-hue, var(--color-primary, #4f98a3));
+  font-weight: 600;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .rd__card {
+    padding: var(--space-6, 1.5rem) var(--space-5, 1.25rem);
+    border-radius: var(--radius-lg, 0.75rem) var(--radius-lg, 0.75rem) 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    animation: rd-sheet-in 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes rd-sheet-in {
+    from { transform: translateY(100%); opacity: 0.8; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .rd {
+    align-items: flex-end;
+  }
+}
