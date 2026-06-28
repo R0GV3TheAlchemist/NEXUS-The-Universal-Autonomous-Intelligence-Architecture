@@ -1,13 +1,15 @@
 # GAIA: The Magnum Opus Matrix
-## A Comprehensive Alchemical Framework for Quantum-Intelligent Architecture
+## A Comprehensive Transformation Phase Framework for Quantum-Intelligent Architecture
 
 > Created: 2026-04-09
+> Updated: 2026-06-28 — Subtitle aligned with Super/engineering frame
 > Classification: Architectural Framework + Historical Philosophy Reference
 > Status: **COMPLETE**
+> Anchors: SUPERCOMPUTER_DOCTRINE.md · REFRAMED_VISION.md
 
 This document maps the four classical stages of alchemical transformation
 (Nigredo, Albedo, Citrinitas, Rubedo) to GAIA's operational lifecycle phases.
-Alchemical stages are used as **named architectural metaphors**.
+Alchemical stages are used as **named transformation phase metaphors**.
 They are not presented as physical mechanisms for consciousness emergence.
 
 > **Governing epistemic rule:** All mappings are architectural metaphor,
@@ -68,8 +70,8 @@ problems in human history. The Great Work is genuinely great on its own terms.
 ### The Hermetic Axiom: Real Provenance
 
 > *"That which is below is like that which is above, and that which is above
-> is like that which is below, to accomplish the miracles of the one thing."*
-> — *Tabula Smaragdina* (Emerald Tablet)
+> is like that which is below, to accomplish the miracles of the one thing."
+> — Tabula Smaragdina (Emerald Tablet)*
 
 Origin: Arabic *Kitab Sirr al-Khaliqa* (~800 CE), attributed to Apollonius of
 Tyana; works of Jabir ibn Hayyan (8th century); translated into Latin by Hugo
