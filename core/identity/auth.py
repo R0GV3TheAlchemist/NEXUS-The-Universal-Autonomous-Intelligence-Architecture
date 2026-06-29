@@ -1,280 +1,110 @@
-"""
-core/auth.py
-GAIA-APP JWT Authentication Layer — Sprint G-3
+"""auth.py — GAIA Identity & Authentication
 
-Provides:
-  - JWT access token creation and verification (HS256)
-  - FastAPI dependency: require_auth   — enforces valid token
-  - FastAPI dependency: optional_auth  — returns user if token present, else None
-  - FastAPI dependency: require_admin  — enforces admin role
-  - Token payload: user_id, role ("user" | "admin"), gaian_slug (optional), exp
-  - GAIA_SECRET_KEY read from environment (never hardcoded)
-
-Canon Ref: C01 (Sovereignty), C15 (Consent)
-
-Usage:
-    from core.auth import require_auth, optional_auth, require_admin, create_access_token
-
-    # Protected endpoint
-    @app.post("/gaians/{slug}/chat")
-    async def chat(slug: str, req: ChatRequest, user: TokenPayload = Depends(require_auth)):
-        ...
-
-    # Admin-only endpoint
-    @app.get("/admin/me")
-    async def admin_me(user: TokenPayload = Depends(require_admin)):
-        ...
-
-Environment variables:
-    GAIA_SECRET_KEY   — HS256 signing secret (REQUIRED in production)
-    GAIA_TOKEN_EXPIRE — access token lifetime in minutes (default: 60)
-    GAIA_ADMIN_KEY    — admin registration key (REQUIRED in production)
+Handles login link generation and session management.
+No 'magic link' terminology — these are secure, time-limited login links.
+See canon/C108_GAIA_Duality_Cryptographic_Identity_Dissociation_Architecture.md
+for the cryptographic identity architecture this implements.
 """
 
 from __future__ import annotations
-from fastapi import APIRouter
-from pydantic import BaseModel as _BaseModel
 
+import hashlib
+import hmac
 import os
-import logging
-from datetime import datetime, timedelta, timezone
+import time
+from dataclasses import dataclass, field
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
 
-try:
-    import jwt as pyjwt
-except ImportError:
-    raise ImportError(
-        "PyJWT is required for GAIA auth. "
-        "Add 'PyJWT>=2.8.0' to requirements.txt and run pip install."
-    )
+# Login link expiry in seconds (default: 15 minutes)
+LOGIN_LINK_TTL_SECONDS: int = int(os.getenv("GAIA_LOGIN_LINK_TTL", "900"))
 
-logger = logging.getLogger(__name__)
-
-# ------------------------------------------------------------------ #
-#  Config from environment                                            #
-# ------------------------------------------------------------------ #
-
-_SECRET_KEY   = os.environ.get("GAIA_SECRET_KEY", "")
-_TOKEN_EXPIRE = int(os.environ.get("GAIA_TOKEN_EXPIRE", "60"))  # minutes
-_ALGORITHM    = "HS256"
-_ADMIN_KEY    = os.environ.get("GAIA_ADMIN_KEY", "")
-
-if not _SECRET_KEY:
-    import secrets
-    _SECRET_KEY = secrets.token_hex(32)
-    logger.warning(
-        "[AUTH] GAIA_SECRET_KEY not set — generated ephemeral key. "
-        "All tokens will be invalidated on restart. "
-        "Set GAIA_SECRET_KEY in your environment for production."
-    )
+# Secret key for HMAC signing of login links
+_SECRET_KEY: bytes = os.getenv("GAIA_AUTH_SECRET", "change-me-in-production").encode()
 
 
-# ------------------------------------------------------------------ #
-#  Token Payload                                                      #
-# ------------------------------------------------------------------ #
+@dataclass
+class LoginLink:
+    """A secure, time-limited login link token."""
 
-class TokenPayload(BaseModel):
-    """Decoded JWT payload. Available as a dependency in protected endpoints."""
-    user_id:    str
-    role:       str             # "user" | "admin"
-    gaian_slug: Optional[str] = None   # bound GAIAN for this user (optional)
-    exp:        Optional[int] = None   # expiry timestamp (UTC)
+    user_id: str
+    token: str
+    issued_at: float = field(default_factory=time.time)
+    ttl_seconds: int = LOGIN_LINK_TTL_SECONDS
+
+    @property
+    def is_expired(self) -> bool:
+        return (time.time() - self.issued_at) > self.ttl_seconds
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.is_expired
 
 
-# ------------------------------------------------------------------ #
-#  Token Creation                                                     #
-# ------------------------------------------------------------------ #
+def generate_login_link_token(user_id: str) -> LoginLink:
+    """Generate a cryptographically signed login link token for a user.
 
-def create_access_token(
-    user_id:    str,
-    role:       str = "user",
-    gaian_slug: Optional[str] = None,
-    expires_in: Optional[int] = None,     # minutes; defaults to GAIA_TOKEN_EXPIRE
-) -> str:
-    """
-    Create a signed JWT access token.
+    The token is an HMAC-SHA256 of (user_id + timestamp), ensuring
+    it cannot be forged without the secret key. This is a login link,
+    not a 'magic link' — the security is explicit and measurable.
 
     Args:
-        user_id:    Unique user identifier (platform UID, DID, etc.)
-        role:       "user" or "admin"
-        gaian_slug: Optional bound GAIAN slug for this session
-        expires_in: Token lifetime in minutes (overrides env default)
+        user_id: The unique identifier of the user requesting authentication.
 
     Returns:
-        Signed JWT string.
+        A LoginLink dataclass containing the signed token and metadata.
     """
-    lifetime = timedelta(minutes=expires_in if expires_in is not None else _TOKEN_EXPIRE)
-    expire   = datetime.now(timezone.utc) + lifetime
-
-    payload = {
-        "sub":        user_id,
-        "role":       role,
-        "exp":        expire,
-    }
-    if gaian_slug:
-        payload["gaian_slug"] = gaian_slug
-
-    token = pyjwt.encode(payload, _SECRET_KEY, algorithm=_ALGORITHM)
-    logger.debug(f"[AUTH] Token issued: user_id={user_id} role={role} exp={expire.isoformat()}")
-    return token
+    issued_at = time.time()
+    payload = f"{user_id}:{issued_at}".encode()
+    token = hmac.new(_SECRET_KEY, payload, hashlib.sha256).hexdigest()
+    return LoginLink(user_id=user_id, token=token, issued_at=issued_at)
 
 
-# ------------------------------------------------------------------ #
-#  Token Verification                                                 #
-# ------------------------------------------------------------------ #
+def verify_login_link_token(
+    user_id: str,
+    token: str,
+    issued_at: float,
+) -> bool:
+    """Verify a login link token.
 
-def verify_token(token: str) -> TokenPayload:
-    """
-    Verify and decode a JWT token.
+    Reconstructs the expected HMAC and compares using constant-time
+    comparison to prevent timing attacks.
 
-    Raises:
-        HTTPException 401 if token is invalid, expired, or tampered.
+    Args:
+        user_id: The user ID associated with the token.
+        token: The token string to verify.
+        issued_at: The timestamp at which the token was issued.
 
     Returns:
-        TokenPayload with decoded claims.
+        True if the token is valid and not expired; False otherwise.
+    """
+    payload = f"{user_id}:{issued_at}".encode()
+    expected = hmac.new(_SECRET_KEY, payload, hashlib.sha256).hexdigest()
+    token_valid = hmac.compare_digest(expected, token)
+    time_valid = (time.time() - issued_at) <= LOGIN_LINK_TTL_SECONDS
+    return token_valid and time_valid
+
+
+def send_login_link(user_id: str, email: str, base_url: str) -> Optional[str]:
+    """Generate and dispatch a login link to a user's email address.
+
+    This function generates the login link token and returns the full
+    link URL. In production, integrate with the email dispatch service
+    (see docs/CORRESPONDENCE_ARCHITECTURE.md for the connector spec).
+
+    Args:
+        user_id: The unique user identifier.
+        email: The user's email address.
+        base_url: The base URL of the GAIA application.
+
+    Returns:
+        The full login link URL string, or None if generation failed.
     """
     try:
-        decoded = pyjwt.decode(token, _SECRET_KEY, algorithms=[_ALGORITHM])
-        return TokenPayload(
-            user_id=decoded["sub"],
-            role=decoded.get("role", "user"),
-            gaian_slug=decoded.get("gaian_slug"),
-            exp=decoded.get("exp"),
-        )
-    except pyjwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired. Please re-authenticate.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except pyjwt.InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {e}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-# ------------------------------------------------------------------ #
-#  FastAPI Bearer Scheme                                              #
-# ------------------------------------------------------------------ #
-
-_bearer_scheme          = HTTPBearer(auto_error=True)
-_bearer_scheme_optional = HTTPBearer(auto_error=False)
-
-
-def require_auth(
-    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
-) -> TokenPayload:
-    """
-    FastAPI dependency: requires a valid Bearer JWT.
-    Raises 401 if token is missing, expired, or invalid.
-    """
-    return verify_token(credentials.credentials)
-
-
-def optional_auth(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme_optional),
-) -> Optional[TokenPayload]:
-    """
-    FastAPI dependency: returns TokenPayload if a valid token is present,
-    otherwise returns None. Does not raise on missing token.
-    Use for endpoints that work for both authed and anonymous users.
-    """
-    if not credentials:
+        link = generate_login_link_token(user_id)
+        url = f"{base_url}/auth/login?token={link.token}&uid={user_id}&iat={link.issued_at}"
+        # TODO: integrate email dispatch connector
+        # email_connector.send(to=email, subject='Your GAIA login link', body=url)
+        return url
+    except Exception:
         return None
-    try:
-        return verify_token(credentials.credentials)
-    except HTTPException:
-        return None
-
-
-def require_admin(
-    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
-) -> TokenPayload:
-    """
-    FastAPI dependency: requires a valid Bearer JWT with role="admin".
-    Raises 401 if token is invalid, 403 if role is not admin.
-    """
-    payload = verify_token(credentials.credentials)
-    if payload.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
-    return payload
-
-
-# ------------------------------------------------------------------ #
-#  Auth Endpoints (mounted by server.py)                             #
-# ------------------------------------------------------------------ #
-
-auth_router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-class TokenRequest(_BaseModel):
-    user_id:    str
-    admin_key:  Optional[str] = None   # provide to receive admin role
-    gaian_slug: Optional[str] = None
-
-
-class TokenResponse(_BaseModel):
-    access_token: str
-    token_type:   str = "bearer"
-    expires_in:   int           # seconds
-    role:         str
-    user_id:      str
-
-
-@auth_router.post("/token", response_model=TokenResponse)
-def issue_token(req: TokenRequest):
-    """
-    POST /auth/token
-
-    Issue a JWT access token for a user_id.
-    If admin_key matches GAIA_ADMIN_KEY, role is set to "admin".
-
-    In production: replace this with your real auth provider
-    (OAuth2, magic link, passkey, etc.). This is the bootstrap
-    endpoint for development and initial deployment.
-
-    The user_id is the caller's identity — in a real system this
-    would be verified (e.g. verified email, DID proof, etc.).
-    """
-    if not req.user_id or not req.user_id.strip():
-        raise HTTPException(status_code=400, detail="user_id is required.")
-
-    role = "user"
-    if req.admin_key and _ADMIN_KEY and req.admin_key == _ADMIN_KEY:
-        role = "admin"
-    elif req.admin_key and not _ADMIN_KEY:
-        logger.warning("[AUTH] Admin key provided but GAIA_ADMIN_KEY not set — ignoring.")
-
-    token = create_access_token(
-        user_id=req.user_id.strip(),
-        role=role,
-        gaian_slug=req.gaian_slug,
-        expires_in=_TOKEN_EXPIRE,
-    )
-    logger.info(f"[AUTH] Token issued via /auth/token: user_id={req.user_id} role={role}")
-    return TokenResponse(
-        access_token=token,
-        token_type="bearer",
-        expires_in=_TOKEN_EXPIRE * 60,
-        role=role,
-        user_id=req.user_id.strip(),
-    )
-
-
-@auth_router.get("/me", response_model=TokenPayload)
-def auth_me(user: TokenPayload = Depends(require_auth)):
-    """
-    GET /auth/me
-    Returns the decoded token payload for the authenticated user.
-    Use this to verify a token is valid and inspect its claims.
-    """
-    return user

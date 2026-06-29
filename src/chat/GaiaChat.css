@@ -1,207 +1,91 @@
-/*
-  src/chat/GaiaChat.css
-  GAIA Chat — clean, real, no magic
-  Canon: C90
-*/
+/* GaiaChat.css — GAIA Chat Interface Styles */
+/* clean, real, no unexplained behavior */
+/* All visual states map to coherence-defined system states. */
+/* See docs/design/ for the crystal UI design system documentation. */
 
 .gaia-chat {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0a0a0f;
-  color: #e2e2e8;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
 }
 
-/* ── Status bar ── */
-.gaia-chat__status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: #0f0f18;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-}
-.gaia-chat__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.gaia-chat__dot--online   { background: #20b2aa; }
-.gaia-chat__dot--offline  { background: #e05a5a; }
-.gaia-chat__dot--checking { background: #888; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-
-.gaia-chat__status-text { flex: 1; }
-
-.gaia-chat__web-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  user-select: none;
-  margin-left: auto;
-}
-.gaia-chat__web-toggle input { accent-color: #20b2aa; cursor: pointer; }
-
-/* ── Messages ── */
 .gaia-chat__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 0;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  scroll-behavior: smooth;
+  gap: 1rem;
 }
-.gaia-chat__messages::-webkit-scrollbar { width: 4px; }
-.gaia-chat__messages::-webkit-scrollbar-track { background: transparent; }
-.gaia-chat__messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-/* Empty state */
-.gaia-chat__empty {
-  flex: 1;
+.gaia-chat__input-area {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 48px 24px;
-  text-align: center;
-  color: rgba(255,255,255,0.25);
-}
-.gaia-chat__empty-title {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  color: #20b2aa;
-}
-.gaia-chat__empty-sub {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.2);
-  max-width: 320px;
-}
-.gaia-chat__empty-hint {
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
-  margin-top: 8px;
-}
-
-/* Message rows */
-.gaia-chat__msg {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px 24px;
-  max-width: 100%;
-}
-.gaia-chat__msg--user {
-  background: transparent;
-}
-.gaia-chat__msg--gaia {
-  background: rgba(32,178,170,0.04);
-  border-top: 1px solid rgba(32,178,170,0.08);
-  border-bottom: 1px solid rgba(32,178,170,0.08);
-}
-
-.gaia-chat__msg-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.25);
-}
-.gaia-chat__msg--gaia .gaia-chat__msg-label { color: #20b2aa; }
-
-.gaia-chat__msg-text {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #e2e2e8;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-width: 720px;
-}
-
-.gaia-chat__cursor {
-  display: inline-block;
-  width: 2px;
-  height: 14px;
-  background: #20b2aa;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  animation: blink 0.9s step-end infinite;
-}
-@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
-
-.gaia-chat__msg-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-}
-.gaia-chat__msg-meta span {
-  font-size: 10px;
-  color: rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.04);
-  padding: 2px 6px;
-  border-radius: 3px;
-  letter-spacing: 0.04em;
-}
-
-/* ── Input row ── */
-.gaia-chat__input-row {
-  display: flex;
+  gap: 0.75rem;
   align-items: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #0f0f18;
-  border-top: 1px solid rgba(255,255,255,0.07);
 }
 
 .gaia-chat__input {
   flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #e2e2e8;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 10px 14px;
   resize: none;
-  outline: none;
-  transition: border-color 0.15s;
-  min-height: 40px;
-  max-height: 160px;
-  overflow-y: auto;
-  field-sizing: content;
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 0.2s ease;
 }
-.gaia-chat__input:focus {
-  border-color: rgba(32,178,170,0.5);
-}
-.gaia-chat__input::placeholder { color: rgba(255,255,255,0.2); }
-.gaia-chat__input:disabled { opacity: 0.5; }
 
-.gaia-chat__btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  background: #20b2aa;
-  color: #000;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
+.gaia-chat__input:focus {
+  outline: none;
+  border-color: var(--color-crystal-focused);
 }
-.gaia-chat__btn:disabled { opacity: 0.3; cursor: default; }
-.gaia-chat__btn:hover:not(:disabled) { opacity: 0.85; }
-.gaia-chat__btn--stop { background: #e05a5a; color: #fff; }
+
+.gaia-chat__send-btn {
+  background: var(--color-crystal-focused);
+  color: var(--color-text-on-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.25rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.gaia-chat__send-btn:hover {
+  background: var(--color-crystal-focused-hover);
+}
+
+.gaia-chat__send-btn:active {
+  transform: scale(0.97);
+}
+
+.gaia-chat__message {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  line-height: 1.6;
+  font-size: var(--text-base);
+}
+
+.gaia-chat__message--user {
+  align-self: flex-end;
+  background: var(--color-crystal-focused);
+  color: var(--color-text-on-accent);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.gaia-chat__message--gaia {
+  align-self: flex-start;
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+}
