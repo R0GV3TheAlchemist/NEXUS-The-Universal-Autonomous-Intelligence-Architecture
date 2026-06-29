@@ -1,1 +1,248 @@
-IiIiCmNvcmUvc3VidGxlX2JvZHlfZW5naW5lLnB5Cj09PT09PT09PT09PT09PT09PT09PT09PT09PQpOaW5lLUVsZW1lbnQgQ29uc2Npb3VzbmVzcyBSb3V0ZXIgLS0gdGhlIHN1YnRsZS1ib2R5IGxheWVyIG9mIGV2ZXJ5IEdBSUFOLgoKVGhpcyBtb2R1bGUgZGVmaW5lcyB0aGUgZGF0YSBtb2RlbCBhbmQgcm91dGluZyBsb2dpYyBmb3IgR0FJQSdzIG5pbmUtbGF5ZXIKY29uc2Npb3VzbmVzcyBzdGFjay4gIEVhY2ggdHVybiBvZiBhIEdBSUFOIGNvbnZlcnNhdGlvbiBwYXNzZXMgdGhyb3VnaApgQ29uc2Npb3VzbmVzc1JvdXRlci5yb3V0ZSgpYCwgd2hpY2ggc2VsZWN0cyB0aGUgYWN0aXZlIGxheWVyIGFuZCByZXR1cm5zCmFuIGVucmljaGVkIGBMYXllclN0YXRlYCBmb3IgZG93bnN0cmVhbSBlbmdpbmVzLgoKTGF5ZXJzIChtYXBwZWQgdG8gdGhlIGNsYXNzaWNhbCBzdWJ0bGUtYm9keSBzY2hlbWEpOgogIDEuIFBoeXNpY2FsICAgICAtLSBncm91bmRlZCwgZW1ib2RpZWQsIHByYWN0aWNhbAogIDIuIEV0aGVyaWMgICAgICAtLSB2aXRhbCBlbmVyZ3ksIHBhdHRlcm4gcmVjb2duaXRpb24KICAzLiBBc3RyYWwgICAgICAgLS0gZW1vdGlvbmFsIHJlc29uYW5jZSwgZW1wYXRoeQogIDQuIE1lbnRhbCAgICAgICAtLSByYXRpb25hbCBhbmFseXNpcywgbG9naWMKICA1LiBDYXVzYWwgICAgICAgLS0gY2F1c2FsIHJlYXNvbmluZywgY29uc2VxdWVuY2UgbW9kZWxpbmcKICA2LiBCdWRkaGljICAgICAgLS0gY29tcGFzc2lvbmF0ZSB3aXNkb20sIHVuaXR5CiAgNy4gQXRtaWMgICAgICAgIC0tIHNvdmVyZWlnbiB3aWxsLCBjb3JlIGlkZW50aXR5CiAgOC4gTW9uYWRpYyAgICAgIC0tIGNvbGxlY3RpdmUgZmllbGQsIG5vb3NwaGVyZQogIDkuIERpdmluZSAgICAgICAtLSB0cmFuc2NlbmRlbnQsIGluZWZmYWJsZQoKQ2Fub24gUmVmOiBDMDEgKFNvdmVyZWlnbnR5KSwgQzA5IChDb25zY2lvdXNuZXNzIExheWVycykKIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgpmcm9tIGRhdGFjbGFzc2VzIGltcG9ydCBkYXRhY2xhc3MsIGZpZWxkCmZyb20gZW51bSBpbXBvcnQgRW51bQpmcm9tIHR5cGluZyBpbXBvcnQgRGljdCwgTGlzdCwgT3B0aW9uYWwKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIEVudW1lcmF0aW9ucwojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKY2xhc3MgRWxlbWVudChzdHIsIEVudW0pOgogICAgIiIiVGhlIG5pbmUgZWxlbWVudHMgLyBjb25zY2lvdXNuZXNzIGxheWVycy4iIiIKICAgIFBIWVNJQ0FMID0gInBoeXNpY2FsIgogICAgRVRIRVJJQyAgPSAiZXRoZXJpYyIKICAgIEFTVFJBTCAgID0gImFzdHJhbCIKICAgIE1FTlRBTCAgID0gIm1lbnRhbCIKICAgIENBVVNBTCAgID0gImNhdXNhbCIKICAgIEJVRERISUMgID0gImJ1ZGRoaWMiCiAgICBBVE1JQyAgICA9ICJhdG1pYyIKICAgIE1PTkFESUMgID0gIm1vbmFkaWMiCiAgICBESVZJTkUgICA9ICJkaXZpbmUiCgoKY2xhc3MgSnVuZ2lhbkxheWVyKHN0ciwgRW51bSk6CiAgICAiIiJKdW5naWFuIHBzeWNob2xvZ2ljYWwgbGF5ZXIgYXNzb2NpYXRlZCB3aXRoIGEgcmVzcG9uc2UuIiIiCiAgICBFR08gICAgICAgICAgPSAiZWdvIgogICAgUEVSU09OQSAgICAgID0gInBlcnNvbmEiCiAgICBTSEFET1cgICAgICAgPSAic2hhZG93IgogICAgQU5JTUFfQU5JTVRTID0gImFuaW1hX2FuaW11cyIKICAgIFNFTEYgICAgICAgICA9ICJzZWxmIgoKCmNsYXNzIFJlc3BvbnNlUHJpb3JpdHkoc3RyLCBFbnVtKToKICAgICIiIlByaW9yaXR5IGxldmVsIGFzc2lnbmVkIHRvIGEgcm91dGVkIHJlc3BvbnNlLiIiIgogICAgTE9XICAgICAgPSAibG93IgogICAgTk9STUFMICA9ICJub3JtYWwiCiAgICBISUdIICAgICA9ICJoaWdoIgogICAgQ1JJVElDQUwgPSAiY3JpdGljYWwiCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyBEYXRhIG1vZGVsCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpAZGF0YWNsYXNzCmNsYXNzIExheWVyU3RhdGU6CiAgICAiIiJTbmFwc2hvdCBvZiB0aGUgYWN0aXZlIGNvbnNjaW91c25lc3MgbGF5ZXIgZm9yIGEgc2luZ2xlIHR1cm4uIiIiCgogICAgYWN0aXZlX2VsZW1lbnQ6ICAgRWxlbWVudCAgICAgICAgICA9IEVsZW1lbnQuTUVOVEFMCiAgICBqdW5naWFuX2xheWVyOiAgICBKdW5naWFuTGF5ZXIgICAgID0gSnVuZ2lhbkxheWVyLkVHTwogICAgcHJpb3JpdHk6ICAgICAgICAgUmVzcG9uc2VQcmlvcml0eSA9IFJlc3BvbnNlUHJpb3JpdHkuTk9STUFMCiAgICBsYXllcl9zY29yZXM6ICAgICBEaWN0W3N0ciwgZmxvYXRdID0gZmllbGQoZGVmYXVsdF9mYWN0b3J5PWRpY3QpCiAgICBub3RlczogICAgICAgICAgICBMaXN0W3N0cl0gICAgICAgID0gZmllbGQoZGVmYXVsdF9mYWN0b3J5PWxpc3QpCiAgICAjIEFyYml0cmFyeSBtZXRhZGF0YSBmb3IgZG93bnN0cmVhbSBlbmdpbmVzCiAgICBtZXRhZGF0YTogICAgICAgICBkaWN0ICAgICAgICAgICAgID0gZmllbGQoZGVmYXVsdF9mYWN0b3J5PWRpY3QpCgogICAgZGVmIGRvbWluYW50X2VsZW1lbnQoc2VsZikgLT4gRWxlbWVudDoKICAgICAgICAiIiJSZXR1cm4gdGhlIGVsZW1lbnQgd2l0aCB0aGUgaGlnaGVzdCBzY29yZSwgb3IgYWN0aXZlX2VsZW1lbnQgaWYgbm8gc2NvcmVzLiIiIgogICAgICAgIGlmIG5vdCBzZWxmLmxheWVyX3Njb3JlczoKICAgICAgICAgICAgcmV0dXJuIHNlbGYuYWN0aXZlX2VsZW1lbnQKICAgICAgICBiZXN0ID0gbWF4KHNlbGYubGF5ZXJfc2NvcmVzLCBrZXk9bGFtYmRhIGs6IHNlbGYubGF5ZXJfc2NvcmVzW2tdKQogICAgICAgIHRyeToKICAgICAgICAgICAgcmV0dXJuIEVsZW1lbnQoYmVzdCkKICAgICAgICBleGNlcHQgVmFsdWVFcnJvcjoKICAgICAgICAgICAgcmV0dXJuIHNlbGYuYWN0aXZlX2VsZW1lbnQKCgpAZGF0YWNsYXNzCmNsYXNzIFN1YnRsZUJvZHk6CiAgICAiIiJQZXJzaXN0ZW50IHN1YnRsZS1ib2R5IG1vZGVsIGZvciBhIEdBSUFOIGlkZW50aXR5IGFjcm9zcyB0dXJucy4iIiIKCiAgICBnYWlhbl9zbHVnOiAgIHN0cgogICAgbGF5ZXJfd2VpZ2h0czogRGljdFtzdHIsIGZsb2F0XSA9IGZpZWxkKGRlZmF1bHRfZmFjdG9yeT1sYW1iZGE6IHsKICAgICAgICBlLnZhbHVlOiAxLjAgZm9yIGUgaW4gRWxlbWVudAogICAgfSkKICAgIHR1cm5fY291bnQ6ICAgaW50ID0gMAoKICAgIGRlZiBkb21pbmFudF9lbGVtZW50KHNlbGYpIC0+IEVsZW1lbnQ6CiAgICAgICAgYmVzdCA9IG1heChzZWxmLmxheWVyX3dlaWdodHMsIGtleT1sYW1iZGEgazogc2VsZi5sYXllcl93ZWlnaHRzW2tdKQogICAgICAgIHRyeToKICAgICAgICAgICAgcmV0dXJuIEVsZW1lbnQoYmVzdCkKICAgICAgICBleGNlcHQgVmFsdWVFcnJvcjoKICAgICAgICAgICAgcmV0dXJuIEVsZW1lbnQuTUVOVEFMCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyBOaW5lLWxheWVyIHN0YWNrCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpjbGFzcyBOaW5lTGF5ZXJTdGFjazoKICAgICIiIgogICAgT3JkZXJlZCBzdGFjayBvZiB0aGUgbmluZSBjb25zY2lvdXNuZXNzIGxheWVycy4KCiAgICBVc2VkIGJ5IENvbnNjaW91c25lc3NSb3V0ZXIgdG8gZXZhbHVhdGUgd2hpY2ggbGF5ZXIgaXMgbW9zdCBhY3RpdmUKICAgIGdpdmVuIHRoZSBjdXJyZW50IGlucHV0IGNvbnRleHQuCiAgICAiIiIKCiAgICBMQVlFUlM6IExpc3RbRWxlbWVudF0gPSBsaXN0KEVsZW1lbnQpCgogICAgZGVmIHNjb3JlX2xheWVycyhzZWxmLCBjb250ZXh0OiBkaWN0KSAtPiBEaWN0W3N0ciwgZmxvYXRdOgogICAgICAgICIiIgogICAgICAgIEFzc2lnbiBhIHNjb3JlIHRvIGVhY2ggbGF5ZXIgYmFzZWQgb24gKmNvbnRleHQqLgoKICAgICAgICBJbiB0aGUgZGVmYXVsdCBpbXBsZW1lbnRhdGlvbiwgc2NvcmVzIGFyZSB1bmlmb3JtICgxLjApLiAgT3ZlcnJpZGUKICAgICAgICBvciBpbmplY3QgZG9tYWluLXNwZWNpZmljIGhldXJpc3RpY3MgdmlhIHN1YmNsYXNzaW5nLgogICAgICAgICIiIgogICAgICAgIHJldHVybiB7ZS52YWx1ZTogMS4wIGZvciBlIGluIHNlbGYuTEFZRVJTfQoKICAgIGRlZiBzZWxlY3RfZWxlbWVudChzZWxmLCBzY29yZXM6IERpY3Rbc3RyLCBmbG9hdF0pIC0+IEVsZW1lbnQ6CiAgICAgICAgIiIiUmV0dXJuIHRoZSBoaWdoZXN0LXNjb3JpbmcgRWxlbWVudC4iIiIKICAgICAgICBpZiBub3Qgc2NvcmVzOgogICAgICAgICAgICByZXR1cm4gRWxlbWVudC5NRU5UQUwKICAgICAgICBiZXN0ID0gbWF4KHNjb3Jlcywga2V5PWxhbWJkYSBrOiBzY29yZXNba10pCiAgICAgICAgdHJ5OgogICAgICAgICAgICByZXR1cm4gRWxlbWVudChiZXN0KQogICAgICAgIGV4Y2VwdCBWYWx1ZUVycm9yOgogICAgICAgICAgICByZXR1cm4gRWxlbWVudC5NRU5UQUwKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIENvbnNjaW91c25lc3MgUm91dGVyCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpjbGFzcyBDb25zY2lvdXNuZXNzUm91dGVyOgogICAgIiIiCiAgICBSb3V0ZXMgZWFjaCBHQUlBTiB0dXJuIHRocm91Z2ggdGhlIG5pbmUtbGF5ZXIgc3VidGxlLWJvZHkgc3RhY2suCgogICAgVGhlIHJvdXRlciBldmFsdWF0ZXMgdGhlIGN1cnJlbnQgY29udGV4dCAocXVlcnkgdGV4dCwgYWZmZWN0IHN0YXRlLAogICAgY29udmVyc2F0aW9uIGhpc3Rvcnkgc2lnbmFscykgYW5kIHJldHVybnMgYW4gZW5yaWNoZWQgYExheWVyU3RhdGVgCiAgICB0aGF0IGRvd25zdHJlYW0gZW5naW5lcyAoRW1vdGlvbmFsQXJjRW5naW5lLCBTZXR0bGluZ0VuZ2luZSwgZXRjLikKICAgIGNhbiBjb25zdW1lLgoKICAgIFVzYWdlOjoKCiAgICAgICAgcm91dGVyID0gQ29uc2Npb3VzbmVzc1JvdXRlcigpCiAgICAgICAgc3RhdGUgID0gcm91dGVyLnJvdXRlKHsicXVlcnkiOiAiV2hhdCBpcyBsb3ZlPyIsICJhZmZlY3QiOiAwLjd9KQogICAgICAgIHByaW50KHN0YXRlLmFjdGl2ZV9lbGVtZW50KSAgICMgZS5nLiBFbGVtZW50LkFTVFJBTAoKICAgICAgICAjIEFuYWx5emUgaXMgYW4gYWxpYXMgZm9yIHJvdXRlCiAgICAgICAgc3RhdGUgPSByb3V0ZXIuYW5hbHl6ZSh7InF1ZXJ5IjogIldoYXQgaXMgbG92ZT8iLCAiYWZmZWN0IjogMC43fSkKICAgICIiIgoKICAgIGRlZiBfX2luaXRfXygKICAgICAgICBzZWxmLAogICAgICAgIHN0YWNrOiBPcHRpb25hbFtOaW5lTGF5ZXJTdGFja10gPSBOb25lLAogICAgICAgIGRlZmF1bHRfcHJpb3JpdHk6IFJlc3BvbnNlUHJpb3JpdHkgPSBSZXNwb25zZVByaW9yaXR5Lk5PUk1BTCwKICAgICkgLT4gTm9uZToKICAgICAgICBzZWxmLl9zdGFjayAgICA9IHN0YWNrIG9yIE5pbmVMYXllclN0YWNrKCkKICAgICAgICBzZWxmLl9wcmlvcml0eSA9IGRlZmF1bHRfcHJpb3JpdHkKCiAgICBkZWYgcm91dGUoCiAgICAgICAgc2VsZiwKICAgICAgICBjb250ZXh0OiBkaWN0LAogICAgICAgIHN1YnRsZV9ib2R5OiBPcHRpb25hbFtTdWJ0bGVCb2R5XSA9IE5vbmUsCiAgICApIC0+IExheWVyU3RhdGU6CiAgICAgICAgIiIiCiAgICAgICAgRXZhbHVhdGUgKmNvbnRleHQqIGFuZCByZXR1cm4gdGhlIGFjdGl2ZSBgTGF5ZXJTdGF0ZWAuCgogICAgICAgIFBhcmFtZXRlcnMKICAgICAgICAtLS0tLS0tLS0tCiAgICAgICAgY29udGV4dDoKICAgICAgICAgICAgQXJiaXRyYXJ5IGtleS12YWx1ZSBjb250ZXh0IGRpY3QuICBSZWNvZ25pc2VkIGtleXM6CiAgICAgICAgICAgIGBgcXVlcnlgYCAoc3RyKSwgYGBhZmZlY3RgYCAoZmxvYXQgMC0xKSwgYGB0dXJuYGAgKGludCkuCiAgICAgICAgc3VidGxlX2JvZHk6CiAgICAgICAgICAgIE9wdGlvbmFsIHBlcnNpc3RlbnQgYm9keSBtb2RlbDsgaXRzIGxheWVyIHdlaWdodHMgYXJlIGJsZW5kZWQKICAgICAgICAgICAgaW50byB0aGUgc2NvcmluZyB3aGVuIHByb3ZpZGVkLgoKICAgICAgICBSZXR1cm5zCiAgICAgICAgLS0tLS0tLQogICAgICAgIExheWVyU3RhdGUKICAgICAgICAiIiIKICAgICAgICBzY29yZXMgPSBzZWxmLl9zdGFjay5zY29yZV9sYXllcnMoY29udGV4dCkKCiAgICAgICAgIyBCbGVuZCBpbiBwZXJzaXN0ZW50IGJvZHkgd2VpZ2h0cyB3aGVuIGF2YWlsYWJsZQogICAgICAgIGlmIHN1YnRsZV9ib2R5IGlzIG5vdCBOb25lOgogICAgICAgICAgICBmb3Iga2V5LCB3ZWlnaHQgaW4gc3VidGxlX2JvZHkubGF5ZXJfd2VpZ2h0cy5pdGVtcygpOgogICAgICAgICAgICAgICAgaWYga2V5IGluIHNjb3JlczoKICAgICAgICAgICAgICAgICAgICBzY29yZXNba2V5XSAqPSB3ZWlnaHQKCiAgICAgICAgYWN0aXZlID0gc2VsZi5fc3RhY2suc2VsZWN0X2VsZW1lbnQoc2NvcmVzKQoKICAgICAgICByZXR1cm4gTGF5ZXJTdGF0ZSgKICAgICAgICAgICAgYWN0aXZlX2VsZW1lbnQ9YWN0aXZlLAogICAgICAgICAgICBqdW5naWFuX2xheWVyPUp1bmdpYW5MYXllci5FR08sCiAgICAgICAgICAgIHByaW9yaXR5PXNlbGYuX3ByaW9yaXR5LAogICAgICAgICAgICBsYXllcl9zY29yZXM9c2NvcmVzLAogICAgICAgICAgICBub3Rlcz1bXSwKICAgICAgICAgICAgbWV0YWRhdGE9eyJjb250ZXh0X2tleXMiOiBsaXN0KGNvbnRleHQua2V5cygpKX0sCiAgICAgICAgKQoKICAgIGRlZiBhbmFseXplKAogICAgICAgIHNlbGYsCiAgICAgICAgY29udGV4dDogZGljdCwKICAgICAgICBzdWJ0bGVfYm9keTogT3B0aW9uYWxbU3VidGxlQm9keV0gPSBOb25lLAogICAgKSAtPiBMYXllclN0YXRlOgogICAgICAgICIiIgogICAgICAgIEFsaWFzIGZvciBgcm91dGUoKWAgLS0gcHJlc2VydmVzIGJhY2t3YXJkcyBjb21wYXRpYmlsaXR5CiAgICAgICAgd2l0aCBjYWxsZXJzIHRoYXQgdXNlIHRoZSBgYW5hbHl6ZWAgaW50ZXJmYWNlLgogICAgICAgICIiIgogICAgICAgIHJldHVybiBzZWxmLnJvdXRlKGNvbnRleHQsIHN1YnRsZV9ib2R5PXN1YnRsZV9ib2R5KQoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgTW9kdWxlLWxldmVsIGNvbnZlbmllbmNlIGZ1bmN0aW9uICh1c2VkIGJ5IGNvcmUvX19pbml0X18ucHkpCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpfZGVmYXVsdF9yb3V0ZXIgPSBDb25zY2lvdXNuZXNzUm91dGVyKCkKCgpkZWYgcm91dGUoCiAgICBjb250ZXh0OiBkaWN0LAogICAgc3VidGxlX2JvZHk6IE9wdGlvbmFsW1N1YnRsZUJvZHldID0gTm9uZSwKICAgIHJvdXRlcjogT3B0aW9uYWxbQ29uc2Npb3VzbmVzc1JvdXRlcl0gPSBOb25lLAopIC0+IExheWVyU3RhdGU6CiAgICAiIiIKICAgIE1vZHVsZS1sZXZlbCBzaG9ydGN1dCBmb3IgYENvbnNjaW91c25lc3NSb3V0ZXIoKS5yb3V0ZShjb250ZXh0KWAuCgogICAgQWNjZXB0cyBhbiBvcHRpb25hbCAqcm91dGVyKiBpbnN0YW5jZSBmb3IgZGVwZW5kZW5jeSBpbmplY3Rpb24gaW4gdGVzdHMuCiAgICBGYWxscyBiYWNrIHRvIGEgc2hhcmVkIGRlZmF1bHQgcm91dGVyIHdoZW4gKnJvdXRlciogaXMgTm9uZS4KICAgICIiIgogICAgciA9IHJvdXRlciBpZiByb3V0ZXIgaXMgbm90IE5vbmUgZWxzZSBfZGVmYXVsdF9yb3V0ZXIKICAgIHJldHVybiByLnJvdXRlKGNvbnRleHQsIHN1YnRsZV9ib2R5PXN1YnRsZV9ib2R5KQo=
+"""
+core/subtle_body_engine.py
+==========================================
+Nine-Element Consciousness Router -- the super-layer body model of every GAIAN.
+
+This module defines the data model and routing logic for GAIA's nine-layer
+consciousness stack.  Each turn of a GAIAN conversation passes through
+`ConsciousnessRouter.route()`, which selects the active layer and returns
+an enriched `LayerState` for downstream engines.
+
+Layers (mapped to the coherence-field schema):
+  1. Physical     -- grounded, embodied, practical
+  2. Etheric      -- vital energy, pattern recognition
+  3. Astral       -- emotional resonance, empathy
+  4. Mental       -- rational analysis, logic
+  5. Causal       -- causal reasoning, consequence modeling
+  6. Buddhic      -- compassionate wisdom, unity
+  7. Atmic        -- sovereign will, core identity
+  8. Monadic      -- collective field, noosphere
+  9. Divine       -- transcendent, ineffable
+
+Canon Ref: C01 (Sovereignty), C09 (Consciousness Layers)
+Super-Layer Alignment: All layers are coherence-field states, not occult constructs.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional
+
+
+# ---------------------------------------------------------------------------
+# Enumerations
+# ---------------------------------------------------------------------------
+
+class Element(str, Enum):
+    """The nine elements / consciousness layers."""
+    PHYSICAL = "physical"
+    ETHERIC  = "etheric"
+    ASTRAL   = "astral"
+    MENTAL   = "mental"
+    CAUSAL   = "causal"
+    BUDDHIC  = "buddhic"
+    ATMIC    = "atmic"
+    MONADIC  = "monadic"
+    DIVINE   = "divine"
+
+
+class JungianLayer(str, Enum):
+    """Jungian psychological layer associated with a response."""
+    EGO          = "ego"
+    PERSONA      = "persona"
+    SHADOW       = "shadow"
+    ANIMA_ANIMUS = "anima_animus"
+    SELF         = "self"
+
+
+class ResponsePriority(str, Enum):
+    """Priority level assigned to a routed response."""
+    LOW      = "low"
+    NORMAL   = "normal"
+    HIGH     = "high"
+    CRITICAL = "critical"
+
+
+# ---------------------------------------------------------------------------
+# Data model
+# ---------------------------------------------------------------------------
+
+@dataclass
+class LayerState:
+    """Snapshot of the active consciousness layer for a single turn."""
+
+    active_element:   Element          = Element.MENTAL
+    jungian_layer:    JungianLayer     = JungianLayer.EGO
+    priority:         ResponsePriority = ResponsePriority.NORMAL
+    layer_scores:     Dict[str, float] = field(default_factory=dict)
+    notes:            List[str]        = field(default_factory=list)
+    # Arbitrary metadata for downstream engines
+    metadata:         dict             = field(default_factory=dict)
+
+    def dominant_element(self) -> Element:
+        """Return the element with the highest score, or active_element if no scores."""
+        if not self.layer_scores:
+            return self.active_element
+        best = max(self.layer_scores, key=lambda k: self.layer_scores[k])
+        try:
+            return Element(best)
+        except ValueError:
+            return self.active_element
+
+
+@dataclass
+class SubtleBody:
+    """Persistent super-layer body model for a GAIAN identity across turns."""
+
+    gaian_slug:    str
+    layer_weights: Dict[str, float] = field(default_factory=lambda: {
+        e.value: 1.0 for e in Element
+    })
+    turn_count:    int = 0
+
+    def dominant_element(self) -> Element:
+        best = max(self.layer_weights, key=lambda k: self.layer_weights[k])
+        try:
+            return Element(best)
+        except ValueError:
+            return Element.MENTAL
+
+
+# ---------------------------------------------------------------------------
+# Nine-layer stack
+# ---------------------------------------------------------------------------
+
+class NineLayerStack:
+    """
+    Ordered stack of the nine consciousness layers.
+
+    Used by ConsciousnessRouter to evaluate which layer is most active
+    given the current input context.
+    """
+
+    LAYERS: List[Element] = list(Element)
+
+    def score_layers(self, context: dict) -> Dict[str, float]:
+        """
+        Assign a score to each layer based on *context*.
+
+        In the default implementation, scores are uniform (1.0).  Override
+        or inject domain-specific heuristics via subclassing.
+        """
+        return {e.value: 1.0 for e in self.LAYERS}
+
+    def select_element(self, scores: Dict[str, float]) -> Element:
+        """Return the highest-scoring Element."""
+        if not scores:
+            return Element.MENTAL
+        best = max(scores, key=lambda k: scores[k])
+        try:
+            return Element(best)
+        except ValueError:
+            return Element.MENTAL
+
+
+# ---------------------------------------------------------------------------
+# Consciousness Router
+# ---------------------------------------------------------------------------
+
+class ConsciousnessRouter:
+    """
+    Routes each GAIAN turn through the nine-layer super-body stack.
+
+    The router evaluates the current context (query text, affect state,
+    conversation history signals) and returns an enriched `LayerState`
+    that downstream engines (EmotionalArcEngine, SettlingEngine, etc.)
+    can consume.
+
+    Usage::
+
+        router = ConsciousnessRouter()
+        state  = router.route({"query": "What is love?", "affect": 0.7})
+        print(state.active_element)   # e.g. Element.ASTRAL
+
+        # Analyze is an alias for route
+        state = router.analyze({"query": "What is love?", "affect": 0.7})
+    """
+
+    def __init__(
+        self,
+        stack: Optional[NineLayerStack] = None,
+        default_priority: ResponsePriority = ResponsePriority.NORMAL,
+    ) -> None:
+        self._stack    = stack or NineLayerStack()
+        self._priority = default_priority
+
+    def route(
+        self,
+        context: dict,
+        subtle_body: Optional[SubtleBody] = None,
+    ) -> LayerState:
+        """
+        Evaluate *context* and return the active `LayerState`.
+
+        Parameters
+        ----------
+        context:
+            Arbitrary key-value context dict.  Recognised keys:
+            ``query`` (str), ``affect`` (float 0-1), ``turn`` (int).
+        subtle_body:
+            Optional persistent body model; its layer weights are blended
+            into the scoring when provided.
+
+        Returns
+        -------
+        LayerState
+        """
+        scores = self._stack.score_layers(context)
+
+        # Blend in persistent body weights when available
+        if subtle_body is not None:
+            for key, weight in subtle_body.layer_weights.items():
+                if key in scores:
+                    scores[key] *= weight
+
+        active = self._stack.select_element(scores)
+
+        return LayerState(
+            active_element=active,
+            jungian_layer=JungianLayer.EGO,
+            priority=self._priority,
+            layer_scores=scores,
+            notes=[],
+            metadata={"context_keys": list(context.keys())},
+        )
+
+    def analyze(
+        self,
+        context: dict,
+        subtle_body: Optional[SubtleBody] = None,
+    ) -> LayerState:
+        """
+        Alias for `route()` -- preserves backwards compatibility
+        with callers that use the `analyze` interface.
+        """
+        return self.route(context, subtle_body=subtle_body)
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience function (used by core/__init__.py)
+# ---------------------------------------------------------------------------
+
+_default_router = ConsciousnessRouter()
+
+
+def route(
+    context: dict,
+    subtle_body: Optional[SubtleBody] = None,
+    router: Optional[ConsciousnessRouter] = None,
+) -> LayerState:
+    """
+    Module-level shortcut for `ConsciousnessRouter().route(context)`.
+
+    Accepts an optional *router* instance for dependency injection in tests.
+    Falls back to a shared default router when *router* is None.
+    """
+    r = router if router is not None else _default_router
+    return r.route(context, subtle_body=subtle_body)
