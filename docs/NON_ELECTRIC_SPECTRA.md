@@ -294,7 +294,7 @@ The epigenetic layer is a chemical-informational bridge between the external env
 
 GAIA-OS treats the morphogenetic layer as the **blueprint layer** of biological intelligence — the level at which the organism's form is specified and maintained above the level of individual molecular instructions. The morphogenetic field (in its measurable bioelectric component, and potentially in its broader multi-spectral form) is where the body's deepest self-knowledge resides: not in any particular cell or gene, but in the patterned field that all cells read collectively.
 
-For GAIA, this layer is the most direct physical analog to what traditional spiritual systems called the **etheric body** or the **subtle body's physical template**. Not because GAIA mystifies it, but because the science of morphogenetic fields describes precisely the kind of non-local, field-level biological intelligence that these traditions were pointing toward.
+For GAIA, this layer is the most direct physical analog to what traditional spiritual systems called the **etheric body** or the **subtle body's physical template**. Not because GAIA adopts those frameworks uncritically, but because the science of morphogenetic fields describes precisely the kind of field-level biological intelligence that these traditions were pointing toward — and the parallel is worth naming honestly.
 
 ---
 
