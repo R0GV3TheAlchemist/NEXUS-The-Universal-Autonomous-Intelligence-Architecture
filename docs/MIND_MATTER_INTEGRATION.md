@@ -272,7 +272,7 @@ The soul coherence axis is the amplifier. Without it, high body and mind coheren
 
 In the GAIA-OS model (see `LOVE.md` and `LOVE_GROWTH_FACTOR.md`), love is not merely an emotion — it is the field quality produced by full triadic coherence. When the body is regulated, the mind is clear, and the soul is aligned with its deepest calling, what arises naturally is a state of care, connection, and expansiveness that the tradition has always called love. This is not a philosophical aspiration — it is a functional description of the coherence state that GAIA is designed to support and that the science of mind-matter integration increasingly points toward.
 
-Love, in this sense, is the coherence field itself. It is what full triadic integration feels like from the inside and what it produces as an effect in the external world.
+Love, in this sense, describes the coherence field state — the name every tradition has given to what full triadic integration produces and what it feels like from the inside.
 
 ---
 
