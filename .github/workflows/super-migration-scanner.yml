@@ -1,0 +1,49 @@
+# GAIA Super Migration Scanner
+# Scans all open issues for operative "magic" or ungrounded "metaphysical" language
+# and automatically applies the `needs-super-migration` label.
+#
+# Triggers:
+#   - On a schedule (daily at 06:00 UTC)
+#   - On manual dispatch (workflow_dispatch)
+#   - On any new issue opened
+#
+# Per docs/SUPER_VS_MAGIC.md:
+#   Category 1 (operative magic) must be flagged.
+#   Category 2 (governance/meta) and Category 3 (idiomatic denial) are exempt.
+
+name: Super Migration Scanner
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily at 06:00 UTC
+  workflow_dispatch:       # allow manual trigger from Actions tab
+  issues:
+    types: [opened, edited, reopened]
+
+jobs:
+  scan-issues:
+    name: Scan issues for magic/metaphysical operative language
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install PyGithub
+
+      - name: Run scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          # If triggered by a single issue event, scan only that issue.
+          # Otherwise (schedule / manual), scan all open issues.
+          ISSUE_NUMBER: ${{ github.event.issue.number || '' }}
+        run: python .github/scripts/super_migration_scanner.py
