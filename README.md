@@ -39,7 +39,7 @@ GAIA App is not a wrapper around another AI. It is a fully original intelligence
 GAIA-OS/
 ├── core/                        # Core intelligence engine (Python)
 │   ├── server.py                # FastAPI + SSE API — v2.0.0
-│   ├── inference_router.py      # GAIAInferenceRouter — single LLM routing layer (C44)
+│   ├── inference_router.py      # GAIAInferenceRouter — single LLM routing layer (C44, ADR-0011)
 │   ├── mother_thread.py         # MotherThread — collective heartbeat engine (C42, C43)
 │   ├── noosphere.py             # Noosphere collective field layer (C43)
 │   ├── canon_loader.py          # Loads and validates canon documents
@@ -59,7 +59,13 @@ GAIA-OS/
 │   │   ├── CANON_*.md           # Authoritative canon documents
 │   │   ├── *_SPEC.md            # Implementation specifications
 │   │   └── *_REPORT.md          # Research & background knowledge
-│   └── CANON_DEDUPLICATION_LOG.md  # Full history of canon deduplication
+│   ├── adr/                     # Architecture Decision Records
+│   │   ├── ADR-0009-langgraph-canonical-orchestrator.md
+│   │   ├── ADR-0010-mcp-canonical-tool-interface.md
+│   │   └── ADR-0011-cloud-as-optional-sovereignty.md
+│   ├── security/
+│   │   └── threat_model.md      # GAIA threat registry (THREAT-001 – THREAT-005)
+│   └── CANON_DEDUPLICATION_LOG.md
 ├── meta/                        # Manifest + schema (canon routing metadata)
 │   ├── CANON_MANIFEST.json      # Authoritative canon document index
 │   └── SCHEMA.md                # Manifest schema definition
@@ -136,8 +142,9 @@ Download the latest release from the [Releases page](https://github.com/R0GV3The
 
 ## Core Principles
 
-- **Human Sovereignty** — the human is always the ultimate authority over GAIA's actions and memory
-- **Action Gates** — risk-tiered veto system (Green / Yellow / Red) on all consequential actions
+- **Human Sovereignty** — the human is always the ultimate authority over GAIA’s actions and memory
+- **Cloud-as-Optional** — cloud LLM calls are optional augmentation; GAIA must remain fully functional on local models alone ([ADR-0011](./docs/adr/ADR-0011-cloud-as-optional-sovereignty.md))
+- **Action Gates** — risk-tiered veto system (Green / Amber / Red) on all consequential actions ([ADR-0010](./docs/adr/ADR-0010-mcp-canonical-tool-interface.md))
 - **Consent Lifecycle** — every consent is time-bound, cryptographically signed, and revocable
 - **Memory Governance** — all memory is inspectable, editable, and erasable by the user
 - **Epistemic Integrity** — every inference turn carries a declared epistemic label (C12, C21)
@@ -154,12 +161,19 @@ See [QUICKSTART-FREE.md](./QUICKSTART-FREE.md) for the fastest path to a running
 - Python 3.11+
 - [Rust](https://rustup.rs/) + [Tauri CLI](https://tauri.app/) (for desktop build)
 - [Node.js 20+](https://nodejs.org/) (for frontend tooling)
-- [Ollama](https://ollama.com/) (free local AI — recommended)
+- [Ollama](https://ollama.com/) (local AI — **required**; cloud providers are optional)
+
+### Recommended Local Models
+```bash
+ollama pull qwen3.5:27b      # primary (medium/high complexity)
+ollama pull gemma3:12b        # fallback (fast, low VRAM)
+```
 
 ### Development (API server)
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
+# Set OLLAMA_MODEL=qwen3.5:27b in .env
 bash start.sh
 # or directly:
 uvicorn core.server:app --reload --port 8008
@@ -175,6 +189,9 @@ npm run tauri dev
 ### Running Tests
 ```bash
 pytest tests/ -v
+
+# Sovereignty routing tests (ADR-0011 — run these before every PR)
+pytest tests/test_inference_router.py -v
 ```
 
 ---
@@ -194,6 +211,8 @@ All intelligence architecture is governed by the canon. The canon lives primaril
 
 - **[`canon/`](./canon/)** — Ratified canons C00, C100–C168+; the complete intelligence architecture
 - **[`docs/knowledge/`](./docs/knowledge/)** — Extended canon specs, implementation blueprints, and the 200+ research knowledge base
+- **[`docs/adr/`](./docs/adr/)** — Architecture Decision Records (ADR-0009 · ADR-0010 · ADR-0011)
+- **[`docs/security/threat_model.md`](./docs/security/threat_model.md)** — GAIA threat registry
 - **[`docs/CANON_DEDUPLICATION_LOG.md`](./docs/CANON_DEDUPLICATION_LOG.md)** — Full audit trail of all deduplication and renumbering decisions
 
 **Navigation:** Start at [`docs/knowledge/GAIA_CANON_INDEX.md`](./docs/knowledge/GAIA_CANON_INDEX.md) for the master index of all canon documents and what each one governs.
@@ -214,8 +233,8 @@ All intelligence architecture is governed by the canon. The canon lives primaril
 ### Key Canon Documents
 | Document | Canon ID | What It Governs |
 |---|---|---|
-| `CANON_AUTHORSHIP_REALITY_STANDARDS.md` | C-AS01 | What is canon, how it's written, what it means |
-| `PILLARS.md` | C-PIL01 | GAIA's five metaphysical + operational pillars |
+| `CANON_AUTHORSHIP_REALITY_STANDARDS.md` | C-AS01 | What is canon, how it’s written, what it means |
+| `PILLARS.md` | C-PIL01 | GAIA’s five metaphysical + operational pillars |
 | `SOUL_MIRROR_ENGINE_IMPLEMENTATION_SPEC.md` | C-SME01 | Soul Mirror data model, inference pipeline, UI |
 | `USER_ONBOARDING_ANY_USER_SPEC.md` | C-OB01 | Full onboarding flow for any user |
 | `RUNTIME_ARCHITECTURE_OVERVIEW.md` | C-RT01 | Tauri/Rust/Python/React runtime map |
@@ -224,7 +243,7 @@ All intelligence architecture is governed by the canon. The canon lives primaril
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) — covers architecture orientation, the three-tier doc system, local setup, the canon protocol, and code standards.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) — covers architecture orientation, the three-tier doc system, local setup, the canon protocol, sovereignty principle, and code standards.
 
 ---
 
