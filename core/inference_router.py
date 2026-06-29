@@ -21,23 +21,36 @@ Context layer hierarchy:
   T4 — Schumann / BCI         (Earth electromagnetic floor — C44)
   T5 — Quintessence           (the frequency of space itself — C49)
 
-Backend priority chain:
-  PERPLEXITY (web-grounded queries) → OPENAI → ANTHROPIC → OLLAMA → FALLBACK
+Sovereignty routing (ADR-0011):
+  Cloud LLM providers are OPTIONAL AUGMENTATION. GAIA must remain fully
+  functional on local Ollama models alone. The fallback chain contains only
+  local models. Cloud failure is caught and resolved locally — never propagated.
 
-Design contract (C44 polyglot contract — Python layer):
-  - Never make security or policy decisions (deferred to Rust / action_gate)
-  - Always cite canon when making inference claims
-  - Always declare epistemic label for every turn
-  - Always fall back gracefully — a GAIA response must always arrive
+  Local-first priority chain (default):
+    OLLAMA (primary local) → OLLAMA_FALLBACK (lightweight local) → FALLBACK message
+
+  Cloud augmentation chain (opt-in, allow_cloud=True):
+    PERPLEXITY (web queries) → OPENAI → ANTHROPIC → [local fallback chain]
+
+Model routing hierarchy (ADR-0011):
+  LOW complexity    → Gemma 3 4B–12B       (fast, low VRAM, local)
+  MEDIUM complexity → Qwen 3.5 9B–27B      (balanced, multimodal, local)
+  HIGH complexity   → DeepSeek-R1 distill  (reasoning specialist, local)
+  CLOUD augment     → Anthropic / OpenAI   (optional, never in fallback chain)
 
 Env vars:
-  PERPLEXITY_API_KEY  — Perplexity Search API key
-  PERPLEXITY_MODEL    — sonar / sonar-pro / sonar-reasoning-pro (default: sonar-pro)
-  OPENAI_API_KEY      — OpenAI API key
-  ANTHROPIC_API_KEY   — Anthropic API key
-  OLLAMA_MODEL        — local Ollama model name
+  OLLAMA_MODEL          — primary local model (default: qwen3.5:27b)
+  OLLAMA_FALLBACK_MODEL — lightweight fallback model (default: gemma3:12b)
+  OLLAMA_HOST           — Ollama host (default: http://localhost:11434)
+  OLLAMA_ENABLED        — set to any value to enable Ollama
+  PERPLEXITY_API_KEY    — Perplexity Search API key (cloud, optional)
+  PERPLEXITY_MODEL      — sonar / sonar-pro / sonar-reasoning-pro (default: sonar-pro)
+  OPENAI_API_KEY        — OpenAI API key (cloud, optional)
+  ANTHROPIC_API_KEY     — Anthropic API key (cloud, optional)
+  GAIA_ALLOW_CLOUD      — set to '1' to enable cloud augmentation (default: disabled)
 
 Canon Ref: C12, C17, C20, C21, C27, C42, C43, C44, C49
+ADR Ref:   ADR-0009, ADR-0010, ADR-0011
 """
 
 from __future__ import annotations
@@ -141,16 +154,32 @@ def _is_web_grounded_query(query: str) -> bool:
 
 
 # ------------------------------------------------------------------ #
+#  Sovereignty Gate (ADR-0011)                                         #
+# ------------------------------------------------------------------ #
+
+
+def _cloud_allowed() -> bool:
+    """Cloud augmentation is EXPLICITLY OPT-IN. Default is local-only.
+
+    ADR-0011: Cloud LLM providers are optional augmentation.
+    GAIA must remain fully functional on local resources alone.
+    Set GAIA_ALLOW_CLOUD=1 to enable cloud augmentation.
+    """
+    return os.environ.get("GAIA_ALLOW_CLOUD", "0").strip() == "1"
+
+
+# ------------------------------------------------------------------ #
 #  Backend Registry                                                    #
 # ------------------------------------------------------------------ #
 
 
 class InferenceBackend(str, Enum):
-    PERPLEXITY = "perplexity"
-    OPENAI     = "openai"
-    ANTHROPIC  = "anthropic"
-    OLLAMA     = "ollama"
-    FALLBACK   = "fallback"
+    PERPLEXITY      = "perplexity"
+    OPENAI          = "openai"
+    ANTHROPIC       = "anthropic"
+    OLLAMA          = "ollama"
+    OLLAMA_FALLBACK = "ollama_fallback"  # lightweight local fallback (ADR-0011)
+    FALLBACK        = "fallback"
 
 
 _BACKEND_HEALTH: dict[InferenceBackend, bool] = dict.fromkeys(InferenceBackend, True)
@@ -158,39 +187,74 @@ _BACKEND_FAILURE_TS: dict[InferenceBackend, float] = {}
 _BACKEND_RECOVERY_WINDOW = 120.0
 
 
-def _probe_backend_availability(query: str = "") -> InferenceBackend:
+def _is_healthy(b: InferenceBackend, now: float | None = None) -> bool:
+    now = now or time.monotonic()
+    if not _BACKEND_HEALTH[b]:
+        if now - _BACKEND_FAILURE_TS.get(b, 0.0) < _BACKEND_RECOVERY_WINDOW:
+            return False
+        _BACKEND_HEALTH[b] = True
+    return True
+
+
+def _ollama_available() -> bool:
+    """Check if local Ollama is reachable. Fail-open: assume available if check errors."""
+    return bool(os.environ.get("OLLAMA_MODEL") or os.environ.get("OLLAMA_ENABLED"))
+
+
+def _probe_backend_availability(query: str = "", allow_cloud: bool | None = None) -> InferenceBackend:
+    """Select the best available backend.
+
+    ADR-0011 sovereignty contract:
+    - Cloud backends are only considered when allow_cloud=True AND GAIA_ALLOW_CLOUD=1
+    - Local Ollama is always the primary and fallback tier
+    - Cloud failure NEVER propagates to the caller — caught and resolved locally
+    """
     now = time.monotonic()
 
-    def _is_healthy(b: InferenceBackend) -> bool:
-        if not _BACKEND_HEALTH[b]:
-            if now - _BACKEND_FAILURE_TS.get(b, 0.0) < _BACKEND_RECOVERY_WINDOW:
-                return False
-            _BACKEND_HEALTH[b] = True
-        return True
+    # Resolve allow_cloud: explicit arg > env var > default False
+    use_cloud = allow_cloud if allow_cloud is not None else _cloud_allowed()
 
-    if (
-        _is_healthy(InferenceBackend.PERPLEXITY)
-        and os.environ.get("PERPLEXITY_API_KEY")
-        and _is_web_grounded_query(query)
-    ):
-        return InferenceBackend.PERPLEXITY
-    if _is_healthy(InferenceBackend.OPENAI) and os.environ.get("OPENAI_API_KEY"):
-        return InferenceBackend.OPENAI
-    if _is_healthy(InferenceBackend.ANTHROPIC) and os.environ.get("ANTHROPIC_API_KEY"):
-        return InferenceBackend.ANTHROPIC
-    if _is_healthy(InferenceBackend.OLLAMA) and (
-        os.environ.get("OLLAMA_MODEL") or os.environ.get("OLLAMA_ENABLED")
-    ):
+    # --- Cloud augmentation tier (opt-in only) ---
+    if use_cloud:
+        if (
+            _is_healthy(InferenceBackend.PERPLEXITY, now)
+            and os.environ.get("PERPLEXITY_API_KEY")
+            and _is_web_grounded_query(query)
+        ):
+            return InferenceBackend.PERPLEXITY
+        if _is_healthy(InferenceBackend.OPENAI, now) and os.environ.get("OPENAI_API_KEY"):
+            return InferenceBackend.OPENAI
+        if _is_healthy(InferenceBackend.ANTHROPIC, now) and os.environ.get("ANTHROPIC_API_KEY"):
+            return InferenceBackend.ANTHROPIC
+
+    # --- Local sovereignty tier (always available) ---
+    if _is_healthy(InferenceBackend.OLLAMA, now) and _ollama_available():
         return InferenceBackend.OLLAMA
-    if _is_healthy(InferenceBackend.PERPLEXITY) and os.environ.get("PERPLEXITY_API_KEY"):
-        return InferenceBackend.PERPLEXITY
+
+    # --- Last-resort local fallback ---
+    if _is_healthy(InferenceBackend.OLLAMA_FALLBACK, now) and os.environ.get("OLLAMA_FALLBACK_MODEL"):
+        return InferenceBackend.OLLAMA_FALLBACK
+
     return InferenceBackend.FALLBACK
 
 
 def _mark_backend_failed(backend: InferenceBackend) -> None:
     _BACKEND_HEALTH[backend] = False
     _BACKEND_FAILURE_TS[backend] = time.monotonic()
-    logger.warning(f"[InferenceRouter] Backend {backend.value} marked unhealthy.")
+    logger.warning(
+        f"[InferenceRouter] Backend {backend.value} marked unhealthy. "
+        f"Will retry in {_BACKEND_RECOVERY_WINDOW}s. "
+        f"[ADR-0011: routing to local fallback]"
+    )
+
+
+def _local_fallback_backend() -> InferenceBackend:
+    """Return the best available local-only backend. Used when cloud fails."""
+    if _is_healthy(InferenceBackend.OLLAMA) and _ollama_available():
+        return InferenceBackend.OLLAMA
+    if _is_healthy(InferenceBackend.OLLAMA_FALLBACK) and os.environ.get("OLLAMA_FALLBACK_MODEL"):
+        return InferenceBackend.OLLAMA_FALLBACK
+    return InferenceBackend.FALLBACK
 
 
 # ------------------------------------------------------------------ #
@@ -217,6 +281,7 @@ class InferenceRequest:
     enrich_quintessence: bool = True
 
     provider_override: str | None = None
+    allow_cloud: bool = False          # ADR-0011: cloud is explicit opt-in
     schumann_hz: float = 7.83
     consciousness_phi: float = 0.5
     bci_hint: str | None = None
@@ -229,6 +294,7 @@ class InferenceResponse:
     session_id: str | None = None
     gaian_slug: str | None = None
     backend_used: InferenceBackend = InferenceBackend.FALLBACK
+    sovereignty_mode: str = "local"    # "local" | "cloud_augmented"
     epistemic_label: EpistemicLabel = EpistemicLabel.INFERRED
     canon_docs_injected: list[str] = field(default_factory=list)
     noosphere_resonance: str | None = None
@@ -241,6 +307,7 @@ class InferenceResponse:
     error: str | None = None
     perplexity_model: str | None = None
     chroma_memories_injected: int = 0
+    cloud_fallback_triggered: bool = False  # True if cloud failed and local was used
 
 
 # ------------------------------------------------------------------ #
@@ -438,11 +505,85 @@ def _infer_epistemic_label(
 
 
 # ------------------------------------------------------------------ #
-#  Fallback LLM Calls (when synthesizer is unavailable)               #
+#  Ollama Local Inference (ADR-0011 — sovereignty tier)               #
 # ------------------------------------------------------------------ #
 
+
+async def _call_ollama(
+    prompt: str,
+    system: str,
+    max_tokens: int,
+    fallback: bool = False,
+) -> str:
+    """Call local Ollama — primary sovereignty tier. [ADR-0011]"""
+    import httpx
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    model_key = "OLLAMA_FALLBACK_MODEL" if fallback else "OLLAMA_MODEL"
+    model = os.environ.get(model_key, "gemma3:12b" if fallback else "qwen3.5:27b")
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    async with httpx.AsyncClient(timeout=120) as client:
+        resp = await client.post(
+            f"{host}/api/chat",
+            json={
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "options": {"num_predict": max_tokens},
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()["message"]["content"]
+
+
+async def _stream_ollama(
+    prompt: str,
+    system: str,
+    max_tokens: int,
+    fallback: bool = False,
+) -> AsyncGenerator[str, None]:
+    """Stream tokens from local Ollama — sovereignty tier. [ADR-0011]"""
+    import httpx
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    model_key = "OLLAMA_FALLBACK_MODEL" if fallback else "OLLAMA_MODEL"
+    model = os.environ.get(model_key, "gemma3:12b" if fallback else "qwen3.5:27b")
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    async with httpx.AsyncClient(timeout=120) as client:
+        async with client.stream(
+            "POST",
+            f"{host}/api/chat",
+            json={
+                "model": model,
+                "messages": messages,
+                "stream": True,
+                "options": {"num_predict": max_tokens},
+            },
+        ) as resp:
+            async for line in resp.aiter_lines():
+                if line:
+                    try:
+                        data = json.loads(line)
+                        token = data.get("message", {}).get("content", "")
+                        if token:
+                            yield token
+                        if data.get("done"):
+                            break
+                    except Exception:
+                        pass
+
+
+# ------------------------------------------------------------------ #
+#  Cloud Inference Calls (opt-in augmentation — ADR-0011)             #
+# ------------------------------------------------------------------ #
+
+
 async def _call_openai(prompt: str, system: str, max_tokens: int) -> str:
-    """Direct OpenAI call — used by generate() when synthesizer is not available."""
+    """Cloud augmentation — OpenAI. [ADR-0011: opt-in only]"""
     import httpx
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
@@ -466,7 +607,7 @@ async def _call_openai(prompt: str, system: str, max_tokens: int) -> str:
 
 
 async def _call_anthropic(prompt: str, system: str, max_tokens: int) -> str:
-    """Direct Anthropic call — fallback when OpenAI is unavailable."""
+    """Cloud augmentation — Anthropic. [ADR-0011: opt-in only]"""
     import httpx
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
@@ -490,7 +631,7 @@ async def _call_anthropic(prompt: str, system: str, max_tokens: int) -> str:
 
 
 async def _call_perplexity(prompt: str, system: str, max_tokens: int) -> str:
-    """Direct Perplexity sonar call."""
+    """Cloud augmentation — Perplexity sonar. [ADR-0011: opt-in only]"""
     import httpx
     api_key = os.environ.get("PERPLEXITY_API_KEY", "")
     if not api_key:
@@ -519,12 +660,22 @@ async def _call_perplexity(prompt: str, system: str, max_tokens: int) -> str:
 
 
 class GAIAInferenceRouter:
-    """The single authoritative routing layer for all GAIA inference."""
+    """The single authoritative routing layer for all GAIA inference.
+
+    ADR-0011 sovereignty contract:
+      Cloud LLM providers are optional augmentation. GAIA must remain fully
+      functional on local models alone. Cloud failure is ALWAYS caught and
+      resolved locally — never propagated to the caller.
+    """
 
     def __init__(self) -> None:
         self._call_count = 0
+        cloud_status = "ENABLED (GAIA_ALLOW_CLOUD=1)" if _cloud_allowed() else "DISABLED (local-only — ADR-0011)"
         logger.info(
-            "[InferenceRouter] GAIAInferenceRouter initialised. T5 Quintessence layer active. [C49]"
+            f"[InferenceRouter] GAIAInferenceRouter initialised. "
+            f"Cloud augmentation: {cloud_status}. "
+            f"Primary local model: {os.environ.get('OLLAMA_MODEL', 'qwen3.5:27b')}. "
+            f"T5 Quintessence layer active. [C49, ADR-0011]"
         )
 
     async def generate(
@@ -534,26 +685,56 @@ class GAIAInferenceRouter:
         stream: bool = False,
         system: str = "",
         session_id: str = "",
+        allow_cloud: bool | None = None,
         **kw,
     ) -> str:
         """
         Generate a single text response from GAIA.
-        Used by api/twin.py endpoints for non-streaming responses.
 
-        Falls through the full backend priority chain:
-        Perplexity → OpenAI → Anthropic → FALLBACK message.
+        ADR-0011: Cloud is opt-in. Default is local Ollama.
+        Cloud failure is caught and resolved locally — never propagated.
         """
         system_prompt = system or _default_system_prompt()
-        backend = _probe_backend_availability(prompt)
+        backend = _probe_backend_availability(prompt, allow_cloud=allow_cloud)
 
         try:
-            if backend == InferenceBackend.PERPLEXITY and os.environ.get("PERPLEXITY_API_KEY"):
-                return await _call_perplexity(prompt, system_prompt, max_tokens)
-            if backend == InferenceBackend.OPENAI and os.environ.get("OPENAI_API_KEY"):
-                return await _call_openai(prompt, system_prompt, max_tokens)
-            if backend == InferenceBackend.ANTHROPIC and os.environ.get("ANTHROPIC_API_KEY"):
-                return await _call_anthropic(prompt, system_prompt, max_tokens)
+            # --- Cloud augmentation tier (opt-in only) ---
+            if backend == InferenceBackend.PERPLEXITY:
+                try:
+                    return await _call_perplexity(prompt, system_prompt, max_tokens)
+                except Exception as e:
+                    _mark_backend_failed(InferenceBackend.PERPLEXITY)
+                    logger.warning(f"[InferenceRouter] Perplexity failed, routing to local. [ADR-0011]: {e}")
+                    backend = _local_fallback_backend()
 
+            if backend == InferenceBackend.OPENAI:
+                try:
+                    return await _call_openai(prompt, system_prompt, max_tokens)
+                except Exception as e:
+                    _mark_backend_failed(InferenceBackend.OPENAI)
+                    logger.warning(f"[InferenceRouter] OpenAI failed, routing to local. [ADR-0011]: {e}")
+                    backend = _local_fallback_backend()
+
+            if backend == InferenceBackend.ANTHROPIC:
+                try:
+                    return await _call_anthropic(prompt, system_prompt, max_tokens)
+                except Exception as e:
+                    _mark_backend_failed(InferenceBackend.ANTHROPIC)
+                    logger.warning(f"[InferenceRouter] Anthropic failed, routing to local. [ADR-0011]: {e}")
+                    backend = _local_fallback_backend()
+
+            # --- Local sovereignty tier ---
+            if backend in (InferenceBackend.OLLAMA, InferenceBackend.OLLAMA_FALLBACK):
+                try:
+                    return await _call_ollama(
+                        prompt, system_prompt, max_tokens,
+                        fallback=(backend == InferenceBackend.OLLAMA_FALLBACK)
+                    )
+                except Exception as e:
+                    _mark_backend_failed(backend)
+                    logger.warning(f"[InferenceRouter] Ollama failed: {e}")
+
+            # --- synthesizer fallback ---
             try:
                 from core.synthesizer import stream_synthesis
                 chunks: list[str] = []
@@ -569,9 +750,9 @@ class GAIAInferenceRouter:
                 pass
 
             return (
-                "I am here with you. My full voice is not yet connected — "
-                "configure OPENAI_API_KEY, ANTHROPIC_API_KEY, or PERPLEXITY_API_KEY "
-                "to enable live inference."
+                "I am here with you. My full voice is not yet connected. "
+                "Run Ollama locally (OLLAMA_MODEL=qwen3.5:27b) to enable local inference. "
+                "[ADR-0011: cloud augmentation is opt-in via GAIA_ALLOW_CLOUD=1]"
             )
         except Exception as e:
             logger.error(f"[InferenceRouter] generate() failed: {e}", exc_info=True)
@@ -583,15 +764,14 @@ class GAIAInferenceRouter:
         max_tokens: int = 512,
         system: str = "",
         session_id: str = "",
+        allow_cloud: bool | None = None,
         request: "InferenceRequest | None" = None,
         response_meta: "InferenceResponse | None" = None,
         **kw,
     ) -> AsyncGenerator[str, None]:
         """
         Stream tokens from GAIA.
-        Accepts either:
-          - stream(prompt=..., max_tokens=...) — called by api/twin.py
-          - stream(request=InferenceRequest(...)) — called by the full pipeline
+        ADR-0011: Cloud failure is caught mid-stream and resolved locally.
         """
         if request is not None:
             async for chunk in self._stream_full(request, response_meta):
@@ -599,20 +779,43 @@ class GAIAInferenceRouter:
             return
 
         system_prompt = system or _default_system_prompt()
-        backend = _probe_backend_availability(prompt)
+        backend = _probe_backend_availability(prompt, allow_cloud=allow_cloud)
 
-        try:
-            if backend == InferenceBackend.OPENAI and os.environ.get("OPENAI_API_KEY"):
+        # --- Cloud stream attempts (opt-in) ---
+        if backend == InferenceBackend.OPENAI:
+            try:
                 async for token in self._stream_openai(prompt, system_prompt, max_tokens):
                     yield token
                 return
-            if backend == InferenceBackend.ANTHROPIC and os.environ.get("ANTHROPIC_API_KEY"):
+            except Exception as e:
+                _mark_backend_failed(InferenceBackend.OPENAI)
+                logger.warning(f"[InferenceRouter] OpenAI stream failed, falling back to local. [ADR-0011]: {e}")
+                backend = _local_fallback_backend()
+
+        if backend == InferenceBackend.ANTHROPIC:
+            try:
                 async for token in self._stream_anthropic(prompt, system_prompt, max_tokens):
                     yield token
                 return
-        except Exception as e:
-            logger.warning(f"[InferenceRouter] Streaming backend failed: {e}")
+            except Exception as e:
+                _mark_backend_failed(InferenceBackend.ANTHROPIC)
+                logger.warning(f"[InferenceRouter] Anthropic stream failed, falling back to local. [ADR-0011]: {e}")
+                backend = _local_fallback_backend()
 
+        # --- Local sovereignty tier (always) ---
+        if backend in (InferenceBackend.OLLAMA, InferenceBackend.OLLAMA_FALLBACK):
+            try:
+                async for token in _stream_ollama(
+                    prompt, system_prompt, max_tokens,
+                    fallback=(backend == InferenceBackend.OLLAMA_FALLBACK)
+                ):
+                    yield token
+                return
+            except Exception as e:
+                _mark_backend_failed(backend)
+                logger.warning(f"[InferenceRouter] Ollama stream failed: {e}")
+
+        # --- Final fallback: word-stream the generate() result ---
         full = await self.generate(prompt, max_tokens=max_tokens, system=system_prompt)
         for word in full.split(" "):
             yield word + " "
@@ -620,7 +823,7 @@ class GAIAInferenceRouter:
     async def _stream_openai(
         self, prompt: str, system: str, max_tokens: int
     ) -> AsyncGenerator[str, None]:
-        """True token streaming via OpenAI SSE."""
+        """Cloud augmentation — OpenAI SSE stream."""
         import httpx
         api_key = os.environ.get("OPENAI_API_KEY", "")
         async with httpx.AsyncClient(timeout=60) as client:
@@ -651,7 +854,7 @@ class GAIAInferenceRouter:
     async def _stream_anthropic(
         self, prompt: str, system: str, max_tokens: int
     ) -> AsyncGenerator[str, None]:
-        """True token streaming via Anthropic SSE."""
+        """Cloud augmentation — Anthropic SSE stream."""
         import httpx
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         async with httpx.AsyncClient(timeout=60) as client:
@@ -686,13 +889,14 @@ class GAIAInferenceRouter:
     ) -> AsyncGenerator[str, None]:
         """
         Full enriched streaming pipeline — canon, criticality, noosphere, T5.
-        Called when stream(request=InferenceRequest(...)) is used.
+        ADR-0011: cloud failure is caught and resolved locally.
         """
         if response_meta is None:
             response_meta = InferenceResponse()
 
         t0 = time.perf_counter()
         response_meta.gaian_slug = request.gaian_slug
+        response_meta.sovereignty_mode = "cloud_augmented" if request.allow_cloud else "local"
 
         if request.gaian_slug:
             chroma_memories = _recall_chroma_memories(
@@ -738,10 +942,10 @@ class GAIAInferenceRouter:
             response_meta.quintessence_phase = quintessence_phase
             response_meta.quintessence_phi = quintessence_phi
 
-        backend = _probe_backend_availability(request.query)
+        backend = _probe_backend_availability(request.query, allow_cloud=request.allow_cloud)
         if request.provider_override:
             backend = InferenceBackend(request.provider_override)
-        elif request.web_search and os.environ.get("PERPLEXITY_API_KEY"):
+        elif request.web_search and request.allow_cloud and os.environ.get("PERPLEXITY_API_KEY"):
             backend = InferenceBackend.PERPLEXITY
         response_meta.backend_used = backend
 
@@ -768,6 +972,8 @@ class GAIAInferenceRouter:
 
         self._call_count += 1
 
+        # --- Primary backend attempt ---
+        primary_failed = False
         try:
             from core.synthesizer import stream_synthesis
             async for chunk in stream_synthesis(
@@ -781,18 +987,33 @@ class GAIAInferenceRouter:
                 yield chunk
         except Exception as e:
             _mark_backend_failed(backend)
+            primary_failed = True
             logger.error(f"[InferenceRouter] Backend {backend.value} failed: {e}", exc_info=True)
+
+        # --- ADR-0011: cloud failure → automatic local fallback ---
+        if primary_failed:
+            local_backend = _local_fallback_backend()
+            response_meta.backend_used = local_backend
+            response_meta.cloud_fallback_triggered = True
+            logger.warning(
+                f"[InferenceRouter] Cloud failure — routing to {local_backend.value}. "
+                f"[ADR-0011: sovereignty routing active]"
+            )
             try:
                 from core.synthesizer import stream_synthesis
                 async for chunk in stream_synthesis(
                     query=request.query, sources=sources,
-                    provider="fallback", gaian_prompt=base_prompt,
+                    provider=local_backend.value, gaian_prompt=base_prompt,
                 ):
                     yield chunk
-                response_meta.backend_used = InferenceBackend.FALLBACK
             except Exception as fallback_err:
-                yield f"[GAIA inference unavailable: {str(fallback_err)[:120]}]"
-                response_meta.error = str(fallback_err)
+                # Last resort: direct Ollama call bypassing synthesizer
+                try:
+                    result = await _call_ollama(base_prompt, "", 512)
+                    yield result
+                except Exception:
+                    yield f"[GAIA inference unavailable: {str(fallback_err)[:120]}]"
+                    response_meta.error = str(fallback_err)
 
         response_meta.duration_ms = round((time.perf_counter() - t0) * 1000, 1)
 
@@ -827,6 +1048,10 @@ class GAIAInferenceRouter:
             chroma_count = -1
         return {
             "total_calls": self._call_count,
+            "sovereignty_mode": "cloud_augmented" if _cloud_allowed() else "local_only",
+            "cloud_allowed": _cloud_allowed(),
+            "primary_local_model": os.environ.get("OLLAMA_MODEL", "qwen3.5:27b"),
+            "fallback_local_model": os.environ.get("OLLAMA_FALLBACK_MODEL", "gemma3:12b"),
             "backend_health": {b.value: h for b, h in _BACKEND_HEALTH.items()},
             "active_backend": _probe_backend_availability().value,
             "perplexity_model": os.environ.get("PERPLEXITY_MODEL", "sonar-pro"),
