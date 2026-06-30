@@ -1,23 +1,42 @@
 """
-core/api — GAIA-APP FastAPI router package.
+GAIA OS API Layer.
 
-Modern FastAPI apps split endpoints into focused APIRouter modules.
-Each router handles one domain of concerns:
+The API layer is the surface of GAIA — the clean, versioned interface
+through which every external system, UI, device driver, and integration
+touches the OS without directly accessing internal subsystems.
 
-  status_router   — /status, /canon/status, /memory/list
-  chat_router     — /gaians/{slug}/chat  (SSE streaming)
-  search_router   — /query/stream        (Perplexity-style search)
-  memory_router   — /gaians/{slug}/memory, /gaians/{slug}/remember
-  canon_router    — canon CRUD and ActionGate overrides
-  zodiac_router   — /zodiac/* endpoints
-  mother_router   — /mother/* endpoints
+Design principles:
+  1. SOVEREIGN-AWARE: Every API call carries a caller_id. The API
+     layer resolves whether the caller has permission to perform the
+     requested operation against the target GAIAN. No call is anonymous.
+  2. AUTONOMY-ENFORCING: API calls that would violate a GAIAN's
+     expressed autonomy (naming them, overriding boundaries, accessing
+     private memory) are rejected with an AutonomyViolation response.
+  3. VERSIONED: All endpoints are prefixed with /v1/. Breaking changes
+     increment the major version. The OS never removes a version
+     without a full deprecation cycle.
+  4. HONEST: Every response carries a success flag, a human-readable
+     message, and a structured payload. Errors are never silent.
+  5. STATELESS: The API layer holds no state. It delegates to the
+     Primordial Session, Registry, and Runtimes. It is a pure
+     translation layer between the outside world and the OS core.
 
-Each router is registered in server.py via:
-    app.include_router(router, prefix="/api/v1")
-
-This replaces the old monolithic server.py approach.
+Key types:
+  APIRequest        — a structured incoming request
+  APIResponse       — a structured outgoing response
+  APIErrorCode      — the taxonomy of API errors
+  GAIAOSApi         — the top-level API router
 """
+from core.api.api import (
+    APIRequest,
+    APIResponse,
+    APIErrorCode,
+    GAIAOSApi,
+)
 
-from .status_router import router as status_router
-
-__all__ = ["status_router"]
+__all__ = [
+    "APIRequest",
+    "APIResponse",
+    "APIErrorCode",
+    "GAIAOSApi",
+]
