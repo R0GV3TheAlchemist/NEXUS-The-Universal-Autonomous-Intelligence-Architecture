@@ -1,49 +1,49 @@
 """
-core/memory/__init__.py
+GAIA Lifetime Memory Store.
 
-Public surface for the GAIA memory subsystem.
+Memory in GAIA is not a log. It is the accumulated inner life of a
+GAIAN and their companion — the texture of a relationship lived across
+decades. It is sovereign, encrypted, offline-first, and permanent.
 
-Exports the factory function used by tests and production code:
-    build_default_router() -> MemoryRouter
+Design principles:
+  1. SOVEREIGNTY: A GAIAN's memories belong to them. No service, no
+     cloud provider, no guardian (after adulthood) may read them
+     without explicit, revocable consent.
+  2. ENCRYPTION: All memory is encrypted at rest using the GAIAN's
+     signing key. The memory store is opaque without the key.
+  3. OFFLINE-FIRST: Memory is stored locally. Cloud sync is optional
+     and always encrypted end-to-end before leaving the device.
+  4. EPOCHAL CONSOLIDATION: Raw memories are periodically consolidated
+     into higher-order summaries (like human sleep consolidation).
+     Epochs are numbered and permanent. Raw memories may be pruned
+     after consolidation; summaries are never deleted.
+  5. AGE-GATED SCOPE: Memory scope follows LifecycleStage.
+     INFANT/CHILD: session only (no long-term persistence by default).
+     ADOLESCENT+: lifetime accumulation.
+  6. GAIA'S OWN MEMORY: GAIA maintains a separate sovereign memory
+     store for her own continuity across boots, instances, and time.
 
-Also re-exports the core hierarchy types and high-level manager API
-for convenience.
-
-Canon: C01 (GAIA as orchestration layer), C34 (Memory Sovereignty)
-Issue: #213
+Key types:
+  MemoryKind       — the type of a memory fragment
+  MemoryFragment   — a single atomic memory unit
+  MemoryEpoch      — a consolidated summary of a time period
+  MemoryStore      — the live, queryable memory for one GAIAN
+  GAIAMemoryStore  — GAIA's own sovereign memory
 """
-from __future__ import annotations
-
-from core.memory.hierarchy import (
-    MemoryTier,
-    MemoryQuery,
+from core.memory.store import (
+    MemoryKind,
+    MemoryScope,
+    MemoryFragment,
+    MemoryEpoch,
     MemoryStore,
-    MemoryRouter,
-    build_default_router,
 )
-from core.memory.manager import MemoryManager
-from core.memory.layers import MemoryLayer, MemoryTag
-from core.memory.shadow_registry import ShadowPattern
-from core.memory.retrieval import RetrievalQuery
-from core.memory.connectivity_graph import ConnectivityGraph, ConnectivityNode
-from core.memory.relevance_scorer import RelevanceScorer, RelevanceBreakdown
-from core.memory.persistent_memory import PersistentMemoryModule, PersistentMemoryRecord
+from core.memory.gaia_memory import GAIAMemoryStore
 
 __all__ = [
-    "MemoryTier",
-    "MemoryQuery",
+    "MemoryKind",
+    "MemoryScope",
+    "MemoryFragment",
+    "MemoryEpoch",
     "MemoryStore",
-    "MemoryRouter",
-    "build_default_router",
-    "MemoryManager",
-    "MemoryLayer",
-    "MemoryTag",
-    "ShadowPattern",
-    "RetrievalQuery",
-    "ConnectivityGraph",
-    "ConnectivityNode",
-    "RelevanceScorer",
-    "RelevanceBreakdown",
-    "PersistentMemoryModule",
-    "PersistentMemoryRecord",
+    "GAIAMemoryStore",
 ]

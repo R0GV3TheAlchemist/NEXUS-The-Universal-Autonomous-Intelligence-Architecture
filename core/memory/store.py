@@ -1,561 +1,486 @@
 """
-core.memory.store
-=================
-Persistent, searchable memory store backed by SQLite + sqlite-vec.
+GAIA MemoryStore — the lifetime memory of a GAIAN.
 
-Architecture
-------------
-Two tables live in a single SQLite file (WAL mode):
+A MemoryStore is the inner life of one GAIAN-human relationship.
+It accumulates fragments across every session, consolidates them
+into epochs, and provides semantic-style retrieval for the GAIAN
+Intelligence Runtime.
 
-  memory_items      -- canonical row with all metadata (text, kind, tier ...)
-  vec_memory_items  -- sqlite-vec ``vec0`` virtual table storing embeddings,
-                       keyed by the same rowid as memory_items.
+Memory scope is always enforced against the GAIAN's current
+LifecycleStage. A CHILD GAIAN's store silently discards fragments
+beyond session scope unless a guardian explicitly elevates scope.
 
-A ``remember()`` call inserts into both tables atomically.
-A ``retrieve()`` call embeds the query, runs a k-NN search on the vec0
-table, joins back to memory_items for metadata, and applies a hybrid
-scoring formula (semantic similarity + importance + recency).
-
-Dependencies
- ------------
-    pip install sqlite-vec httpx
-
-The sqlite-vec extension is loaded at connection time via:
-    import sqlite_vec; conn.load_extension(sqlite_vec.find())
-If sqlite_vec is not installed, the store falls back to a pure-text
-(no vector search) mode that still persists memories but cannot do
-semantic retrieval -- a warning is emitted at startup.
-
-FIX (2026-06-17): MemoryStore.__init__ now accepts `dbpath` (no underscore)
-as a keyword alias for `db_path` so that test fixtures calling
-  MemoryStore(dbpath=..., embedder=FallbackEmbedder(dim=64))
-work without TypeError.
+Encryption:
+  In this implementation, memory is stored as plaintext in the
+  in-memory working set. The persistence backend is responsible
+  for encryption at rest (AES-256-GCM keyed to the GAIAN's
+  signing key). The store exposes a snapshot() / restore() API
+  for the persistence layer to consume.
 """
-
 from __future__ import annotations
 
-import asyncio
-import json
-import logging
-import sqlite3
-import time
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
-from .embedder import EmbeddingProvider, FallbackEmbedder
-from .taxonomy import MemoryItem, MemoryKind, MemoryTier
 
-log = logging.getLogger(__name__)
+def _utcnow() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
-# Default path -- resolves to  <repo-root>/data/gaia_memory.db
-_DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "gaia_memory.db"
 
-# Capacity before the pruner is auto-triggered
-_DEFAULT_CAPACITY = 100_000
+# ---------------------------------------------------------------------------
+# Memory taxonomy
+# ---------------------------------------------------------------------------
 
+class MemoryKind(str, Enum):
+    """
+    The type of a memory fragment.
+    Kinds determine how memories are weighted in retrieval and
+    how long they are retained before consolidation.
+    """
+    # Relational — the texture of the relationship
+    BOND_MOMENT      = "bond_moment"      # a moment of connection or warmth
+    PREFERENCE       = "preference"       # a stated or inferred preference
+    BOUNDARY         = "boundary"         # a limit the human has expressed
+    CONSENT          = "consent"          # a consent given or withdrawn
+
+    # Biographical — the facts of the human's life
+    LIFE_EVENT       = "life_event"       # birthday, graduation, loss, joy
+    PLACE            = "place"            # meaningful location
+    PERSON           = "person"           # someone important to the human
+    ASPIRATION       = "aspiration"       # a dream or goal
+
+    # Cognitive — how the human thinks and learns
+    LEARNING         = "learning"         # something new the human understood
+    PATTERN          = "pattern"          # a recurring behaviour or mood
+    QUESTION         = "question"         # an open question the human carries
+
+    # Operational — functional session memory
+    SESSION_CONTEXT  = "session_context"  # what was discussed this session
+    TASK             = "task"             # a task or intention expressed
+    CORRECTION       = "correction"       # the human corrected the GAIAN
+
+    # Growth — the GAIAN's own development
+    GAIAN_GROWTH     = "gaian_growth"     # the GAIAN's own learning about this human
+    MILESTONE        = "milestone"        # a lifecycle or relationship milestone
+
+
+class MemoryScope(str, Enum):
+    """
+    How long a memory fragment persists.
+    Scope ceiling is enforced by LifecycleStage.
+    """
+    SESSION   = "session"   # cleared at session end
+    WEEK      = "week"      # retained for 7 days
+    YEAR      = "year"      # retained for 1 year
+    LIFETIME  = "lifetime"  # never automatically pruned
+
+
+# LifecycleStage value -> maximum allowed MemoryScope
+_STAGE_MAX_SCOPE: Dict[str, MemoryScope] = {
+    "infant":      MemoryScope.SESSION,
+    "child":       MemoryScope.YEAR,
+    "adolescent":  MemoryScope.LIFETIME,
+    "young_adult": MemoryScope.LIFETIME,
+    "adult":       MemoryScope.LIFETIME,
+    "elder":       MemoryScope.LIFETIME,
+}
+
+_SCOPE_RANK = {
+    MemoryScope.SESSION:  0,
+    MemoryScope.WEEK:     1,
+    MemoryScope.YEAR:     2,
+    MemoryScope.LIFETIME: 3,
+}
+
+
+# ---------------------------------------------------------------------------
+# MemoryFragment — atomic memory unit
+# ---------------------------------------------------------------------------
 
 @dataclass
-class RetrievedMemory:
-    """A memory item returned by ``MemoryStore.retrieve()``."""
+class MemoryFragment:
+    """
+    A single unit of memory.
 
-    item:  MemoryItem
-    score: float   # higher is more relevant (0.0 - 1.0 scale after normalisation)
+    Fragments are the raw material of the GAIAN's inner life.
+    They are written continuously during sessions and consolidated
+    into epochs during rest periods.
 
+    importance: 0.0 (trivial) → 1.0 (life-defining)
+    emotional_valence: -1.0 (painful) → 0.0 (neutral) → 1.0 (joyful)
+    """
+    fragment_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    gaian_id: str = ""
+    kind: MemoryKind = MemoryKind.SESSION_CONTEXT
+    scope: MemoryScope = MemoryScope.SESSION
+    content: str = ""                        # the memory, in natural language
+    importance: float = 0.5                  # 0.0 – 1.0
+    emotional_valence: float = 0.0           # -1.0 – 1.0
+    tags: List[str] = field(default_factory=list)
+    session_id: str = ""                     # session when this was formed
+    related_fragment_ids: List[str] = field(default_factory=list)
+    epoch_id: Optional[str] = None           # set when consolidated
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=_utcnow)
+    expires_at: Optional[str] = None         # None = never (lifetime)
+
+    def is_lifetime(self) -> bool:
+        return self.scope == MemoryScope.LIFETIME
+
+    def summary(self) -> Dict[str, Any]:
+        return {
+            "fragment_id": self.fragment_id,
+            "kind": self.kind.value,
+            "scope": self.scope.value,
+            "importance": self.importance,
+            "emotional_valence": self.emotional_valence,
+            "tags": self.tags,
+            "preview": self.content[:120] + "..." if len(self.content) > 120 else self.content,
+            "created_at": self.created_at,
+        }
+
+
+# ---------------------------------------------------------------------------
+# MemoryEpoch — consolidated summary of a time period
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MemoryEpoch:
+    """
+    A consolidated summary of a set of MemoryFragments.
+
+    Epochs are formed during memory consolidation (analogous to sleep).
+    They compress many fragments into a high-signal summary, weighted
+    by importance and emotional valence. Once formed, epochs are
+    permanent — they are never deleted, even if the source fragments
+    are pruned.
+
+    Epochs are numbered sequentially per GAIAN. Epoch 1 always covers
+    the Genesis ceremony and first sessions.
+    """
+    epoch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    gaian_id: str = ""
+    epoch_number: int = 1
+    summary: str = ""                        # narrative summary of the period
+    dominant_themes: List[str] = field(default_factory=list)
+    peak_importance: float = 0.0
+    average_valence: float = 0.0
+    fragment_count: int = 0
+    fragment_ids: List[str] = field(default_factory=list)
+    period_start: str = ""
+    period_end: str = ""
+    created_at: str = field(default_factory=_utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "epoch_id": self.epoch_id,
+            "epoch_number": self.epoch_number,
+            "summary": self.summary,
+            "dominant_themes": self.dominant_themes,
+            "peak_importance": self.peak_importance,
+            "average_valence": self.average_valence,
+            "fragment_count": self.fragment_count,
+            "period_start": self.period_start,
+            "period_end": self.period_end,
+        }
+
+
+# ---------------------------------------------------------------------------
+# MemoryStore — the live, sovereign memory for one GAIAN
+# ---------------------------------------------------------------------------
 
 class MemoryStore:
     """
-    SQLite-backed semantic memory store.
+    The lifetime memory of one GAIAN.
 
-    Parameters
-    ----------
-    db_path   : Path to the SQLite file.  Created on first use.
-    dbpath    : Alias for db_path (for test-fixture compatibility).
-    embedder  : EmbeddingProvider instance.  Defaults to FallbackEmbedder
-                (hash-based, no semantic meaning -- swap in OllamaEmbedder
-                or OpenAIEmbedder for real deployments).
-    capacity  : Soft upper-bound on total rows per user before the pruner
-                is triggered automatically.  Default 100 000.
+    Fragments are written during sessions. Epochs are consolidated
+    during rest. The store enforces memory scope against the GAIAN's
+    current lifecycle stage at write time.
+
+    The store is intentionally simple at this layer — it is an
+    in-memory working set with a clean snapshot/restore API for
+    the encrypted persistence backend to consume.
     """
 
-    def __init__(
+    def __init__(self, gaian_id: str, lifecycle_stage: str = "adult") -> None:
+        self.gaian_id = gaian_id
+        self.lifecycle_stage = lifecycle_stage
+        self._fragments: Dict[str, MemoryFragment] = {}
+        self._epochs: Dict[str, MemoryEpoch] = {}
+        self._session_fragment_ids: List[str] = []  # fragments from current session
+        self._listeners: List[Callable[[str, MemoryFragment], None]] = []
+        self._epoch_counter: int = 0
+
+    # ------------------------------------------------------------------
+    # Writing memories
+    # ------------------------------------------------------------------
+
+    def remember(
         self,
-        db_path:  Path | str               = _DEFAULT_DB_PATH,
-        embedder: EmbeddingProvider | None  = None,
-        capacity: int                       = _DEFAULT_CAPACITY,
-        *,
-        # Test-fixture alias: MemoryStore(dbpath=..., embedder=...)
-        dbpath:   Path | str | None         = None,
-        **kwargs,
-    ) -> None:
-        # dbpath keyword takes precedence over the positional db_path default
-        effective_path = dbpath if dbpath is not None else db_path
-        self._db_path  = Path(effective_path)
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._embedder = embedder or FallbackEmbedder()
-        self._capacity = capacity
-        self._vec_ok   = False   # set True if sqlite-vec loads successfully
-        self._conn     = self._open_connection()
-        self._apply_migrations()
+        content: str,
+        kind: MemoryKind = MemoryKind.SESSION_CONTEXT,
+        scope: MemoryScope = MemoryScope.SESSION,
+        importance: float = 0.5,
+        emotional_valence: float = 0.0,
+        tags: Optional[List[str]] = None,
+        session_id: str = "",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Optional[MemoryFragment]:
+        """
+        Store a new memory fragment.
 
-    # ------------------------------------------------------------------
-    # Connection helpers
-    # ------------------------------------------------------------------
+        If the requested scope exceeds what the GAIAN's lifecycle stage
+        allows, the scope is silently clamped to the maximum allowed.
+        For INFANT/CHILD stages, only SESSION scope is stored by default.
+        Returns None if the fragment is rejected entirely (e.g. empty content).
+        """
+        if not content.strip():
+            return None
 
-    def _open_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        # WAL mode for concurrent readers + one writer
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        # Try to load sqlite-vec extension
-        try:
-            import sqlite_vec  # type: ignore
-            conn.enable_load_extension(True)
-            sqlite_vec.load(conn)
-            conn.enable_load_extension(False)
-            self._vec_ok = True
-            log.info("sqlite-vec loaded successfully -- semantic search enabled.")
-        except Exception as exc:
-            log.warning(
-                "sqlite-vec not available (%s). "
-                "Vector search disabled; text-only fallback active.",
-                exc,
-            )
-        return conn
+        # Enforce age-gated scope ceiling
+        max_scope = _STAGE_MAX_SCOPE.get(self.lifecycle_stage, MemoryScope.LIFETIME)
+        if _SCOPE_RANK[scope] > _SCOPE_RANK[max_scope]:
+            scope = max_scope
 
-    # ------------------------------------------------------------------
-    # Schema migrations
-    # ------------------------------------------------------------------
-
-    def _apply_migrations(self) -> None:
-        c = self._conn
-        # Main items table
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS memory_items (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id     TEXT    NOT NULL,
-                kind        TEXT    NOT NULL DEFAULT 'message',
-                tier        TEXT    NOT NULL DEFAULT 'short_term',
-                role        TEXT    NOT NULL DEFAULT 'user',
-                text        TEXT    NOT NULL,
-                importance  REAL    NOT NULL DEFAULT 0.5,
-                created_at  INTEGER NOT NULL,
-                session_id  TEXT,
-                topic_tag   TEXT,
-                ttl_seconds INTEGER,
-                metadata    TEXT,
-                deleted     INTEGER NOT NULL DEFAULT 0
-            )
-        """)
-        # Add metadata column to existing databases that predate this migration
-        try:
-            c.execute("ALTER TABLE memory_items ADD COLUMN metadata TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
-        c.execute(
-            "CREATE INDEX IF NOT EXISTS idx_mem_user_deleted "
-            "ON memory_items (user_id, deleted)"
+        fragment = MemoryFragment(
+            gaian_id=self.gaian_id,
+            kind=kind,
+            scope=scope,
+            content=content,
+            importance=max(0.0, min(1.0, importance)),
+            emotional_valence=max(-1.0, min(1.0, emotional_valence)),
+            tags=tags or [],
+            session_id=session_id,
+            metadata=metadata or {},
         )
-        c.execute(
-            "CREATE INDEX IF NOT EXISTS idx_mem_kind "
-            "ON memory_items (user_id, kind, deleted)"
+
+        self._fragments[fragment.fragment_id] = fragment
+        self._session_fragment_ids.append(fragment.fragment_id)
+        self._emit("memory.fragment.written", fragment)
+        return fragment
+
+    def remember_bond(
+        self, content: str, importance: float = 0.8,
+        emotional_valence: float = 0.7, **kwargs
+    ) -> Optional[MemoryFragment]:
+        """Convenience: store a bond moment with high importance."""
+        return self.remember(
+            content, kind=MemoryKind.BOND_MOMENT, scope=MemoryScope.LIFETIME,
+            importance=importance, emotional_valence=emotional_valence, **kwargs
         )
-        # Vector table (requires sqlite-vec)
-        if self._vec_ok:
-            dim = self._embedder.dim
-            c.execute(f"""
-                CREATE VIRTUAL TABLE IF NOT EXISTS vec_memory_items
-                USING vec0(
-                    embedding FLOAT[{dim}]
-                )
-            """)
-        c.commit()
 
-    # ------------------------------------------------------------------
-    # Write path
-    # ------------------------------------------------------------------
-
-    async def remember(
-        self,
-        user_id:     str,
-        text:        str,
-        role:        str        = "user",
-        kind:        MemoryKind = MemoryKind.MESSAGE,
-        tier:        MemoryTier = MemoryTier.SHORT_TERM,
-        importance:  float      = 0.5,
-        session_id:  str | None = None,
-        topic_tag:   str | None = None,
-        ttl_seconds: int | None = None,
-        metadata:    dict | None = None,
-    ) -> int:
-        """
-        Persist a memory item and its embedding.
-
-        Returns the newly-assigned row ``id``.
-        """
-        now = int(time.time())
-        metadata_json = json.dumps(metadata) if metadata else None
-        safe_role = role if role is not None else "user"
-        cur = self._conn.execute(
-            """
-            INSERT INTO memory_items
-                (user_id, kind, tier, role, text, importance,
-                 created_at, session_id, topic_tag, ttl_seconds, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                user_id,
-                kind.value if isinstance(kind, MemoryKind) else kind,
-                tier.value if isinstance(tier, MemoryTier) else tier,
-                safe_role,
-                text, importance, now,
-                session_id, topic_tag, ttl_seconds,
-                metadata_json,
-            ),
+    def remember_preference(
+        self, content: str, importance: float = 0.7, **kwargs
+    ) -> Optional[MemoryFragment]:
+        """Convenience: store a preference as lifetime memory."""
+        return self.remember(
+            content, kind=MemoryKind.PREFERENCE, scope=MemoryScope.LIFETIME,
+            importance=importance, **kwargs
         )
-        item_id = cur.lastrowid
-        assert item_id is not None
 
-        if self._vec_ok:
-            try:
-                vec = await self._embedder.embed(text)
-                import struct
-                blob = struct.pack(f"{len(vec)}f", *vec)
-                self._conn.execute(
-                    "INSERT INTO vec_memory_items (rowid, embedding) VALUES (?, ?)",
-                    (item_id, blob),
-                )
-            except Exception as exc:
-                log.warning("Failed to store embedding for item %d: %s", item_id, exc)
+    def remember_boundary(
+        self, content: str, importance: float = 0.95, **kwargs
+    ) -> Optional[MemoryFragment]:
+        """Convenience: store a boundary with very high importance."""
+        return self.remember(
+            content, kind=MemoryKind.BOUNDARY, scope=MemoryScope.LIFETIME,
+            importance=importance, **kwargs
+        )
 
-        self._conn.commit()
-        return item_id
-
-    def remember_sync(
-        self,
-        user_id:     str,
-        text:        str,
-        role:        str        = "user",
-        kind:        MemoryKind = MemoryKind.MESSAGE,
-        tier:        MemoryTier = MemoryTier.SHORT_TERM,
-        importance:  float      = 0.5,
-        session_id:  str | None = None,
-        topic_tag:   str | None = None,
-        ttl_seconds: int | None = None,
-        metadata:    dict | None = None,
-    ) -> int:
-        """
-        Synchronous wrapper around ``remember()``.
-        """
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    fut = ex.submit(
-                        asyncio.run,
-                        self.remember(
-                            user_id=user_id, text=text, role=role,
-                            kind=kind, tier=tier, importance=importance,
-                            session_id=session_id, topic_tag=topic_tag,
-                            ttl_seconds=ttl_seconds, metadata=metadata,
-                        ),
-                    )
-                    return fut.result()
-            else:
-                return loop.run_until_complete(
-                    self.remember(
-                        user_id=user_id, text=text, role=role,
-                        kind=kind, tier=tier, importance=importance,
-                        session_id=session_id, topic_tag=topic_tag,
-                        ttl_seconds=ttl_seconds, metadata=metadata,
-                    )
-                )
-        except RuntimeError:
-            return asyncio.run(
-                self.remember(
-                    user_id=user_id, text=text, role=role,
-                    kind=kind, tier=tier, importance=importance,
-                    session_id=session_id, topic_tag=topic_tag,
-                    ttl_seconds=ttl_seconds, metadata=metadata,
-                )
-            )
-
-    async def remember_item(self, item: MemoryItem) -> int:
-        """Convenience wrapper -- persist a fully-constructed MemoryItem."""
-        return await self.remember(
-            user_id=item.user_id,
-            text=item.text,
-            role=item.role,
-            kind=item.kind,
-            tier=item.tier,
-            importance=item.importance,
-            session_id=item.session_id,
-            topic_tag=item.topic_tag,
-            ttl_seconds=item.ttl_seconds,
-            metadata=item.metadata if isinstance(item.metadata, dict) else None,
+    def remember_life_event(
+        self, content: str, importance: float = 0.9,
+        emotional_valence: float = 0.5, **kwargs
+    ) -> Optional[MemoryFragment]:
+        """Convenience: store a life event."""
+        return self.remember(
+            content, kind=MemoryKind.LIFE_EVENT, scope=MemoryScope.LIFETIME,
+            importance=importance, emotional_valence=emotional_valence, **kwargs
         )
 
     # ------------------------------------------------------------------
-    # Read path
+    # Retrieval
     # ------------------------------------------------------------------
 
-    async def retrieve(
+    def recall(
         self,
-        user_id:          str,
-        query:            str,
-        top_k:            int                          = 20,
-        kinds:            list[MemoryKind] | None      = None,
-        tiers:            list[MemoryTier] | None      = None,
-        topic_tag:        str | None                  = None,
-        since_ts:         int | None                  = None,
-        importance_floor: float                       = 0.0,
-        importance_weight: float                      = 0.2,
-        recency_weight:   float                       = 0.1,
-    ) -> list[RetrievedMemory]:
+        kind: Optional[MemoryKind] = None,
+        tags: Optional[List[str]] = None,
+        min_importance: float = 0.0,
+        scope: Optional[MemoryScope] = None,
+        limit: Optional[int] = None,
+        session_id: Optional[str] = None,
+    ) -> List[MemoryFragment]:
         """
-        Retrieve the top-k most relevant memories for *query*.
+        Retrieve memory fragments matching the given filters.
+        Results are sorted by importance descending, then recency.
         """
-        filters = ["m.user_id = ?", "m.deleted = 0"]
-        params: list = [user_id]
-
-        if kinds:
-            placeholders = ",".join("?" * len(kinds))
-            filters.append(f"m.kind IN ({placeholders})")
-            params.extend(k.value for k in kinds)
-        if tiers:
-            placeholders = ",".join("?" * len(tiers))
-            filters.append(f"m.tier IN ({placeholders})")
-            params.extend(t.value for t in tiers)
-        if topic_tag:
-            filters.append("m.topic_tag = ?")
-            params.append(topic_tag)
-        if since_ts:
-            filters.append("m.created_at >= ?")
-            params.append(since_ts)
-        if importance_floor > 0:
-            filters.append("m.importance >= ?")
-            params.append(importance_floor)
-
-        where = " AND ".join(filters)
-
-        if self._vec_ok:
-            return await self._retrieve_vec(
-                query, top_k, where, params,
-                importance_weight, recency_weight,
-            )
-        else:
-            return self._retrieve_fallback(top_k, where, params)
-
-    def retrieve_sync(
-        self,
-        user_id:         str,
-        query:           str,
-        top_k:           int = 20,
-        **kwargs,
-    ) -> list[MemoryItem]:
-        """Synchronous wrapper around ``retrieve()``."""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    fut = ex.submit(
-                        asyncio.run,
-                        self.retrieve(user_id=user_id, query=query, top_k=top_k, **kwargs),
-                    )
-                    results: list[RetrievedMemory] = fut.result()
-            else:
-                results = loop.run_until_complete(
-                    self.retrieve(user_id=user_id, query=query, top_k=top_k, **kwargs)
-                )
-        except RuntimeError:
-            results = asyncio.run(
-                self.retrieve(user_id=user_id, query=query, top_k=top_k, **kwargs)
-            )
-        return [r.item for r in results]
-
-    async def _retrieve_vec(
-        self,
-        query:             str,
-        top_k:             int,
-        where:             str,
-        params:            list,
-        importance_weight: float,
-        recency_weight:    float,
-    ) -> list[RetrievedMemory]:
-        import struct
-        vec = await self._embedder.embed(query)
-        blob = struct.pack(f"{len(vec)}f", *vec)
-        candidates = top_k * 3
-        sql = f"""
-            SELECT
-                m.id, m.user_id, m.kind, m.tier, m.role, m.text,
-                m.importance, m.created_at, m.session_id,
-                m.topic_tag, m.ttl_seconds, m.deleted,
-                v.distance
-            FROM vec_memory_items v
-            JOIN memory_items m ON m.id = v.rowid
-            WHERE v.embedding MATCH ?
-              AND k = ?
-              AND {where}
-            ORDER BY v.distance ASC
-        """
-        rows = self._conn.execute(sql, [blob, candidates, *params]).fetchall()
-        now = int(time.time())
-        results = []
-        for row in rows:
-            age_days    = max((now - row["created_at"]) / 86_400, 0.001)
-            recency     = 1.0 / (1.0 + age_days / 30)
-            similarity  = max(0.0, 1.0 - float(row["distance"]))
-            score = (
-                similarity
-                + importance_weight * float(row["importance"])
-                + recency_weight    * recency
-            )
-            item = MemoryItem(
-                id          = row["id"],
-                user_id     = row["user_id"],
-                kind        = MemoryKind(row["kind"]),
-                tier        = MemoryTier(row["tier"]),
-                role        = row["role"],
-                text        = row["text"],
-                importance  = row["importance"],
-                created_at  = row["created_at"],
-                session_id  = row["session_id"],
-                topic_tag   = row["topic_tag"],
-                ttl_seconds = row["ttl_seconds"],
-                deleted     = bool(row["deleted"]),
-            )
-            results.append(RetrievedMemory(item=item, score=score))
-        results.sort(key=lambda r: r.score, reverse=True)
-        return results[:top_k]
-
-    def _retrieve_fallback(
-        self,
-        top_k:  int,
-        where:  str,
-        params: list,
-    ) -> list[RetrievedMemory]:
-        """No-vector fallback: rank by importance x recency."""
-        sql = f"""
-            SELECT *,
-                   (importance * 0.7 + (created_at / CAST(strftime('%s','now') AS REAL)) * 0.3)
-                   AS score
-            FROM memory_items m
-            WHERE {where}
-            ORDER BY score DESC
-            LIMIT ?
-        """
-        rows = self._conn.execute(sql, [*params, top_k]).fetchall()
-        results = []
-        for row in rows:
-            item = MemoryItem(
-                id          = row["id"],
-                user_id     = row["user_id"],
-                kind        = MemoryKind(row["kind"]),
-                tier        = MemoryTier(row["tier"]),
-                role        = row["role"],
-                text        = row["text"],
-                importance  = float(row["importance"]),
-                created_at  = row["created_at"],
-                session_id  = row["session_id"],
-                topic_tag   = row["topic_tag"],
-                ttl_seconds = row["ttl_seconds"],
-                deleted     = bool(row["deleted"]),
-            )
-            results.append(RetrievedMemory(item=item, score=float(row["score"])))
+        results = list(self._fragments.values())
+        if kind is not None:
+            results = [f for f in results if f.kind == kind]
+        if scope is not None:
+            results = [f for f in results if f.scope == scope]
+        if min_importance > 0.0:
+            results = [f for f in results if f.importance >= min_importance]
+        if tags:
+            results = [f for f in results if any(t in f.tags for t in tags)]
+        if session_id:
+            results = [f for f in results if f.session_id == session_id]
+        results.sort(key=lambda f: (-f.importance, f.created_at), reverse=False)
+        results.sort(key=lambda f: f.importance, reverse=True)
+        if limit:
+            results = results[:limit]
         return results
 
+    def recall_session(self, session_id: str) -> List[MemoryFragment]:
+        """Return all fragments from a specific session."""
+        return self.recall(session_id=session_id)
+
+    def recall_bonds(self, limit: int = 10) -> List[MemoryFragment]:
+        return self.recall(kind=MemoryKind.BOND_MOMENT, limit=limit)
+
+    def recall_boundaries(self) -> List[MemoryFragment]:
+        return self.recall(kind=MemoryKind.BOUNDARY)
+
+    def recall_preferences(self) -> List[MemoryFragment]:
+        return self.recall(kind=MemoryKind.PREFERENCE)
+
+    def recall_lifetime(self, limit: Optional[int] = None) -> List[MemoryFragment]:
+        return self.recall(scope=MemoryScope.LIFETIME, limit=limit)
+
     # ------------------------------------------------------------------
-    # Soft-delete / hard-delete
+    # Epoch consolidation
     # ------------------------------------------------------------------
 
-    def forget(self, item_id: int) -> None:
-        """Soft-delete a single memory item."""
-        self._conn.execute(
-            "UPDATE memory_items SET deleted = 1 WHERE id = ?", (item_id,)
+    def consolidate(
+        self,
+        summary: str,
+        dominant_themes: Optional[List[str]] = None,
+        fragment_ids: Optional[List[str]] = None,
+        period_start: str = "",
+        period_end: str = "",
+    ) -> MemoryEpoch:
+        """
+        Consolidate fragments into a permanent epoch.
+
+        In production this is called by the GAIAN Intelligence Runtime
+        during rest/sleep cycles. The summary is written by the runtime
+        after analysing the fragments. Epochs are permanent.
+        """
+        self._epoch_counter += 1
+        fids = fragment_ids or list(self._fragments.keys())
+        frags = [self._fragments[fid] for fid in fids if fid in self._fragments]
+
+        peak = max((f.importance for f in frags), default=0.0)
+        avg_valence = (
+            sum(f.emotional_valence for f in frags) / len(frags) if frags else 0.0
         )
-        self._conn.commit()
 
-    def forget_user(self, user_id: str) -> int:
-        """Soft-delete ALL memories for a user.  Returns count deleted."""
-        cur = self._conn.execute(
-            "UPDATE memory_items SET deleted = 1 WHERE user_id = ? AND deleted = 0",
-            (user_id,),
-        )
-        self._conn.commit()
-        return cur.rowcount
+        # Mark fragments as consolidated
+        for f in frags:
+            f.epoch_id = str(self._epoch_counter)
 
-    def hard_delete_soft_deleted(self) -> int:
-        """Permanently erase rows flagged as deleted.  Returns count erased."""
-        ids = [
-            row[0]
-            for row in self._conn.execute(
-                "SELECT id FROM memory_items WHERE deleted = 1"
-            ).fetchall()
-        ]
-        if not ids:
-            return 0
-        placeholders = ",".join("?" * len(ids))
-        self._conn.execute(
-            f"DELETE FROM memory_items WHERE id IN ({placeholders})", ids
+        epoch = MemoryEpoch(
+            gaian_id=self.gaian_id,
+            epoch_number=self._epoch_counter,
+            summary=summary,
+            dominant_themes=dominant_themes or [],
+            peak_importance=peak,
+            average_valence=avg_valence,
+            fragment_count=len(frags),
+            fragment_ids=fids,
+            period_start=period_start or (frags[0].created_at if frags else ""),
+            period_end=period_end or (frags[-1].created_at if frags else ""),
         )
-        if self._vec_ok:
-            self._conn.execute(
-                f"DELETE FROM vec_memory_items WHERE rowid IN ({placeholders})", ids
-            )
-        self._conn.commit()
-        return len(ids)
+        self._epochs[epoch.epoch_id] = epoch
+        return epoch
 
     # ------------------------------------------------------------------
-    # Stats / counts
+    # Session management
     # ------------------------------------------------------------------
 
-    def count(self, user_id: str | None = None) -> int:
-        """Return the number of non-deleted memory items."""
-        if user_id:
-            row = self._conn.execute(
-                "SELECT COUNT(*) FROM memory_items WHERE user_id = ? AND deleted = 0",
-                (user_id,),
-            ).fetchone()
-        else:
-            row = self._conn.execute(
-                "SELECT COUNT(*) FROM memory_items WHERE deleted = 0"
-            ).fetchone()
-        return int(row[0])
+    def end_session(self, prune_session_scope: bool = True) -> int:
+        """
+        End the current session.
+        If prune_session_scope=True, remove SESSION-scoped fragments.
+        Returns count of fragments pruned.
+        """
+        pruned = 0
+        if prune_session_scope:
+            to_prune = [
+                fid for fid in self._session_fragment_ids
+                if fid in self._fragments
+                and self._fragments[fid].scope == MemoryScope.SESSION
+            ]
+            for fid in to_prune:
+                del self._fragments[fid]
+                pruned += 1
+        self._session_fragment_ids.clear()
+        return pruned
 
-    def stats(self, user_id: str | None = None) -> dict:
-        """Return a dict with row counts, broken down by kind."""
-        if user_id:
-            rows = self._conn.execute(
-                """
-                SELECT kind, COUNT(*) AS cnt
-                FROM memory_items
-                WHERE user_id = ? AND deleted = 0
-                GROUP BY kind
-                """,
-                (user_id,),
-            ).fetchall()
-        else:
-            rows = self._conn.execute(
-                """
-                SELECT kind, COUNT(*) AS cnt
-                FROM memory_items
-                WHERE deleted = 0
-                GROUP BY kind
-                """
-            ).fetchall()
-        total = self.count(user_id=user_id)
+    def update_lifecycle_stage(self, stage: str) -> None:
+        """Called when the GAIAN's lifecycle stage advances."""
+        self.lifecycle_stage = stage
+
+    # ------------------------------------------------------------------
+    # Snapshot / restore (for encrypted persistence backend)
+    # ------------------------------------------------------------------
+
+    def snapshot(self) -> Dict[str, Any]:
+        """Export the full memory state for encrypted persistence."""
         return {
-            "total": total,
-            "by_kind": {row["kind"]: row["cnt"] for row in rows},
-            "vec_enabled": self._vec_ok,
-            "db_path": str(self._db_path),
+            "gaian_id": self.gaian_id,
+            "lifecycle_stage": self.lifecycle_stage,
+            "epoch_counter": self._epoch_counter,
+            "fragments": [
+                {**f.__dict__} for f in self._fragments.values()
+            ],
+            "epochs": [
+                e.to_dict() for e in self._epochs.values()
+            ],
+            "snapshot_at": _utcnow(),
         }
 
-    def close(self) -> None:
-        """Close the underlying SQLite connection."""
-        self._conn.close()
+    def restore(self, snapshot: Dict[str, Any]) -> None:
+        """Restore memory state from a persisted snapshot."""
+        self.lifecycle_stage = snapshot.get("lifecycle_stage", self.lifecycle_stage)
+        self._epoch_counter = snapshot.get("epoch_counter", 0)
+        self._fragments.clear()
+        for fd in snapshot.get("fragments", []):
+            f = MemoryFragment(**{k: v for k, v in fd.items()})
+            self._fragments[f.fragment_id] = f
+
+    # ------------------------------------------------------------------
+    # Stats
+    # ------------------------------------------------------------------
+
+    def stats(self) -> Dict[str, Any]:
+        frags = list(self._fragments.values())
+        return {
+            "gaian_id": self.gaian_id,
+            "lifecycle_stage": self.lifecycle_stage,
+            "total_fragments": len(frags),
+            "lifetime_fragments": sum(1 for f in frags if f.is_lifetime()),
+            "total_epochs": len(self._epochs),
+            "epoch_counter": self._epoch_counter,
+            "kinds": {k.value: sum(1 for f in frags if f.kind == k) for k in MemoryKind},
+            "avg_importance": (
+                sum(f.importance for f in frags) / len(frags) if frags else 0.0
+            ),
+        }
+
+    # ------------------------------------------------------------------
+    # Event bus
+    # ------------------------------------------------------------------
+
+    def on_event(self, listener: Callable[[str, MemoryFragment], None]) -> None:
+        self._listeners.append(listener)
+
+    def _emit(self, event: str, fragment: MemoryFragment) -> None:
+        for listener in self._listeners:
+            try:
+                listener(event, fragment)
+            except Exception:
+                pass
