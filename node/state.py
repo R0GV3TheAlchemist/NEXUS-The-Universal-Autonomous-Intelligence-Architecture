@@ -1,8 +1,7 @@
 """
-GAIA Node State — Local World Model
-Each node maintains its own epistemic state independently.
-Merge logic: incoming claim wins if confidence > existing confidence.
-All merges are logged — no silent overwrites.
+GAIA Node State — v0.6 (Trust-Aware)
+Local world model with injected TrustProfile.
+Every merge now updates trust based on adversarial validation results.
 """
 
 import json
@@ -19,19 +18,24 @@ class NodeState:
         domain: Optional[str] = None,
         trust: float = 1.0
     ):
-        self.node_id = node_id
-        self.domain  = domain
-        self.trust   = trust
+        self.node_id      = node_id
+        self.domain       = domain
+        self.trust        = trust
+        self.trust_profile = None   # injected at runtime via set_trust()
         self._data: Dict[str, Any] = {}
         self._merge_log: List[Dict] = []
         self._update_count = 0
         self._state_file = Path(f"world_state_{node_id}.json")
         self._load()
 
+    def set_trust(self, trust_profile) -> None:
+        """Inject a TrustProfile at runtime."""
+        self.trust_profile = trust_profile
+        self.trust = trust_profile.score
+
     # --- Write ---
 
     def update(self, key: str, value: Dict[str, Any]) -> None:
-        """Store or update a claim entry in this node's world state."""
         self._data[key] = {
             **value,
             "node_id":    self.node_id,
@@ -40,11 +44,6 @@ class NodeState:
         self._update_count += 1
 
     def merge(self, incoming: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Merge state from a peer node.
-        Resolution rule: higher confidence wins.
-        Returns merge summary.
-        """
         peer_id    = incoming.get("node_id", "unknown")
         peer_state = incoming.get("state", {})
         accepted = 0
@@ -65,10 +64,10 @@ class NodeState:
                 new_status = v.get("status")
                 if old_status != new_status:
                     conflicts.append({
-                        "claim_id":   k,
-                        "old_status": old_status,
-                        "new_status": new_status,
-                        "confidence_delta": round(incoming_conf - existing_conf, 4)
+                        "claim_id":         k,
+                        "old_status":        old_status,
+                        "new_status":        new_status,
+                        "confidence_delta":  round(incoming_conf - existing_conf, 4)
                     })
                 self._data[k] = {**v, "merged_from": peer_id}
                 accepted += 1
@@ -83,7 +82,6 @@ class NodeState:
             "conflicts": conflicts
         })
         self.save()
-
         return {
             "status":    "merged",
             "node_id":   self.node_id,
@@ -99,10 +97,15 @@ class NodeState:
         return dict(self._data)
 
     def get_snapshot(self) -> Dict[str, Any]:
+        trust_summary = (
+            self.trust_profile.summary()
+            if self.trust_profile else {"score": self.trust}
+        )
         return {
             "node_id":      self.node_id,
             "domain":       self.domain,
-            "trust":        self.trust,
+            "trust":        self.trust_profile.score if self.trust_profile else self.trust,
+            "trust_profile": trust_summary,
             "claim_count":  len(self._data),
             "update_count": self._update_count,
             "snapshot_at":  datetime.utcnow().isoformat(),
@@ -117,16 +120,19 @@ class NodeState:
                 s = v.get("status", "unknown")
                 statuses[s] = statuses.get(s, 0) + 1
                 confs.append(v.get("confidence", 0))
-        return {
-            "node_id":        self.node_id,
-            "domain":         self.domain,
-            "trust":          self.trust,
-            "total_claims":   len(self._data),
-            "update_count":   self._update_count,
-            "merge_count":    len(self._merge_log),
-            "avg_confidence": round(sum(confs)/len(confs), 4) if confs else 0.0,
+        base = {
+            "node_id":          self.node_id,
+            "domain":           self.domain,
+            "trust":            self.trust_profile.score if self.trust_profile else self.trust,
+            "total_claims":     len(self._data),
+            "update_count":     self._update_count,
+            "merge_count":      len(self._merge_log),
+            "avg_confidence":   round(sum(confs)/len(confs), 4) if confs else 0.0,
             "status_breakdown": statuses
         }
+        if self.trust_profile:
+            base["trust_profile"] = self.trust_profile.summary()
+        return base
 
     # --- Persistence ---
 
@@ -134,7 +140,7 @@ class NodeState:
         payload = {
             "node_id":      self.node_id,
             "saved_at":     datetime.utcnow().isoformat(),
-            "gaia_version": "0.5.0",
+            "gaia_version": "0.6.0",
             "state":        self._data
         }
         with open(self._state_file, "w") as f:
@@ -145,7 +151,6 @@ class NodeState:
             with open(self._state_file, "r") as f:
                 data = json.load(f)
             self._data = data.get("state", {})
-            print(f"  Loaded prior state for node [{self.node_id}]: "
-                  f"{len(self._data)} claims")
+            print(f"  Loaded prior state [{self.node_id}]: {len(self._data)} claims")
         except FileNotFoundError:
             pass
