@@ -1,70 +1,30 @@
 """
-core.connectors
-===============
-GAIA Connector Layer — the typed abstraction that bridges all external systems
-(calendar, communications, IoT, data sources, device interfaces, OS primitives)
-into the GAIA runtime.
+GAIA Connectors — the universal integration layer.
 
-This package is the direct prerequisite for core.os_interface.  Every OS-level
-capability — file-system access, display management, notifications, hardware
-devices — is modelled first as a Connector, then elevated into the OS interface
-layer above it.
+Connectors bridge GAIA to the external world: calendars, communications,
+IoT devices, data streams, cloud services, operating system interfaces,
+hardware buses, and cross-platform OS integration.
 
-Public surface
---------------
-    ConnectorKind          — enumeration of integration domains
-    ConnectorCapability    — flag set describing what a connector can do
-    ConnectorStatus        — lifecycle state machine
-    ConnectorManifest      — declarative metadata record for a connector type
-    ConnectorCredential    — secure credential vault entry
-    ConnectorEvent         — typed event emitted by a connector
-    BaseConnector          — abstract base class all connectors must implement
-    ConnectorRegistry      — discover, register, and look up connector types
-    ConnectorBus           — event-driven publish/subscribe message bus
-    ConnectorManager       — orchestration: instantiate, wire, lifecycle-manage
-    ConnectorError         — base exception
-    ConnectorNotFoundError — raised when a connector id is unknown
-    ConnectorAuthError     — raised on credential or permission failures
-    ConnectorTimeoutError  — raised when a remote call exceeds its deadline
+Each connector is a typed adapter that follows the BaseConnector contract.
+Connectors register with the ConnectorRegistry so the Agentic Loop and
+Workflow engine can discover and invoke them by capability.
 """
-
-from .model import (
+from core.connectors.model import (
     ConnectorKind,
-    ConnectorCapability,
     ConnectorStatus,
     ConnectorManifest,
-    ConnectorCredential,
     ConnectorEvent,
 )
-from .base import BaseConnector
-from .registry import ConnectorRegistry
-from .bus import ConnectorBus
-from .manager import (
-    ConnectorManager,
-    ConnectorError,
-    ConnectorNotFoundError,
-    ConnectorAuthError,
-    ConnectorTimeoutError,
-)
+from core.connectors.registry import ConnectorRegistry
+from core.connectors.base import BaseConnector
+from core.connectors.manager import ConnectorManager
 
 __all__ = [
-    # model
     "ConnectorKind",
-    "ConnectorCapability",
     "ConnectorStatus",
     "ConnectorManifest",
-    "ConnectorCredential",
     "ConnectorEvent",
-    # base
-    "BaseConnector",
-    # registry
     "ConnectorRegistry",
-    # bus
-    "ConnectorBus",
-    # manager + exceptions
+    "BaseConnector",
     "ConnectorManager",
-    "ConnectorError",
-    "ConnectorNotFoundError",
-    "ConnectorAuthError",
-    "ConnectorTimeoutError",
 ]
