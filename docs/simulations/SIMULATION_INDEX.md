@@ -1,8 +1,8 @@
 # SIMULATION INDEX — Master Traceability Register
 
-**Last updated:** 2026-06-30  
+**Last updated:** 2026-06-30 (Pass 3 filed)  
 **Maintained by:** GAIA Development Process  
-**Purpose:** Single source of truth for all simulation runs. Every SIM entry must include its pass history, scores, target gate, and commit SHA for its artifacts.
+**Purpose:** Single source of truth for all simulation runs.
 
 ---
 
@@ -10,9 +10,9 @@
 
 | Column | Meaning |
 |---|---|
-| SIM ID | Canonical identifier (e.g. SIM_018) |
+| SIM ID | Canonical identifier |
 | Topic | What the simulation is testing |
-| Pass | Current highest completed pass |
+| Highest Pass | Current highest completed pass |
 | Best Score | Highest score achieved across all passes |
 | Target Gate | The GATE condition this SIM must satisfy |
 | Status | ACTIVE / COMPLETE / BLOCKED / STUB |
@@ -30,7 +30,7 @@
 | SIM_016 | BCI Next-Gen Detector | Pass 7 | ~91% | GATE-003 Tier 2 | COMPLETE | See repo history |
 | SIM_017 | Persistent Memory Architecture | Pass 1 | — | GATE-004 | ACTIVE | See repo history |
 | SIM_INT_012 | Integration Simulation — Cross-Module | Pass 1 | — | GATE-004 | ACTIVE | See repo history |
-| **SIM_018** | **GAIA Benchmark v2 — GATE-005 Band 2** | **Pass 2** | **84.7%** | **GATE-005 Tier 1 (≥88%)** | **ACTIVE** | **09130b8** |
+| **SIM_018** | **GAIA Benchmark v2 — GATE-005 Band 2** | **Pass 3** | **86.8%** | **GATE-005 Tier 1 (≥88%)** | **ACTIVE** | **5924fba / current** |
 
 ## Stub Queue (Not Yet Active)
 
@@ -48,12 +48,15 @@
 | Pass 1 | Baseline | ~79.6% | Initial run — Band 2 baseline established | `SIM_018_Spec_Stub.md` | `SIM_018_Pass1_Results.md` |
 | Pass 2A | Bayes Prior Calibration | 81.3% | Prior sharpening on ambiguous tasks | `SIM_018_Pass2_Spec.md` | `SIM_018_Pass2_Results.md` |
 | Pass 2B | Context Window Expansion | 83.9% | Extended retrieval window for multi-hop tasks | `SIM_018_Pass2_Spec.md` | `SIM_018_Pass2_Results.md` |
-| Pass 2C | Hybrid Fusion | **84.7%** | Combined Bayes + context expansion | `SIM_018_Pass2_Spec.md` | `SIM_018_Pass2_Results.md` |
-| Pass 3 | Verification (planned) | — | GATE-005 Tier 1 conditions — see spec | `SIM_018_Pass3_Spec.md` | — |
+| Pass 2C | Hybrid Fusion | 84.7% | Combined Bayes + context expansion | `SIM_018_Pass2_Spec.md` | `SIM_018_Pass2_Results.md` |
+| Pass 3A | Stability Verification | 84.54% mean / 0.49% std | 5-seed stability confirmed | `SIM_018_Pass3_Spec.md` | `SIM_018_Pass3_Results.md` |
+| Pass 3B | Threshold Tuning | 85.3% | S3 threshold 0.55 adopted | `SIM_018_Pass3_Spec.md` | `SIM_018_Pass3_Results.md` |
+| Pass 3C | 1-Layer CNN | **86.8%** | Feature extraction confirmed bottleneck | `SIM_018_Pass3_Spec.md` | `SIM_018_Pass3_Results.md` |
+| Pass 4 | 2–3 Layer CNN / Transformer | — | Deep feature extraction — GATE-005 Tier 1 formal clearance | `SIM_018_Pass4_Spec.md` | — |
 
-**Ceiling estimate:** 86–88%  
-**Bayes floor identified:** Yes — see `SIM_018_Pass2_Bottleneck_Ledger.md`  
-**Next action:** Run Pass 3 per `SIM_018_Pass3_Spec.md`
+**Ceiling estimate:** 88–90%  
+**GATE-005 Tier 1 status:** 🔓 Open (conditions met) — formal clearance pending ≥88% score  
+**Next action:** Run Pass 4 per `SIM_018_Pass4_Spec.md`
 
 ---
 
