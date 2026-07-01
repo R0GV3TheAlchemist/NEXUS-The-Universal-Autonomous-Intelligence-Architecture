@@ -1,0 +1,124 @@
+name: Container Smoke Test
+
+# Runs after CI passes on main/develop and on every PR.
+# Boots the real container, confirms Schumann, confirms health,
+# runs a full birth-session-memory sequence via the HTTP API,
+# and verifies the Sentinel is armed.
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Container smoke test
+    runs-on: ubuntu-latest
+
+    env:
+      GAIA_PORT: 8000
+      GAIA_BEARER_TOKENS: smoke-operator
+      GAIA_SENTINEL_RATE_LIMIT: '200'   # headroom for the test script
+      GAIA_BOOT_NUMBER: '1'
+
+    steps:
+      # ----------------------------------------------------------------
+      # 1. Checkout
+      # ----------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # 2. Build the image locally (reuses GHA layer cache)
+      # ----------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: gaia-os:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ----------------------------------------------------------------
+      # 3. Start the container
+      # ----------------------------------------------------------------
+      - name: Start GAIA OS container
+        run: |
+          docker run -d \
+            --name gaia-smoke \
+            -p ${{ env.GAIA_PORT }}:${{ env.GAIA_PORT }} \
+            -e GAIA_PORT=${{ env.GAIA_PORT }} \
+            -e GAIA_BEARER_TOKENS=${{ env.GAIA_BEARER_TOKENS }} \
+            -e GAIA_SENTINEL_RATE_LIMIT=${{ env.GAIA_SENTINEL_RATE_LIMIT }} \
+            -e GAIA_BOOT_NUMBER=${{ env.GAIA_BOOT_NUMBER }} \
+            -e GAIA_ROOT=/data/gaia \
+            gaia-os:smoke
+
+      # ----------------------------------------------------------------
+      # 4. Wait for the container to be healthy
+      #    Poll /health for up to 60 seconds before failing.
+      # ----------------------------------------------------------------
+      - name: Wait for healthy
+        timeout-minutes: 2
+        run: |
+          BASE="http://localhost:${{ env.GAIA_PORT }}"
+          echo "Polling $BASE/health ..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "GAIA OS is healthy (attempt $i)"
+              exit 0
+            fi
+            echo "  attempt $i: HTTP $STATUS — waiting 2s"
+            sleep 2
+          done
+          echo "GAIA OS did not become healthy within 60s"
+          docker logs gaia-smoke
+          exit 1
+
+      # ----------------------------------------------------------------
+      # 5. Smoke scenario: full happy-path via HTTP API
+      # ----------------------------------------------------------------
+      - name: Set up Python for smoke script
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install httpx
+        run: pip install --quiet httpx
+
+      - name: Run smoke scenario
+        env:
+          GAIA_SMOKE_BASE: http://localhost:${{ env.GAIA_PORT }}
+          GAIA_SMOKE_TOKEN: ${{ env.GAIA_BEARER_TOKENS }}
+        run: python .github/scripts/smoke_test.py
+
+      # ----------------------------------------------------------------
+      # 6. Dump logs on failure so we can see what went wrong
+      # ----------------------------------------------------------------
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker logs gaia-smoke
+
+      # ----------------------------------------------------------------
+      # 7. Stop and remove the container
+      # ----------------------------------------------------------------
+      - name: Stop container
+        if: always()
+        run: docker rm -f gaia-smoke || true
