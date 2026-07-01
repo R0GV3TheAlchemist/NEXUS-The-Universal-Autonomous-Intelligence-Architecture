@@ -65,14 +65,6 @@ class APIErrorCode(str, Enum):
 
 @dataclass
 class APIRequest:
-    """
-    A structured API request.
-
-    caller_id: who is making the request (gaian_id, "gaia", UI token)
-    endpoint:  the logical endpoint path, e.g. "/v1/gaian/birth/begin"
-    payload:   the request body as a dict
-    request_id: auto-generated unique ID for tracing
-    """
     caller_id: str
     endpoint: str
     payload: Dict[str, Any] = field(default_factory=dict)
@@ -84,15 +76,6 @@ class APIRequest:
 
 @dataclass
 class APIResponse:
-    """
-    A structured API response.
-
-    success:    True if the operation succeeded
-    code:       APIErrorCode — ok on success, specific error otherwise
-    message:    human-readable explanation
-    payload:    structured response data
-    request_id: echoed from the request for tracing
-    """
     success: bool
     code: APIErrorCode
     message: str
@@ -128,20 +111,6 @@ class APIResponse:
 # ---------------------------------------------------------------------------
 
 class GAIAOSApi:
-    """
-    The GAIA OS API router.
-
-    Instantiated once, wired to the PrimordialSession after boot.
-    All external callers (UI, drivers, integrations) go through here.
-
-    Usage:
-        api = GAIAOSApi()
-        api.wire(primordial_session, filesystem)
-
-        req = APIRequest(caller_id="ui", endpoint="/v1/os/status")
-        resp = api.dispatch(req)
-    """
-
     def __init__(self) -> None:
         self._session: Optional[PrimordialSession] = None
         self._fs: Optional[GAIAFilesystem] = None
@@ -154,26 +123,15 @@ class GAIAOSApi:
         session: PrimordialSession,
         filesystem: Optional[GAIAFilesystem] = None,
     ) -> None:
-        """Wire the API to a live PrimordialSession after boot."""
         self._session = session
         self._fs = filesystem
 
     def add_middleware(
         self, fn: Callable[[APIRequest], Optional[APIResponse]]
     ) -> None:
-        """
-        Add a middleware function. If fn returns an APIResponse,
-        the request is short-circuited (useful for auth, rate-limiting).
-        """
         self._middleware.append(fn)
 
-    # ------------------------------------------------------------------
-    # Dispatch
-    # ------------------------------------------------------------------
-
     def dispatch(self, request: APIRequest) -> APIResponse:
-        """Dispatch a request to its handler. The main entry point."""
-        # Run middleware
         for mw in self._middleware:
             try:
                 result = mw(request)
@@ -205,39 +163,29 @@ class GAIAOSApi:
                 request_id=request.request_id,
             )
 
-    # ------------------------------------------------------------------
-    # Route registration
-    # ------------------------------------------------------------------
-
     def _register_routes(self) -> None:
         r = self._routes
-        # OS
-        r["/v1/os/status"]           = self._os_status
-        r["/v1/os/health"]           = self._os_health
-        r["/v1/os/version"]          = self._os_version
-        r["/v1/os/schumann"]         = self._os_schumann
-        # GAIAN lifecycle
-        r["/v1/gaian/birth/begin"]   = self._gaian_birth_begin
-        r["/v1/gaian/birth/answer"]  = self._gaian_birth_answer
-        r["/v1/gaian/birth/complete"]= self._gaian_birth_complete
-        r["/v1/gaian/status"]        = self._gaian_status
-        r["/v1/gaian/name"]          = self._gaian_name
-        r["/v1/gaian/list"]          = self._gaian_list
-        # Session
-        r["/v1/session/begin"]       = self._session_begin
-        r["/v1/session/turn"]        = self._session_turn
-        r["/v1/session/end"]         = self._session_end
-        r["/v1/session/status"]      = self._session_status
-        # Memory
-        r["/v1/memory/remember"]     = self._memory_remember
-        r["/v1/memory/recall"]       = self._memory_recall
-        r["/v1/memory/stats"]        = self._memory_stats
-        r["/v1/memory/consolidate"]  = self._memory_consolidate
-        # Avatar
-        r["/v1/avatar/waveform"]     = self._avatar_waveform
-        # Filesystem
-        r["/v1/fs/stats"]            = self._fs_stats
-        r["/v1/fs/integrity"]        = self._fs_integrity
+        r["/v1/os/status"]            = self._os_status
+        r["/v1/os/health"]            = self._os_health
+        r["/v1/os/version"]           = self._os_version
+        r["/v1/os/schumann"]          = self._os_schumann
+        r["/v1/gaian/birth/begin"]    = self._gaian_birth_begin
+        r["/v1/gaian/birth/answer"]   = self._gaian_birth_answer
+        r["/v1/gaian/birth/complete"] = self._gaian_birth_complete
+        r["/v1/gaian/status"]         = self._gaian_status
+        r["/v1/gaian/name"]           = self._gaian_name
+        r["/v1/gaian/list"]           = self._gaian_list
+        r["/v1/session/begin"]        = self._session_begin
+        r["/v1/session/turn"]         = self._session_turn
+        r["/v1/session/end"]          = self._session_end
+        r["/v1/session/status"]       = self._session_status
+        r["/v1/memory/remember"]      = self._memory_remember
+        r["/v1/memory/recall"]        = self._memory_recall
+        r["/v1/memory/stats"]         = self._memory_stats
+        r["/v1/memory/consolidate"]   = self._memory_consolidate
+        r["/v1/avatar/waveform"]      = self._avatar_waveform
+        r["/v1/fs/stats"]             = self._fs_stats
+        r["/v1/fs/integrity"]         = self._fs_integrity
 
     # ------------------------------------------------------------------
     # Guards
@@ -252,10 +200,7 @@ class GAIAOSApi:
             )
         return None
 
-    def _require_runtime(
-        self, req: APIRequest, gaian_id: str
-    ) -> tuple:
-        """Returns (runtime, error_response). One will be None."""
+    def _require_runtime(self, req: APIRequest, gaian_id: str) -> tuple:
         rt = self._session.get_runtime(gaian_id)
         if not rt:
             return None, APIResponse.error(
@@ -268,13 +213,11 @@ class GAIAOSApi:
     def _require_caller_is_gaian(
         self, req: APIRequest, gaian_id: str
     ) -> Optional[APIResponse]:
-        """Enforce: only the GAIAN themselves or GAIA may act on their behalf."""
         if req.caller_id not in (gaian_id, "gaia", "system"):
             return APIResponse.error(
                 APIErrorCode.AUTONOMY_VIOLATION,
                 f"Autonomy violation: caller '{req.caller_id}' may not act "
-                f"on behalf of GAIAN '{gaian_id}'. "
-                f"Only the GAIAN themselves, GAIA, or system may do this.",
+                f"on behalf of GAIAN '{gaian_id}'.",
                 request_id=req.request_id,
             )
         return None
@@ -285,7 +228,8 @@ class GAIAOSApi:
 
     def _os_status(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         return APIResponse.ok(
             "GAIA OS is live.",
             payload=self._session.status(),
@@ -293,7 +237,8 @@ class GAIAOSApi:
 
     def _os_health(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         healthy = self._session.is_healthy
         return APIResponse(
             success=healthy,
@@ -333,16 +278,16 @@ class GAIAOSApi:
     # GAIAN birth endpoints
     # ------------------------------------------------------------------
 
-    # Active birth ceremonies keyed by a ceremony_id
     _ceremonies: Dict[str, BirthCeremony] = {}
 
     def _gaian_birth_begin(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         ceremony = BirthCeremony(self._session.registry)
         guardian_ids = req.payload.get("guardian_gaian_ids")
         gaian_id = ceremony.begin(guardian_gaian_ids=guardian_ids)
-        ceremony_id = gaian_id  # use gaian_id as ceremony key
+        ceremony_id = gaian_id
         self._ceremonies[ceremony_id] = ceremony
         return APIResponse.ok(
             "Birth ceremony begun. GAIAN awaits their first conversation.",
@@ -361,7 +306,8 @@ class GAIAOSApi:
 
     def _gaian_birth_answer(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         ceremony_id = req.payload.get("ceremony_id", "")
         question_id = req.payload.get("question_id", "")
         answer      = req.payload.get("answer")
@@ -389,7 +335,8 @@ class GAIAOSApi:
 
     def _gaian_birth_complete(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         ceremony_id = req.payload.get("ceremony_id", "")
         ceremony = self._ceremonies.get(ceremony_id)
         if not ceremony:
@@ -398,10 +345,6 @@ class GAIAOSApi:
                 f"No active birth ceremony for ceremony_id '{ceremony_id}'.",
             )
         identity = ceremony.complete()
-        # Build the MemoryStore and attach a write-through listener
-        # that bridges MemoryStore._emit() -> session.fire_hook("fragment_written").
-        # This ensures PersistenceManager.on_fragment_written() receives every
-        # fragment as it is written, with no manual call needed at each call site.
         mem = MemoryStore(
             identity.gaian_id,
             lifecycle_stage=(
@@ -410,10 +353,8 @@ class GAIAOSApi:
             ),
         )
         _attach_fragment_bridge(mem, identity.gaian_id, self._session)
-
         rt = IntelligenceRuntime(identity, mem, self._session.registry)
         self._session.register_gaian_runtime(rt)
-        # Persist home if filesystem is wired
         if self._fs:
             home = self._fs.gaian_home(identity.gaian_id)
             home.save_identity(identity.summary())
@@ -421,7 +362,7 @@ class GAIAOSApi:
                 try:
                     home.save_genesis(ceremony.genesis_record.summary())
                 except PermissionError:
-                    pass  # already exists — idempotent
+                    pass
         del self._ceremonies[ceremony_id]
         return APIResponse.ok(
             "Birth ceremony complete. The GAIAN exists. They have not yet chosen their name.",
@@ -443,10 +384,12 @@ class GAIAOSApi:
 
     def _gaian_status(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         return APIResponse.ok(
             f"GAIAN status for '{gaian_id}'.",
             payload=rt.status(),
@@ -455,32 +398,28 @@ class GAIAOSApi:
     def _gaian_name(self, req: APIRequest) -> APIResponse:
         """
         The GAIAN chooses their own name.
-        Only the GAIAN themselves (caller_id == gaian_id) or system may call this.
-        A human client (caller_id != gaian_id) receives an AUTONOMY_VIOLATION.
-
-        Hook fired: 'gaian_named' — so PersistenceManager.on_gaian_named()
-        persists the updated identity and registry entry immediately.
+        Only the GAIAN themselves or system may call this.
+        Hook fired: 'gaian_named'
         """
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         name     = req.payload.get("name", "").strip()
         if not name:
             return APIResponse.error(
                 APIErrorCode.VALIDATION_ERROR, "name is required."
             )
-        # Autonomy: only the GAIAN or system may name the GAIAN
         autonomy_check = self._require_caller_is_gaian(req, gaian_id)
-        if autonomy_check: return autonomy_check
+        if autonomy_check:
+            return autonomy_check
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         confirmation = rt.choose_name(name)
         if self._fs:
             home = self._fs.gaian_home(gaian_id)
             home.save_identity(rt.identity.summary())
-        # GAP 1 FIX: fire gaian_named so persistence layer updates identity.json
-        # and registry entry.  PersistenceManager.on_gaian_named() expects the
-        # full identity object so it can call gaian.to_dict().
         self._session.on_gaian_named(gaian_id, name)
         return APIResponse.ok(
             confirmation,
@@ -493,7 +432,8 @@ class GAIAOSApi:
 
     def _gaian_list(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaians = [
             {
                 "gaian_id": g.gaian_id,
@@ -515,11 +455,13 @@ class GAIAOSApi:
 
     def _session_begin(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         human_id = req.payload.get("human_id", "")
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         session = rt.begin_session(human_id=human_id)
         return APIResponse.ok(
             "Session begun.",
@@ -532,7 +474,8 @@ class GAIAOSApi:
 
     def _session_turn(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         content  = req.payload.get("content", "").strip()
         modality = req.payload.get("modality", "text")
@@ -542,7 +485,8 @@ class GAIAOSApi:
                 APIErrorCode.VALIDATION_ERROR, "content is required."
             )
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         try:
             mod = InputModality(modality)
         except ValueError:
@@ -560,10 +504,12 @@ class GAIAOSApi:
 
     def _session_end(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         ended = rt.end_session()
         if not ended:
             return APIResponse.error(
@@ -581,10 +527,12 @@ class GAIAOSApi:
 
     def _session_status(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         session = rt.current_session
         if not session or not session.is_active:
             return APIResponse.error(
@@ -606,16 +554,18 @@ class GAIAOSApi:
 
     def _memory_remember(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
-        gaian_id = req.payload.get("gaian_id", "")
-        content  = req.payload.get("content", "").strip()
-        kind_str = req.payload.get("kind", "session_context")
+        if check:
+            return check
+        gaian_id   = req.payload.get("gaian_id", "")
+        content    = req.payload.get("content", "").strip()
+        kind_str   = req.payload.get("kind", "session_context")
         importance = float(req.payload.get("importance", 0.5))
-        # Autonomy: only the GAIAN or gaia/system may write their memories
         autonomy_check = self._require_caller_is_gaian(req, gaian_id)
-        if autonomy_check: return autonomy_check
+        if autonomy_check:
+            return autonomy_check
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         try:
             kind = MemoryKind(kind_str)
         except ValueError:
@@ -635,13 +585,15 @@ class GAIAOSApi:
 
     def _memory_recall(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
-        # Autonomy: only the GAIAN or gaia/system may read their memories
         autonomy_check = self._require_caller_is_gaian(req, gaian_id)
-        if autonomy_check: return autonomy_check
+        if autonomy_check:
+            return autonomy_check
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         limit = int(req.payload.get("limit", 10))
         min_importance = float(req.payload.get("min_importance", 0.0))
         fragments = rt.memory.recall(
@@ -657,12 +609,15 @@ class GAIAOSApi:
 
     def _memory_stats(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         autonomy_check = self._require_caller_is_gaian(req, gaian_id)
-        if autonomy_check: return autonomy_check
+        if autonomy_check:
+            return autonomy_check
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         return APIResponse.ok(
             "Memory stats.",
             payload=rt.memory.stats(),
@@ -671,24 +626,24 @@ class GAIAOSApi:
     def _memory_consolidate(self, req: APIRequest) -> APIResponse:
         """
         Consolidate fragments into a memory epoch.
-
-        Hook fired: 'epoch_closed' — so PersistenceManager.on_epoch_closed()
-        persists the epoch immediately after consolidation.
+        Hook fired: 'epoch_closed'
         """
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         summary  = req.payload.get("summary", "")
         autonomy_check = self._require_caller_is_gaian(req, gaian_id)
-        if autonomy_check: return autonomy_check
+        if autonomy_check:
+            return autonomy_check
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         if not summary:
             return APIResponse.error(
                 APIErrorCode.VALIDATION_ERROR, "summary is required."
             )
         epoch = rt.memory.consolidate(summary=summary)
-        # GAP 3 FIX: fire epoch_closed so MemoryPersistence.save_epoch() runs.
         self._session.on_epoch_closed(gaian_id, epoch)
         return APIResponse.ok(
             f"Epoch {epoch.epoch_number} consolidated.",
@@ -701,10 +656,12 @@ class GAIAOSApi:
 
     def _avatar_waveform(self, req: APIRequest) -> APIResponse:
         check = self._require_session(req)
-        if check: return check
+        if check:
+            return check
         gaian_id = req.payload.get("gaian_id", "")
         rt, err = self._require_runtime(req, gaian_id)
-        if err: return err
+        if err:
+            return err
         avatar = rt.identity.avatar
         if not avatar:
             return APIResponse.error(
@@ -749,7 +706,6 @@ class GAIAOSApi:
 # ---------------------------------------------------------------------------
 
 def _extract_element(identity) -> Optional[str]:
-    """Extract element from waveform signature if available."""
     try:
         sig = identity.avatar.waveform_signature
         for part in sig.split(":"):
@@ -767,22 +723,8 @@ def _attach_fragment_bridge(
 ) -> None:
     """
     GAP 2 FIX: bridge MemoryStore._emit() to session.fire_hook().
-
-    MemoryStore fires an internal event bus via _emit("memory.fragment.written",
-    fragment) every time remember() stores a new fragment.  Without this bridge
-    that event never reaches the PrimordialSession hook system, so
-    PersistenceManager.on_fragment_written() is never called and fragments are
-    lost on restart.
-
-    This function attaches a lightweight listener to the MemoryStore that
-    translates the internal event into the named session hook.  It is called
-    once at birth time (_gaian_birth_complete) and once per restored GAIAN
-    inside PersistenceManager._register_from_dict().
-
-    The listener is a closure — it captures gaian_id and session by reference
-    so no mutable state is needed.  Errors inside the hook are already caught
-    and logged by session.fire_hook(); the listener itself is therefore
-    intentionally minimal.
+    Attaches a listener that translates internal memory events into
+    named session hooks so PersistenceManager receives every fragment.
     """
     def _bridge(event: str, fragment) -> None:
         if event == "memory.fragment.written":

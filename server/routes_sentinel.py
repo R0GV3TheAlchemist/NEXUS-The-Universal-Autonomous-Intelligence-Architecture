@@ -3,7 +3,7 @@ Sentinel API routes — /v1/sentinel/
 
 Endpoints:
   GET  /v1/sentinel/status
-       Returns the Sentinel\'s current health: active rules, audit stats,
+       Returns the Sentinel's current health: active rules, audit stats,
        and the last N threat events at BLOCK or CRITICAL level.
 
   GET  /v1/sentinel/audit
@@ -31,10 +31,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re as _re
 from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -110,9 +111,6 @@ class AuditQueryOut(BaseModel):
 # ---------------------------------------------------------------------------
 # Dependency: sentinel instance
 # ---------------------------------------------------------------------------
-# The sentinel singleton is set on the router at app startup.
-# See server/app.py: router_sentinel.sentinel = sentinel_instance
-# ---------------------------------------------------------------------------
 
 def _get_sentinel() -> Sentinel:
     s = getattr(router, "sentinel", None)
@@ -127,12 +125,7 @@ def _get_sentinel() -> Sentinel:
 # ---------------------------------------------------------------------------
 # Operator auth dependency
 # ---------------------------------------------------------------------------
-# Reuses the same Bearer-token auth from server/middleware.py but adds
-# the constraint that GAIAN IDs (UUIDs) are not treated as operators.
-# Operators are non-UUID tokens defined in GAIA_BEARER_TOKENS.
-# ---------------------------------------------------------------------------
 
-import re as _re
 _UUID_RE = _re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
@@ -140,10 +133,7 @@ _UUID_RE = _re.compile(
 
 def require_operator(
     sentinel: Sentinel = Depends(_get_sentinel),
-    # caller_id is resolved upstream in server/middleware.py and
-    # stored on request.state by the BearerAuthMiddleware.
-    # We access it via the FastAPI Request object.
-    request: "fastapi.Request" = Depends(lambda r: r),
+    request: Request = Depends(lambda r: r),
 ) -> Sentinel:
     """
     Dependency that guards Sentinel routes from GAIAN callers.
@@ -173,12 +163,6 @@ def require_operator(
     "/status",
     response_model=SentinelStatusOut,
     summary="Sentinel health and active rule summary",
-    description=(
-        "Returns the list of active Sentinel rules, aggregate audit stats "
-        "(counts by threat level), and the 10 most recent BLOCK and CRITICAL "
-        "events from the in-memory ring buffer. "
-        "Operator authentication required."
-    ),
 )
 def get_sentinel_status(
     sentinel: Sentinel = Depends(require_operator),
@@ -224,42 +208,19 @@ _VALID_LEVELS = {"watch", "warn", "block", "critical"}
     "/audit",
     response_model=AuditQueryOut,
     summary="Query the Sentinel audit log",
-    description=(
-        "Returns ThreatEvents from the in-memory ring buffer (last 1,000 "
-        "events). Filter by level, min_level, caller_id, gaian_id, or since. "
-        "For historical queries spanning multiple days, read the JSONL files "
-        "at GAIA_ROOT/sentinel/audit/ directly. "
-        "Operator authentication required."
-    ),
 )
 def get_sentinel_audit(
     sentinel:  Sentinel = Depends(require_operator),
-    level:     Optional[str] = Query(
-        None,
-        description="Exact threat level: watch | warn | block | critical",
-    ),
-    min_level: Optional[str] = Query(
-        None,
-        description="Minimum threat level (inclusive): watch | warn | block | critical",
-    ),
-    caller_id: Optional[str] = Query(None, description="Filter by caller ID"),
-    gaian_id:  Optional[str] = Query(None, description="Filter by GAIAN ID"),
-    since:     Optional[str] = Query(
-        None,
-        description="ISO-8601 datetime — only events at or after this time",
-    ),
-    limit:     int = Query(
-        50,
-        ge=1,
-        le=500,
-        description="Maximum number of events to return (1–500, default 50)",
-    ),
+    level:     Optional[str] = Query(None),
+    min_level: Optional[str] = Query(None),
+    caller_id: Optional[str] = Query(None),
+    gaian_id:  Optional[str] = Query(None),
+    since:     Optional[str] = Query(None),
+    limit:     int = Query(50, ge=1, le=500),
 ) -> AuditQueryOut:
-    # Validate level strings
     level_enum     = _parse_level(level, "level")
     min_level_enum = _parse_level(min_level, "min_level")
 
-    # Parse since datetime
     since_dt: Optional[datetime] = None
     if since:
         try:
@@ -267,8 +228,7 @@ def get_sentinel_audit(
         except ValueError:
             raise HTTPException(
                 status_code=422,
-                detail=f"Invalid 'since' datetime: '{since}'. "
-                       f"Use ISO-8601 format, e.g. 2026-06-30T19:00:00Z",
+                detail=f"Invalid 'since' datetime: '{since}'.",
             )
 
     events = sentinel.audit.filter(
@@ -278,10 +238,7 @@ def get_sentinel_audit(
         gaian_id=gaian_id,
         since=since_dt,
     )
-
-    # Most recent first, then limit
     events = list(reversed(events))[:limit]
-
     return AuditQueryOut(
         count=len(events),
         events=[ThreatEventOut.from_event(e) for e in events],
@@ -295,20 +252,11 @@ def get_sentinel_audit(
 @router.get(
     "/audit/stream",
     summary="Live SSE stream of Sentinel threat events",
-    description=(
-        "Server-Sent Events stream. Emits a JSON object for every ThreatEvent "
-        "at WARN level or above as it is recorded by the Sentinel. "
-        "Connect with EventSource in a browser or `curl -N`. "
-        "Operator authentication required."
-    ),
     response_class=StreamingResponse,
 )
 async def stream_sentinel_audit(
     sentinel: Sentinel = Depends(require_operator),
-    min_level: Optional[str] = Query(
-        "warn",
-        description="Minimum level to stream: watch | warn | block | critical",
-    ),
+    min_level: Optional[str] = Query("warn"),
 ) -> StreamingResponse:
     min_level_enum = _parse_level(min_level, "min_level") or ThreatLevel.WARN
 
@@ -318,7 +266,6 @@ async def stream_sentinel_audit(
     ]
     min_idx = _LEVEL_ORDER.index(min_level_enum) if min_level_enum in _LEVEL_ORDER else 1
 
-    # We push events via an asyncio.Queue populated by an audit hook.
     queue: asyncio.Queue = asyncio.Queue(maxsize=256)
 
     def _hook(event) -> None:
@@ -331,12 +278,11 @@ async def stream_sentinel_audit(
         try:
             queue.put_nowait(event)
         except asyncio.QueueFull:
-            pass  # drop if consumer is slow
+            pass
 
     sentinel.audit.add_hook(_hook)
 
     async def _generate() -> AsyncGenerator[str, None]:
-        # Send a heartbeat comment every 15 s to keep the connection alive
         try:
             while True:
                 try:
@@ -344,11 +290,10 @@ async def stream_sentinel_audit(
                     data = json.dumps(event.to_dict(), default=str)
                     yield f"data: {data}\n\n"
                 except asyncio.TimeoutError:
-                    yield ": heartbeat\n\n"  # SSE comment, no client event
+                    yield ": heartbeat\n\n"
         except asyncio.CancelledError:
             pass
         finally:
-            # Remove hook when client disconnects
             try:
                 sentinel.audit._hooks.remove(_hook)
             except ValueError:
@@ -358,8 +303,8 @@ async def stream_sentinel_audit(
         _generate(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control":    "no-cache",
-            "X-Accel-Buffering": "no",  # disable nginx buffering
+            "Cache-Control":     "no-cache",
+            "X-Accel-Buffering": "no",
         },
     )
 
