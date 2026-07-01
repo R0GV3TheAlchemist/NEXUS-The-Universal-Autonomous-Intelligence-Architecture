@@ -19,7 +19,7 @@ class ServerConfig:
     port: int = 8000
     reload: bool = False
 
-    # GAIA OS root directory (passed to GAIAFilesystem)
+    # GAIA OS root directory (passed to GAIAFilesystem + PersistenceManager)
     gaia_root: Optional[Path] = None
 
     # Auth
@@ -35,13 +35,19 @@ class ServerConfig:
     # Boot number (incremented externally for multi-boot tracking)
     boot_number: int = 1
 
+    # Sentinel
+    # Maximum weighted requests per caller per 60-second window.
+    # Session turns are weighted 3x. Default: 60 (i.e. 20 turns/min).
+    # Set higher for trusted internal deployments, lower for public APIs.
+    sentinel_rate_limit: int = 60
+
     @classmethod
     def from_env(cls) -> "ServerConfig":
         gaia_root_env = os.environ.get("GAIA_ROOT")
-        tokens_env = os.environ.get("GAIA_BEARER_TOKENS", "")
-        tokens = [t.strip() for t in tokens_env.split(",") if t.strip()]
-        cors_env = os.environ.get("GAIA_CORS_ORIGINS", "*")
-        cors = [o.strip() for o in cors_env.split(",") if o.strip()]
+        tokens_env    = os.environ.get("GAIA_BEARER_TOKENS", "")
+        tokens        = [t.strip() for t in tokens_env.split(",") if t.strip()]
+        cors_env      = os.environ.get("GAIA_CORS_ORIGINS", "*")
+        cors          = [o.strip() for o in cors_env.split(",") if o.strip()]
         return cls(
             host=os.environ.get("GAIA_HOST", "0.0.0.0"),
             port=int(os.environ.get("GAIA_PORT", "8000")),
@@ -51,4 +57,7 @@ class ServerConfig:
             require_auth=len(tokens) > 0,
             cors_origins=cors,
             boot_number=int(os.environ.get("GAIA_BOOT_NUMBER", "1")),
+            sentinel_rate_limit=int(
+                os.environ.get("GAIA_SENTINEL_RATE_LIMIT", "60")
+            ),
         )
