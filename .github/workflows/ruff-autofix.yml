@@ -1,6 +1,16 @@
 name: Ruff Autofix
+
 on:
+  # Run automatically on every push to main so auto-fixable issues
+  # self-heal without manual workflow_dispatch triggers.
+  push:
+    branches: [main]
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+  # Keep manual trigger for on-demand runs from Actions tab.
   workflow_dispatch:
+
 jobs:
   fix:
     runs-on: ubuntu-latest
@@ -8,18 +18,25 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Fetch full history so the bot push doesn't trigger another run loop
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install ruff
         run: pip install ruff
+
       - name: Run ruff autofix
         run: ruff check --fix . || true
-      - name: Commit fixes
+
+      - name: Commit fixes (skip if nothing changed)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "chore: ruff --fix autofix"
+          git diff --cached --quiet || git commit -m "chore: ruff --fix autofix [skip ci]"
           git push
