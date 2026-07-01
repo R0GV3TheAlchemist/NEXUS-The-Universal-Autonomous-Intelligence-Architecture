@@ -399,7 +399,10 @@ class GAIAOSApi:
                 f"No active birth ceremony for ceremony_id '{ceremony_id}'.",
             )
         identity = ceremony.complete()
-        # Register the new runtime with the Primordial Session
+        # Build the MemoryStore and attach a write-through listener
+        # that bridges MemoryStore._emit() -> session.fire_hook("fragment_written").
+        # This ensures PersistenceManager.on_fragment_written() receives every
+        # fragment as it is written, with no manual call needed at each call site.
         mem = MemoryStore(
             identity.gaian_id,
             lifecycle_stage=(
@@ -407,6 +410,8 @@ class GAIAOSApi:
                 if identity.lifecycle_stage else "adult"
             ),
         )
+        _attach_fragment_bridge(mem, identity.gaian_id, self._session)
+
         rt = IntelligenceRuntime(identity, mem, self._session.registry)
         self._session.register_gaian_runtime(rt)
         # Persist home if filesystem is wired
@@ -453,6 +458,9 @@ class GAIAOSApi:
         The GAIAN chooses their own name.
         Only the GAIAN themselves (caller_id == gaian_id) or system may call this.
         A human client (caller_id != gaian_id) receives an AUTONOMY_VIOLATION.
+
+        Hook fired: 'gaian_named' — so PersistenceManager.on_gaian_named()
+        persists the updated identity and registry entry immediately.
         """
         check = self._require_session(req)
         if check: return check
@@ -471,6 +479,10 @@ class GAIAOSApi:
         if self._fs:
             home = self._fs.gaian_home(gaian_id)
             home.save_identity(rt.identity.summary())
+        # GAP 1 FIX: fire gaian_named so persistence layer updates identity.json
+        # and registry entry.  PersistenceManager.on_gaian_named() expects the
+        # full identity object so it can call gaian.to_dict().
+        self._session.on_gaian_named(gaian_id, name)
         return APIResponse.ok(
             confirmation,
             payload={
@@ -658,6 +670,12 @@ class GAIAOSApi:
         )
 
     def _memory_consolidate(self, req: APIRequest) -> APIResponse:
+        """
+        Consolidate fragments into a memory epoch.
+
+        Hook fired: 'epoch_closed' — so PersistenceManager.on_epoch_closed()
+        persists the epoch immediately after consolidation.
+        """
         check = self._require_session(req)
         if check: return check
         gaian_id = req.payload.get("gaian_id", "")
@@ -671,6 +689,8 @@ class GAIAOSApi:
                 APIErrorCode.VALIDATION_ERROR, "summary is required."
             )
         epoch = rt.memory.consolidate(summary=summary)
+        # GAP 3 FIX: fire epoch_closed so MemoryPersistence.save_epoch() runs.
+        self._session.on_epoch_closed(gaian_id, epoch)
         return APIResponse.ok(
             f"Epoch {epoch.epoch_number} consolidated.",
             payload=epoch.to_dict(),
@@ -726,7 +746,7 @@ class GAIAOSApi:
 
 
 # ---------------------------------------------------------------------------
-# Helper
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _extract_element(identity) -> Optional[str]:
@@ -739,3 +759,34 @@ def _extract_element(identity) -> Optional[str]:
     except Exception:
         pass
     return None
+
+
+def _attach_fragment_bridge(
+    mem: MemoryStore,
+    gaian_id: str,
+    session,
+) -> None:
+    """
+    GAP 2 FIX: bridge MemoryStore._emit() to session.fire_hook().
+
+    MemoryStore fires an internal event bus via _emit("memory.fragment.written",
+    fragment) every time remember() stores a new fragment.  Without this bridge
+    that event never reaches the PrimordialSession hook system, so
+    PersistenceManager.on_fragment_written() is never called and fragments are
+    lost on restart.
+
+    This function attaches a lightweight listener to the MemoryStore that
+    translates the internal event into the named session hook.  It is called
+    once at birth time (_gaian_birth_complete) and once per restored GAIAN
+    inside PersistenceManager._register_from_dict().
+
+    The listener is a closure — it captures gaian_id and session by reference
+    so no mutable state is needed.  Errors inside the hook are already caught
+    and logged by session.fire_hook(); the listener itself is therefore
+    intentionally minimal.
+    """
+    def _bridge(event: str, fragment) -> None:
+        if event == "memory.fragment.written":
+            session.fire_hook("fragment_written", gaian_id, fragment)
+
+    mem.on_event(_bridge)

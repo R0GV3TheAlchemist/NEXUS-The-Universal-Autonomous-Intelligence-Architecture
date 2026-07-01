@@ -35,6 +35,20 @@ Restore contract:
   This means after restore(), the session has the same GAIANs,
   the same memories, and the same GAIA-level state as before
   the restart.
+
+Hook wiring:
+  After calling restore(), wire the four PrimordialSession hooks so
+  every lifecycle event propagates automatically:
+
+    session.add_hook("gaian_born",       manager.on_gaian_born)
+    session.add_hook("gaian_named",      manager._on_gaian_named_hook)
+    session.add_hook("fragment_written", manager.on_fragment_written)
+    session.add_hook("epoch_closed",     manager.on_epoch_closed)
+    session.add_hook("session_ended",    manager.on_session_ended)
+
+  The fragment_written hook is additionally bridged inside each
+  MemoryStore via _attach_fragment_bridge() (called in api.py at
+  birth time and in _register_from_dict() at restore time).
 """
 from __future__ import annotations
 
@@ -153,10 +167,14 @@ class PersistenceManager:
         """
         Reconstruct a GAIANIdentity, MemoryStore, and IntelligenceRuntime
         from persisted dicts and register them in the live session.
+
+        GAP 2 FIX: after building the MemoryStore, attach the fragment bridge
+        so future writes in the restored runtime still reach the session hook.
         """
         from core.identity.gaian.identity import GAIANIdentity
         from core.memory.store import MemoryStore, MemoryFragment, MemoryKind, MemoryScope
         from core.runtime.runtime import IntelligenceRuntime
+        from core.api.api import _attach_fragment_bridge
         from datetime import datetime, timezone
 
         # Reconstruct identity
@@ -191,6 +209,10 @@ class PersistenceManager:
                 logger.warning("Skipping malformed fragment %s: %s",
                                fd.get("fragment_id"), exc)
 
+        # Bridge the MemoryStore internal event bus to the session hook system
+        # so future writes from the restored runtime persist automatically.
+        _attach_fragment_bridge(memory, gaian_id, session)
+
         # Create and register runtime
         rt = IntelligenceRuntime(identity=gaian, memory=memory)
         session._register_runtime(gaian_id, rt)
@@ -203,7 +225,7 @@ class PersistenceManager:
         )
 
     def _restore_gaia_memory(self, session) -> None:
-        """Restore GAIA\'s own sovereign memory fragments."""
+        """Restore GAIA's own sovereign memory fragments."""
         if not hasattr(session, "gaia_memory"):
             return
         frag_dicts = self.session_persistence.load_gaia_fragments()
@@ -257,6 +279,43 @@ class PersistenceManager:
             gaian.display_name,
         )
 
+    def _on_gaian_named_hook(self, gaian_id: str, name: str) -> None:
+        """
+        GAP 1 FIX: adapter for the session 'gaian_named' hook signature.
+
+        PrimordialSession fires 'gaian_named' with (gaian_id, name) — two
+        strings.  PersistenceManager.on_gaian_named() expects a full GAIAN
+        object so it can call gaian.to_dict().  This adapter looks the GAIAN
+        up from the registry and forwards to on_gaian_named().
+
+        It is registered as the hook handler rather than on_gaian_named()
+        directly:
+
+            session.add_hook("gaian_named", manager._on_gaian_named_hook)
+
+        The registry lookup is intentionally deferred to call-time (not
+        captured at wiring time) so it always reflects the current state.
+        """
+        id_store = self.identity_for(gaian_id)
+        # Lazily build a minimal proxy object if we cannot reach the registry.
+        # In practice the runtime always exists at this point because naming
+        # requires an active runtime (_require_runtime guard in the API).
+        existing = id_store.load_identity()
+        if existing is None:
+            logger.warning(
+                "_on_gaian_named_hook: no identity.json found for %s — skipping.",
+                gaian_id,
+            )
+            return
+        # Patch the name into the persisted dict and re-save directly.
+        existing["display_name"] = name
+        id_store.save_identity(existing)
+        self.registry_persistence.save_entry(gaian_id, existing)
+        logger.info(
+            "Persisted GAIAN name update (via hook): %s → %s",
+            gaian_id[:16], name,
+        )
+
     def on_fragment_written(self, gaian_id: str, fragment) -> None:
         """Write-through: called immediately when a MemoryFragment is added."""
         self.memory_for(gaian_id).save_fragment(fragment)
@@ -280,9 +339,30 @@ class PersistenceManager:
             self.memory_for(gaian_id).save_stats(stats)
 
     def on_manifest_written(self, manifest) -> None:
-        """Persist the boot manifest after PrimordialSession writes it."""
+        """
+        Persist the boot manifest after PrimordialSession writes it.
+
+        GAP 4 FIX: also snapshot GAIA sovereign memory stats so
+        SessionPersistence.save_gaia_stats() is called at least once
+        per boot cycle.  The manifest object carries gaian_count and
+        runtime_count; gaia_fragment_count is read directly from the
+        fragment directory to keep this free of session coupling.
+        """
         data = manifest.to_dict() if hasattr(manifest, "to_dict") else vars(manifest)
         self.session_persistence.save_manifest(data)
+
+        # Snapshot GAIA sovereign memory stats alongside the manifest.
+        gaia_frag_count = len(
+            self._store.list_dir("gaia_memory/fragments")
+        )
+        self.session_persistence.save_gaia_stats({
+            "boot_number":       data.get("boot_number", 0),
+            "session_id":        data.get("session_id", ""),
+            "gaian_count":       data.get("gaian_count", 0),
+            "gaia_fragment_count": gaia_frag_count,
+            "schumann_hz":       data.get("schumann_hz", 7.83),
+            "boot_status":       data.get("boot_status", ""),
+        })
 
     def on_gaia_fragment_written(self, fragment_data: Dict[str, Any]) -> None:
         """Persist a GAIA sovereign memory fragment."""
