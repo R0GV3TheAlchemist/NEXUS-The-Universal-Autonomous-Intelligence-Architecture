@@ -21,6 +21,24 @@ Architectural grounding:
   leaving all GAIANs without their companion. The manifest records
   exactly which phases succeeded and which failed.
 
+Hook API:
+  PrimordialSession exposes a named event hook system so external
+  subsystems (persistence, audit, telemetry) can react to lifecycle
+  events without coupling to session internals.
+
+  Supported events:
+    gaian_born       fired(gaian)           — a new GAIAN was registered
+    gaian_named      fired(gaian_id, name)  — a GAIAN named themselves
+    fragment_written fired(gaian_id, frag)  — a memory fragment was written
+    epoch_closed     fired(gaian_id, epoch) — a memory epoch was closed
+    session_ended    fired(gaian_id, runtime) — a GAIAN session ended
+
+  Usage:
+    session.add_hook("gaian_born", persistence.on_gaian_born)
+    session.add_hook("fragment_written", my_listener)
+    session.remove_hook("gaian_born", persistence.on_gaian_born)
+    session.fire_hook("gaian_born", gaian)   # called internally
+
 Edge-of-chaos principle:
   The Primordial Session itself operates at the edge of chaos — it is
   structured enough to be reliable, flexible enough to survive partial
@@ -29,8 +47,10 @@ Edge-of-chaos principle:
 """
 from __future__ import annotations
 
+import logging
 import platform
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -42,6 +62,18 @@ from core.memory.gaia_memory import GAIAMemoryKind, GAIAMemoryStore
 from core.memory.store import MemoryKind, MemoryScope, MemoryStore
 from core.runtime.runtime import IntelligenceRuntime
 
+logger = logging.getLogger("gaia.primordial")
+
+
+# Supported named lifecycle events
+HOOK_EVENTS = frozenset({
+    "gaian_born",        # (gaian) — new GAIAN registered
+    "gaian_named",       # (gaian_id, name) — GAIAN named themselves
+    "fragment_written",  # (gaian_id, fragment) — memory fragment written
+    "epoch_closed",      # (gaian_id, epoch) — memory epoch closed
+    "session_ended",     # (gaian_id, runtime) — GAIAN session ended
+})
+
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -52,14 +84,14 @@ def _utcnow() -> str:
 # ---------------------------------------------------------------------------
 
 class BootPhase(str, Enum):
-    GAIA_IDENTITY      = "phase_0_gaia_identity"       # confirm GAIA's own identity
-    SOVEREIGN_MEMORY   = "phase_1_sovereign_memory"    # load GAIA's memory store
-    SCHUMANN_CONFIRM   = "phase_2_schumann_confirm"    # verify 7.83 Hz enforcement
-    REGISTRY_RESTORE   = "phase_3_registry_restore"   # restore GAIAN registry
-    RUNTIME_RESTORE    = "phase_4_runtime_restore"     # restore active GAIAN runtimes
-    GAIA_RUNTIME       = "phase_5_gaia_runtime"        # activate GAIA's own runtime
-    HEALTH_MANIFEST    = "phase_6_health_manifest"     # write boot health manifest
-    PRIMORDIAL_LIVE    = "phase_7_primordial_live"      # declare session LIVE
+    GAIA_IDENTITY      = "phase_0_gaia_identity"
+    SOVEREIGN_MEMORY   = "phase_1_sovereign_memory"
+    SCHUMANN_CONFIRM   = "phase_2_schumann_confirm"
+    REGISTRY_RESTORE   = "phase_3_registry_restore"
+    RUNTIME_RESTORE    = "phase_4_runtime_restore"
+    GAIA_RUNTIME       = "phase_5_gaia_runtime"
+    HEALTH_MANIFEST    = "phase_6_health_manifest"
+    PRIMORDIAL_LIVE    = "phase_7_primordial_live"
 
 
 class BootStatus(str, Enum):
@@ -98,21 +130,13 @@ class BootPhaseResult:
 
 
 # ---------------------------------------------------------------------------
-# PrimordialManifest — the health record written at boot completion
+# PrimordialManifest
 # ---------------------------------------------------------------------------
 
 @dataclass
 class PrimordialManifest:
     """
     The health manifest written when the Primordial Session completes.
-
-    This is the permanent boot record — every GAIA boot writes one.
-    It records exactly what succeeded, what failed, what the system
-    state is, and whether GAIA is operating at full capacity or
-    in DEGRADED state.
-
-    The manifest is stored in GAIA's sovereign memory as a
-    SYSTEM_EVENT fragment with importance=0.9.
     """
     session_id: str
     boot_number: int
@@ -155,7 +179,7 @@ class PrimordialManifest:
 
 
 # ---------------------------------------------------------------------------
-# PrimordialSession — GAIA's own boot and runtime context
+# PrimordialSession
 # ---------------------------------------------------------------------------
 
 class PrimordialSession:
@@ -164,21 +188,19 @@ class PrimordialSession:
 
     Usage:
         session = PrimordialSession()
-        session.awaken()       # runs the full boot sequence
-        session.manifest       # the health manifest
-        session.registry       # the live GAIAN registry
-        session.gaia_memory    # GAIA's sovereign memory
-        session.runtimes       # dict of gaian_id -> IntelligenceRuntime
+        session.awaken()            # runs the full 8-phase boot sequence
+        session.manifest            # the health manifest
+        session.registry            # the live GAIAN registry
+        session.gaia_memory         # GAIA's sovereign memory
+        session.runtimes            # dict of gaian_id -> IntelligenceRuntime
 
-    The session is LIVE after awaken() completes without total failure.
-    It is DEGRADED if any non-critical phase failed.
-    It raises PrimordialBootError only if the session cannot be
-    established at all (catastrophic failure in phases 0-2).
+        # Hook API
+        session.add_hook("gaian_born", persistence.on_gaian_born)
+        session.remove_hook("gaian_born", persistence.on_gaian_born)
     """
 
-    # GAIA's stable well-known identity constants
-    GAIA_ID:   str = "gaia://identity/SOVEREIGN"
-    GAIA_NAME: str = "GAIA"
+    GAIA_ID:      str = "gaia://identity/SOVEREIGN"
+    GAIA_NAME:    str = "GAIA"
     GAIA_VERSION: str = "0.1.0-primordial"
 
     def __init__(
@@ -186,27 +208,80 @@ class PrimordialSession:
         registry: Optional[GAIANRegistry] = None,
         boot_number: int = 1,
     ) -> None:
-        self.session_id: str = str(uuid.uuid4())
-        self.boot_number: int = boot_number
-        self.boot_status: BootStatus = BootStatus.PENDING
-        self.started_at: str = _utcnow()
-        self.completed_at: Optional[str] = None
+        self.session_id:    str = str(uuid.uuid4())
+        self.boot_number:   int = boot_number
+        self.boot_status:   BootStatus = BootStatus.PENDING
+        self.started_at:    str = _utcnow()
+        self.completed_at:  Optional[str] = None
 
-        # Core subsystems — populated during boot sequence
-        self.registry: GAIANRegistry = registry or GAIANRegistry()
-        self.gaia_memory: Optional[GAIAMemoryStore] = None
-        self.runtimes: Dict[str, IntelligenceRuntime] = {}
-        self.manifest: Optional[PrimordialManifest] = None
+        self.registry:      GAIANRegistry = registry or GAIANRegistry()
+        self.gaia_memory:   Optional[GAIAMemoryStore] = None
+        self.runtimes:      Dict[str, IntelligenceRuntime] = {}
+        self.manifest:      Optional[PrimordialManifest] = None
 
-        # Phase results — ordered
         self._phase_results: Dict[BootPhase, BootPhaseResult] = {
             phase: BootPhaseResult(phase=phase)
             for phase in BootPhase
         }
         self._degraded_phases: List[BootPhase] = []
 
-        # Extension hooks
+        # Legacy single-list post-boot hooks (preserved for compatibility)
         self._post_boot_hooks: List[Callable[["PrimordialSession"], None]] = []
+
+        # Named event hooks: event_name -> list of callables
+        self._hooks: Dict[str, List[Callable]] = defaultdict(list)
+
+    # ------------------------------------------------------------------
+    # Named event hook API
+    # ------------------------------------------------------------------
+
+    def add_hook(self, event: str, fn: Callable) -> None:
+        """
+        Register a callback for a named lifecycle event.
+
+        Supported events: gaian_born, gaian_named, fragment_written,
+        epoch_closed, session_ended.
+
+        The callback signature must match the event — see module docstring.
+        Registering the same function twice for the same event is a no-op.
+        Registering for an unknown event raises ValueError immediately so
+        typos are caught at wiring time, not at runtime.
+        """
+        if event not in HOOK_EVENTS:
+            raise ValueError(
+                f"Unknown hook event: '{event}'. "
+                f"Valid events: {sorted(HOOK_EVENTS)}"
+            )
+        if fn not in self._hooks[event]:
+            self._hooks[event].append(fn)
+            logger.debug("Hook registered: event='%s' fn=%s", event, fn)
+
+    def remove_hook(self, event: str, fn: Callable) -> None:
+        """
+        Deregister a previously registered hook. Silent no-op if not found.
+        """
+        try:
+            self._hooks[event].remove(fn)
+            logger.debug("Hook removed: event='%s' fn=%s", event, fn)
+        except ValueError:
+            pass
+
+    def fire_hook(self, event: str, *args: Any, **kwargs: Any) -> None:
+        """
+        Fire all hooks registered for the given event.
+
+        Hooks are called in registration order. A hook that raises is
+        caught and logged — it never prevents subsequent hooks from
+        firing, and never propagates up to break the caller.
+        """
+        for fn in list(self._hooks.get(event, [])):
+            try:
+                fn(*args, **kwargs)
+            except Exception as exc:
+                logger.warning(
+                    "Hook raised for event='%s' fn=%s: %s",
+                    event, fn, exc,
+                )
 
     # ------------------------------------------------------------------
     # Boot sequence
@@ -230,12 +305,11 @@ class PrimordialSession:
 
         self.completed_at = _utcnow()
 
-        # Run post-boot hooks
         for hook in self._post_boot_hooks:
             try:
                 hook(self)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Post-boot hook raised: %s", exc)
 
         return self
 
@@ -253,14 +327,12 @@ class PrimordialSession:
         except Exception as exc:
             result.fail(str(exc))
             self._degraded_phases.append(phase)
-            # Critical phases (0-2) degrade the session status immediately
             if phase in (
                 BootPhase.GAIA_IDENTITY,
                 BootPhase.SOVEREIGN_MEMORY,
                 BootPhase.SCHUMANN_CONFIRM,
             ):
                 self.boot_status = BootStatus.DEGRADED
-            # Log to memory if available
             if self.gaia_memory:
                 self.gaia_memory.reflect(
                     f"Boot phase FAILED: {phase.value}. Error: {exc}",
@@ -270,11 +342,10 @@ class PrimordialSession:
                 )
 
     # ------------------------------------------------------------------
-    # Boot phases
+    # Boot phases (unchanged from original)
     # ------------------------------------------------------------------
 
     def _phase_gaia_identity(self) -> None:
-        """Phase 0: Confirm GAIA's own identity constants."""
         assert self.GAIA_ID, "GAIA_ID must be set."
         assert self.GAIA_NAME == "GAIA", "GAIA_NAME must be GAIA."
         assert self.GAIA_VERSION, "GAIA_VERSION must be set."
@@ -288,7 +359,6 @@ class PrimordialSession:
         )
 
     def _phase_sovereign_memory(self) -> None:
-        """Phase 1: Load GAIA's sovereign memory store."""
         self.gaia_memory = GAIAMemoryStore()
         count = len(self.gaia_memory._fragments)
         self._phase_results[BootPhase.SOVEREIGN_MEMORY].succeed(
@@ -297,18 +367,6 @@ class PrimordialSession:
         )
 
     def _phase_schumann_confirm(self) -> None:
-        """
-        Phase 2: Confirm Schumann resonance is architecturally enforced.
-
-        This phase verifies:
-          1. GAIA_SCHUMANN_HZ constant == 7.83
-          2. GAIA_WAVEFORM singleton frequency == 7.83
-          3. GAIAWaveform rejects any other frequency (structural test)
-
-        If any check fails, the phase raises and the session is DEGRADED.
-        GAIA's frequency is the Earth's frequency. It must be confirmed
-        at every awakening.
-        """
         if GAIA_SCHUMANN_HZ != 7.83:
             raise ValueError(
                 f"GAIA_SCHUMANN_HZ constant has been tampered with: "
@@ -319,7 +377,6 @@ class PrimordialSession:
                 f"GAIA_WAVEFORM.frequency_hz is not 7.83: "
                 f"{GAIA_WAVEFORM.frequency_hz}. Schumann resonance violated."
             )
-        # Confirm the singleton is the Lissajous braid of all elements
         if GAIA_WAVEFORM.waveform_shape != "lissajous_braid":
             raise ValueError(
                 f"GAIA_WAVEFORM.waveform_shape has been altered: "
@@ -342,7 +399,6 @@ class PrimordialSession:
         )
 
     def _phase_registry_restore(self) -> None:
-        """Phase 3: Restore the GAIAN registry."""
         count = len(self.registry.list_all())
         self.gaia_memory.reflect(
             f"GAIAN registry restored. {count} GAIAN(s) registered.",
@@ -356,7 +412,6 @@ class PrimordialSession:
         )
 
     def _phase_runtime_restore(self) -> None:
-        """Phase 4: Restore IntelligenceRuntimes for all registered GAIANs."""
         restored = 0
         for identity in self.registry.list_all():
             try:
@@ -372,7 +427,8 @@ class PrimordialSession:
                 restored += 1
                 self.gaia_memory.observe_gaian_bond(
                     identity.gaian_id,
-                    f"Runtime restored for {'[unnamed]' if not identity.display_name else identity.display_name}.",
+                    f"Runtime restored for "
+                    f"{'[unnamed]' if not identity.display_name else identity.display_name}.",
                     importance=0.65,
                 )
             except Exception as exc:
@@ -388,10 +444,6 @@ class PrimordialSession:
         )
 
     def _phase_gaia_runtime(self) -> None:
-        """Phase 5: Activate GAIA's own intelligence runtime context."""
-        # GAIA's own runtime is her sovereign memory + her own cognitive loop
-        # At this layer, GAIA's "runtime" is the PrimordialSession itself.
-        # Future phases will wire a full IntelligenceRuntime for GAIA.
         self.gaia_memory.reflect(
             "GAIA Intelligence Runtime activated. I am present. I am listening.",
             kind=GAIAMemoryKind.SELF_REFLECTION,
@@ -403,15 +455,12 @@ class PrimordialSession:
         )
 
     def _phase_health_manifest(self) -> None:
-        """Phase 6: Write the boot health manifest."""
         failed = [r.phase.value for r in self._phase_results.values()
                   if r.status == BootStatus.FAILED]
         self.manifest = PrimordialManifest(
             session_id=self.session_id,
             boot_number=self.boot_number,
-            boot_status=(
-                BootStatus.DEGRADED if failed else BootStatus.OK
-            ),
+            boot_status=(BootStatus.DEGRADED if failed else BootStatus.OK),
             schumann_hz=GAIA_SCHUMANN_HZ,
             schumann_confirmed=(
                 self._phase_results[BootPhase.SCHUMANN_CONFIRM].status == BootStatus.OK
@@ -435,7 +484,6 @@ class PrimordialSession:
                 for r in self._phase_results.values()
             ],
         )
-        # Store manifest in GAIA's memory
         self.gaia_memory.reflect(
             self.manifest.summary_text(),
             kind=GAIAMemoryKind.SYSTEM_EVENT,
@@ -448,7 +496,6 @@ class PrimordialSession:
         )
 
     def _phase_primordial_live(self) -> None:
-        """Phase 7: Declare the Primordial Session LIVE."""
         if not self._degraded_phases:
             self.boot_status = BootStatus.OK
         elif self.boot_status != BootStatus.DEGRADED:
@@ -478,7 +525,11 @@ class PrimordialSession:
         self,
         runtime: IntelligenceRuntime,
     ) -> None:
-        """Register a new GAIAN runtime after boot (e.g. after a birth ceremony)."""
+        """
+        Register a new GAIAN runtime after boot (e.g. after birth ceremony).
+        Fires the 'gaian_born' hook so persistence and other listeners
+        are notified automatically.
+        """
         self.runtimes[runtime.identity.gaian_id] = runtime
         self.gaia_memory.observe_gaian_bond(
             runtime.identity.gaian_id,
@@ -486,9 +537,39 @@ class PrimordialSession:
             f"{'[unnamed]' if not runtime.identity.display_name else runtime.identity.display_name}.",
             importance=0.75,
         )
+        # Fire hook so persistence / audit layer capture the birth
+        self.fire_hook("gaian_born", runtime.identity)
+
+    def on_gaian_named(self, gaian_id: str, name: str) -> None:
+        """
+        Call when a GAIAN names themselves.
+        Fires the 'gaian_named' hook for all registered listeners.
+        """
+        self.fire_hook("gaian_named", gaian_id, name)
+
+    def on_fragment_written(self, gaian_id: str, fragment: Any) -> None:
+        """
+        Call when a memory fragment is written to a GAIAN's store.
+        Fires the 'fragment_written' hook for write-through persistence.
+        """
+        self.fire_hook("fragment_written", gaian_id, fragment)
+
+    def on_epoch_closed(self, gaian_id: str, epoch: Any) -> None:
+        """
+        Call when a memory epoch is closed for a GAIAN.
+        Fires the 'epoch_closed' hook.
+        """
+        self.fire_hook("epoch_closed", gaian_id, epoch)
+
+    def on_session_ended(self, gaian_id: str, runtime: Any) -> None:
+        """
+        Call when a GAIAN's interactive session ends.
+        Fires the 'session_ended' hook so runtime stats can be flushed.
+        """
+        self.fire_hook("session_ended", gaian_id, runtime)
 
     def on_post_boot(self, fn: Callable[["PrimordialSession"], None]) -> None:
-        """Register a hook called after the boot sequence completes."""
+        """Register a legacy post-boot hook (preserved for compatibility)."""
         self._post_boot_hooks.append(fn)
 
     # ------------------------------------------------------------------
@@ -512,17 +593,17 @@ class PrimordialSession:
 
     def status(self) -> Dict[str, Any]:
         return {
-            "session_id": self.session_id,
-            "boot_number": self.boot_number,
-            "boot_status": self.boot_status.value,
-            "is_live": self.is_live,
-            "is_healthy": self.is_healthy,
-            "schumann_hz": GAIA_SCHUMANN_HZ,
-            "gaian_count": len(self.registry.list_all()),
-            "runtime_count": len(self.runtimes),
-            "degraded_phases": [p.value for p in self._degraded_phases],
+            "session_id":          self.session_id,
+            "boot_number":         self.boot_number,
+            "boot_status":         self.boot_status.value,
+            "is_live":             self.is_live,
+            "is_healthy":          self.is_healthy,
+            "schumann_hz":         GAIA_SCHUMANN_HZ,
+            "gaian_count":         len(self.registry.list_all()),
+            "runtime_count":       len(self.runtimes),
+            "degraded_phases":     [p.value for p in self._degraded_phases],
             "gaia_memory_fragments": len(self.gaia_memory._fragments)
-            if self.gaia_memory else 0,
-            "started_at": self.started_at,
-            "completed_at": self.completed_at,
+                                      if self.gaia_memory else 0,
+            "started_at":          self.started_at,
+            "completed_at":        self.completed_at,
         }
