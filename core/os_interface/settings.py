@@ -29,7 +29,7 @@ Modelled after the full settings spectrum required for a universal OS:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 @dataclass

@@ -1,6 +1,7 @@
 """Tests for core/subject_side_identity.py — Issue #274"""
 import pytest
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from core.subject_side_identity import (

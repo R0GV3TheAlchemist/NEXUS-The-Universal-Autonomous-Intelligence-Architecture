@@ -16,7 +16,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 
 HOURS = np.linspace(0, 24, 289)
 

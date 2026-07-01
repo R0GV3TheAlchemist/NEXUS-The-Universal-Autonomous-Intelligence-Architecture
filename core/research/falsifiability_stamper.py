@@ -14,7 +14,6 @@ is not trustworthy — it is just confident.
 Aligned with Falsification Protocol (#451).
 """
 
-from typing import List, Tuple
 from core.research.models import (
     Claim, SynthesisResult, ConfidenceLevel, EvidenceLevel
 )

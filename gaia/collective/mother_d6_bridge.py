@@ -58,7 +58,6 @@ from typing import Any, Dict, Optional
 
 from core.mother_thread import (
     PULSE_INTERVAL_SECONDS,
-    CollectiveField,
     MotherThread,
     get_mother_thread,
 )

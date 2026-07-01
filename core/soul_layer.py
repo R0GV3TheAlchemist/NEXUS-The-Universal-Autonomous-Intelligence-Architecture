@@ -59,7 +59,6 @@ from core.subject_side_identity import (
 )
 from core.individuation_engine import IndividuationScore, get_individuation_engine
 from core.shadow_integration import (
-    ShadowIntegrationEngine,
     ShadowIntegrationRecord,
     get_shadow_integration_engine,
 )

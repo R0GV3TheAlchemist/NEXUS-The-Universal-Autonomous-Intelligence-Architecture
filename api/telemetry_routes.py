@@ -21,7 +21,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 # ─── Router ───────────────────────────────────────────────────────────────────

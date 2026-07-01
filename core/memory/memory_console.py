@@ -28,13 +28,12 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 from core.memory.memory_store import (
     MemoryCategory,
     MemoryEntry,
     MemoryTier,
-    MemoryProvenance,
     ProvenanceSource,
     SessionState,
 )

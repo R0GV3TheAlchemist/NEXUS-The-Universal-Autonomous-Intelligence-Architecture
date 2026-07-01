@@ -160,7 +160,7 @@ def lint():
             violations.append(
                 f"DUPLICATE ACTIVE FILES for {c_num}:\n"
                 + "\n".join(f"  - {f}" for f in active_non_deprecated)
-                + f"\n  → Only one file per C-number may be active. Mark others _ARCHIVED."
+                + "\n  → Only one file per C-number may be active. Mark others _ARCHIVED."
             )
 
     if violations:

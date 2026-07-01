@@ -23,10 +23,10 @@ GAIA  — Lissajous braid of all four, dominant frequency 7.83 Hz
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 
 # ---------------------------------------------------------------------------

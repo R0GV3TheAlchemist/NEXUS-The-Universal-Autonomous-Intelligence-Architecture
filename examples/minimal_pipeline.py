@@ -195,7 +195,7 @@ def run_pipeline(text: str, source: str = "user") -> dict:
 
 if __name__ == "__main__":
     text = sys.argv[1] if len(sys.argv) > 1 else "Solar panels reduce energy costs over time"
-    print(f"\n🌍 GAIA v0.1 — Minimal Pipeline")
+    print("\n🌍 GAIA v0.1 — Minimal Pipeline")
     print(f"   Input: {text!r}\n")
 
     result = run_pipeline(text)
@@ -205,6 +205,6 @@ if __name__ == "__main__":
     print(f"   Confidence:     {result['result']['confidence']}")
     print(f"   Entity type:    {result['result']['entity_type']}")
     print(f"   Snapshot saved: {result['snapshot']}")
-    print(f"\n   Full result:")
+    print("\n   Full result:")
     print(json.dumps(result['result'], indent=4))
-    print(f"\n✅ Pipeline complete. GAIA is alive.\n")
+    print("\n✅ Pipeline complete. GAIA is alive.\n")

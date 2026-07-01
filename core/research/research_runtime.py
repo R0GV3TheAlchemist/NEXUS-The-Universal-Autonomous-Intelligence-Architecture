@@ -20,11 +20,10 @@ at the frequency of what they need to know.
 import time
 import hashlib
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 
 from core.research.models import (
-    ResearchSession, FrequencyContext, QueryIntent,
-    SubQuery, RetrievedSource, RankedSource, SynthesisResult
+    ResearchSession, FrequencyContext, SubQuery
 )
 from core.research.query_decomposer import QueryDecomposer
 from core.research.retrieval import RetrievalEngine

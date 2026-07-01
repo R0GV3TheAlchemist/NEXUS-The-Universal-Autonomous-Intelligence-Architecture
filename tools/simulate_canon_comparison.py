@@ -64,14 +64,14 @@ import os
 import sys
 import textwrap
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 # ---------------------------------------------------------------------------
 # Path bootstrap — works whether run from repo root or tools/
 # ---------------------------------------------------------------------------
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.synergy_engine import SynergyEngine, _analyse_canon_context  # noqa: E402
+from core.synergy_engine import SynergyEngine  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

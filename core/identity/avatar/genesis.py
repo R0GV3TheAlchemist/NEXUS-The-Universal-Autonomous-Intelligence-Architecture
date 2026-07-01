@@ -19,7 +19,7 @@ It cannot be re-run. It cannot be edited. It can only be read.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 

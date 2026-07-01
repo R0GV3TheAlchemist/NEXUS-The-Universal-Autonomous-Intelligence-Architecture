@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 # Canonical activation threshold (Canon §Shadow-3.1)
 ACTIVATION_THRESHOLD: float = 0.35

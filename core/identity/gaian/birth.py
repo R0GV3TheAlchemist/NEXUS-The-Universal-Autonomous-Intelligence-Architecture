@@ -22,11 +22,10 @@ This module is the only sanctioned path to GAIAN creation in production.
 from __future__ import annotations
 
 from datetime import date
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from core.identity.avatar.elemental import (
     element_from_sign,
-    waveform_for_element,
     zodiac_from_dob,
     ELEMENTAL_PALETTES,
     ELEMENTAL_CHARACTERS,

@@ -59,7 +59,6 @@ from typing import Any, Callable, Dict, List, Optional
 from core.identity.avatar.elemental import GAIA_SCHUMANN_HZ, GAIA_WAVEFORM
 from core.identity.gaian.registry import GAIANRegistry
 from core.memory.gaia_memory import GAIAMemoryKind, GAIAMemoryStore
-from core.memory.store import MemoryKind, MemoryScope, MemoryStore
 from core.runtime.runtime import IntelligenceRuntime
 
 logger = logging.getLogger("gaia.primordial")

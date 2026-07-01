@@ -33,9 +33,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 from core.fs.filesystem import GAIAFilesystem
 from core.identity.gaian.birth import BirthCeremony
-from core.identity.gaian.registry import GAIANRegistry
 from core.memory.store import MemoryKind, MemoryScope, MemoryStore
-from core.primordial.session import BootStatus, PrimordialSession
+from core.primordial.session import PrimordialSession
 from core.runtime.runtime import InputModality, IntelligenceRuntime
 
 

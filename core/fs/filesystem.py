@@ -16,7 +16,7 @@ Tamper detection:
 
 Cross-platform root resolution:
   Linux/macOS : ~/.gaia/  (XDG_DATA_HOME aware)
-  Windows     : %APPDATA%\GAIA\
+  Windows     : %APPDATA%\\GAIA\
   Override    : GAIA_ROOT environment variable
 """
 from __future__ import annotations
@@ -25,7 +25,6 @@ import hashlib
 import json
 import os
 import shutil
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

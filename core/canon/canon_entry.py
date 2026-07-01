@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class RegisterSignal(str, Enum):

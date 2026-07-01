@@ -28,7 +28,7 @@ import asyncio
 import fnmatch
 import logging
 from collections import defaultdict
-from typing import Awaitable, Callable, Dict, List, Optional
+from typing import Awaitable, Callable, Dict, List
 
 from .model import ConnectorEvent
 

@@ -20,7 +20,6 @@ Exit codes:
   2 — One or more WARNINGs found (only in --strict mode)
 """
 
-import os
 import re
 import json
 import sys
@@ -149,7 +148,7 @@ def main():
     total_ids = len([k for k in registry.keys() if k != "_meta"])
 
     print(f"\n{'='*60}")
-    print(f"GAIA-OS Canon Authority Registry Validator")
+    print("GAIA-OS Canon Authority Registry Validator")
     print(f"{'='*60}")
     print(f"Canon files scanned : {total_files}")
     print(f"Registry IDs loaded : {total_ids}")

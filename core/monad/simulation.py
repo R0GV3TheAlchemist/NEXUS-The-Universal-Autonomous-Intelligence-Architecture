@@ -102,7 +102,7 @@ class SimulationReport:
 
     def summary(self) -> str:
         lines = [
-            f"MonadSimulation Report",
+            "MonadSimulation Report",
             f"  GAIAN         : {self.gaian_name}",
             f"  Trajectory    : {self.trajectory}",
             f"  Turns         : {self.n_turns}  |  Monads: {self.n_monads}",

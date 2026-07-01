@@ -4,7 +4,7 @@ Integration Tracker — monitors shadow integration progress over time.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 

@@ -20,7 +20,6 @@ from core.os_interface.device.model import (
     DevicePowerState,
     DeviceState,
     GAIADevice,
-    HotplugEvent,
 )
 from core.os_interface.device.registry import HALRegistry
 

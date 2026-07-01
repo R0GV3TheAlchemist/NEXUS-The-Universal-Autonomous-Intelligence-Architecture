@@ -5,7 +5,7 @@ The persistent, versioned memory of what GAIA believes is real.
 """
 
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 from pathlib import Path
 

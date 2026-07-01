@@ -24,7 +24,7 @@ from core.memory.layers import MemoryTag
 from .architect import ArchitectRepository
 from .bootstrap import SessionBootstrap
 from .seal import SessionSeal
-from .result import SessionInitResult, SealedSessionRecord, SessionState
+from .result import SessionInitResult, SealedSessionRecord
 from .stubs import (
     ICircadianLightEngine,
     IMagnumOpusStageEngine,

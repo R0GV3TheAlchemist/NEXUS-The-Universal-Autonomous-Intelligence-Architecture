@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from .layers import MemoryLayer, MemoryRecord, MemoryScope, MemoryTag
+from .layers import MemoryLayer, MemoryRecord, MemoryTag
 from .session_buffer import SessionBuffer
 from .episodic import EpisodicMemoryStore
 from .semantic import SemanticMemoryStore
@@ -27,9 +27,8 @@ from .identity import IdentityMemoryStore, GaianTwinProfile
 from .shared import SharedMemoryStore
 from .shadow_registry import ShadowRegistry, ShadowPattern, ShadowEntry
 from .retrieval import MemoryRetrievalEngine, RetrievalQuery, RankedMemory
-from .persistent_memory import PersistentMemoryModule, PersistentMemoryRecord
-from .connectivity_graph import ConnectivityGraph
-from .relevance_scorer import RelevanceScorer, RelevanceBreakdown
+from .persistent_memory import PersistentMemoryModule
+from .relevance_scorer import RelevanceBreakdown
 
 
 class MemoryManager:

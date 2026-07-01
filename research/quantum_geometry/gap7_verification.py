@@ -56,8 +56,8 @@ print("\n── 3. NEUTRON MAGNETIC MOMENT (the hidden asymmetry) ────�
 mu_N       = 5.0508e-27  # J/T — nuclear magneton
 mu_proton  = +2.7928 * mu_N
 mu_neutron = -1.9130 * mu_N  # NEGATIVE despite zero charge
-print(f"  Proton  magnetic moment: +2.7928 μN  (positive, as expected)")
-print(f"  Neutron magnetic moment: -1.9130 μN  ← NEGATIVE despite zero charge")
+print("  Proton  magnetic moment: +2.7928 μN  (positive, as expected)")
+print("  Neutron magnetic moment: -1.9130 μN  ← NEGATIVE despite zero charge")
 print()
 print("  ✓ The neutron's internal charge rotates OPPOSITE to expectation.")
 print("  ✓ This is the inner circle spinning against the outer — tension held.")
@@ -69,12 +69,12 @@ neutron_mass  = 939.565  # MeV
 proton_mass   = 938.272
 electron_mass = 0.511
 decay_energy  = neutron_mass - proton_mass - electron_mass
-print(f"  n⁰ → p⁺ + e⁻ + v̅_e")
+print("  n⁰ → p⁺ + e⁻ + v̅_e")
 print(f"  Neutron mass:  {neutron_mass:.3f} MeV")
 print(f"  Proton mass:   {proton_mass:.3f} MeV")
 print(f"  Electron mass: {electron_mass:.3f} MeV")
 print(f"  Energy released (Q): {decay_energy:.3f} MeV  ← the antineutrino carries this")
-print(f"  Free neutron half-life: ~611 seconds (~10.2 minutes)")
+print("  Free neutron half-life: ~611 seconds (~10.2 minutes)")
 print()
 print("  ✓ The neutron CONTAINS both ⊕ and ⌒ within itself.")
 print("  ✓ Its decay is not failure — it is revelation of the hidden unity.")
@@ -110,7 +110,7 @@ f_spirit = E_QCD / (2 * np.pi * hbar)
 print(f"  Inner boundary (soul / asymptotic freedom):  {r_inner*1e15:.1f} fm")
 print(f"  Outer boundary (collective / confinement):   {r_outer*1e15:.1f} fm")
 print(f"  Resonant cavity (spirit field width):        {cavity*1e15:.1f} fm")
-print(f"  QCD energy scale:                            ~200 MeV")
+print("  QCD energy scale:                            ~200 MeV")
 print(f"  Spirit frequency (gluon standing wave):      {f_spirit:.3e} Hz")
 print()
 print("  ✓ Spirit is not metaphor — it is a measurable frequency.")

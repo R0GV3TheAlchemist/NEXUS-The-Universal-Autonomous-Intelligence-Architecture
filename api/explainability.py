@@ -33,11 +33,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from core.governance.explainability import (
-    CanonCitation,
-    CounterfactualResult,
-    DashboardEntry,
     DecisionExplainer,
-    DecisionReport,
 )
 
 # ---------------------------------------------------------------------------

@@ -36,11 +36,10 @@ Routing protocol (the spec designed in conversation):
 
 from __future__ import annotations
 
-import math
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional
 
 
 # ─────────────────────────────────────────────

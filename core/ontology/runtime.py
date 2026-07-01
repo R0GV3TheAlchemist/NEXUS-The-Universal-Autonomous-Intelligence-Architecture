@@ -17,8 +17,7 @@ The five Ontological Constraints from C03 §5 are enforced as HARD GUARDS:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Optional
 
 from .entities import (
     AlchemicalStage,
@@ -32,7 +31,7 @@ from .entities import (
 )
 from .permissions import AuditTrail, Capability, PermissionDeniedError, PermissionEnvelope
 from .relationships import RelationshipGraph, RelationshipType
-from .state_machine import AlchemicalStateMachine, StateTransitionError
+from .state_machine import AlchemicalStateMachine
 
 
 # ---------------------------------------------------------------------------

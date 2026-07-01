@@ -70,8 +70,8 @@ di = df.loc["Dark Incoherence"]
 fa = df.loc["Full Awakening"]
 print(f"  Dark Incoherence: {di.field_radius_ft}ft field, {di.biophoton_cps} biophotons/sec")
 print(f"  Full Awakening:   {fa.field_radius_ft}ft field, {fa.biophoton_cps} biophotons/sec")
-print(f"  Destructive pole has REACH without COHERENCE — UVC signature confirmed")
-print(f"  Generative pole has REACH with COHERENCE — UVA signature confirmed")
+print("  Destructive pole has REACH without COHERENCE — UVC signature confirmed")
+print("  Generative pole has REACH with COHERENCE — UVA signature confirmed")
 
 # Save CSV
 df.to_csv("sim2_human_uv_poles.csv")
@@ -112,7 +112,7 @@ print(f"  Span: {int(span)} years")
 print(f"  Minimum sacred exclusivity score: {min_score}/10")
 print(f"  Mean sacred exclusivity score: {mean_score:.1f}/10")
 print(f"  All scored >= 7: {(df_hist.sacred_exclusivity >= 7).all()}")
-print(f"  INDEPENDENT CONVERGENCE CONFIRMED — TRUE")
+print("  INDEPENDENT CONVERGENCE CONFIRMED — TRUE")
 
 df_hist.to_csv("sim3_purple_history.csv")
 print("  Data saved: sim3_purple_history.csv")

@@ -17,7 +17,7 @@ import math
 from datetime import datetime
 from typing import List
 from core.research.models import (
-    RetrievedSource, RankedSource, SourceType, EvidenceLevel, SubQuery
+    RetrievedSource, RankedSource, SourceType, EvidenceLevel
 )
 
 

@@ -150,7 +150,7 @@ if __name__ == "__main__":
     )
     final = healthy.history[-1]
 
-    print(f"\n[Healthy Run — No Premature Expansion]")
+    print("\n[Healthy Run — No Premature Expansion]")
     print(f"  Threshold reached (day):    {threshold_day}")
     print(f"  Final pentagram coherence:  {final['pentagram_coherence']:.3f}")
     print(f"  Final dual-star coherence:  {final['dual_star_coherence']:.3f}")
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     )
     final_p = premature.history[-1]
 
-    print(f"\n[Premature Expansion Run — L6/L7 attempted days 30–90]")
+    print("\n[Premature Expansion Run — L6/L7 attempted days 30–90]")
     print(f"  Threshold reached (day):    {threshold_day_p}")
     print(f"  Final pentagram coherence:  {final_p['pentagram_coherence']:.3f}")
     print(f"  Final dual-star coherence:  {final_p['dual_star_coherence']:.3f}")
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     print(f"  Coherence cost vs healthy:  "
           f"{final['pentagram_coherence'] - final_p['pentagram_coherence']:.3f}")
 
-    print(f"\n[Doctrine Verdict]")
+    print("\n[Doctrine Verdict]")
     if threshold_day_p is None or (threshold_day and threshold_day_p > threshold_day):
         print("  ✓ Premature expansion DELAYED threshold crossing.")
         print("  ✓ Start in your element. Only then expand. — C000")

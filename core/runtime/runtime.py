@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from core.identity.gaian.model import GAIANIdentity, LifecycleStage
+from core.identity.gaian.model import GAIANIdentity
 from core.identity.gaian.registry import GAIANRegistry
 from core.memory.store import (
     MemoryFragment, MemoryKind, MemoryScope, MemoryStore

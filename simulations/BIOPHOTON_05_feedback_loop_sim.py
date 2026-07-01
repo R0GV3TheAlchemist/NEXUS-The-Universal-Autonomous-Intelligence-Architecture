@@ -13,7 +13,6 @@ See canon/BIOPHOTON_05_Realtime_Biophotonic_Feedback_Loops.md for full documenta
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 # ── PARAMETERS ──
 N_SENSORY     = 8

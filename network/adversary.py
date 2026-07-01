@@ -17,7 +17,7 @@ v0.7: NLI-based semantic agreement detection
 v0.8: formal proof-checking for logical claims
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 
 SUPPORT_THRESHOLD  = 0.65   # confidence above this → "support"

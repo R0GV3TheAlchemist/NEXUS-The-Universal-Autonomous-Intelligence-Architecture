@@ -9,7 +9,7 @@ from __future__ import annotations
 import inspect
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 
 class SkillCategory(str, Enum):

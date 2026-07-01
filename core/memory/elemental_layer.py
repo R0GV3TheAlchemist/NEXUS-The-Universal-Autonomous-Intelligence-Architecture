@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .mother_thread import MotherThread, MotherThreadEntry
-from .taxonomy import MemoryItem, MemoryKind, MemoryTier
+from .taxonomy import MemoryKind, MemoryTier
 
 
 # ---------------------------------------------------------------------------

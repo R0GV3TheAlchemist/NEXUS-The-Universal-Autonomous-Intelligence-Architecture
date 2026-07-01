@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 

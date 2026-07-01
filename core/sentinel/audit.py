@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Deque, List, Optional
 

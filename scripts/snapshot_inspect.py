@@ -8,7 +8,6 @@ Usage:
     python scripts/snapshot_inspect.py snapshot_v0.1.json --type simulation
 """
 
-import sys
 import json
 import argparse
 from pathlib import Path
@@ -18,7 +17,7 @@ def inspect(path: str, filter_type: str = None):
     data = json.loads(Path(path).read_text())
     claims = data.get("state", {})
 
-    print(f"\n🌍 GAIA Snapshot Inspector")
+    print("\n🌍 GAIA Snapshot Inspector")
     print(f"   File:      {path}")
     print(f"   Saved at:  {data.get('saved_at', 'unknown')}")
     print(f"   Version:   {data.get('gaia_version', 'unknown')}")
@@ -38,11 +37,11 @@ def inspect(path: str, filter_type: str = None):
             t = v.get("knowledge_type", "unknown")
             type_counts[t] = type_counts.get(t, 0) + 1
 
-    print(f"\n   Knowledge type breakdown:")
+    print("\n   Knowledge type breakdown:")
     for ktype, count in sorted(type_counts.items()):
         print(f"     {ktype:<15} {count}")
 
-    print(f"\n   Claims:")
+    print("\n   Claims:")
     for claim_id, claim in list(claims.items())[:20]:  # show first 20
         ktype = claim.get('knowledge_type', '?') if isinstance(claim, dict) else '?'
         conf  = claim.get('confidence', '?') if isinstance(claim, dict) else '?'

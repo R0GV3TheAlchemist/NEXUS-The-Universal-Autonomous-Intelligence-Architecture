@@ -18,7 +18,7 @@ import re
 import sys
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 # ---------------------------------------------------------------------------
@@ -280,7 +280,7 @@ def validate_record(batch_id: str, name: str, blob: str) -> list[Violation]:
         violations.append(Violation(
             WARN, "R09", batch_id, name,
             f"numerology={numerology} is not a valid value (valid: 1–9, 11, 22, 33)",
-            fix=f"Set numerology to the correct Pythagorean value (0 is invalid)",
+            fix="Set numerology to the correct Pythagorean value (0 is invalid)",
         ))
 
     # R10 — angel_number should match numerology digit pattern

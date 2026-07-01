@@ -20,9 +20,7 @@ Commands:
   /exit                    Save and exit
 """
 
-import sys
 import json
-import uuid
 import logging
 import argparse
 from pathlib import Path
@@ -170,7 +168,7 @@ def run_demo(ontology, evaluator, world, graph, policy, kb):
             print(f"  → [{result['status'].upper()} @{result['confidence']:.3f}] "
                   f"{statement[:60]}...")
 
-    print(f"\n  Demo complete.")
+    print("\n  Demo complete.")
     print(f"  Ontology: {ontology}")
     print(f"  Graph:    {graph}")
     print(f"  World:    {world}\n")

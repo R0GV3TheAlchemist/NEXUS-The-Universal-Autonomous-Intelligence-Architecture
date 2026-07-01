@@ -4,7 +4,7 @@ The COEXISTENCE_LAWS and GAIAN_LAWS encoded as executable constraints.
 Governance is not above the system. Governance IS the system.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 from ..epistemics.claim import Claim
 
 

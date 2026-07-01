@@ -18,7 +18,7 @@ HTTP status code mapping:
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from core.api.api import APIErrorCode, APIRequest

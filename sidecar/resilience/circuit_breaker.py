@@ -18,12 +18,11 @@ State machine:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 

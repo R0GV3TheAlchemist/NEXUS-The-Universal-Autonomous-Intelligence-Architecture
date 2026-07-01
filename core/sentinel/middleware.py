@@ -25,7 +25,7 @@ The middleware:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from core.api.api import APIErrorCode, APIRequest, APIResponse
 from core.sentinel.sentinel import Sentinel

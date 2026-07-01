@@ -22,15 +22,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Optional
 
-from .circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitState
-from .degraded_fallbacks import DEGRADED_FALLBACKS, DegradedFallback
+from .circuit_breaker import CircuitBreaker, CircuitOpenError
+from .degraded_fallbacks import DegradedFallback
 from .retry_policy import (
-    DEFAULT_RETRY_POLICY,
-    NonRetryableError,
-    RetryPolicy,
     WorkflowFailure,
     get_policy,
 )

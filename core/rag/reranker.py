@@ -34,7 +34,6 @@ from .models import (
     EVIDENCE_SCORES,
     EvidenceLevel,
     Query,
-    QueryIntent,
     RankedDoc,
     RetrievalTier,
     RetrievedDoc,

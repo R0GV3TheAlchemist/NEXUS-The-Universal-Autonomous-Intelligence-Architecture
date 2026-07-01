@@ -9,7 +9,7 @@ Outputs: shadow_active_flags, interrogator_questions, falsification_pending
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from .base import GaiaMonad

@@ -19,11 +19,8 @@ Usage:
 from __future__ import annotations
 
 import base64
-import io
-import math
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 log = logging.getLogger("gaia.alignment_visualizer")
 

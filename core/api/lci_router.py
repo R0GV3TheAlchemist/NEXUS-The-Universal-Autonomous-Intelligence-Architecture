@@ -35,7 +35,6 @@ from pydantic import BaseModel
 from core.auth import TokenPayload, require_auth
 from core.logger import GAIAEvent, get_logger, log_event
 from core.gaian import load_gaian, GaianMemory
-from core.session_memory import get_or_create_session
 from core.love_coherence_index import get_love_coherence_index, LOVE_QUALITY_WEIGHTS, LOVE_SPECTRAL_MAP
 from core.rate_limiter import rate_limit
 
@@ -398,7 +397,7 @@ async def lci_reflect(
             duration_ms = round((time.perf_counter() - t0) * 1000, 1)
             log_event(
                 GAIAEvent.TURN_COMPLETE,
-                message=f"LCI reflect stream complete",
+                message="LCI reflect stream complete",
                 gaian=slug, user_id=user.user_id,
                 duration_ms=duration_ms,
             )

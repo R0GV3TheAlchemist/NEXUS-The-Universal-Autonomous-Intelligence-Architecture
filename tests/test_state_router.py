@@ -156,7 +156,8 @@ async def test_T03_evaluate_fires_intervention_event_over_ws(app):
             )
             # Regardless of HTTP result, attempt to receive the WS message
             # The WS broadcast is async so we allow a short timeout
-            import threading, time
+            import threading
+            import time
 
             def _post():
                 import gaia.api.state_router as sr

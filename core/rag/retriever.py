@@ -18,10 +18,10 @@ Special routing:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Protocol
 
-from .models import EvidenceLevel, GAIAEntity, Query, QueryIntent, RetrievalTier, RetrievedDoc
+from .models import Query, RetrievalTier, RetrievedDoc
 
 
 # ---------------------------------------------------------------------------

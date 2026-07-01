@@ -29,7 +29,6 @@ On failure, a traceback is printed and the exit code is 1.
 
 from __future__ import annotations
 
-import json
 import sys
 import traceback
 from pathlib import Path
@@ -101,7 +100,7 @@ def run_heartbeat() -> bool:
 
         # pretty-print a compact snapshot for visibility
         snap = result.state_snapshot
-        print(f"\n  Snapshot preview:")
+        print("\n  Snapshot preview:")
         print(f"    gaian          : {snap.get('gaian')}")
         print(f"    layer          : {snap.get('layer')}")
         print(f"    codex_tier     : {snap.get('codex_tier')}")
@@ -135,7 +134,7 @@ def run_heartbeat() -> bool:
             f"got {bond_after_t3:.4f}"
         )
 
-        print(f"  Persistence check:")
+        print("  Persistence check:")
         print(f"    session_count  : {session_count_2} (expected ≥ 2)")
         print(f"    bond_depth     : {bond_after_t3:.4f} (matches TEST 2)")
         print()

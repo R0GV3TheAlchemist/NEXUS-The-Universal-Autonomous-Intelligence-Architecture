@@ -24,7 +24,7 @@ import hashlib
 import json
 import time
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path

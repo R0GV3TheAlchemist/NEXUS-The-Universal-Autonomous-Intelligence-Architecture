@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Mapping, Optional
 
-from core.skills.executor import SkillExecutor, SkillResult, SkillStatus
+from core.skills.executor import SkillExecutor, SkillResult
 from core.workflows.plan import InputSource, Workflow, WorkflowStep
 
 

@@ -25,9 +25,9 @@ from __future__ import annotations
 
 import os
 import secrets
-from typing import Any, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 

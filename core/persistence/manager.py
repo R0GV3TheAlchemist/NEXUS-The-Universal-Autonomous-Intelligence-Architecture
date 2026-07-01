@@ -175,7 +175,6 @@ class PersistenceManager:
         from core.memory.store import MemoryStore, MemoryFragment, MemoryKind, MemoryScope
         from core.runtime.runtime import IntelligenceRuntime
         from core.api.api import _attach_fragment_bridge
-        from datetime import datetime, timezone
 
         # Reconstruct identity
         gaian = GAIANIdentity.from_dict(identity_data)

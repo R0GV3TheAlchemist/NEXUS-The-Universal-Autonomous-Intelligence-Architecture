@@ -101,5 +101,4 @@ class ConflictResolver:
 
 
 # fix missing Optional import
-from typing import Optional  # noqa: E402
 ConflictResolver._check_views.__annotations__["return"] = "Optional[Dict]"

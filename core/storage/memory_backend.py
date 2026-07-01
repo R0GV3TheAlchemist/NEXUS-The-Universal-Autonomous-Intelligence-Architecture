@@ -19,7 +19,6 @@ Issue: #281
 from __future__ import annotations
 
 import time
-from .backend import StorageWriteError
 
 
 class MemoryBackend:

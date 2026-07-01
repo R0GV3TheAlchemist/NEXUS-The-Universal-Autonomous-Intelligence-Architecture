@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, Query
 
 from core.auth import TokenPayload, require_auth
 from core.logger import GAIAEvent, get_logger, log_event
-from core.gaian import load_gaian, GaianMemory
+from core.gaian import load_gaian
 from core.rate_limiter import rate_limit
 
 router = APIRouter(prefix="/status", tags=["Status"])

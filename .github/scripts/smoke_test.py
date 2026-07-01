@@ -25,7 +25,6 @@ from __future__ import annotations
 import os
 import sys
 import json
-import time
 
 try:
     import httpx
@@ -212,7 +211,7 @@ def main():
     # Not a hard failure — the autonomy block may not have crossed the
     # Sentinel probe threshold (requires N repeated violations).
     # Just confirm the endpoint is functional.
-    print(f"  PASS [sentinel_audit]  Endpoint operational")
+    print("  PASS [sentinel_audit]  Endpoint operational")
 
     # ------------------------------------------------------------------
     # 12. Boot manifest

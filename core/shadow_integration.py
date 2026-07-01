@@ -3,7 +3,6 @@ core/shadow_integration.py
 Shadow Integration — soul-mirror shadow work integration layer.
 """
 from __future__ import annotations
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional

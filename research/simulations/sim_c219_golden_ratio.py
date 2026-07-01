@@ -12,7 +12,6 @@ Five simulations:
 """
 
 import numpy as np
-import pandas as pd
 
 PHI = (1 + np.sqrt(5)) / 2
 print(f"phi = {PHI:.10f}")

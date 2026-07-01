@@ -124,7 +124,8 @@ class TestSentinelStatus:
         from fastapi import FastAPI, Request
         from fastapi.middleware.base import BaseHTTPMiddleware
         from server.routes_sentinel import router as r
-        import importlib, server.routes_sentinel as sr_module
+        import importlib
+        import server.routes_sentinel as sr_module
         # Temporarily remove sentinel from router
         old = getattr(r, "sentinel", None)
         if hasattr(r, "sentinel"):

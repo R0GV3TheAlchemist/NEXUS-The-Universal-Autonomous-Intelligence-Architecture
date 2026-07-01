@@ -4,7 +4,7 @@ Resolves conflicts between claims using source trust weighting.
 Flags unresolvable conflicts for human review.
 """
 
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 from ..epistemics.claim import Claim
 
 

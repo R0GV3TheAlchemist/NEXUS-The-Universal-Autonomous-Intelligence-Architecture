@@ -47,7 +47,7 @@ for name, cfg in PROTOCOLS.items():
     if t_90 < 90:
         print(f"  Time to 90% ceiling: {t_90:.1f} min")
     else:
-        print(f"  Never reaches 90% of ceiling within 90 min")
+        print("  Never reaches 90% of ceiling within 90 min")
 
 
 # ── Plot ─────────────────────────────────────────────────────────────────────

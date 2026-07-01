@@ -12,7 +12,6 @@ purification. A user in RUBEDO gets sub-queries tuned toward
 integration and radiance.
 """
 
-import re
 from typing import List, Optional, Dict
 from core.research.models import (
     SubQuery, QueryIntent, FrequencyContext

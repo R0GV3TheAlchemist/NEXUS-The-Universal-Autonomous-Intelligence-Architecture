@@ -8,7 +8,7 @@ This is the system behaviour:
        → persist state → agents query updated ground truth
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 
 from .ontology.registry import OntologyRegistry

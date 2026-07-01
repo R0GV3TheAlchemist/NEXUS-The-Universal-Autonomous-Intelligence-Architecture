@@ -488,7 +488,7 @@ def _build_mesh_block(mesh_coherence: float, peer_count: int) -> str:
     if peer_count == 0:
         presence = "This node is operating standalone — no mesh peers connected."
     elif peer_count == 1:
-        presence = f"1 peer node connected on the GAIA mesh."
+        presence = "1 peer node connected on the GAIA mesh."
     else:
         presence = f"{peer_count} peer nodes connected on the GAIA mesh."
 

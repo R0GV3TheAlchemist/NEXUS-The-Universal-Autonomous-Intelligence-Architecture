@@ -14,7 +14,6 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..ontology.registry import OntologyRegistry
-    from ..ontology.claim import Claim
 
 # Scoring weights
 SUPPORT_BOOST    = 0.08

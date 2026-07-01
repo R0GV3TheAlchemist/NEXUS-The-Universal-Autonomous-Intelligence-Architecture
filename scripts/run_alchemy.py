@@ -99,7 +99,7 @@ Alchemical Stages:
         from core.alchemical_pipeline import process_batch
         process_batch(n=args.batch, verbose=True)
 
-    elif getattr(args, "all"):
+    elif args.all:
         from core.alchemical_pipeline import process_all
         process_all(verbose=False)
 

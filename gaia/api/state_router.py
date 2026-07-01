@@ -38,7 +38,7 @@ from pydantic import BaseModel, Field
 
 from gaia.core.state import GAIAState, GAIAMode, default_state
 from gaia.core.d6_engine import D6Engine, EngineProbes, InterventionEvent
-from gaia.core.talisman import Talisman, TalismanEngine, make_talisman
+from gaia.core.talisman import Talisman, TalismanEngine
 
 
 # ---------------------------------------------------------------------------

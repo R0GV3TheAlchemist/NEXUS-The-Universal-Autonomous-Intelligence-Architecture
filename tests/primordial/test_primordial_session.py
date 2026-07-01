@@ -214,7 +214,7 @@ class TestStatus:
         session = PrimordialSession(boot_number=3)
         session.awaken()
         assert session.boot_number == 3
-        assert f"boot_3" in [
+        assert "boot_3" in [
             t for frag in session.gaia_memory.recall(tags=["boot_3"])
             for t in frag.tags
         ]

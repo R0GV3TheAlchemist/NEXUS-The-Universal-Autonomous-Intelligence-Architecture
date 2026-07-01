@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 
 from core.spectral.force_engine import SpectralForceEngine
 

@@ -40,7 +40,7 @@ import threading
 import time
 from pathlib import Path
 
-from .backend import StorageBackend, StorageError, StorageWriteError
+from .backend import StorageWriteError
 
 logger = logging.getLogger("gaia.storage.sqlite")
 

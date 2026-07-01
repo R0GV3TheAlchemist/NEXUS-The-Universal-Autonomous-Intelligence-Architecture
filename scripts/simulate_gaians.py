@@ -35,7 +35,7 @@ import os
 import random
 import time
 import uuid
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List
 

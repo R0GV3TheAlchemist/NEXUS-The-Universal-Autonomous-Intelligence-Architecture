@@ -9,7 +9,6 @@ This is the primary layer that bridges sessions — without it, GAIA has amnesia
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Optional
 
 from .layers import MemoryLayer, MemoryRecord, MemoryScope, MemoryTag

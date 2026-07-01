@@ -15,7 +15,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 
 # ── Parameters ──────────────────────────────────────────────────────────────
 HOURS = np.linspace(0, 24, 289)   # 5-min resolution

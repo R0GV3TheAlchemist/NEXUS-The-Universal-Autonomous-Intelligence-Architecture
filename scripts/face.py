@@ -53,7 +53,7 @@ def _print_footer(passed: int, total: int) -> None:
     ok = passed == total
     print(f"  {'─' * W}")
     if ok:
-        print(f"  ✅  GAIA has a face. Phase 3 complete.")
+        print("  ✅  GAIA has a face. Phase 3 complete.")
     else:
         print(f"  ❌  {total - passed} test(s) failed.")
     print(f"{'═' * (W + 10)}\n")
@@ -86,7 +86,6 @@ def _stream_chat(token: str) -> dict:
     POST /gaians/gaia/chat and consume the SSE stream.
     Returns the final `done` payload, or raises on error/timeout.
     """
-    import socket
     url  = f"{BASE_URL}/gaians/{GAIAN_SLUG}/chat"
     body = json.dumps({
         "message":           MESSAGE,
@@ -167,7 +166,7 @@ def run() -> bool:
         # Backend not running — no point continuing
         _print_footer(passed, total)
         print("  ⚠️  Start the backend first:")
-        print(f"     uvicorn core.server:app --host 127.0.0.1 --port 8008\n")
+        print("     uvicorn core.server:app --host 127.0.0.1 --port 8008\n")
         return False
 
     # TEST 2 — Auth
@@ -189,7 +188,7 @@ def run() -> bool:
     if not token:
         _print_footer(passed, total)
         print("  ⚠️  Set credentials via env vars:")
-        print(f"     GAIA_USERNAME=<user> GAIA_PASSWORD=<pass> python -m scripts.face\n")
+        print("     GAIA_USERNAME=<user> GAIA_PASSWORD=<pass> python -m scripts.face\n")
         return False
 
     # TEST 3 — GAIA exists
@@ -237,7 +236,7 @@ def run() -> bool:
                 chunk, preview = preview[:W - 4], preview[W - 4:]
                 print(f"  │  {chunk}")
             if result.get("_full_text", "")[240:]:
-                print(f"  │  …")
+                print("  │  …")
             print(f"  └{'─' * (W - 1)}┘")
             passed += 1
         else:

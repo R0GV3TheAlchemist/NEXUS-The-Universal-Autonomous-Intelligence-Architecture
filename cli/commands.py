@@ -12,11 +12,7 @@ All OS logic is in the API layer. Commands are thin.
 """
 from __future__ import annotations
 
-import json
-import sys
-from typing import Optional
 
-from core.api.api import APIErrorCode
 from cli.context import CLIContext
 
 

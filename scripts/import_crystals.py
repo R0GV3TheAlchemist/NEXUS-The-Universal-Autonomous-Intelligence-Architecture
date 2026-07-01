@@ -59,7 +59,6 @@ from core.crystal_correspondence.ingestion import (
     clear_validation_errors,
     get_validation_errors,
     ingest_json_file,
-    validate_record,
 )
 
 logging.basicConfig(

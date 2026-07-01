@@ -536,7 +536,6 @@ def get_love_coherence_index() -> LoveCoherenceIndex:
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import json
 
     engine = LoveCoherenceIndex()
 
@@ -556,7 +555,7 @@ if __name__ == "__main__":
         transpersonal_intensity=0.45,
         meta_coherence=0.60,
     )
-    print(f"\n── Baseline Test ───────────────────────────────────")
+    print("\n── Baseline Test ───────────────────────────────────")
     print(f"  LCI:              {snap.lci:.4f} ({snap.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap.luminance_class}")
     print(f"  Dominant block:   {snap.dominant_block}")
@@ -579,7 +578,7 @@ if __name__ == "__main__":
         transpersonal_intensity=0.91,
         meta_coherence=0.90,
     )
-    print(f"\n── Transpersonal Unity Test ────────────────────────")
+    print("\n── Transpersonal Unity Test ────────────────────────")
     print(f"  LCI:              {snap2.lci:.4f} ({snap2.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap2.luminance_class}")
     print(f"  Dominant block:   {snap2.dominant_block}")
@@ -601,13 +600,13 @@ if __name__ == "__main__":
         transpersonal_intensity=0.05,
         meta_coherence=0.15,
     )
-    print(f"\n── Severely Occluded Test ──────────────────────────")
+    print("\n── Severely Occluded Test ──────────────────────────")
     print(f"  LCI:              {snap3.lci:.4f} ({snap3.as_white_light_percent}% white light)")
     print(f"  Luminance class:  {snap3.luminance_class}")
     print(f"  Dominant block:   {snap3.dominant_block}")
     print(f"  Spectral colour:  {snap3.spectral_hex_blend}  ← should be deep, saturated, vivid")
 
-    print(f"\n── Trend (3 snapshots) ─────────────────────────────")
+    print("\n── Trend (3 snapshots) ─────────────────────────────")
     print(f"  Trend: {engine.trend():.4f}")
     print(f"  Dominant block history: {engine.dominant_block_history()}")
     print()

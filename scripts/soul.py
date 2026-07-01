@@ -113,7 +113,7 @@ def run_soul() -> bool:
                birth_result.attestation.get("type") == "GAIANBirth" or \
                len(birth_result.attestation) > 0,                 "attestation empty"
 
-        print(f"\n  Birth preview:")
+        print("\n  Birth preview:")
         print(f"    gaian name     : {birth_result.gaian.name}")
         print(f"    jungian_role   : {birth_result.jungian_role}")
         print(f"    born_at        : {birth_result.born_at[:19]}Z")
@@ -145,7 +145,7 @@ def run_soul() -> bool:
         assert "jungian_role"   in id_data, "jungian_role missing"
         assert id_data["jungian_role"] == "anima", "jungian_role should be anima"
 
-        print(f"  Identity check:")
+        print("  Identity check:")
         print(f"    DID            : {birth_result.did[:40]}...")
         print(f"    identity.json  : {id_path}")
         print(f"    jungian_role   : {id_data['jungian_role']}")
@@ -165,7 +165,7 @@ def run_soul() -> bool:
         assert len(fw) > 30,                "first_words suspiciously short"
         assert TEST_GAIAN_NAME in fw,       "first_words don't contain the Gaian's name"
 
-        print(f"  First words preview:")
+        print("  First words preview:")
         print(f"    \"{fw[:120]}...\"")
         print()
 
@@ -175,12 +175,12 @@ def run_soul() -> bool:
 
     # ── TEST 5: KnowledgeMatrix ─────────────────────────────────────────────
     try:
-        from core.knowledge_matrix import KnowledgeMatrixEngine, get_knowledge_engine
+        from core.knowledge_matrix import get_knowledge_engine
 
         engine = get_knowledge_engine()
         assert engine is not None, "get_knowledge_engine() returned None"
 
-        print(f"  KnowledgeMatrix check:")
+        print("  KnowledgeMatrix check:")
         print(f"    engine type    : {type(engine).__name__}")
         print()
 

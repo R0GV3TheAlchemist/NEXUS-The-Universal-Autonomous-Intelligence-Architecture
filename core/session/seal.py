@@ -23,7 +23,7 @@ from core.ontology import GAIARuntime
 from core.memory.manager import MemoryManager
 from core.memory.layers import MemoryTag
 
-from .result import SealedSessionRecord, SessionState
+from .result import SealedSessionRecord
 
 
 class SessionSeal:

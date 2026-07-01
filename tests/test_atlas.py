@@ -64,12 +64,12 @@ def _inject_requests(side_effect=None, json_data=None):
 
         had_attr = hasattr(atlas_module, "requests")
         original = getattr(atlas_module, "requests", None)
-        setattr(atlas_module, "requests", fake)
+        atlas_module.requests = fake
         try:
             yield fake
         finally:
             if had_attr:
-                setattr(atlas_module, "requests", original)
+                atlas_module.requests = original
             else:
                 try:
                     delattr(atlas_module, "requests")

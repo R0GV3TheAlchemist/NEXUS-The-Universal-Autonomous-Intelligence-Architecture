@@ -156,7 +156,7 @@ def main():
 
         elif user_input.lower() == "/stats":
             stats = world.stats()
-            print(f"\n  World State Stats:")
+            print("\n  World State Stats:")
             for k, v in stats.items():
                 print(f"    {k}: {v}")
             print()

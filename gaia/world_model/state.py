@@ -4,7 +4,7 @@ The runtime world model — receives evaluated claims and maintains
 the current best-supported state of everything GAIA tracks.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from datetime import datetime
 from ..epistemics.claim import Claim
 

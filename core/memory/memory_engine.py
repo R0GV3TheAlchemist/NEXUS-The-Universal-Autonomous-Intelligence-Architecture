@@ -10,7 +10,7 @@ orthestrates staleness decay and contradiction detection.
 import uuid
 import hashlib
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 
 from sqlalchemy import create_engine, or_
 from sqlalchemy.orm import sessionmaker, Session

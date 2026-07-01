@@ -26,7 +26,6 @@ from .node import GAIANode
 from .global_state import GlobalWorldState
 from .consensus import ConsensusEngine
 from .conflict import ConflictResolver
-from .sync import SyncLayer
 
 
 class GAIANetwork:
