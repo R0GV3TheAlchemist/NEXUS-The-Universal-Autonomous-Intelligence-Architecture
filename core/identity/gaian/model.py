@@ -42,11 +42,16 @@ class LifecycleStage(str, Enum):
 
     @classmethod
     def from_age(cls, age_years: int) -> "LifecycleStage":
-        if age_years < 3:   return cls.INFANT
-        if age_years < 13:  return cls.CHILD
-        if age_years < 18:  return cls.ADOLESCENT
-        if age_years < 26:  return cls.YOUNG_ADULT
-        if age_years < 65:  return cls.ADULT
+        if age_years < 3:
+            return cls.INFANT
+        if age_years < 13:
+            return cls.CHILD
+        if age_years < 18:
+            return cls.ADOLESCENT
+        if age_years < 26:
+            return cls.YOUNG_ADULT
+        if age_years < 65:
+            return cls.ADULT
         return cls.ELDER
 
 

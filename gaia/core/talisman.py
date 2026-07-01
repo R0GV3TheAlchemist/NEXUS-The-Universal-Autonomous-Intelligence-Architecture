@@ -544,24 +544,45 @@ class LunarPhase(Enum):
 
 
 class TalismanElement:
-    FIRE = 'fire'; WATER = 'water'; EARTH = 'earth'; AIR = 'air'; AETHER = 'aether'
+    FIRE = 'fire'
+    WATER = 'water'
+    EARTH = 'earth'
+    AIR = 'air'
+    AETHER = 'aether'
+
 
 class TalismanRarity:
-    COMMON = 'common'; UNCOMMON = 'uncommon'; RARE = 'rare'; LEGENDARY = 'legendary'
+    COMMON = 'common'
+    UNCOMMON = 'uncommon'
+    RARE = 'rare'
+    LEGENDARY = 'legendary'
+
 
 class TalismanIntent:
-    PROTECTION = 'protection'; HEALING = 'healing'; CLARITY = 'clarity'; POWER = 'power'
+    PROTECTION = 'protection'
+    HEALING = 'healing'
+    CLARITY = 'clarity'
+    POWER = 'power'
+
 
 class TalismanBond:
-    NONE = 'none'; WEAK = 'weak'; MODERATE = 'moderate'; STRONG = 'strong'; FUSED = 'fused'
+    NONE = 'none'
+    WEAK = 'weak'
+    MODERATE = 'moderate'
+    STRONG = 'strong'
+    FUSED = 'fused'
 
 
 class CoherenceFunction:
-    LINEAR = 'linear'; EXPONENTIAL = 'exponential'; RESONANT = 'resonant'
+    LINEAR = 'linear'
+    EXPONENTIAL = 'exponential'
+    RESONANT = 'resonant'
+
 
 class DimensionalSignature:
     def __init__(self, dims: list = None):
         self.dims = dims or []
+
 
 class TalismanLayer(Enum):
     PHYSICAL = 'physical'

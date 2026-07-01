@@ -22,6 +22,8 @@ import json
 import sys
 from typing import Any, Dict
 
+_HEXAGON = "\u2b22"  # ⬢  — pulled out so f-strings stay Python 3.11-compatible
+
 
 def _is_tty() -> bool:
     return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
@@ -107,10 +109,13 @@ class Renderer:
         colour = _C.LIVING_GREEN if status == "OK" else _C.EMBER
         schumann = self._c(_C.SCHUMANN_BLUE, f"{manifest.schumann_hz} Hz")
         gaians   = str(manifest.gaian_count)
-        print(f"  {self._c(colour, '\u2b22 ')} Primordial Session "
-              f"{self._c(colour, status)}  ·  "
-              f"Schumann {schumann}  ·  "
-              f"{gaians} GAIAN(s)")
+        hex_icon = self._c(colour, _HEXAGON + " ")
+        print(
+            f"  {hex_icon} Primordial Session "
+            f"{self._c(colour, status)}  ·  "
+            f"Schumann {schumann}  ·  "
+            f"{gaians} GAIAN(s)"
+        )
         print()
 
     # ------------------------------------------------------------------
