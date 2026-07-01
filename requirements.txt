@@ -1,18 +1,20 @@
-# GAIA Runtime Dependencies — v0.5
+# GAIA OS — Python dependencies
+# Core OS has zero third-party dependencies (stdlib only).
+# The HTTP server layer adds FastAPI + uvicorn.
+# The CLI layer adds nothing beyond core.
+# Test layer adds pytest.
 
-# Core
-pydantic>=2.0.0
-
-# API layer
-fastapi>=0.110.0
-uvicorn>=0.29.0
-
-# HTTP client (node sync)
-requests>=2.31.0
-
-# Graph layer (optional — falls back to dict if not installed)
-networkx>=3.0
+# HTTP server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+python-multipart>=0.0.9
+websockets>=12.0
 
 # Testing
-pytest>=8.0.0
-httpx>=0.27.0    # async test client for FastAPI
+pytest>=8.2.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0          # FastAPI TestClient async support
+
+# Optional: structured logging
+python-json-logger>=2.0.7

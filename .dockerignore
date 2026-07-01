@@ -1,52 +1,49 @@
-# ── Version control ───────────────────────────────────────────────────────────
-.git
-.gitignore
-.github
+# =============================================================================
+# .dockerignore — keep the GAIA image lean
+# =============================================================================
 
-# ── Python artifacts ──────────────────────────────────────────────────────────
-__pycache__
+# Version control
+.git/
+.gitignore
+
+# Python byte-code and caches
+__pycache__/
 *.py[cod]
 *.pyo
-.mypy_cache
-.ruff_cache
-.pytest_cache
-*.egg-info
-dist/
-build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Virtual environments
 .venv/
 venv/
 env/
 
-# ── Test fixtures & local data ────────────────────────────────────────────────
-tests/
-results/
+# Test outputs and coverage
+htmlcov/
+.coverage
+coverage.xml
+*.log
 
-# ── Dev artifacts ─────────────────────────────────────────────────────────────
-*.md
-docs/
-specs/
-canon/
-meta/
+# Local development data
+# (The real data lives in the Docker volume at /data/gaia,
+#  not in the source tree)
+~/.gaia/
+data/
 
-# ── Node / frontend ───────────────────────────────────────────────────────────
-node_modules/
-dist/
-.pnpm-store/
-ui/node_modules/
-src/
-src-tauri/
-
-# ── Local key material & secrets ──────────────────────────────────────────────
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.secret
-
-# ── OS / editor artifacts ─────────────────────────────────────────────────────
+# IDE and OS noise
 .DS_Store
-Thumbs.db
 .idea/
 .vscode/
 *.swp
+*.swo
+Thumbs.db
+
+# Docs build artefacts
+docs/_build/
+site/
+
+# Docker files themselves (no infinite recursion)
+Dockerfile*
+docker-compose*.yml

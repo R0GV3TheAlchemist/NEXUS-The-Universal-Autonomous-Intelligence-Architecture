@@ -1,74 +1,89 @@
-# GAIA Distributed Runtime — v0.5
-# Three-node epistemic network.
-# Each node is an independent FastAPI server with its own world state.
-# Nodes sync over the internal Docker network.
+# =============================================================================
+# GAIA OS — Docker Compose
 #
-# Run:
-#   docker-compose build
-#   docker-compose up
+# Services:
+#   gaia      — The GAIA OS HTTP server
+#   gaia-cli  — One-shot CLI container (profile: cli)
 #
-# Submit a claim to Node A:
-#   curl -X POST http://localhost:8001/claim \
-#     -H "Content-Type: application/json" \
-#     -d '{"statement": "The sky is blue", "confidence": 0.9}'
+# Quick start:
+#   docker compose up
 #
-# Check if it propagated to Node B:
-#   curl http://localhost:8002/state
-
+# With auth enabled:
+#   GAIA_BEARER_TOKENS=my-token docker compose up
+#
+# Run the CLI against the running server:
+#   (Not yet — CLI talks to the in-process API.
+#    HTTP CLI client coming in a future layer.)
+# =============================================================================
 version: "3.9"
 
 services:
 
-  gaia-node-a:
-    build: .
-    ports:
-      - "8001:8000"
-    environment:
-      - NODE_ID=A
-      - NODE_DOMAIN=biophotonics
-      - NODE_TRUST=0.90
-      - PEERS=http://gaia-node-b:8000,http://gaia-node-c:8000
-    volumes:
-      - ./data/node-a:/app/data
+  gaia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: gaia-os:latest
+    container_name: gaia-os
     restart: unless-stopped
+    ports:
+      - "${GAIA_PORT:-8000}:${GAIA_PORT:-8000}"
+    environment:
+      GAIA_ROOT: /data/gaia
+      GAIA_HOST: 0.0.0.0
+      GAIA_PORT: ${GAIA_PORT:-8000}
+      GAIA_RELOAD: ${GAIA_RELOAD:-false}
+      GAIA_BEARER_TOKENS: ${GAIA_BEARER_TOKENS:-}
+      GAIA_CORS_ORIGINS: ${GAIA_CORS_ORIGINS:-*}
+      GAIA_BOOT_NUMBER: ${GAIA_BOOT_NUMBER:-1}
+      GAIA_WORKERS: ${GAIA_WORKERS:-1}
+    volumes:
+      # Named volume — GAIAN homes + memory survive container restarts
+      - gaia-data:/data/gaia
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import urllib.request
+          urllib.request.urlopen('http://localhost:${GAIA_PORT:-8000}/health').read()
+      interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 10s
+    networks:
+      - gaia-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  gaia-node-b:
-    build: .
-    ports:
-      - "8002:8000"
-    environment:
-      - NODE_ID=B
-      - NODE_DOMAIN=architecture
-      - NODE_TRUST=0.85
-      - PEERS=http://gaia-node-a:8000,http://gaia-node-c:8000
-    volumes:
-      - ./data/node-b:/app/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+  # ---------------------------------------------------------------------------
+  # Optional: nginx reverse proxy
+  # Uncomment to serve GAIA behind nginx with TLS termination.
+  # ---------------------------------------------------------------------------
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: gaia-nginx
+  #   ports:
+  #     - "443:443"
+  #     - "80:80"
+  #   volumes:
+  #     - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./deploy/nginx/certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     gaia:
+  #       condition: service_healthy
+  #   networks:
+  #     - gaia-net
 
-  gaia-node-c:
-    build: .
-    ports:
-      - "8003:8000"
-    environment:
-      - NODE_ID=C
-      - NODE_DOMAIN=epistemics
-      - NODE_TRUST=0.88
-      - PEERS=http://gaia-node-a:8000,http://gaia-node-b:8000
-    volumes:
-      - ./data/node-c:/app/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+volumes:
+  gaia-data:
+    driver: local
+
+networks:
+  gaia-net:
+    driver: bridge
