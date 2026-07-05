@@ -2,6 +2,7 @@
  * GAIANProfile.ts — Persistent Identity Layer for the GAIAN Console
  *
  * M1: Core Runtime Identity (Issue #756)
+ * M2: LCI Live Computation — updateLCIBaseline() (Issue #756)
  * ADR: docs/adr/FE/ADR-FE-004-state-management.md
  *
  * State hierarchy:
@@ -187,6 +188,12 @@ const PROFILE_STORE_NAME = 'gaian-profiles.dat';
 const PROFILE_KEY_PREFIX  = 'profile:';
 
 /**
+ * Default rolling window size for lciBaseline computation.
+ * Uses the last 10 LCI history entries to compute the baseline.
+ */
+const DEFAULT_BASELINE_WINDOW = 10;
+
+/**
  * GAIANProfileManager
  *
  * Handles load, save, and update of GAIANProfile records via @tauri-apps/plugin-store.
@@ -265,6 +272,47 @@ export class GAIANProfileManager {
         activationLocked: phi < 0.30,
         // Superhuman mode becomes ready at phi >= 0.72 (matches Akashic gate)
         superhumanModeReady: phi >= 0.72,
+      },
+    });
+  }
+
+  /**
+   * updateLCIBaseline — M2: LCI Live Computation
+   *
+   * Recomputes lciBaseline as the rolling arithmetic mean of the last
+   * `windowSize` entries in the provided LCI history, then writes it
+   * back to the persisted profile.
+   *
+   * Call this at session close (after all LCI history entries for the
+   * session have been appended) so the baseline reflects real usage.
+   *
+   * If history is empty, lciBaseline is left unchanged.
+   * If history has fewer entries than windowSize, all entries are used.
+   *
+   * @param architectId  The architect whose profile to update.
+   * @param entries      The full LCI history array (profile.lciHistory).
+   * @param windowSize   Number of recent entries to average (default: 10).
+   */
+  async updateLCIBaseline(
+    architectId: string,
+    entries:     LCIHistoryEntry[],
+    windowSize = DEFAULT_BASELINE_WINDOW,
+  ): Promise<void> {
+    if (entries.length === 0) return;
+
+    const window = entries.slice(-Math.abs(windowSize));
+    const mean   = window.reduce((sum, e) => sum + e.phi, 0) / window.length;
+    const baseline = Math.max(0.0, Math.min(1.0, mean));
+
+    const profile = await this.load(architectId);
+    if (!profile) return;
+
+    await this.save({
+      ...profile,
+      lciBaseline: baseline,
+      constitutional: {
+        ...profile.constitutional,
+        ethicalGuardrailActive: true,  // Invariant
       },
     });
   }

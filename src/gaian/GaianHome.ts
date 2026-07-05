@@ -6,6 +6,8 @@
  *   ┌──────────────────────────────────────────────────┐
  *   │  [profile card: name · archetype · relationship age]        │
  *   │                                                              │
+ *   │  [Recovery Mode banner — visible when LCI trend = volatile] │
+ *   │                                                              │
  *   │              [GaianOrb canvas]                               │
  *   │           [mood label beneath orb]                          │
  *   │           [band label — CoherenceBand from CrystalState]    │
@@ -35,6 +37,12 @@
  * onto <html> — and to AlignmentIndicator.update() so the ambient pill
  * reflects the live score.  Failures degrade silently; the last applied
  * tier persists until the next successful fetch.
+ *
+ * Recovery Mode (M2 — Issue #756):
+ * setLCITrend(trend) is called by the session layer after GAIANRuntime.process()
+ * returns a RuntimeResult.  When trend === 'volatile', a Recovery Mode banner
+ * is shown above the orb.  The banner is dismissed automatically when trend
+ * returns to any non-volatile value.
  */
 
 import { GaianOrb }          from './GaianOrb';
@@ -50,6 +58,7 @@ import {
   type AlignmentState,
 } from './ViriditasTheme';
 import { AlignmentIndicator } from './AlignmentIndicator';
+import type { LCITrend }     from './GAIANProfile';
 
 // React + ReactDOM are loaded as globals at runtime via CDN (same pattern
 // as THREE / gsap in GaianOrb.ts).
@@ -241,10 +250,48 @@ export class GaianHome {
   /** setInterval handle for the 10-min Schumann poll. */
   private _schumannPollHandle: number | null = null;
 
+  // ── Recovery Mode state (M2) ───────────────────────────────────────────
+  /** The Recovery Mode banner element, created once in _render(). */
+  private _recoveryBanner: HTMLElement | null = null;
+  /** Current LCI trend — updated by setLCITrend(). */
+  private _lciTrend: LCITrend = 'stable';
+
   constructor({ container, onNavigate }: GaianHomeOptions) {
     this.container  = container;
     this.onNavigate = onNavigate;
     this._render();
+  }
+
+  // ── Recovery Mode API (M2) ─────────────────────────────────────────────────
+
+  /**
+   * Called by the session layer after GAIANRuntime.process() returns.
+   * Shows or hides the Recovery Mode banner based on lci_trend.
+   *
+   * When trend === 'volatile':
+   *   - The banner becomes visible with an accessible live-region alert.
+   *   - The orb receives a 'alert' mood hint to visually reflect distress.
+   *
+   * When trend transitions away from 'volatile':
+   *   - The banner is hidden.
+   *   - The orb mood is left as-is (controlled by the affect pipeline).
+   *
+   * @param trend  The LCITrend value from RuntimeResult.lci_trend
+   */
+  setLCITrend(trend: LCITrend): void {
+    this._lciTrend = trend;
+    this._updateRecoveryBanner(trend);
+  }
+
+  private _updateRecoveryBanner(trend: LCITrend): void {
+    if (!this._recoveryBanner) return;
+    const isVolatile = trend === 'volatile';
+    this._recoveryBanner.hidden = !isVolatile;
+    this._recoveryBanner.setAttribute('aria-hidden', isVolatile ? 'false' : 'true');
+    if (isVolatile) {
+      // Alert the orb — visual coherence distress signal
+      this.orb?.setMood('alert');
+    }
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -269,6 +316,24 @@ export class GaianHome {
       </div>
     `;
     this.container.appendChild(profileCard);
+
+    // ── Recovery Mode banner (M2 — hidden until LCI trend = volatile)
+    const recoveryBanner = document.createElement('div');
+    recoveryBanner.className = 'home-recovery-banner';
+    recoveryBanner.setAttribute('role', 'alert');
+    recoveryBanner.setAttribute('aria-live', 'assertive');
+    recoveryBanner.setAttribute('aria-label', 'Recovery Mode active');
+    recoveryBanner.hidden = true;
+    recoveryBanner.setAttribute('aria-hidden', 'true');
+    recoveryBanner.innerHTML = [
+      '<span class="recovery-icon" aria-hidden="true">⚠</span>',
+      '<span class="recovery-text">',
+      '  <strong>Recovery Mode</strong> — LCI coherence is volatile.',
+      '  Grounding recommended before proceeding.',
+      '</span>',
+    ].join('');
+    this.container.appendChild(recoveryBanner);
+    this._recoveryBanner = recoveryBanner;
 
     // ── Orb wrapper + canvas
     const orbWrap = document.createElement('div');
@@ -381,6 +446,9 @@ export class GaianHome {
       });
 
       this._wireLongPress(orbWrap);
+
+      // Re-apply Recovery Mode state in case setLCITrend was called before orb init
+      this._updateRecoveryBanner(this._lciTrend);
     });
 
     // ── Async hydration (non-blocking)
@@ -669,6 +737,7 @@ export class GaianHome {
     this._crystalRoot = null;
     this._crystalHost = null;
     this._bandLabel   = null;
+    this._recoveryBanner = null;
 
     // Viriditas teardown
     if (this._schumannPollHandle !== null) {
