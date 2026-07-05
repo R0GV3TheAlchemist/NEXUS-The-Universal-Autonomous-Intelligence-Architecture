@@ -36,7 +36,7 @@ const QUESTIONS: Question[] = [
   {
     id: 'questionWhat',
     ask: 'What brought you here?',
-    sub: 'There are no wrong answers. Say what's true.',
+    sub: "Say what's true.",
     placeholder: 'Take your time...',
   },
   {
@@ -153,7 +153,7 @@ export function Phase4ThreeQuestions({ onComplete, onBack }: Props) {
           aria-label={isLast ? 'Finish questions' : 'Next question'}
         >
           {answers[question.id].trim()
-            ? isLast ? 'That's what I carry' : 'Continue'
+            ? isLast ? "That's what I carry" : 'Continue'
             : isLast ? 'Finish' : 'Skip'
           }
         </button>
