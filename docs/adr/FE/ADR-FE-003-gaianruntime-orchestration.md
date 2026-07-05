@@ -8,65 +8,48 @@ Accepted
 
 ## Context
 
-`GAIANRuntime.ts` is the central orchestration point for the GAIAN console. It manages:
-- Session initialization (`sessionInit()`)
-- Query processing and context management (`process()`)
-- Connection to the Python backend via Tauri IPC
-- `RuntimeContext` — the typed state object passed through the execution cycle
+`GAIANRuntime.ts` is the single TypeScript file responsible for session initialization, context management, and result processing in the GAIAN console. The question of why this runtime lives in TypeScript (frontend) rather than Python (backend) — and what its exact responsibilities are — was not previously documented.
 
-Questions that existed before this ADR:
-1. Why is the runtime in TypeScript (frontend) rather than Python (backend)?
-2. What is the exact boundary between `GAIANRuntime.ts` and the Python core?
-3. How are Python errors surfaced in the TypeScript runtime?
-4. Is `GAIANRuntime.ts` a singleton or instantiated per session?
+Without this documentation, contributors risk either duplicating runtime logic in Python or moving responsibilities into the wrong layer.
 
 ## Decision
 
-**`GAIANRuntime.ts` is the TypeScript session orchestrator. It owns the lifecycle of one GAIAN session from init to teardown. The Python core owns all intelligence computation.**
+**`GAIANRuntime.ts` is the TypeScript-side session orchestrator.** It owns the lifecycle of a single GAIAN session from the user's perspective. It does not own inference, computation, or reasoning — those belong to the Python core.
 
-### Why TypeScript for the runtime?
+Responsibilities of `GAIANRuntime.ts`:
+1. Session initialization — load `GAIANProfile`, establish IPC connection to Python sidecar
+2. Context assembly — collect current session context (profile state, LCI snapshot, active modules) before each query
+3. IPC dispatch — send assembled context + query to Python via Tauri `invoke()`
+4. Result processing — receive Python response, apply console adaptation rules, route to correct view
+5. Error surfacing — catch IPC failures, apply offline fallback strategy (see ADR-FE-005)
+6. Session teardown — persist profile state on session end
 
-The runtime lives in TypeScript because its primary job is **session lifecycle management and IPC coordination** — both of which are inherently frontend concerns in a Tauri application. The alternative (a Python runtime that drives the session) would require an additional IPC layer and would make the console non-functional when the Python backend is unreachable (violating ADR-FE-005).
+**`GAIANRuntime.ts` is a singleton.** One instance per application lifetime. It is instantiated once in the Tauri app entry point and passed via context or accessed via module-level export.
 
-### The boundary
-
-| `GAIANRuntime.ts` owns | Python core owns |
-|---|---|
-| Session start / end | AI inference (RAG, LLM) |
-| `RuntimeContext` construction | SpectralForceEngine computation |
-| Tauri `invoke()` calls | MagnumOpusStageEngine |
-| Error surface (catch + format) | AkashicEngine |
-| Profile load/save coordination | All `core/` modules |
-| Console state updates | Claim validation, provenance |
-
-### Error handling
-
-Errors from the Python core arrive as rejected Tauri `invoke()` promises. `GAIANRuntime.ts` catches these, formats them into a typed `GAIARuntimeError`, and surfaces them to the console. No raw Python tracebacks reach the UI. The Error Correction Engine (issue #755) hooks into this error surface point.
-
-### Singleton vs. per-session
-
-`GAIANRuntime.ts` is a **per-session singleton** — one instance per active GAIAN session, created at `sessionInit()` and released at session end. It is not a global singleton across the application lifetime.
+**`GAIANRuntime.ts` is TypeScript (not Python) because** the session lifecycle is a frontend concern. The user opens the app, interacts with the console, closes the app — this arc is owned by the UI layer. Python is stateless across IPC calls; state continuity is the runtime's job.
 
 ## Rationale
 
-- Tauri architecture naturally places session management in the frontend
-- Offline-first requirement (ADR-FE-005) demands a TypeScript runtime that can operate without the Python backend
-- Per-session (not global) singleton keeps state clean across sessions and prevents cross-session contamination
+The alternative — a Python-side session manager — would require the Python sidecar to maintain state between Tauri IPC calls. This creates a tight coupling between the frontend and the sidecar's internal state, making offline resilience (ADR-FE-005) significantly harder. A TypeScript-side runtime that holds session state locally and calls Python only for computation is cleaner, more testable, and more resilient.
 
 ## Consequences
 
-**Easier:** The console can render and operate in degraded mode when Python is unreachable. Error boundaries are well-defined.
+**Easier:**
+- Session state is always local to the frontend — offline resilience is achievable
+- Python sidecar can be restarted without losing session context
+- TypeScript unit tests can mock the IPC layer cleanly
 
-**Harder:** Python errors must be explicitly mapped to typed `GAIARuntimeError` objects — this requires maintenance as the Python core evolves.
+**Harder:**
+- Any state that Python needs to "remember" across calls must be passed explicitly in each IPC payload
+- The IPC contract must be comprehensive (see ADR-FE-001)
 
-**New constraint:** No Python computation logic may be added to `GAIANRuntime.ts`. If logic belongs in the backend, it goes in `core/` and is called via `invoke()`.
+**New constraints:**
+- `GAIANRuntime.ts` must remain a singleton
+- No session state may be stored exclusively in the Python sidecar
+- All IPC calls go through `GAIANRuntime.ts` — no component calls `invoke()` directly
 
 ## Related ADRs
-- ADR-FE-001 — Language Boundaries
-- ADR-FE-004 — State Management
-- ADR-FE-005 — Offline-First Architecture
-
-## Related Issues
-- #756 — GAIANProfile (extends RuntimeContext)
-- #755 — Error Correction Engine (hooks into GAIANRuntime error surface)
-- #439 — Full system prompt injection (GAIANRuntime foundation)
+- ADR-FE-001 (Language boundaries)
+- ADR-FE-004 (State management)
+- ADR-FE-005 (Offline-first architecture)
+- Related issue: #439 (Full system prompt injection)

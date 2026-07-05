@@ -1,4 +1,4 @@
-# ADR-FE-004: State Management in src/gaian/
+# ADR-FE-004: State Management in src/gaian/ (No Redux/Zustand)
 
 ## Status
 Accepted
@@ -8,65 +8,50 @@ Accepted
 
 ## Context
 
-`src/gaian/` contains no Redux, Zustand, Jotai, MobX, or any other centralized state management library. State appears to be managed through:
-- `RuntimeContext` — a typed object passed through `GAIANRuntime.ts`
-- File-level module state in individual `.ts` files
-- Tauri store (for persistence)
-- Direct Tauri IPC for cross-boundary communication
+The `src/gaian/` layer manages state without a centralized state management library (no Redux, Zustand, Jotai, MobX, or equivalent). This is not an oversight — it is a deliberate architectural choice that must be documented so future contributors do not introduce a state library assuming one is missing.
 
-This raised the question: is this a deliberate architectural decision, or an oversight that will cause problems as the codebase grows?
-
-With `GAIANProfile` (issue #756) introducing persistent per-user state, and the Meta Control Console (ADR-FE-006) introducing power state, the state management question becomes urgent.
+The introduction of `GAIANProfile` (issue #756) adds a significant new state object: the persistent identity of the GAIAN across sessions. Its placement in the state hierarchy must be declared.
 
 ## Decision
 
-**`src/gaian/` uses `RuntimeContext` as its primary state carrier, extended by `GAIANProfile` for persistent state. No third-party state management library is introduced.**
+**State in `src/gaian/` is managed through three and only three mechanisms:**
 
-The rationale for avoiding Redux/Zustand/Jotai:
-1. The console is not a traditional React SPA with deeply nested component trees — it is a Tauri desktop application with a focused set of surfaces
-2. `RuntimeContext` already provides a typed, session-scoped state object
-3. Adding a state library introduces a dependency and a new mental model that the existing architecture does not need
-4. Tauri's `@tauri-apps/plugin-store` handles cross-session persistence — this is the "store" layer
+1. **`GAIANRuntime.ts` module-level singleton** — holds session-scoped state (current profile snapshot, active LCI, session context). This is the source of truth for the running session.
+2. **`@tauri-apps/plugin-store`** — holds persistent state (GAIANProfile, user preferences, calibration history). This is the source of truth across sessions.
+3. **Local component state** — holds ephemeral UI state (input field content, scroll position, animation state) that does not need to survive a component unmount.
 
-### State hierarchy (after issue #756)
+**`GAIANProfile` lives in `@tauri-apps/plugin-store`** as the persistent record, and is loaded into `GAIANRuntime.ts` as a session snapshot at startup. Components read profile data from the runtime, not directly from the store.
 
-```
-Tauri Store (persistent, across sessions)
-  └── GAIANProfile (loaded at sessionInit, saved at session end)
-        └── RuntimeContext (ephemeral, per-session)
-              └── Individual component state (ephemeral, per-render)
-```
-
-### Shared state passing
-
-Shared state (current `phi`, active `spectral_force`, `GAIANProfile`) is passed explicitly through `RuntimeContext` — not through global singletons or event buses. Components read from `RuntimeContext`, not from each other.
-
-### When to revisit this decision
-
-This decision should be revisited if:
-- Component count in `src/gaian/` exceeds 20 files with shared state dependencies
-- A new surface requires state that spans multiple sessions without going through `GAIANProfile`
-- Performance profiling shows prop-drilling overhead becoming significant
+**Why no Redux/Zustand/Jotai:**
+- GAIA's frontend state is not complex enough to require a reactive global store. There is one primary state object (`GAIANProfile`) and one session orchestrator (`GAIANRuntime.ts`). A state library would add indirection without adding capability.
+- Tauri's plugin-store already provides the persistence layer. Adding a separate state management library would create two sources of truth for the same data.
+- The offline-first requirement (ADR-FE-005) is simpler to implement when persistence is handled directly by the Tauri store rather than mediated through a reactive state library.
 
 ## Rationale
 
-- Keeps the architecture simple and consistent with existing patterns
-- Avoids unnecessary dependencies in a desktop application context
-- `GAIANProfile` + `RuntimeContext` provides a typed, auditable state chain
+The three-mechanism model (runtime singleton + Tauri store + local state) maps directly onto the three scopes of state in GAIA: session, persistent, and ephemeral. Each scope has exactly one owner. This makes state predictable and auditable without tooling.
+
+Alternatives considered:
+- **Zustand:** Rejected. Adds a dependency and a reactive graph for a problem that a singleton solves directly.
+- **Redux Toolkit:** Rejected. Significant overhead for a single primary state object.
+- **Jotai / Recoil:** Rejected. Atom-based state is appropriate for complex UI trees with many independent state slices. GAIA's console is not that.
 
 ## Consequences
 
-**Easier:** No new library to learn. State flow is explicit and traceable.
+**Easier:**
+- State flow is traceable without DevTools or middleware
+- Persistence is always explicit — no hidden reactive writes to disk
+- New contributors can read state management from the code without learning a library
 
-**Harder:** As the console grows, `RuntimeContext` may become large. Must be actively pruned.
+**Harder:**
+- Cross-component state sharing requires going through `GAIANRuntime.ts` rather than a hook
+- If the console grows significantly in complexity, this decision should be revisited (file a new ADR)
 
-**New constraint:** No state management library may be added to `src/gaian/` without a new ADR that supersedes this one.
+**New constraints:**
+- No state management library may be added to `src/gaian/` without a superseding ADR
+- `GAIANProfile` must not be accessed directly from `@tauri-apps/plugin-store` in components — always go through the runtime
 
 ## Related ADRs
-- ADR-FE-003 — GAIANRuntime as Central Execution Loop
-- ADR-FE-005 — Offline-First Architecture
-- ADR-FE-006 — Meta Control Console Integration
-
-## Related Issues
-- #756 — GAIANProfile (the persistent state layer)
-- #759 — ADR series for src/gaian/
+- ADR-FE-003 (GAIANRuntime as central execution loop)
+- ADR-FE-005 (Offline-first architecture)
+- Related issue: #756 (GAIANProfile)

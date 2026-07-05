@@ -1,4 +1,4 @@
-# ADR-FE-002: .tsx vs .ts File Extension Convention in src/gaian/
+# ADR-FE-002: Why CrystalView is .tsx and Everything Else is .ts
 
 ## Status
 Accepted
@@ -8,50 +8,44 @@ Accepted
 
 ## Context
 
-In `src/gaian/`, all files use the `.ts` extension except `CrystalView.tsx`. This inconsistency raises the question: is `.tsx` reserved for a specific purpose, or is it accidental?
+`CrystalView.tsx` uses the `.tsx` extension, which signals JSX/TSX syntax — the ability to write HTML-like markup directly in TypeScript. All other files in `src/gaian/` use `.ts`. This creates a visible inconsistency: `GaianChatView.ts` and `GaianHome.ts` both render UI but do not use `.tsx`.
 
-The distinction matters because:
-- `.tsx` enables JSX syntax (React component markup inline with TypeScript)
-- `.ts` is pure TypeScript — no JSX
-- Tooling (tsc, ESLint, Vite) treats them differently
-- Developers need a clear rule to know which extension to use when creating new files
-
-Currently `GaianHome.ts`, `GaianChatView.ts`, and `AlignmentIndicator.ts` all render UI surfaces but use `.ts`. `CrystalView.tsx` renders UI and uses `.tsx`. No documented rule explains the difference.
+Without a declared convention, contributors cannot tell whether `.tsx` is reserved, required, or simply inconsistently applied.
 
 ## Decision
 
-**`.tsx` is reserved for files that contain JSX/React component syntax.**
-**.ts` is used for all other TypeScript files — including files that orchestrate or produce UI output through non-JSX means.**
+**The `.tsx` extension is reserved for files that directly return or render JSX markup.** Files that orchestrate, configure, or control UI without directly writing JSX markup use `.ts`.
 
-Specifically:
-- A file gets `.tsx` if and only if it contains JSX expressions (e.g., `return <Component />` or `<div>...</div>`)
-- A file that manages UI state, triggers renders, or configures visual output without JSX syntax stays `.ts`
-- `CrystalView.tsx` is correctly named — it contains JSX
-- `GaianHome.ts`, `GaianChatView.ts`, `AlignmentIndicator.ts` are correctly named if they do not contain JSX — this must be verified when those files are opened for modification
+Specific rules:
 
-**When creating a new file in `src/gaian/`:**
-- Does it contain `return (<...>)` JSX syntax? → use `.tsx`
-- Does it not contain JSX? → use `.ts`
-- When in doubt: start with `.ts`, rename to `.tsx` only when JSX is added
+1. A file uses `.tsx` if and only if it contains JSX syntax (`<Component />`, `<div>`, etc.) in its return value or render output.
+2. A file uses `.ts` if it manages state, handles events, calls IPC, or composes logic — even if it ultimately causes UI to render.
+3. `CrystalView.tsx` is correctly named: it returns JSX.
+4. `GaianChatView.ts` and `GaianHome.ts` should be audited. If they contain JSX, rename to `.tsx`. If they do not, the current extension is correct.
+5. This rule applies to all new files in `src/gaian/` going forward.
 
 ## Rationale
 
-- Consistent with standard TypeScript/React community conventions
-- Prevents tooling misconfiguration (tsc will error on JSX in a `.ts` file without explicit config changes)
-- Keeps the rule simple and verifiable — no judgment call required
+The `.tsx` / `.ts` distinction is the TypeScript compiler's own signal. Using it consistently means the file extension communicates intent: open a `.tsx` file and expect markup; open a `.ts` file and expect logic. This reduces cognitive overhead and makes the codebase self-documenting at the filesystem level.
+
+Alternatives considered:
+- **All files as `.tsx`:** Rejected. Unnecessary — the JSX transform has a cost and `.tsx` files have stricter parsing rules. Using `.tsx` everywhere is noise.
+- **All files as `.ts`:** Rejected. Loses the signal entirely and requires opening files to understand their role.
 
 ## Consequences
 
-**Easier:** Every new file has a clear, mechanical rule for its extension. PR review can enforce this without ambiguity.
+**Easier:**
+- File extension communicates role without opening the file
+- Consistent with TypeScript community convention
 
-**Harder:** Existing files may need extension review when they are modified (a `.ts` file that introduces JSX must be renamed).
+**Harder:**
+- `GaianChatView.ts` and `GaianHome.ts` need an audit pass
+- Contributors must remember to choose extension deliberately
 
-**New constraint:** PR checklist must include extension verification for any new `src/gaian/` file.
+**New constraints:**
+- New file extension must be explicitly chosen using this rule, not defaulted
+- PR checklist should include: "Is the file extension correct per ADR-FE-002?"
 
 ## Related ADRs
-- ADR-FE-001 — Language Boundaries
-- ADR-FE-003 — GAIANRuntime as Central Execution Loop
-
-## Related Issues
-- #759 — ADR series for src/gaian/
-- #756 — GAIANProfile (new files will be created in src/gaian/ — this rule applies)
+- ADR-FE-001 (Language boundaries)
+- ADR-FE-003 (GAIANRuntime as central execution loop)

@@ -1,4 +1,4 @@
-# ADR-FE-005: Offline-First Architecture for the GAIAN Console
+# ADR-FE-005: Offline-First Architecture for the Console
 
 ## Status
 Accepted
@@ -8,63 +8,63 @@ Accepted
 
 ## Context
 
-The GAIAN console is a Tauri desktop application with a TypeScript frontend and a Python backend. The Python backend handles AI inference, RAG, and all `core/` computations. If the Python backend is unreachable (process crash, startup failure, dependency missing), the console must not show a blank screen or an unhandled error.
+The GAIAN console must render a meaningful, stable state even when the Python backend is unreachable. This is not an edge case — it is a design requirement. The console is a personal intelligence layer. It must be present for the person even when the network is down, the sidecar has crashed, or the AI provider is unreachable.
 
-This is especially critical because:
-- The console is a personal tool used in sensitive, high-stakes moments
-- A blank screen when a person needs grounding or clarity is a failure that matters
-- `GAIANProfile` (issue #756) provides a cached state that can serve as a meaningful fallback
+Without a declared offline strategy, the console will silently fail or render blank screens, which is the opposite of what a stability-oriented system should do.
 
 ## Decision
 
-**The GAIAN console must render a meaningful, stable state even when the Python backend is unreachable. No component in `src/gaian/` may show a blank or broken state.**
+**The console must always render.** Degraded mode is acceptable. Blank screens are not.
 
-### Persistence layer
+The offline-first strategy has three tiers:
 
-The persistence layer uses **`@tauri-apps/plugin-store`** (Tauri's built-in key-value store). This was chosen over:
-- Raw filesystem: less structured, no atomic writes
-- SQLite: heavier dependency for the data volume required
-- IndexedDB: browser-only, not available in Tauri WebView context
+### Tier 1: Python Sidecar Unreachable
+- `GAIANRuntime.ts` catches the IPC failure
+- Console renders from the last known `GAIANProfile` snapshot (held in runtime memory)
+- User sees a status indicator: "Core offline — working from last known state"
+- All profile-driven adaptation (greeting, module display, LCI color) continues from cached data
+- New queries are queued locally and replayed when the sidecar reconnects
 
-Maximum acceptable staleness for cached profile data: **the last completed session** (no time limit — the last known good state is always better than no state).
+### Tier 2: Profile Store Unreadable
+- `@tauri-apps/plugin-store` read fails
+- Console renders with a safe default profile (`phi: 0.5`, no active modules, neutral LCI)
+- User is informed: "Profile unavailable — using defaults"
+- No data is written until the store is confirmed writable
 
-### Fallback rendering strategy
+### Tier 3: Full Offline (No Sidecar, No Store)
+- Console renders the GAIA welcome screen with static content
+- No AI features are available
+- User sees: "GAIA is offline. Your profile will load when connectivity is restored."
+- No error states, no crashes, no blank screens
 
-When `GAIANRuntime.ts` cannot reach the Python backend:
+**Persistence mechanism:** `@tauri-apps/plugin-store` is the single persistence layer for the console. SQLite is not used at the frontend layer. The filesystem is not accessed directly.
 
-1. `GAIANProfileManager.load(architectId)` is called — always offline-capable
-2. The last known `GAIANProfile` is injected into `RuntimeContext`
-3. Console surfaces render from cached profile:
-   - `CrystalView.tsx` renders last known `activeModules`
-   - `AlignmentIndicator.ts` renders last known `lciHistory`
-   - `GaianOrb.ts` renders with last known `orbParams`
-   - `GaianMood.ts` renders with `lciTrend: 'volatile'` to signal degraded mode
-4. A non-blocking status indicator shows "Backend unreachable — showing last known state"
-5. No component throws, crashes, or shows undefined/null
-
-### Components must never show blank state
-
-Every component in `src/gaian/` must have a defined fallback for every rendered value. There is no acceptable case where a missing backend results in an empty UI.
+**Maximum acceptable staleness for cached profile data:** One session (the profile is refreshed from store on every app launch). Mid-session, the runtime snapshot is authoritative.
 
 ## Rationale
 
-- A personal console that goes blank when most needed is worse than no console
-- `GAIANProfile` provides exactly the cached state needed for meaningful offline rendering
-- `@tauri-apps/plugin-store` is the natural persistence layer for Tauri applications
+A system designed to support human stability cannot itself be unstable. The offline-first requirement is a direct expression of GAIA's Constitutional Layer: the console must not fail the person when they need it most.
+
+The three-tier degradation model ensures that each failure mode has a named, predictable response. Named failure modes are manageable. Unnamed failure modes become chaos.
 
 ## Consequences
 
-**Easier:** Users always see a stable console. Recovery from backend failure is graceful.
+**Easier:**
+- Console is always testable without a running Python sidecar
+- Users trust the console because it never goes blank on them
+- Failure modes are explicit and can be tested independently
 
-**Harder:** Every new component must implement a fallback rendering path. This is a permanent maintenance requirement.
+**Harder:**
+- `GAIANRuntime.ts` must implement reconnection logic
+- Default profile values must be maintained and kept meaningful
+- UI must include status indicators for each offline tier
 
-**New constraint:** PR review for any `src/gaian/` component must verify offline fallback exists. The PR checklist includes this check.
+**New constraints:**
+- Console must pass a "no sidecar" smoke test before any PR is merged
+- Blank screens are a bug, not a feature, in every failure mode
 
 ## Related ADRs
-- ADR-FE-003 — GAIANRuntime as Central Execution Loop
-- ADR-FE-004 — State Management
-
-## Related Issues
-- #756 — GAIANProfile (Phase 4: Offline-First Resilience)
-- #755 — Error Correction Engine
-- #759 — ADR series for src/gaian/
+- ADR-FE-003 (GAIANRuntime as central execution loop)
+- ADR-FE-004 (State management)
+- ADR-FE-006 (Meta Control Console integration)
+- Related issue: #756 Phase 4 (Offline-First Resilience)

@@ -8,51 +8,52 @@ Accepted
 
 ## Context
 
-`src/gaian/` contains files in two languages:
+`src/gaian/` contains both TypeScript (`.ts`, `.tsx`) and Python (`.py`) files. Without a declared rule, every new contributor faces the same question: which language owns what? The presence of `runtimetypes.py` alongside `GAIANRuntime.ts` in the same directory makes this ambiguity acute.
 
-- **TypeScript** (`.ts`, `.tsx`): `GAIANRuntime.ts`, `GaianBirth.ts`, `GaianHome.ts`, `GaianChatView.ts`, `CrystalView.tsx`, `GaianMood.ts`, `GaianOrb.ts`, `AlignmentIndicator.ts`, `OrbParams.ts`, `ViriditasTheme.ts`
-- **Python** (`.py`): `runtimetypes.py`
+GAIA's architecture spans three runtimes:
+- **Tauri (Rust)** — native shell, window management, OS integration
+- **TypeScript** — frontend logic, UI orchestration, session management
+- **Python** — AI inference, core reasoning, data pipelines, LCI computation
 
-No rule existed before this ADR to explain why a Python file lives in the TypeScript frontend directory, which language should own what logic, or what the IPC boundary between the two is.
-
-This creates ambiguity for every developer working in `src/gaian/` and for automated tooling (linters, type checkers, CI) that must handle two language runtimes in one directory.
+The IPC boundary between TypeScript and Python is the Tauri `invoke()` channel.
 
 ## Decision
 
-**TypeScript owns the frontend layer. Python owns the backend core.**
+**TypeScript owns everything the user sees and interacts with.** Python owns everything that computes, reasons, or persists.
 
-The rule is:
+Specific rules:
 
-| Layer | Language | Location |
-|---|---|---|
-| UI rendering, console surfaces, Tauri IPC client | TypeScript (`.ts`, `.tsx`) | `src/gaian/` |
-| Runtime orchestration (session init, context management) | TypeScript | `src/gaian/GAIANRuntime.ts` |
-| AI inference, RAG pipeline, spectral computation, data models | Python | `core/` |
-| Shared type definitions used by the Python backend | Python | `core/` or `src/python/` — **NOT** `src/gaian/` |
-
-**`runtimetypes.py` is misplaced.** It lives in `src/gaian/` by accident of early development, not by design. It must be migrated to `core/` or a dedicated `src/python/` directory as part of issue #756 (GAIANProfile).
-
-**The IPC boundary** is the Tauri command layer. TypeScript calls `invoke()` from `@tauri-apps/api`. Python backend receives these via Tauri's Rust command handlers. No Python file should live in `src/gaian/` — that directory is the TypeScript frontend.
+1. **TypeScript** is the language for: UI components, session orchestration, Tauri IPC calls, profile loading/saving, console adaptation logic, event handling.
+2. **Python** is the language for: LCI computation, spectral force resolution, RAG pipeline, Akashic retrieval, AI model calls, data persistence beyond simple key-value storage.
+3. **`runtimetypes.py` in `src/gaian/`** is misplaced. It belongs in `src-python/types/` or `core/types/`. It was placed in `src/gaian/` during early prototyping before this boundary was declared. It will be relocated in a follow-up issue.
+4. **No Python file should be added to `src/gaian/`** after this ADR is accepted. Python files in the frontend layer indicate a boundary violation.
+5. **The IPC contract** (what TypeScript may call on the Python side) must be documented in `docs/api/ipc-contract.md`. Any new IPC command requires that document to be updated.
 
 ## Rationale
 
-- Mixing languages in a single directory breaks tooling assumptions (ESLint, tsc, Ruff all need to know their scope)
-- The Tauri architecture naturally enforces a frontend/backend split at the IPC boundary — this ADR makes that split explicit in directory structure
-- Future developers must not have to guess which language owns a piece of logic
+The TypeScript/Python split mirrors the perceptual/computational split in GAIA's design philosophy: the console is the face, the core is the mind. Keeping them separated by language makes the boundary legible without tooling. A developer looking at a file extension immediately knows which runtime it belongs to.
+
+Alternatives considered:
+- **All TypeScript (via node Python bridge):** Rejected. Python's AI/ML ecosystem is non-negotiable for the core.
+- **All Python (via server-rendered UI):** Rejected. Tauri's native performance and offline capability require a TypeScript frontend.
+- **Mixed freely:** Rejected. This is the current state and it produces exactly the confusion this ADR resolves.
 
 ## Consequences
 
-**Easier:** Linting, type checking, and CI configuration. New developers understand the layer immediately.
+**Easier:**
+- New contributors immediately know which language to use for any given task
+- Lint, type checking, and testing pipelines can be cleanly separated
+- The IPC boundary becomes the single, documented integration point
 
-**Harder:** `runtimetypes.py` must be migrated (tracked in issue #756). Any existing import paths that reference `src/gaian/runtimetypes.py` must be updated.
+**Harder:**
+- `runtimetypes.py` must be relocated (follow-up issue required)
+- Any shared type definitions must be maintained in both languages or generated from a schema
 
-**New constraint:** No `.py` file may be created in `src/gaian/`. PR review must catch this.
+**New constraints:**
+- No Python files in `src/gaian/` after this date
+- New IPC commands require `docs/api/ipc-contract.md` update before implementation
 
 ## Related ADRs
-- ADR-0001 — GAIA Kernel Architecture (OS-layer boundary definitions)
-- ADR-FE-003 — GAIANRuntime as Central Execution Loop
-- ADR-FE-005 — Offline-First Architecture
-
-## Related Issues
-- #756 — GAIANProfile (migration of runtimetypes.py)
-- #759 — ADR series for src/gaian/
+- ADR-0001 (GAIA Kernel Architecture)
+- ADR-FE-003 (GAIANRuntime as central execution loop)
+- ADR-FE-005 (Offline-first architecture)
