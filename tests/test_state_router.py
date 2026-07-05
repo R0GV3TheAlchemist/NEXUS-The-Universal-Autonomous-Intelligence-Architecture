@@ -245,6 +245,8 @@ def test_T06_ws_probe_message_triggers_d6_evaluation(app):
     T06: Sending a PROBE message over WS must trigger D6Engine.evaluate().
     We verify this by checking that the engine's intervention log grows.
     """
+    import time
+
     import gaia.api.state_router as sr
 
     initial_log_len = len(sr._engine.intervention_log)
@@ -265,7 +267,7 @@ def test_T06_ws_probe_message_triggers_d6_evaluation(app):
             }))
 
             # Give the async handler time to process
-            import time; time.sleep(0.1)
+            time.sleep(0.1)
 
     # D6 must have logged at least one more intervention
     assert len(sr._engine.intervention_log) > initial_log_len, \
@@ -282,6 +284,8 @@ def test_T07_ws_update_message_broadcasts_state_update(app):
     broadcast to all connected clients on the connection pool.
     The sender itself also receives the broadcast.
     """
+    import time
+
     with TestClient(app) as client:
         with client.websocket_connect("/state/ws") as ws:
             # Drain init
@@ -295,7 +299,7 @@ def test_T07_ws_update_message_broadcasts_state_update(app):
             }))
 
             # Read the broadcast
-            import time; time.sleep(0.1)
+            time.sleep(0.1)
             raw = ws.receive_text()
             msg = json.loads(raw)
 
