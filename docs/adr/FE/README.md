@@ -1,35 +1,62 @@
-# ADR — Frontend Layer (src/gaian/)
+# Frontend Architecture Decision Records
 
-This directory contains Architecture Decision Records for `src/gaian/` — the GAIAN console frontend layer.
+All ADRs governing the GAIA-OS Tauri / TypeScript frontend layer.
 
-For OS-layer decisions, see `../` (the parent `docs/adr/` directory).
+Parent index: [`docs/adr/README.md`](../README.md)
+
+---
+
+## Numbering Convention
+
+`ADR-FE-NNN-slug.md` — FE prefix distinguishes frontend decisions from backend/core ADRs.
 
 ---
 
 ## ADR Index
 
-| ADR | Title | Status | Date |
+| # | Title | Status | Implemented |
 |---|---|---|---|
-| [ADR-FE-001](ADR-FE-001-language-boundaries.md) | Language Boundaries in src/gaian/ | Accepted | 2026-07-05 |
-| [ADR-FE-002](ADR-FE-002-tsx-vs-ts-convention.md) | .tsx vs .ts File Extension Convention | Accepted | 2026-07-05 |
-| [ADR-FE-003](ADR-FE-003-gaianruntime-orchestration.md) | GAIANRuntime as Central Execution Loop | Accepted | 2026-07-05 |
-| [ADR-FE-004](ADR-FE-004-state-management.md) | State Management in src/gaian/ | Accepted | 2026-07-05 |
-| [ADR-FE-005](ADR-FE-005-offline-first-strategy.md) | Offline-First Architecture for the Console | Accepted | 2026-07-05 |
-| [ADR-FE-006](ADR-FE-006-meta-control-console-integration.md) | Meta Control Console — GAIA Integration Architecture | Accepted | 2026-07-05 |
+| [ADR-FE-001](ADR-FE-001-language-boundaries.md) | Language Boundaries — TypeScript owns the UI layer; Python owns the kernel | Accepted | ✅ |
+| [ADR-FE-002](ADR-FE-002-tsx-vs-ts-convention.md) | TSX vs TS — `.tsx` only when JSX is present; `.ts` otherwise | Accepted | ✅ |
+| [ADR-FE-003](ADR-FE-003-gaianruntime-orchestration.md) | GAIANRuntime Orchestration — 7-step sessionInit sequence | Accepted | ✅ M1 |
+| [ADR-FE-004](ADR-FE-004-state-management.md) | State Management — GAIANProfile via Tauri Store; ephemeral state in RuntimeContext | Accepted | ✅ M1 |
+| [ADR-FE-005](ADR-FE-005-offline-first-strategy.md) | Offline-First Strategy — profile load always runs regardless of network | Accepted | ✅ M1 |
+| [ADR-FE-006](ADR-FE-006-meta-control-console-integration.md) | Meta Control Console Integration — MCC power commands, LCI gates, ConstitutionalLayer | Accepted | ⬜ M2–M5 |
 
 ---
 
-## When to Write an ADR
+## M1 — Core Runtime Identity (Issue #756) — ✅ Complete
 
-Write an ADR for `src/gaian/` when:
-- You are choosing between two or more viable approaches for a frontend decision
-- A decision affects more than one file in `src/gaian/`
-- A new pattern is being established that future files will follow
-- The decision involves a language, tooling, or architectural boundary
+**Completed: 2026-07-05**
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full ADR protocol.
+Three files written / updated:
+
+| File | Change |
+|---|---|
+| `src/gaian/GAIANProfile.ts` | New — persistent identity layer (GAIANProfile, GAIANProfileManager, ConstitutionalLayer, computeLCITrend) |
+| `src/gaian/GaianBirth.ts` | Updated — 3-step birth wizard fully wired; saves GAIANProfile on successful birth |
+| `src/gaian/GAIANRuntime.ts` | Updated — RuntimeContext extended with `profile?`; sessionInit wired with 7-step sequence; `[GAIAN IDENTITY]` context block added to SystemPromptBuilder |
+
+ADRs satisfied by M1: **ADR-FE-003, ADR-FE-004, ADR-FE-005**
 
 ---
 
-*Governed by: Issue #759 — ADR series for src/gaian/*
-*Last updated: 2026-07-05*
+## M2–M5 — Roadmap
+
+| Milestone | Scope | ADR |
+|---|---|---|
+| M2 | LCI Live Computation — phi updated from real session data; `lciBaseline` written back to profile | ADR-FE-003, ADR-FE-004 |
+| M3 | Crystal System — crystal selection UI; `preferredCrystal` persisted; SpectralForceEngine reads crystal | ADR-FE-006 |
+| M4 | Constitutional Layer UI — Sigil Lock, Service Mode, Human/Superhuman toggle wired to profile | ADR-FE-006 |
+| M5 | MCC Power Commands — 12 command implementations (ACTIVATE, DEACTIVATE, MODIFY, ENHANCE, COMBINE, SPLIT, STORE, TRANSFER, MONITOR, SEARCH, CUSTOMIZE, DELETE) | ADR-FE-006 |
+
+---
+
+## Adding a New FE ADR
+
+1. Copy `../ADR-000-template.md`
+2. Name it `ADR-FE-NNN-slug.md` (next available number)
+3. Fill in all sections — Status must be `Draft` until PR is merged
+4. Add a row to the index table above
+5. Add a row to the parent `docs/adr/README.md` table
+6. Open a PR referencing the relevant issue
