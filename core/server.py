@@ -1,5 +1,5 @@
 """
-GAIA API Server — FastAPI bootstrap v2.6.0
+GAIA API Server — FastAPI bootstrap v2.7.0
 
 Split from the monolith in Sprint C47+. All endpoints live in
 core/routers/. Shared process state lives in core/server_state.py.
@@ -22,8 +22,18 @@ v2.6.0 additions (June 17, 2026):
     collision with any future system /state namespace.
   - Canon refs: C52 (Six-Dimensional Architecture), GAIA_D6_META_COHERENCE_ENGINE
 
+v2.7.0 additions (July 6, 2026):
+  - primordial_router mounted at /primordial  🌀  Primordial Simulation Engine
+  - POST /primordial/simulate    — run a single entity through the gauntlet
+  - POST /primordial/recover     — run a recovery simulation with interventions
+  - GET  /primordial/archetypes  — return all five archetype outcomes
+  - GET  /primordial/canon       — return canon log aggregate statistics
+  - GET  /primordial/canon/entries — return recent canon log entries
+  - Canon refs: PRIMORDIAL_ENGINE_V1, GAIA_SURVIVAL_THRESHOLD
+
 Canon Refs: C01, C04, C12, C15, C17, C20, C21, C27, C30, C42, C43, C44, C47, C48,
-            C52, C128 (Spiritus Pneuma Canon), GAIA_D6_META_COHERENCE_ENGINE
+            C52, C128 (Spiritus Pneuma Canon), GAIA_D6_META_COHERENCE_ENGINE,
+            PRIMORDIAL_ENGINE_V1, GAIA_SURVIVAL_THRESHOLD
 """
 
 import os
@@ -64,6 +74,9 @@ from core.server_state import SERVER_VERSION, canon
 
 # 🔮 GAIAState + D6 Engine router (gaia/ package)
 from gaia.api import register_routers as _register_gaia_routers
+
+# 🌀 Primordial Simulation Engine
+from api.primordial import router as primordial_router
 
 logger = get_logger(__name__)
 
@@ -111,6 +124,7 @@ app.include_router(room_router)
 app.include_router(goals_router,  prefix="/goals",  tags=["Goals"])   # ★ C128
 app.include_router(lci_router)                                         # ❤️ GET+POST /lci/*
 app.include_router(status_router)                                      # 📊 GET /status/*
+app.include_router(primordial_router)                                  # 🌀 /primordial/*
 
 # 🔮 GAIAState REST + WebSocket — MUST come after error boundary and middleware
 # Registers: /gaia-state, /gaia-state/mode, /gaia-state/health,
