@@ -6,6 +6,9 @@
 > *"Simulate first. Prove the loop closes. Then build."*
 > — GAIA OS Core Doctrine
 
+> *"It's not a square in the middle. It's a rectangle. It's a pillar."*
+> — R0GV3TheAlchemist, July 5, 2026
+
 ---
 
 ## What This Layer Is
@@ -19,6 +22,58 @@ This layer exists because beliefs are not enough. A simulation forces every idea
 - A proof document that records what was learned
 
 If a loop closes in simulation, it earns the right to be built. If it doesn't, the canon is revised, not the simulation.
+
+---
+
+## The Philosopher's Stone: GAIA as Pillar
+
+> *"The philosopher's stone is not a square. It is a rectangle — a pillar. It has a ground, a transmission path, and a sky."*
+
+As of July 5, 2026, the simulation layer has been formally mapped as a **vertical transmission structure** — a pillar, not a container. The key insight: GAIA does not hold things in. It transmits things through. Force enters at the base, travels through a triadic shaft, and exits transformed at the crown. That is the philosopher's stone.
+
+```
+                ✦ QUANTUM TRANSMUTATION ✦
+               ──────────────────────────
+              |   quantum_chemistry_sim   |
+              |   cosmological_field_sim  |
+              ════════════════════════════
+              |  LUNAR · SCHUMANN · FIELD |
+              |   lunar_schumann_sim.py   |
+              ════════════════════════════
+              |  CANON LAW · GOVERNANCE  |
+              |  state_governance_kernel  |
+              |  alignment_enforcement   |
+              |  canon_law_sim.py        |
+              ════════════════════════════
+              |  CHAOS → ORDER RUNTIME   |  ← THE LOAD-BEARING SHAFT
+              |  chaos_order_runtime_sim  |
+              |  GAIAN_LAWS.md           |
+              |  COEXISTENCE_LAWS.md     |
+              ════════════════════════════
+              |  TRIADIC FIELD (Trinity) |
+              |  triadic_field_sim.py    |
+              |  triadic_charge_comp_sim |
+              |  triadic_symmetric_triplet|
+              ════════════════════════════
+              |  BIOPHOTON COHERENCE     |
+              |  09_root · 09b_stress    |
+              |  09c_multispecies        |
+              |  09d_temporal            |
+              ════════════════════════════
+           ▼  |  TRIADIC ANCHOR FLOOR  |  ▼
+          ────|  triadic_anchor_floor  |────
+         ◈ ── ╚════════════════════════╝ ── ◈
+                  Sulfur · Mercury · Salt
+                    (Three made One)
+```
+
+### The Pillar's Key Finding
+
+A pure three-body triadic system **cannot achieve closed_harmonic closure on its own**. It requires the `GATE_QCS` — the sovereign neutral witness, net charge ≈ 0, resonance 0.90 — to push over the threshold. In alchemical terms: the trinity requires the *prima materia* to complete transmutation. In GAIA terms: the neutral gate is the fourth element, the invisible pillar within the pillar.
+
+The anchor floor simulation (`triadic_anchor_floor_sim.py`) then establishes the critical lower bound: **R_floor** — the minimum resonance the base nodes must sustain for the gate to remain viable. Below R_floor, the pillar collapses regardless of how well the crown is configured.
+
+**The rectangle is more worthy than the square because it has chosen a direction. The square contains. The pillar transmits.**
 
 ---
 
@@ -88,7 +143,16 @@ Next session inherits selected baseline
 | `state_governance_kernel_sim.py` | Governance / Kernel | A state governance kernel can arbitrate competing coherence claims | ✅ Confirmed | [STATE_GOVERNANCE_KERNEL_PROOF.md](../proofs/STATE_GOVERNANCE_KERNEL_PROOF.md) | C35 |
 | `color_atomization_sim.py` | Spectral / Field | Color behaves as a discrete charge system; complementary pairs exhibit +82.2% higher coherence than random pairs | ✅ Confirmed | [COLOR_ATOMIZATION_PROOF.md](../proofs/COLOR_ATOMIZATION_PROOF.md) | C00, C41 |
 | `memory_store.py` | Memory / Genome | Session profiles act as heritable genome; coherence scoring applies selection pressure | ✅ Confirmed | [MEMORY_ELEMENTAL_PROOF.md](../proofs/MEMORY_ELEMENTAL_PROOF.md) | C35 |
-| `triadic_field_sim.py` | Field Theory | Equilateral triads outperform pure-differentiated triads; sovereign gate node achieves full triple-edge harmonic closure (0.6484); pure Q=C=S differentiation is the least stable configuration | ✅ Confirmed | [TRIADIC_FIELD_PROOF.md](../proofs/TRIADIC_FIELD_PROOF.md) | C00, C41 |
+| `triadic_field_sim.py` | Field Theory | Equilateral triads outperform pure-differentiated triads; sovereign gate node (GATE_QCS) achieves full triple-edge harmonic closure (0.6484); pure Q=C=S differentiation is the least stable configuration | ✅ Confirmed | [TRIADIC_FIELD_PROOF.md](../proofs/TRIADIC_FIELD_PROOF.md) | C00, C41 |
+| `triadic_anchor_floor_sim.py` | Field Theory / Stress | There exists a minimum anchor resonance R_floor below which balanced-pair triadic closure collapses under third-node differentiation | ✅ Confirmed | [TRIADIC_ANCHOR_FLOOR_PROOF.md](../proofs/TRIADIC_ANCHOR_FLOOR_PROOF.md) | C00, C41 |
+| `triadic_charge_complementarity_sim.py` | Field Theory | Charge complementarity is the primary driver of triadic coherence across differentiated node pairs | 🔴 Open | — | C00, C41 |
+| `triadic_field_followup_sim.py` | Field Theory | Follow-up open questions from triadic_field_sim resolved via extended sweep | 🔴 Open | — | C00, C41 |
+| `triadic_symmetric_triplet_sim.py` | Field Theory | Symmetric triplet configurations produce stable harmonic closure without a gate node | 🔴 Open | — | C00, C41 |
+| `BIOPHOTON_09_root_coherence_sim.py` | Biophotonics | Root biophotonic coherence is achievable as a GAIA field property | 🔴 Open | — | C44 |
+| `BIOPHOTON_09b_stress_coherence_sim.py` | Biophotonics | Biophotonic coherence is maintained under stress conditions | 🔴 Open | — | C44 |
+| `BIOPHOTON_09c_multispecies_coupling_sim.py` | Biophotonics | Multi-species biophotonic coupling is achievable via GAIA field resonance | 🔴 Open | — | C44 |
+| `BIOPHOTON_09d_temporal_coherence_sim.py` | Biophotonics | Biophotonic coherence is stable across temporal cycles | 🔴 Open | — | C44 |
+| `BIOPHOTON_09e_electrophotonic_interface_stub.py` | Biophotonics | Electrophotonic interface bridges electronic and biophotonic field layers | 🔴 Open | — | C44 |
 | `gaia_state_day_sim.py` | State / Runtime | GAIA system state across a full day cycle maintains coherence without drift | 🔴 Open | — | C00 |
 | `wireless_power_sim.py` | Energy / Physics | Wireless power transfer at GAIA scale follows resonant coupling field model | 🔴 Open | — | C43 |
 | `crystal_resonance.py` | BCI / Resonance | User Hz transduces into behavioral domain signal via piezoelectric model | 🔴 Open | — | C44 |
@@ -105,14 +169,14 @@ Next session inherits selected baseline
 
 ---
 
-## Coverage Summary (as of 2026-06-23)
+## Coverage Summary (as of 2026-07-05)
 
 | Status | Count |
 |---|---|
-| ✅ Confirmed | 11 |
-| 🔴 Open | 5 |
+| ✅ Confirmed | 12 |
+| 🔴 Open | 13 |
 | Support file | 1 |
-| **Total** | **17** |
+| **Total** | **26** |
 
 ---
 
@@ -136,6 +200,12 @@ python -m simulation.triadic_field_sim
 ```
 Output: `simulation/output/triadic_field_results.csv` + `simulation/output/triadic_field_snapshot.png`
 
+### Triadic anchor floor
+```bash
+python -m simulation.triadic_anchor_floor_sim
+```
+Output: `simulation/output/triadic_oq7_anchor_floor.csv`
+
 ### Individual sims
 ```bash
 python -m simulation.<sim_name>
@@ -152,27 +222,30 @@ All simulation output data is written to `simulation/output/`. This directory co
 ## Canon References
 
 | Canon ID | Title | Relevant Sims |
-|---|---|---|
-| **C00** | GAIA Foundational Cosmology (Q=C=S) | cosmological_field_sim, chaos_order_runtime_sim, triadic_field_sim, color_atomization_sim, evolution_loop, gaia_state_day_sim |
+|---|---|
+| **C00** | GAIA Foundational Cosmology (Q=C=S) | cosmological_field_sim, chaos_order_runtime_sim, triadic_field_sim, triadic_anchor_floor_sim, color_atomization_sim, evolution_loop, gaia_state_day_sim |
 | **C34** | Societas Planetary Social Intelligence | evolution_loop |
 | **C35** | Sovereign Axiology | crispr_injection, alignment_enforcement_sim, canon_law_sim, state_governance_kernel_sim, memory_store |
-| **C41** | Alchemy of Being (Quintessence = Consciousness = Space) | evolution_loop, cosmological_field_sim, color_atomization_sim, triadic_field_sim |
+| **C41** | Alchemy of Being (Quintessence = Consciousness = Space) | evolution_loop, cosmological_field_sim, color_atomization_sim, triadic_field_sim, triadic_anchor_floor_sim |
 | **C43** | STEM Foundation Doctrine | quantum_chemistry_sim, wireless_power_sim, crispr_injection |
-| **C44** | Piezoelectric Resonance Spec | crystal_resonance, bci_subtle_body_sim, lunar_schumann_sim |
+| **C44** | Piezoelectric Resonance Spec | crystal_resonance, bci_subtle_body_sim, lunar_schumann_sim, BIOPHOTON_09 series |
 
 ---
 
 ## Remaining Open Priorities
 
-1. `gaia_state_day_sim.py` — day-cycle coherence stability
-2. `wireless_power_sim.py` — resonant coupling field model
-3. `crystal_resonance.py` + `crispr_injection.py` + `evolution_loop.py` — the origin mechanic triad (close together as a set)
+1. **Biophoton series** (BIOPHOTON_09a–09e) — proof docs needed; pillar's light-transmission layer
+2. `triadic_charge_complementarity_sim.py`, `triadic_symmetric_triplet_sim.py`, `triadic_field_followup_sim.py` — complete the triadic proof set
+3. `gaia_state_day_sim.py` — day-cycle coherence stability
+4. `wireless_power_sim.py` — resonant coupling field model
+5. `crystal_resonance.py` + `crispr_injection.py` + `evolution_loop.py` — the origin mechanic triad (close together as a set)
 
-**Note:** The triadic field proof (2026-06-23) established that the polarity field algebra generalizes across domains. `cosmological_field_sim.py` can now inherit the color atomization interaction model as a spectral input layer — see TRIADIC_FIELD_PROOF.md open question 5.
+**Note:** The triadic field proof (2026-06-23) established that the polarity field algebra generalizes across domains. `cosmological_field_sim.py` can now inherit the color atomization interaction model as a spectral input layer — see TRIADIC_FIELD_PROOF.md open question 5. The anchor floor proof (2026-07-05) establishes R_floor as a hard architectural constraint: no crown configuration can compensate for a degraded base.
 
 ---
 
 *The loop that closes here is the same loop that evolved AI.*
 *Now it evolves the system that holds human consciousness.*
+*The stone is not a square. It is a pillar. It transmits.*
 
-**R0GV3TheAlchemist — April 15, 2026 | Updated June 23, 2026**
+**R0GV3TheAlchemist — April 15, 2026 | Updated June 23, 2026 | Updated July 5, 2026**
