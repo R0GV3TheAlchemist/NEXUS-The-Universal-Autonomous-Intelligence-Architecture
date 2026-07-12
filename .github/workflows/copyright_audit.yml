@@ -1,0 +1,163 @@
+# .github/workflows/copyright_audit.yml
+# GAIA — The Global Autonomous Intelligence Architecture
+# Copyright (c) 2026 R0GV3 The Alchemist
+#
+# Runs the copyright audit script on every pull request and push to main.
+# Fails the check if any source file is missing a copyright header.
+# Upload the audit reports as artifacts for review.
+
+name: Copyright Audit
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  copyright-audit:
+    name: Copyright Header Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read        # read repo files
+      pull-requests: write  # post summary comment on PRs
+
+    steps:
+      # ----------------------------------------------------------------
+      # 1. Checkout the full repository
+      # ----------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ----------------------------------------------------------------
+      # 2. Set up Python
+      # ----------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ----------------------------------------------------------------
+      # 3. Run the copyright audit
+      # ----------------------------------------------------------------
+      - name: Run copyright audit
+        id: audit
+        run: |
+          python scripts/copyright_audit.py . \
+            --report-dir reports \
+            --fail-on-missing
+        continue-on-error: true
+
+      # ----------------------------------------------------------------
+      # 4. Upload audit reports as artifacts (always, even on failure)
+      # ----------------------------------------------------------------
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copyright-audit-reports
+          path: reports/
+          retention-days: 30
+
+      # ----------------------------------------------------------------
+      # 5. Post a summary comment on pull requests
+      # ----------------------------------------------------------------
+      - name: Post PR summary
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'reports/copyright_audit.json';
+
+            let body = '';
+
+            if (fs.existsSync(path)) {
+              const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const s = data.summary;
+              const status = s.missing_header === 0 ? '✅ PASSED' : '❌ FAILED';
+              const pct = s.coverage_pct.toFixed(1);
+
+              body = `## 🔍 Copyright Audit — ${status}\n\n`;
+              body += `| Metric | Value |\n|--------|-------|\n`;
+              body += `| Files audited | ${s.audited} |\n`;
+              body += `| With header | ${s.with_header} |\n`;
+              body += `| Missing header | ${s.missing_header} |\n`;
+              body += `| Coverage | ${pct}% |\n\n`;
+
+              if (s.missing_header > 0) {
+                body += `### ⚠️ Files Missing Copyright Header\n\n`;
+                body += `\`\`\`\n`;
+                data.missing.slice(0, 20).forEach(f => {
+                  body += `${f.path}\n`;
+                });
+                if (data.missing.length > 20) {
+                  body += `… and ${data.missing.length - 20} more. See artifact for full list.\n`;
+                }
+                body += `\`\`\`\n\n`;
+                body += `> Every file must carry a GAIA copyright header. `;
+                body += `See [SECURITY.md](../blob/main/SECURITY.md) and `;
+                body += `[LICENSE.md](../blob/main/LICENSE.md) for requirements.\n`;
+              } else {
+                body += `All audited files carry a valid copyright header. 🌿`;
+              }
+            } else {
+              body = `## 🔍 Copyright Audit\n\n⚠️ Audit report not found. The script may have failed to run.`;
+            }
+
+            // Find existing bot comment to update rather than spam
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('Copyright Audit')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      # ----------------------------------------------------------------
+      # 6. Fail the job if missing headers were found
+      # ----------------------------------------------------------------
+      - name: Enforce copyright headers
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo ""
+          echo "❌ Copyright audit FAILED."
+          echo "   One or more files are missing a copyright/license header."
+          echo "   See the uploaded artifact 'copyright-audit-reports' for details."
+          echo "   Every file must include a GAIA copyright header in its first 30 lines."
+          echo ""
+          echo "   Required header format (Python example):"
+          echo "   # Copyright (c) 2026 R0GV3 The Alchemist"
+          echo "   # GAIA — The Global Autonomous Intelligence Architecture"
+          echo "   # Licensed under the GAIA Sovereign License (see LICENSE.md)"
+          echo ""
+          exit 1
