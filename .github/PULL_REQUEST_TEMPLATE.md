@@ -1,39 +1,35 @@
-## What This PR Does
-<!-- One sentence summary of the change -->
+---
+author: Kyle Alexander Steen
+identity_name: The Alchemist
+handle: R0GV3TheAlchemist
+role: GAIA Architect
+location: San Antonio, Texas
+copyright: "© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved."
+---
 
+## Summary
 
-## Linked Issue
-Closes #
+<!-- What does this PR do? One sentence. -->
 
-## Type of Change
-- [ ] Feature (new capability)
-- [ ] Fix (bug correction)
-- [ ] Research deliverable
-- [ ] Process / documentation
-- [ ] Architecture change (ADR required)
-- [ ] Refactor (no functional change)
+## Related Issues
+
+Closes #<!-- issue number -->
 
 ## Changes Made
-<!-- Brief description of what changed and why -->
 
+- 
+- 
 
-## Definition of Done Checklist
-<!-- Copy the Definition of Done from the linked issue and check each item -->
-- [ ] 
-- [ ] 
+## Checklist
 
-## Pre-Merge Checklist
-- [ ] `Closes #` is filled in above
-- [ ] Tests written and passing locally
-- [ ] No new lint errors (`ruff check .` for Python, `eslint` for TypeScript)
-- [ ] For architecture changes: ADR filed or updated
-- [ ] For UI changes: screenshots or recording attached below
-- [ ] For security changes: `core/sentinel/` impact assessed
-- [ ] CONTRIBUTING.md followed throughout
+- [ ] My code follows the GAIA Constitutional Canon
+- [ ] I have added or updated relevant documentation
+- [ ] Tests pass locally (`pytest`)
+- [ ] Docker build passes locally
+- [ ] No secrets or credentials are included
+- [ ] Branch is up to date with `main` or `develop`
 
-## Known Limitations / Follow-Up Issues
-<!-- Anything this PR intentionally does NOT address -->
+## Authorship Declaration
 
-
-## Screenshots / Recordings
-<!-- For any UI change, attach before/after screenshots or a screen recording -->
+This contribution is made by or under the direction of **Kyle Alexander Steen (The Alchemist)**, GAIA Architect, San Antonio, Texas.
+© 2026 Kyle Alexander Steen. All rights reserved.
