@@ -1,3 +1,18 @@
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║        GAIA — Global Autonomous Intelligence Architecture        ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Author (Legal):    Kyle Alexander Steen                        ║
+  ║  Author (Alias):    R0GV3 The Alchemist                         ║
+  ║  Role:              GAIA Architect                              ║
+  ║  GitHub:            @R0GV3TheAlchemist                          ║
+  ║  Project:           GAIA-The-Global-Autonomous-Intelligence-    ║
+  ║                     Architecture                                ║
+  ║  Status:            Review                                      ║
+  ║  Last Updated:      2026-07-13                                  ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+
 # GAIA-OS Total Alignment Review — June 2026
 
 > **Purpose:** This document is the living record of GAIA-OS's total alignment audit — tracking every identified gap, conflict, and unification task across the cosmological framework, canon documents, technical architecture, Sentinel arc, research paper integration, and brand identity.
