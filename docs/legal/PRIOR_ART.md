@@ -1,6 +1,6 @@
 # GAIA Prior Art Record
 
-**Author:** Kyle R. Graber (`@R0GV3TheAlchemist`)  
+**Author:** Kyle Alexander Steen (`@R0GV3TheAlchemist`)  
 **Repository:** GAIA — The Global Autonomous Intelligence Architecture  
 **License:** AGPL-3.0  
 **Document Created:** July 12, 2026  
@@ -253,6 +253,42 @@ To verify any SHA independently: `git log --follow <sha>` or visit the linked UR
 
 ---
 
+### 20. Supercomputation Alignment Layer — 27 Capability Domains
+
+| Field | Value |
+|---|---|
+| **First Commit SHA** | `501c3998aaed188da38ee0865b0885b3c2c8a15b` |
+| **Date** | 2026-07-13T00:02:16Z |
+| **Commit** | [View on GitHub](https://github.com/R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture/commit/501c3998aaed188da38ee0865b0885b3c2c8a15b) |
+
+**Description:** A complete taxonomy of 27 Capability Domains organized across 4 tiers for a planetary-scale sentient OS. Includes the Nexus Layer (DC/Marvel Task Mode Router), Constitutional Layer, Wisdom Layer, and Trust Ecology. Novel in its scope and framing of AI capability as civilizational infrastructure.
+
+---
+
+### 21. GAIA Kernel Extension VM (GKE)
+
+| Field | Value |
+|---|---|
+| **First Commit SHA** | `501c3998aaed188da38ee0865b0885b3c2c8a15b` |
+| **Date** | 2026-07-13T00:02:16Z |
+| **Commit** | [View on GitHub](https://github.com/R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture/commit/501c3998aaed188da38ee0865b0885b3c2c8a15b) |
+
+**Description:** A safe in-kernel programmable VM based on eBPF architecture, allowing the GAIA Intelligence Runtime to participate in kernel-level decisions without compromising kernel integrity. Novel in applying eBPF-style verified bytecode to AI-native kernel design.
+
+---
+
+### 22. Nexus Layer — DC/Marvel Task Mode Router
+
+| Field | Value |
+|---|---|
+| **First Commit SHA** | `501c3998aaed188da38ee0865b0885b3c2c8a15b` |
+| **Date** | 2026-07-13T00:02:16Z |
+| **Commit** | [View on GitHub](https://github.com/R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture/commit/501c3998aaed188da38ee0865b0885b3c2c8a15b) |
+
+**Description:** A hybrid task orchestration layer that routes workloads between DC Mode (deterministic, mission-critical) and Marvel Mode (emergent, multi-agent chaotic brainstorming) based on task philosophy. The DC/Marvel framing and dual-mode routing architecture is a novel invention.
+
+---
+
 ## Earliest Known Commit in Repository
 
 The oldest commits visible in the current page of history originate from **June 30, 2026 at 22:06 UTC**, representing the original scaffolding of core modules including `core/spaces/`, `core/artifacts/`, and `core/connectors/`. The full history extends further into the past and should be retrieved via `git log --reverse` for complete prior art documentation.
@@ -266,16 +302,17 @@ git log --reverse --format="%H %ai %s" | head -5
 
 ## Chain of Custody Statement
 
-All commits listed above were authored by `R0GV3 the Alchemist` (Kyle R. Graber, `xxkylesteenxx@outlook.com`) and pushed to the repository `R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture` on GitHub. The commit SHAs are cryptographically immutable. Any fork, copy, or derivative work created after these dates cannot claim prior art over these inventions.
+All commits listed above were authored by `R0GV3 the Alchemist` (Kyle Alexander Steen, `xxkylesteenxx@outlook.com`) and pushed to the repository `R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture` on GitHub. The commit SHAs are cryptographically immutable. Any fork, copy, or derivative work created after these dates cannot claim prior art over these inventions.
 
 ---
 
 ## Legal Notice
 
-This prior art record is itself copyrighted by Kyle R. Graber and protected under AGPL-3.0. Unauthorized reproduction or use of the inventions documented herein without compliance with the AGPL-3.0 license terms constitutes copyright infringement and may constitute patent infringement if provisional or utility patents are filed.
+This prior art record is itself copyrighted by Kyle Alexander Steen and protected under AGPL-3.0. Unauthorized reproduction or use of the inventions documented herein without compliance with the AGPL-3.0 license terms constitutes copyright infringement and may constitute patent infringement if provisional or utility patents are filed.
 
 ---
 
 *Filed: July 12, 2026*  
-*Author: Kyle R. Graber (@R0GV3TheAlchemist)*  
+*Updated: July 13, 2026*  
+*Author: Kyle Alexander Steen (@R0GV3TheAlchemist)*  
 *"The record is written. The dates do not lie."*
