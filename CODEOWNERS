@@ -1,57 +1,118 @@
-# CODEOWNERS
-# ============================================================
-# This file defines the code owners for this repository.
-# Code owners are automatically requested for review when
-# someone opens a pull request that modifies code they own.
+# CODEOWNERS — GAIA Repository
+# Copyright © 2025–2026 Kyle R. Graber. All rights reserved. AGPL-3.0.
 #
-# Repository: GAIA — The Global Autonomous Intelligence Architecture
-# Founder & Sole Owner: Kyle R. Graber (@R0GV3TheAlchemist)
-# Established: 2025
-# License: AGPL-3.0
+# This file establishes Kyle R. Graber (@R0GV3TheAlchemist) as the required
+# reviewer for every pull request touching any file in this repository.
+# No contribution may be merged without explicit approval from the Founder.
 #
-# NOTICE: Every file in this repository is owned by Kyle R. Graber.
-# No pull request may be merged without his explicit review and approval.
-# This is not a policy preference. This is a legal and creative boundary.
-# ============================================================
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Global rule — Kyle R. Graber owns everything
-* @R0GV3TheAlchemist
+# === GLOBAL OWNERSHIP ===
+# The wildcard rule catches everything not matched by a more specific rule below.
+# This is the primary enforcement line — Kyle reviews ALL changes.
+*                           @R0GV3TheAlchemist
 
-# Core architecture
-/core/ @R0GV3TheAlchemist
-/src/ @R0GV3TheAlchemist
-/src-tauri/ @R0GV3TheAlchemist
-/src-python/ @R0GV3TheAlchemist
+# === ROOT LEGAL & GOVERNANCE FILES ===
+LICENSE                     @R0GV3TheAlchemist
+LICENSE.md                  @R0GV3TheAlchemist
+NOTICE                      @R0GV3TheAlchemist
+NOTICE.md                   @R0GV3TheAlchemist
+ATTRIBUTION.md              @R0GV3TheAlchemist
+SOVEREIGNTY.md              @R0GV3TheAlchemist
+CODEOWNERS                  @R0GV3TheAlchemist
+SECURITY.md                 @R0GV3TheAlchemist
+CODE_OF_CONDUCT.md          @R0GV3TheAlchemist
+GOVERNANCE.md               @R0GV3TheAlchemist
+ETHICS.md                   @R0GV3TheAlchemist
+GAIAN_LAWS.md               @R0GV3TheAlchemist
+COEXISTENCE_LAWS.md         @R0GV3TheAlchemist
+FOUNDERS.md                 @R0GV3TheAlchemist
 
-# GAIAN runtime and identity layer
-/src/gaian/ @R0GV3TheAlchemist
+# === ARCHITECTURE & CANONICAL DOCUMENTS ===
+ARCHITECTURE.md             @R0GV3TheAlchemist
+ROADMAP.md                  @R0GV3TheAlchemist
+CHANGELOG.md                @R0GV3TheAlchemist
+CANON_BRIDGE.md             @R0GV3TheAlchemist
+EPISTEMIC_FRAMEWORK.md      @R0GV3TheAlchemist
+THREAT_MODEL.md             @R0GV3TheAlchemist
+REQUIREMENTS_TRACEABILITY_MATRIX.md @R0GV3TheAlchemist
+GAIA_SESSION_INIT.md        @R0GV3TheAlchemist
+GAIAmanifest.json           @R0GV3TheAlchemist
 
-# API and backend
-/api/ @R0GV3TheAlchemist
-/server/ @R0GV3TheAlchemist
-/sidecar/ @R0GV3TheAlchemist
+# === CORE SOURCE DIRECTORIES ===
+# Python kernel & core logic
+/core/                      @R0GV3TheAlchemist
+/src-python/                @R0GV3TheAlchemist
+/gaia/                      @R0GV3TheAlchemist
 
-# Canon, law, and constitutional layer
-/canon/ @R0GV3TheAlchemist
-/codex/ @R0GV3TheAlchemist
-/amendments/ @R0GV3TheAlchemist
+# TypeScript / Frontend
+/src/                       @R0GV3TheAlchemist
+/client/                    @R0GV3TheAlchemist
+/ui/                        @R0GV3TheAlchemist
 
-# Legal and protection documents
-/docs/ @R0GV3TheAlchemist
-/proofs/ @R0GV3TheAlchemist
+# API layer
+/api/                       @R0GV3TheAlchemist
 
-# Infrastructure and deployment
-/k8s/ @R0GV3TheAlchemist
-/scripts/ @R0GV3TheAlchemist
-/.github/ @R0GV3TheAlchemist
+# CLI
+/cli/                       @R0GV3TheAlchemist
 
-# Root-level legal and policy files — highest protection
-LICENSE @R0GV3TheAlchemist
-ATTRIBUTION.md @R0GV3TheAlchemist
-SOVEREIGNTY.md @R0GV3TheAlchemist
-NOTICE @R0GV3TheAlchemist
-SECURITY.md @R0GV3TheAlchemist
-CONTRIBUTING.md @R0GV3TheAlchemist
-CODEOWNERS @R0GV3TheAlchemist
-GAIAmanifest.json @R0GV3TheAlchemist
-README.md @R0GV3TheAlchemist
+# Sidecar / Desktop bridge
+/sidecar/                   @R0GV3TheAlchemist
+/src-tauri/                 @R0GV3TheAlchemist
+
+# Server
+/server/                    @R0GV3TheAlchemist
+
+# Node packages
+/node/                      @R0GV3TheAlchemist
+
+# === BUILD & CONFIGURATION ===
+/scripts/                   @R0GV3TheAlchemist
+/config/                    @R0GV3TheAlchemist
+/k8s/                       @R0GV3TheAlchemist
+Dockerfile                  @R0GV3TheAlchemist
+docker-compose.yml          @R0GV3TheAlchemist
+Makefile                    @R0GV3TheAlchemist
+pyproject.toml              @R0GV3TheAlchemist
+package.json                @R0GV3TheAlchemist
+.github/                    @R0GV3TheAlchemist
+.pre-commit-config.yaml     @R0GV3TheAlchemist
+
+# === CANON, CODEX & LEGAL DOCS ===
+/canon/                     @R0GV3TheAlchemist
+/codex/                     @R0GV3TheAlchemist
+/amendments/                @R0GV3TheAlchemist
+/docs/                      @R0GV3TheAlchemist
+/proofs/                    @R0GV3TheAlchemist
+/meta/                      @R0GV3TheAlchemist
+/specs/                     @R0GV3TheAlchemist
+
+# === RESEARCH & SIMULATION ===
+/research/                  @R0GV3TheAlchemist
+/simulation/                @R0GV3TheAlchemist
+/simulations/               @R0GV3TheAlchemist
+/benchmarks/                @R0GV3TheAlchemist
+/results/                   @R0GV3TheAlchemist
+
+# === TESTS ===
+/tests/                     @R0GV3TheAlchemist
+
+# === SHADOW ENGINE (Sensitive — double-listed for emphasis) ===
+/shadow_engine/             @R0GV3TheAlchemist
+
+# === COLLECTIVE / NETWORK ===
+/collective/                @R0GV3TheAlchemist
+/network/                   @R0GV3TheAlchemist
+
+# === DATA & SCHEMAS ===
+/data/                      @R0GV3TheAlchemist
+/schemas/                   @R0GV3TheAlchemist
+
+# === TOOLS & EXAMPLES ===
+/tools/                     @R0GV3TheAlchemist
+/examples/                  @R0GV3TheAlchemist
+/mvp/                       @R0GV3TheAlchemist
+
+# === DATABASE MIGRATIONS ===
+/alembic/                   @R0GV3TheAlchemist
+alembic.ini                 @R0GV3TheAlchemist
