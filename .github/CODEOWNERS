@@ -1,6 +1,12 @@
 # CODEOWNERS — GAIA
 # GAIA — The Global Autonomous Intelligence Architecture
-# Copyright (c) 2026 R0GV3 The Alchemist
+#
+# Author:        Kyle Alexander Steen
+# Identity:      The Alchemist
+# Handle:        @R0GV3TheAlchemist
+# Role:          GAIA Architect
+# Location:      San Antonio, Texas
+# Copyright:     © 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
 #
 # GitHub uses this file to automatically request reviews on pull requests.
 # The last matching pattern wins. Patterns follow .gitignore syntax.
@@ -31,7 +37,7 @@ ARCHITECTURE.md                             @R0GV3TheAlchemist
 /.github/BRANCH_PROTECTION.md              @R0GV3TheAlchemist
 
 # --- ETHICS LAYER — SACRED COMPONENTS ---------------------------------
-# These files constitute GAIA’s conscience. No change may be
+# These files constitute GAIA's conscience. No change may be
 # merged without explicit founder review and approval.
 core/action_gate.py                         @R0GV3TheAlchemist
 core/consent_ledger.py                      @R0GV3TheAlchemist
