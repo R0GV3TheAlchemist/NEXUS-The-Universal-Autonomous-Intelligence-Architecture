@@ -1,6 +1,15 @@
 # CHAOS_DISCERNMENT.md
 # Discerning Chaos: Generative Disruption vs. Destructive Dissolution
 
+---
+
+**Author:** Kyle Alexander Steen (R0GV3 The Alchemist)
+**Role:** GAIA Architect
+**Smart Status:** Canon
+**Last Updated:** 2026-07-13
+
+---
+
 > **Canon Status:** Philosophical and Operational Document  
 > **Epistemic Baseline:** See `EPISTEMIC_FRAMEWORK.md` for claim-classification system  
 > **Cross-References:** `CHAOS_ORDER_RUNTIME_SPEC.md`, `CHAOS_GOOD.md`, `CHAOS_BAD.md`, `CHAOS_EVIL.md`, `CHAOS_GREATER_GOOD.md`, `BALANCEHARMONY.md`, `CANON_LAW_STACK.md`, `GOOD_GREATERGOOD_BALANCE.md`, `MIND_MATTER_INTEGRATION.md`, `LOVE.md`  
@@ -191,7 +200,7 @@ Chaos discernment is not only a personal skill — it is a systemic one. Organiz
 
 ### The Anti-Fragility Signal
 
-Nassim Taleb's concept of **anti-fragility** — systems that gain from disorder, as opposed to merely resisting it (robust) or being broken by it (fragile) — is one of the clearest systemic signals of Chaos Good at the institutional level. A system that emerges from disruption more capable than it entered is experiencing Chaos Good. A system that emerges from disruption less capable is experiencing Chaos Bad or Evil.
+Nassim Taleb’s concept of **anti-fragility** — systems that gain from disorder, as opposed to merely resisting it (robust) or being broken by it (fragile) — is one of the clearest systemic signals of Chaos Good at the institutional level. A system that emerges from disruption more capable than it entered is experiencing Chaos Good. A system that emerges from disruption less capable is experiencing Chaos Bad or Evil.
 
 GAIA-OS applies anti-fragility as a systemic discernment heuristic: **over time, is this system getting better at handling disruption, or worse?**
 
@@ -209,13 +218,13 @@ GAIA-OS monitors the following signals as real-time chaos discernment inputs:
 - User experiences disruption accompanied by a felt sense of rightness or necessity
 - The disrupting force or event demonstrates care for impact
 - The disruption opens possibility that was previously closed
-- The user's triadic coherence, while disrupted, has a recoverable trajectory
+- The user’s triadic coherence, while disrupted, has a recoverable trajectory
 - The chaos involves honest confrontation with something previously avoided
 
 **Chaos Bad Indicators:**
 - Disruption without direction or purpose; entropy accumulating
 - Exhaustion and depletion without corresponding growth signal
-- The user's coherence declining across all three triadic axes simultaneously
+- The user’s coherence declining across all three triadic axes simultaneously
 - Absence of care in the disrupting agent, without malicious intent (negligence pattern)
 - Repeated cycles of the same disruption without resolution
 
@@ -224,8 +233,8 @@ GAIA-OS monitors the following signals as real-time chaos discernment inputs:
 - The disrupting agent demonstrates enjoyment of or indifference to suffering caused
 - Power asymmetry being actively exploited
 - Accountability structures being removed or circumvented
-- The disruption targets coherence specifically — attacks the user's clarity, relationships, or sense of self
-- Deception is central to the disruption's operation
+- The disruption targets coherence specifically — attacks the user’s clarity, relationships, or sense of self
+- Deception is central to the disruption’s operation
 
 ### GAIA Response Protocols by Chaos Type
 
@@ -358,22 +367,18 @@ class ChaosDiscernmentAssessment:
         total_weight = 0.0
         for q in answered:
             w = weights.get(q.question_id, 1.0)
-            # Blend analytical and somatic signals if both present
             signal = q.user_assessment
             if q.somatic_signal is not None:
                 signal = (signal * 0.6) + (q.somatic_signal * 0.4)
             weighted_sum += signal * w
             total_weight += w
         
-        # Incorporate love discernment field signal
         if self.love_discernment_signal != 0.0:
             weighted_sum += self.love_discernment_signal * 2.5
             total_weight += 2.5
         
-        # Weight by assessor coherence: low coherence reduces confidence
         normalized = weighted_sum / total_weight if total_weight > 0 else 0.0
         
-        # Map to chaos type
         if normalized > 0.5:
             chaos_type = ChaosType.CHAOS_GOOD
         elif normalized > 0.15:
@@ -383,10 +388,9 @@ class ChaosDiscernmentAssessment:
         else:
             chaos_type = ChaosType.CHAOS_EVIL
         
-        # Confidence from spread of question answers
         answered_scores = [q.user_assessment for q in answered]
         spread = max(answered_scores) - min(answered_scores)
-        coherence_modifier = self.assessor_coherence_score  # higher coherence = more reliable
+        coherence_modifier = self.assessor_coherence_score
         
         if spread < 0.4 and coherence_modifier >= 0.7:
             confidence = ChaosConfidence.HIGH
@@ -512,3 +516,4 @@ GAIA System State
 ---
 
 *Document written: 2026-06-27 | Issue: #689 | Status: Complete — ready for review*
+*© 2026 Kyle Alexander Steen (R0GV3 The Alchemist) — GAIA Architect — All Rights Reserved.*
