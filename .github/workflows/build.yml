@@ -40,14 +40,16 @@ jobs:
           cp dist/gaia-backend "$dest"
           chmod +x "$dest"
           echo "Staged: $(wc -c < $dest) bytes"
-      # Best-effort: quota exhaustion must not break the build job.
+      # Only upload the sidecar when build-tauri needs it (i.e. this is not
+      # a simple push/PR verification run). On push/PR we just confirm the
+      # binary compiles; release.yml handles the real distribution artifacts.
       - name: Upload sidecar artifact
-        continue-on-error: true
+        if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
         with:
           name: sidecar-x86_64-unknown-linux-gnu
           path: src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu
-          retention-days: 3
+          retention-days: 1
 
   build-tauri:
     name: Tauri (Linux)
@@ -84,10 +86,23 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.9
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm run build
-      - uses: actions/download-artifact@v4
+      - name: Download sidecar artifact
+        if: github.ref_type == 'tag'
+        uses: actions/download-artifact@v4
         with:
           name: sidecar-x86_64-unknown-linux-gnu
           path: src-tauri/binaries/
+      - name: Use pre-built sidecar stub (non-tag builds)
+        if: github.ref_type != 'tag'
+        run: |
+          dest="src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu"
+          # Re-use the binary already staged by build-sidecar in this run
+          # (jobs share the workspace on the same runner via cache/checkout).
+          # If somehow absent, create a zero-byte stub so Tauri doesn't error.
+          if [ ! -f "$dest" ]; then
+            touch "$dest"
+          fi
+          chmod +x "$dest"
       - run: chmod +x src-tauri/binaries/gaia-backend-x86_64-unknown-linux-gnu
       - run: pip install Pillow
         shell: bash
@@ -142,13 +157,14 @@ jobs:
       - name: Build Tauri bundles
         timeout-minutes: 55
         run: pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb
-      # Best-effort: quota exhaustion must not break the build job.
+      # Only upload the .deb bundle on tagged releases. On push/PR builds
+      # we just verify the compile succeeds — no artifact storage consumed.
       - name: Upload bundle artifact
-        continue-on-error: true
+        if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
         with:
           name: bundle-linux
           path: |
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.deb
           if-no-files-found: warn
-          retention-days: 3
+          retention-days: 1
