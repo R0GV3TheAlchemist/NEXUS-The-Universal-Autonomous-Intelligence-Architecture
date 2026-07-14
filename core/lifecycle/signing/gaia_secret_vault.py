@@ -12,20 +12,19 @@ GAIA-native credential store defined in C15).
 
 from __future__ import annotations
 
-import os
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Dict
 
 try:
     from cryptography.hazmat.primitives.asymmetric.ed25519 import (
-        Ed25519PrivateKey,
-        Ed25519PublicKey,
+        Ed25519PrivateKey,  # noqa: F401
+        Ed25519PublicKey,   # noqa: F401
     )
     from cryptography.hazmat.primitives.serialization import (
         Encoding,
         PublicFormat,
-        PrivateFormat,
-        NoEncryption,
+        PrivateFormat,     # noqa: F401
+        NoEncryption,      # noqa: F401
     )
     _CRYPTO_AVAILABLE = True
 except ImportError:

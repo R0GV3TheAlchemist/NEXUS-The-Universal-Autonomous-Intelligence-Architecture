@@ -52,7 +52,7 @@ class TestEd25519Signing:
 
     def test_vault_missing_key_raises(self):
         vault = InProcessVault()
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             vault.get_private_key("nonexistent-key")
 
     def test_signer_verify_valid_entry(self):

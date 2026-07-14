@@ -19,7 +19,7 @@ Injection pattern::
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from .gaian_lifecycle_state import GAIANLifecycleState

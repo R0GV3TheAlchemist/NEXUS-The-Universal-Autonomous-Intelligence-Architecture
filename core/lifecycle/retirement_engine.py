@@ -14,7 +14,6 @@ Cross-refs: C17 (memory), C23 (shadow registry)
 from __future__ import annotations
 
 import hashlib
-import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone

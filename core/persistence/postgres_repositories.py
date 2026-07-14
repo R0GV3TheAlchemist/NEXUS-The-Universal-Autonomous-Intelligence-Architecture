@@ -6,13 +6,11 @@ This module provides concrete repository implementations for the interfaces in
 
 from __future__ import annotations
 
-import json
 import uuid
 from contextlib import contextmanager
 from datetime import UTC, datetime
-from typing import Any, Iterator, Sequence
+from typing import Any, Sequence
 
-import psycopg2
 from psycopg2.extras import Json, RealDictCursor
 from psycopg2.pool import ThreadedConnectionPool
 

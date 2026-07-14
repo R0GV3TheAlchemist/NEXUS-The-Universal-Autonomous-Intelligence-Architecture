@@ -44,7 +44,6 @@ Canon-refs: C26, C27, C04, C47
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import time
@@ -55,7 +54,6 @@ from typing import Callable, Dict, List, Optional
 from core.mesh.p2p_mesh import GossipEnvelope, P2PMesh
 from core.mesh.node import GaiaNode
 from core.lifecycle.lifecycle_audit_logger import LifecycleEvent
-from core.lifecycle.gaian_lifecycle_state import GAIANLifecycleState
 
 logger = logging.getLogger("gaia.mesh.lifecycle")
 

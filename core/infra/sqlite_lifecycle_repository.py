@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 
 from core.lifecycle.gaian_lifecycle_state import GAIANLifecycleState
