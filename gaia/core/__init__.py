@@ -8,6 +8,7 @@ individual submodules, e.g.::
 
     from gaia.core import GAIAState, GAIAMode, D6Engine, Talisman
     from gaia.core import D6Inputs, D6Decision, compute_next_state, clamp
+    from gaia.core import GAIACore
 
 This keeps the internal file structure free to change without
 breaking downstream imports.
@@ -15,14 +16,14 @@ breaking downstream imports.
 
 from __future__ import annotations
 
-# ── GAIAState ─────────────────────────────────────────────────────────────────
+# ── GAIAState ────────────────────────────────────────────────────────────────────────────────
 from gaia.core.state import (
     GAIAMode,
     GAIAOperationalMode,  # backward-compat alias
     GAIAState,
 )
 
-# ── Talisman ───────────────────────────────────────────────────────────────────
+# ── Talisman ───────────────────────────────────────────────────────────────────────────────
 from gaia.core.talisman import (
     CoherenceFunction,
     DimensionalSignature,
@@ -36,10 +37,10 @@ from gaia.core.talisman import (
     ARCHITECT_RESTORE_TALISMAN,
 )
 
-# ── TalismanStore ───────────────────────────────────────────────────────────────
+# ── TalismanStore ─────────────────────────────────────────────────────────────────────────────
 from gaia.core.talisman_store import TalismanStore
 
-# ── D6 Meta-Coherence Engine ───────────────────────────────────────────────────
+# ── D6 Meta-Coherence Engine ──────────────────────────────────────────────────────────
 from gaia.core.d6_engine import (
     D6Decision,
     D6Engine,
@@ -50,6 +51,9 @@ from gaia.core.d6_engine import (
     clamp,
     compute_next_state,
 )
+
+# ── GAIACore ──────────────────────────────────────────────────────────────────────────────────
+from gaia.core.gaia_core import GAIACore
 
 __all__ = [
     # State
@@ -77,4 +81,6 @@ __all__ = [
     "InterventionSeverity",
     "clamp",
     "compute_next_state",
+    # GAIA Core
+    "GAIACore",
 ]

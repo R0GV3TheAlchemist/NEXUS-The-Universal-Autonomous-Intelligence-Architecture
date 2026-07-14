@@ -47,7 +47,7 @@ from pathlib import Path
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware  # fastapi.middleware.base moved to starlette in FastAPI >= 0.111
 from fastapi.staticfiles import StaticFiles
 from fastapi.testclient import TestClient
 
@@ -321,15 +321,9 @@ class TestStreamEndpointForDashboard:
             assert resp.headers.get("cache-control", "") == "no-cache"
 
     def test_stream_event_is_valid_json(self):
-        """
-        Pre-load a WARN event, then consume the first data: line from the
-        stream and verify it decodes to a valid event dict.
-        """
         s = Sentinel()
         ev = _event(ThreatLevel.WARN)
         s.audit.record(ev)
-        # Use a hook to push the event into the stream queue immediately.
-        # We verify the endpoint accepts it and the SSE line parses cleanly.
         client = TestClient(_make_app(s))
         lines = []
         try:
@@ -339,12 +333,11 @@ class TestStreamEndpointForDashboard:
                         payload = line[len("data:"):].strip()
                         parsed = json.loads(payload)
                         lines.append(parsed)
-                        break  # got one — stop
-                    if line.startswith(":"):   # heartbeat comment
+                        break
+                    if line.startswith(":"):
                         break
         except Exception:
-            pass  # stream cancelled after first line
-        # If we got a data line it must have the required fields
+            pass
         for parsed in lines:
             for field in ("event_id", "level", "category", "rule_name",
                           "caller_id", "endpoint", "description",
@@ -368,7 +361,7 @@ class TestStreamEndpointForDashboard:
                 "GET", f"/v1/sentinel/audit/stream?min_level={level}"
             ) as resp:
                 assert resp.status_code == 200
-                break  # just confirm it opens
+                break
 
     def test_stream_invalid_min_level_returns_422(self):
         client = TestClient(_make_app(Sentinel()))
