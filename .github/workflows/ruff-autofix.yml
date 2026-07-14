@@ -1,10 +1,14 @@
 name: Ruff Autofix
 
 on:
-  # Manual trigger only — run from the Actions tab when you want to
-  # batch-apply auto-fixable ruff issues across the codebase.
-  # Do NOT run on push: that causes the bot commit to become HEAD
-  # on main, which suppresses CI check reporting.
+  push:
+    branches: [main]
+    paths:
+      - '**.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.py'
   workflow_dispatch:
 
 jobs:
@@ -16,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,8 +35,8 @@ jobs:
 
       - name: Commit fixes (skip if nothing changed)
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "gaia-autofix[bot]"
+          git config user.email "gaia-autofix[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "chore: ruff --fix autofix"
+          git diff --cached --quiet || git commit -m "chore: ruff --fix autofix [skip ci]"
           git push

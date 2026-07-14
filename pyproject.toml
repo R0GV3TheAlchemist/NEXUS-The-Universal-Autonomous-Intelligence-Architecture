@@ -72,12 +72,18 @@ ignore = [
     # Local variables assigned for readability / future use in router functions;
     # removing them would obscure the intent of multi-field response payloads.
     "F841",
+    # pytest.raises(Exception) in hardening tests — intentional broad catch
+    # in phase2 hardening suite where the exact exception type is non-deterministic.
+    "B017",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # Test files — allow assert, unused imports, ambiguous names in fixtures
-"tests/**"    = ["F401", "F811", "S101", "E741", "B007", "B028", "B905"]
-"**/tests/**" = ["F401", "F811", "S101", "E741", "B007", "B028", "B905"]
+"tests/**"    = ["F401", "F811", "S101", "E741", "B007", "B028", "B905", "B017"]
+"**/tests/**" = ["F401", "F811", "S101", "E741", "B007", "B028", "B905", "B017"]
+# Signing modules use conditional try/except ImportError blocks for optional
+# cryptography dependency — F401 false positives on guarded availability checks.
+"core/lifecycle/signing/**" = ["F401"]
 # CrystalCorrespondence model: alchemical_stage @property intentionally shadows
 # the mapped_column of the same name — standard SQLAlchemy v2 hybrid override.
 "core/crystal_correspondence/models.py" = ["F811"]
