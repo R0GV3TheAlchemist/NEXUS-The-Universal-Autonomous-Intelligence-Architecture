@@ -16,6 +16,8 @@ numpy>=1.26.0
 
 # Database / ORM
 sqlalchemy>=2.0.0
+aiosqlite>=0.20.0          # async SQLite driver (sqlite+aiosqlite:// URLs)
+psycopg2-binary>=2.9.0     # Postgres driver for RepositoryFactory / postgres_repositories
 
 # Schema validation
 jsonschema>=4.22.0

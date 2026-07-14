@@ -67,22 +67,37 @@ Quick-start with Postgres
 """
 
 from .manager import PersistenceManager
-from .repository_factory import Repositories, RepositoryFactory
-from .postgres_repositories import (
-    PostgresMemoryRepository,
-    PostgresPool,
-    PostgresSearchRepository,
-)
 from .store import PersistenceStore
 from .memory import MemoryPersistence
 from .identity import IdentityPersistence
 from .registry import RegistryPersistence
 from .session import SessionPersistence
 
+# ---------------------------------------------------------------------------
+# Optional Postgres layer — only imported when psycopg2 is available.
+# This keeps the file-based path completely stdlib-clean and prevents
+# collection-time ImportError when psycopg2 is not installed.
+# ---------------------------------------------------------------------------
+try:
+    from .repository_factory import Repositories, RepositoryFactory
+    from .postgres_repositories import (
+        PostgresMemoryRepository,
+        PostgresPool,
+        PostgresSearchRepository,
+    )
+    _POSTGRES_AVAILABLE = True
+except ImportError:
+    RepositoryFactory = None  # type: ignore[assignment,misc]
+    Repositories = None  # type: ignore[assignment,misc]
+    PostgresPool = None  # type: ignore[assignment,misc]
+    PostgresMemoryRepository = None  # type: ignore[assignment,misc]
+    PostgresSearchRepository = None  # type: ignore[assignment,misc]
+    _POSTGRES_AVAILABLE = False
+
 __all__ = [
     # Core orchestrator
     "PersistenceManager",
-    # Postgres factory & container
+    # Postgres factory & container (None when psycopg2 not installed)
     "RepositoryFactory",
     "Repositories",
     # Postgres repos (importable directly for type hints)
@@ -95,4 +110,6 @@ __all__ = [
     "IdentityPersistence",
     "RegistryPersistence",
     "SessionPersistence",
+    # Availability flag
+    "_POSTGRES_AVAILABLE",
 ]
