@@ -20,12 +20,12 @@ sqlalchemy>=2.0.0
 # Schema validation
 jsonschema>=4.22.0
 
-# Cryptography (sovereign memory AES-GCM)
+# Cryptography (sovereign memory AES-GCM + Ed25519 signing)
 cryptography>=42.0.0
 
-# JWT authentication (core/identity/auth.py uses PyJWT; api/auth.py uses python-jose)
+# JWT authentication — PyJWT backed by cryptography (no ecdsa dep, no CVE)
+# python-jose removed: pulls in ecdsa which has PYSEC-2026-1325 (no fix planned)
 PyJWT>=2.8.0
-python-jose[cryptography]>=3.3.0
 
 # Password hashing (api/auth.py)
 bcrypt>=4.1.0

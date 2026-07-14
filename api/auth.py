@@ -10,7 +10,7 @@ Endpoints:
   GET  /auth/me         Bearer token required           → UserInfo
 
 Setup (auto-runs on first import):
-  pip install bcrypt python-jose[cryptography]
+  pip install bcrypt PyJWT
 
 DB: data/users.db (SQLite, created automatically)
 """
@@ -23,14 +23,15 @@ from datetime import datetime, timedelta, timezone
 from contextlib import contextmanager
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import InvalidTokenError
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
 
 log = logging.getLogger("gaia.auth")
 
-# ── Config ──────────────────────────────────────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────────────────────────────────────────
 
 _ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DB_PATH = os.path.join(_ROOT, "data", "users.db")
@@ -52,7 +53,7 @@ SECRET_KEY    = os.environ.get("GAIA_JWT_SECRET") or _get_secret_key()
 ALGORITHM     = "HS256"
 TOKEN_EXPIRY  = timedelta(days=7)
 
-# ── DB ──────────────────────────────────────────────────────────────────────────────────
+# ── DB ──────────────────────────────────────────────────────────────────────────────────────
 
 def _init_db():
     os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
@@ -80,7 +81,7 @@ def _db():
     finally:
         conn.close()
 
-# ── Schemas ──────────────────────────────────────────────────────────────────────────────
+# ── Schemas ──────────────────────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     email:    str
@@ -123,7 +124,7 @@ class UserInfo(BaseModel):
     role:       str
     created_at: str
 
-# ── JWT helpers ─────────────────────────────────────────────────────────────────────────────
+# ── JWT helpers ─────────────────────────────────────────────────────────────────────────────────
 
 def _create_token(user_id: str, username: str, role: str) -> str:
     expire = datetime.now(timezone.utc) + TOKEN_EXPIRY
@@ -137,7 +138,7 @@ def _create_token(user_id: str, username: str, role: str) -> str:
 def _decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError as e:
+    except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -145,7 +146,7 @@ def _decode_token(token: str) -> dict:
         ) from e
 
 
-# ── Auth dependency ─────────────────────────────────────────────────────────────────────────────────
+# ── Auth dependency ────────────────────────────────────────────────────────────────────────────────────────────
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -168,7 +169,6 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 def register(req: RegisterRequest):
     import uuid
     with _db() as conn:
-        # Check uniqueness
         existing = conn.execute(
             "SELECT id FROM users WHERE email = ? OR username = ?",
             (req.email.lower(), req.username.lower()),
