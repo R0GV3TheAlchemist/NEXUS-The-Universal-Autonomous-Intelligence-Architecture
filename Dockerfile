@@ -55,8 +55,13 @@ WORKDIR /app
 # Copy source (respects .dockerignore)
 COPY --chown=gaia:gaia . .
 
-# GAIA data volume — all GAIAN homes, manifests, memory live here
-# Mount a host volume or named volume to persist state between restarts.
+# GAIA data directory — must be created and owned by the gaia user BEFORE
+# the VOLUME declaration. Docker snapshots ownership at the VOLUME instruction;
+# any chown after that point is ignored on mounted volumes.
+RUN mkdir -p /data/gaia && chown -R gaia:gaia /data/gaia
+
+# Declare the volume AFTER ownership is set so external mounts inherit the
+# correct uid/gid on first use.
 VOLUME ["/data/gaia"]
 
 # Environment defaults (all overridable at runtime)
