@@ -74,6 +74,7 @@ jobs:
         with:
           name: sidecar-${{ matrix.triple }}
           path: src-tauri/binaries/gaia-backend-${{ matrix.triple }}${{ matrix.ext }}
+          retention-days: 1
 
 
   # ── 2. Build + publish Tauri release for each platform ────────────────────
@@ -113,10 +114,10 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Set up Node 20
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install Linux system deps
