@@ -7,6 +7,9 @@ interact with the persistence layer. It owns one PersistenceStore
 
 Lifecycle:
   manager = PersistenceManager(root=Path('/data/gaia'))
+  # OR with Postgres repos:
+  repos   = RepositoryFactory.from_env()
+  manager = PersistenceManager(root=Path('/data/gaia'), repos=repos)
 
   # At server boot (Phase 3 — registry_restore):
   manager.restore(session, registry, api)
@@ -25,6 +28,9 @@ Lifecycle:
 
   # After GAIA memory fragment is written:
   manager.on_gaia_fragment_written(fragment)
+
+  # At process exit (when Postgres is configured):
+  RepositoryFactory.close(manager.repos)
 
 Restore contract:
   restore() reads the registry index, then for each known GAIAN:
@@ -71,15 +77,59 @@ class PersistenceManager:
 
     One instance lives for the lifetime of the server process,
     shared by the PrimordialSession and (via hooks) the API layer.
+
+    Args:
+        root:  Root directory for file-based persistence.
+        repos: Optional :class:`~core.persistence.repository_factory.Repositories`
+               produced by :class:`~core.persistence.repository_factory.RepositoryFactory`.
+               When provided the Postgres-backed ``memory_repo`` and
+               ``search_repo`` properties become available in addition to
+               (not instead of) the existing file stores, allowing a
+               gradual migration path.
     """
 
-    def __init__(self, root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        repos=None,  # Optional[Repositories] — kept un-typed to avoid
+                     # a hard import of psycopg2 at module load time.
+    ) -> None:
         self.root    = Path(root)
         self._store  = PersistenceStore(self.root)
         self.registry_persistence  = RegistryPersistence(self._store)
         self.session_persistence   = SessionPersistence(self._store)
         self._memory_stores: Dict[str, MemoryPersistence] = {}
         self._identity_stores: Dict[str, IdentityPersistence] = {}
+
+        # Optional Postgres repositories — None when not configured.
+        self._repos = repos
+
+    # ------------------------------------------------------------------
+    # Postgres repository accessors
+    # ------------------------------------------------------------------
+
+    @property
+    def repos(self):
+        """The active :class:`~core.persistence.repository_factory.Repositories`
+        or ``None`` when Postgres is not configured."""
+        return self._repos
+
+    @property
+    def memory_repo(self):
+        """Postgres :class:`~core.persistence.postgres_repositories.PostgresMemoryRepository`,
+        or ``None`` when Postgres is not configured."""
+        return self._repos.memory if self._repos else None
+
+    @property
+    def search_repo(self):
+        """Postgres :class:`~core.persistence.postgres_repositories.PostgresSearchRepository`,
+        or ``None`` when Postgres is not configured."""
+        return self._repos.search if self._repos else None
+
+    @property
+    def postgres_enabled(self) -> bool:
+        """``True`` when a Postgres connection pool is active."""
+        return self._repos is not None
 
     # ------------------------------------------------------------------
     # Sub-store accessors (lazy construction)
@@ -133,10 +183,17 @@ class PersistenceManager:
         if latest and hasattr(session, "_last_persisted_manifest"):
             session._last_persisted_manifest = latest
 
-        logger.info(
-            "PersistenceManager.restore(): %d GAIAN(s) restored from %s",
-            restored, self.root,
-        )
+        if self.postgres_enabled:
+            logger.info(
+                "PersistenceManager.restore(): %d GAIAN(s) restored "
+                "(Postgres repos active) from %s",
+                restored, self.root,
+            )
+        else:
+            logger.info(
+                "PersistenceManager.restore(): %d GAIAN(s) restored from %s",
+                restored, self.root,
+            )
         return restored
 
     def _restore_gaian(self, gaian_id: str, session, registry) -> None:
@@ -377,10 +434,12 @@ class PersistenceManager:
         frag_counts = {}
         for gid in gaian_ids:
             frag_counts[gid] = self.memory_for(gid).fragment_count()
-        return {
-            "root":           str(self.root),
-            "gaian_count":    len(gaian_ids),
-            "boot_count":     self.session_persistence.boot_count(),
-            "fragment_counts": frag_counts,
-            "gaia_fragments": len(self._store.list_dir("gaia_memory/fragments")),
+        result: Dict[str, Any] = {
+            "root":             str(self.root),
+            "postgres_enabled": self.postgres_enabled,
+            "gaian_count":      len(gaian_ids),
+            "boot_count":       self.session_persistence.boot_count(),
+            "fragment_counts":  frag_counts,
+            "gaia_fragments":   len(self._store.list_dir("gaia_memory/fragments")),
         }
+        return result
