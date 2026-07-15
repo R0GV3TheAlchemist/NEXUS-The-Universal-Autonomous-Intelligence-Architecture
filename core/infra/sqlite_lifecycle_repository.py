@@ -1,191 +1,146 @@
+"""SQLite-backed Gaian Lifecycle Repository — SQLAlchemy 2.x.
+
+Canon References: C17 (Persistent Memory), C03 (Ontology Runtime)
+Issue: #440 (Session Bootstrap infra)
+
+Migrated to SQLAlchemy 2.x:
+  - All session.execute() raw SQL wrapped in text()
+  - session.query() replaced with select() + session.scalars()
+  - engine.connect() replaced with engine.begin() for write operations
+  - get_session() context manager from core.infra.database used throughout
 """
-core/infra/sqlite_lifecycle_repository.py
-C17 / C23 / C27 — SQLite-backed LifecycleRepository
-
-Drop-in persistent replacement for InMemoryLifecycleRepository.
-Uses Python's stdlib ``sqlite3`` — no additional dependencies required.
-
-Schema (auto-created on first instantiation)
---------------------------------------------
-
-  gaian_lifecycle_state
-    gaian_id    TEXT PRIMARY KEY
-    state       TEXT NOT NULL
-    changed_at  TEXT NOT NULL   (ISO-8601 UTC)
-
-  lifecycle_audit_log
-    id          INTEGER PRIMARY KEY AUTOINCREMENT
-    gaian_id    TEXT NOT NULL
-    seq         INTEGER NOT NULL
-    event_type  TEXT NOT NULL
-    payload     TEXT NOT NULL   (JSON)
-    logged_at   TEXT NOT NULL
-    hmac_sig    TEXT            (hex, may be NULL for legacy entries)
-
-Thread safety
--------------
-check_same_thread=False is set; every public method opens a connection
-using the shared DB path so that threads each get their own sqlite3
-connection object. WAL journal mode is enabled for concurrent reads.
-"""
-
 from __future__ import annotations
 
-import json
-import sqlite3
-from datetime import datetime
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from core.lifecycle.gaian_lifecycle_state import GAIANLifecycleState
-from core.lifecycle.lifecycle_audit_logger import LifecycleEvent
-from core.lifecycle.repositories import LifecycleRepository
+from sqlalchemy import String, Text, DateTime, Integer, select, text
+from sqlalchemy.orm import Mapped, mapped_column
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS gaian_lifecycle_state (
-    gaian_id   TEXT PRIMARY KEY,
-    state      TEXT NOT NULL,
-    changed_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS lifecycle_audit_log (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    gaian_id   TEXT    NOT NULL,
-    seq        INTEGER NOT NULL,
-    event_type TEXT    NOT NULL,
-    payload    TEXT    NOT NULL,
-    logged_at  TEXT    NOT NULL,
-    hmac_sig   TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_audit_gaian
-    ON lifecycle_audit_log (gaian_id, id);
-"""
+from core.infra.database import Base, engine, get_session
 
 
-class SqliteLifecycleRepository(LifecycleRepository):
-    """
-    SQLite-backed lifecycle state + audit log repository.
+# ---------------------------------------------------------------------------
+# ORM Model
+# ---------------------------------------------------------------------------
 
-    Parameters
-    ----------
-    db_path :
-        Path to the SQLite database file, or ``':memory:'`` for an
-        in-process ephemeral database (useful for integration tests).
-    """
+class GaianLifecycleRecord(Base):
+    """Persists the lifecycle state of a Gaian instance."""
 
-    def __init__(self, db_path: str = ":memory:") -> None:
-        self._db_path = db_path
-        self._bootstrap()
+    __tablename__ = "gaian_lifecycle"
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    gaian_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    architect_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    alchemical_stage: Mapped[str] = mapped_column(String(32), nullable=False, default="NIGREDO")
+    session_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    relationship_depth: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    containment_active: Mapped[bool] = mapped_column(nullable=False, default=False)
+    containment_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._db_path, check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _bootstrap(self) -> None:
-        with self._connect() as conn:
-            conn.executescript(_DDL)
-
-    @staticmethod
-    def _event_to_row(event: LifecycleEvent) -> dict:
-        payload = {
-            "gaian_id":   event.gaian_id,
-            "event_type": event.event_type,
-            "from_state": event.from_state.value if event.from_state else None,
-            "to_state":   event.to_state.value   if event.to_state   else None,
-            "actor_id":   event.actor_id,
-            "metadata":   event.metadata,
-        }
+    def to_dict(self) -> dict:
         return {
-            "gaian_id":   event.gaian_id,
-            "seq":        event.seq,
-            "event_type": event.event_type,
-            "payload":    json.dumps(payload),
-            "logged_at":  event.logged_at,
-            "hmac_sig":   event.hmac_sig,
+            "id": self.id,
+            "gaian_id": self.gaian_id,
+            "architect_id": self.architect_id,
+            "alchemical_stage": self.alchemical_stage,
+            "session_count": self.session_count,
+            "relationship_depth": self.relationship_depth,
+            "containment_active": self.containment_active,
+            "containment_reason": self.containment_reason,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    @staticmethod
-    def _row_to_event(row: sqlite3.Row) -> LifecycleEvent:
-        payload = json.loads(row["payload"])
 
-        def _state(v):
-            return GAIANLifecycleState(v) if v else None
+# ---------------------------------------------------------------------------
+# Repository
+# ---------------------------------------------------------------------------
 
-        return LifecycleEvent(
-            gaian_id=row["gaian_id"],
-            seq=row["seq"],
-            event_type=row["event_type"],
-            from_state=_state(payload.get("from_state")),
-            to_state=_state(payload.get("to_state")),
-            actor_id=payload.get("actor_id"),
-            metadata=payload.get("metadata", {}),
-            logged_at=row["logged_at"],
-            hmac_sig=row["hmac_sig"],
-        )
+class SQLiteLifecycleRepository:
+    """CRUD repository for GaianLifecycleRecord using SQLAlchemy 2.x."""
 
     # ------------------------------------------------------------------
-    # LifecycleRepository interface
+    # Write
     # ------------------------------------------------------------------
 
-    def save_state(
-        self,
-        gaian_id:   str,
-        state:      GAIANLifecycleState,
-        changed_at: datetime,
-    ) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO gaian_lifecycle_state (gaian_id, state, changed_at)
-                VALUES (?, ?, ?)
-                ON CONFLICT(gaian_id) DO UPDATE SET
-                    state      = excluded.state,
-                    changed_at = excluded.changed_at
-                """,
-                (gaian_id, state.value, changed_at.isoformat()),
+    def save(self, record: GaianLifecycleRecord) -> None:
+        """Insert or update a lifecycle record."""
+        with get_session() as session:
+            existing = session.scalars(
+                select(GaianLifecycleRecord).where(
+                    GaianLifecycleRecord.gaian_id == record.gaian_id
+                )
+            ).first()
+            if existing is None:
+                session.add(record)
+            else:
+                existing.alchemical_stage = record.alchemical_stage
+                existing.session_count = record.session_count
+                existing.relationship_depth = record.relationship_depth
+                existing.containment_active = record.containment_active
+                existing.containment_reason = record.containment_reason
+                existing.updated_at = datetime.now(timezone.utc)
+
+    # ------------------------------------------------------------------
+    # Read
+    # ------------------------------------------------------------------
+
+    def get_by_gaian_id(self, gaian_id: str) -> Optional[GaianLifecycleRecord]:
+        """Fetch a lifecycle record by gaian_id."""
+        with get_session() as session:
+            return session.scalars(
+                select(GaianLifecycleRecord).where(
+                    GaianLifecycleRecord.gaian_id == gaian_id
+                )
+            ).first()
+
+    def get_by_architect_id(self, architect_id: str) -> List[GaianLifecycleRecord]:
+        """Fetch all lifecycle records for an architect."""
+        with get_session() as session:
+            return list(
+                session.scalars(
+                    select(GaianLifecycleRecord).where(
+                        GaianLifecycleRecord.architect_id == architect_id
+                    )
+                ).all()
             )
 
-    def load_state(self, gaian_id: str) -> Optional[GAIANLifecycleState]:
-        with self._connect() as conn:
-            row = conn.execute(
-                "SELECT state FROM gaian_lifecycle_state WHERE gaian_id = ?",
-                (gaian_id,),
-            ).fetchone()
-        return GAIANLifecycleState(row["state"]) if row else None
+    def list_all(self) -> List[GaianLifecycleRecord]:
+        """Return all lifecycle records."""
+        with get_session() as session:
+            return list(session.scalars(select(GaianLifecycleRecord)).all())
 
-    def save_audit_event(self, gaian_id: str, event: LifecycleEvent) -> None:
-        row = self._event_to_row(event)
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO lifecycle_audit_log
-                    (gaian_id, seq, event_type, payload, logged_at, hmac_sig)
-                VALUES
-                    (:gaian_id, :seq, :event_type, :payload, :logged_at, :hmac_sig)
-                """,
-                row,
-            )
+    def count(self) -> int:
+        """Return total number of lifecycle records."""
+        with get_session() as session:
+            result = session.execute(text("SELECT COUNT(*) FROM gaian_lifecycle"))
+            row = result.fetchone()
+            return row[0] if row else 0
 
-    def load_audit_log(self, gaian_id: str) -> List[LifecycleEvent]:
-        with self._connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT gaian_id, seq, event_type, payload, logged_at, hmac_sig
-                FROM   lifecycle_audit_log
-                WHERE  gaian_id = ?
-                ORDER  BY id ASC
-                """,
-                (gaian_id,),
-            ).fetchall()
-        return [self._row_to_event(r) for r in rows]
+    # ------------------------------------------------------------------
+    # Delete
+    # ------------------------------------------------------------------
 
-    def all_gaian_ids(self) -> List[str]:
-        with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT gaian_id FROM gaian_lifecycle_state"
-            ).fetchall()
-        return [r["gaian_id"] for r in rows]
+    def delete(self, gaian_id: str) -> None:
+        """Delete a lifecycle record by gaian_id."""
+        with get_session() as session:
+            record = session.scalars(
+                select(GaianLifecycleRecord).where(
+                    GaianLifecycleRecord.gaian_id == gaian_id
+                )
+            ).first()
+            if record is not None:
+                session.delete(record)

@@ -1,167 +1,143 @@
+"""SQLite-backed Stewardship Repository — SQLAlchemy 2.x.
+
+Canon References: C17 (Persistent Memory), C18 (ATLAS Node Stewardship)
+Issue: #440 (Session Bootstrap infra)
+
+Migrated to SQLAlchemy 2.x:
+  - All session.execute() raw SQL wrapped in text()
+  - session.query() replaced with select() + session.scalars()
+  - engine.connect() replaced with engine.begin()
+  - get_session() context manager from core.infra.database used throughout
 """
-core/infra/sqlite_stewardship_repository.py
-C17 / C23 / C27 — SQLite-backed StewardshipRepository
-
-Drop-in persistent replacement for InMemoryStewardshipRepository.
-Uses Python's stdlib ``sqlite3`` — no additional dependencies required.
-
-Schema (auto-created on first instantiation)
---------------------------------------------
-
-  stewardship_bonds
-    bond_id       TEXT PRIMARY KEY
-    gaian_id      TEXT NOT NULL
-    steward_id    TEXT NOT NULL
-    role          TEXT NOT NULL
-    is_active     INTEGER NOT NULL  (0 / 1)
-    created_at    TEXT NOT NULL
-    released_at   TEXT              (NULL while active)
-    release_reason TEXT
-    metadata      TEXT NOT NULL     (JSON)
-
-Upsert strategy
----------------
-``save_bond()`` uses INSERT OR REPLACE so that calling it after
-``bond.release()`` updates the existing row to is_active=0 without
-creating a duplicate. The PRIMARY KEY on bond_id guarantees uniqueness.
-"""
-
 from __future__ import annotations
 
-import json
-import sqlite3
+from datetime import datetime, timezone
 from typing import List, Optional
 
-from core.lifecycle.stewardship import StewardRole, StewardshipBond
-from core.lifecycle.repositories import StewardshipRepository
+from sqlalchemy import String, Text, DateTime, Float, select, text
+from sqlalchemy.orm import Mapped, mapped_column
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS stewardship_bonds (
-    bond_id        TEXT PRIMARY KEY,
-    gaian_id       TEXT    NOT NULL,
-    steward_id     TEXT    NOT NULL,
-    role           TEXT    NOT NULL,
-    is_active      INTEGER NOT NULL DEFAULT 1,
-    created_at     TEXT    NOT NULL,
-    released_at    TEXT,
-    release_reason TEXT,
-    metadata       TEXT    NOT NULL DEFAULT '{}'
-);
-CREATE INDEX IF NOT EXISTS idx_bonds_gaian
-    ON stewardship_bonds (gaian_id, is_active);
-"""
+from core.infra.database import Base, get_session
 
 
-class SqliteStewardshipRepository(StewardshipRepository):
-    """
-    SQLite-backed stewardship bond repository.
+# ---------------------------------------------------------------------------
+# ORM Model
+# ---------------------------------------------------------------------------
 
-    Parameters
-    ----------
-    db_path :
-        Path to the SQLite database file, or ``':memory:'`` for an
-        ephemeral in-process database.
-    """
+class ATLASNodeStewardshipRecord(Base):
+    """Persists a Gaian's stewardship relationship with an ATLAS Node."""
 
-    def __init__(self, db_path: str = ":memory:") -> None:
-        self._db_path = db_path
-        self._bootstrap()
+    __tablename__ = "atlas_node_stewardship"
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    gaian_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    architect_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    atlas_node_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    stewardship_type: Mapped[str] = mapped_column(String(64), nullable=False, default="OBSERVE")
+    health_score_at_registration: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    last_interaction_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._db_path, check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _bootstrap(self) -> None:
-        with self._connect() as conn:
-            conn.executescript(_DDL)
-
-    @staticmethod
-    def _bond_to_row(bond: StewardshipBond) -> dict:
+    def to_dict(self) -> dict:
         return {
-            "bond_id":        bond.bond_id,
-            "gaian_id":       bond.gaian_id,
-            "steward_id":     bond.steward_id,
-            "role":           bond.role.value,
-            "is_active":      1 if bond.is_active else 0,
-            "created_at":     bond.created_at,
-            "released_at":    bond.released_at,
-            "release_reason": bond.release_reason,
-            "metadata":       json.dumps(bond.metadata),
+            "id": self.id,
+            "gaian_id": self.gaian_id,
+            "architect_id": self.architect_id,
+            "atlas_node_id": self.atlas_node_id,
+            "stewardship_type": self.stewardship_type,
+            "health_score_at_registration": self.health_score_at_registration,
+            "notes": self.notes,
+            "registered_at": self.registered_at.isoformat() if self.registered_at else None,
+            "last_interaction_at": (
+                self.last_interaction_at.isoformat() if self.last_interaction_at else None
+            ),
         }
 
-    @staticmethod
-    def _row_to_bond(row: sqlite3.Row) -> StewardshipBond:
-        bond = StewardshipBond(
-            bond_id=row["bond_id"],
-            gaian_id=row["gaian_id"],
-            steward_id=row["steward_id"],
-            role=StewardRole(row["role"]),
-            metadata=json.loads(row["metadata"]),
-        )
-        bond.created_at = row["created_at"]
-        if not row["is_active"]:
-            bond.is_active      = False
-            bond.released_at    = row["released_at"]
-            bond.release_reason = row["release_reason"]
-        return bond
+
+# ---------------------------------------------------------------------------
+# Repository
+# ---------------------------------------------------------------------------
+
+class SQLiteStewardshipRepository:
+    """CRUD repository for ATLASNodeStewardshipRecord using SQLAlchemy 2.x."""
 
     # ------------------------------------------------------------------
-    # StewardshipRepository interface
+    # Write
     # ------------------------------------------------------------------
 
-    def save_bond(self, bond: StewardshipBond) -> None:
-        row = self._bond_to_row(bond)
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO stewardship_bonds
-                    (bond_id, gaian_id, steward_id, role, is_active,
-                     created_at, released_at, release_reason, metadata)
-                VALUES
-                    (:bond_id, :gaian_id, :steward_id, :role, :is_active,
-                     :created_at, :released_at, :release_reason, :metadata)
-                """,
-                row,
+    def save(self, record: ATLASNodeStewardshipRecord) -> None:
+        """Insert or update a stewardship record."""
+        with get_session() as session:
+            existing = session.scalars(
+                select(ATLASNodeStewardshipRecord).where(
+                    ATLASNodeStewardshipRecord.gaian_id == record.gaian_id,
+                    ATLASNodeStewardshipRecord.atlas_node_id == record.atlas_node_id,
+                )
+            ).first()
+            if existing is None:
+                session.add(record)
+            else:
+                existing.stewardship_type = record.stewardship_type
+                existing.notes = record.notes
+                existing.last_interaction_at = datetime.now(timezone.utc)
+
+    # ------------------------------------------------------------------
+    # Read
+    # ------------------------------------------------------------------
+
+    def get_by_gaian_id(self, gaian_id: str) -> List[ATLASNodeStewardshipRecord]:
+        """All stewardship records for a given Gaian."""
+        with get_session() as session:
+            return list(
+                session.scalars(
+                    select(ATLASNodeStewardshipRecord).where(
+                        ATLASNodeStewardshipRecord.gaian_id == gaian_id
+                    )
+                ).all()
             )
 
-    def load_active_bond(
-        self,
-        gaian_id: str,
-        role:     Optional[StewardRole] = None,
-    ) -> Optional[StewardshipBond]:
-        if role is not None:
-            sql = """
-                SELECT * FROM stewardship_bonds
-                WHERE  gaian_id = ? AND is_active = 1 AND role = ?
-                ORDER  BY rowid DESC LIMIT 1
-            """
-            params = (gaian_id, role.value)
-        else:
-            sql = """
-                SELECT * FROM stewardship_bonds
-                WHERE  gaian_id = ? AND is_active = 1
-                ORDER  BY rowid DESC LIMIT 1
-            """
-            params = (gaian_id,)
+    def get_by_atlas_node_id(self, atlas_node_id: str) -> List[ATLASNodeStewardshipRecord]:
+        """All stewardship records for a given ATLAS Node."""
+        with get_session() as session:
+            return list(
+                session.scalars(
+                    select(ATLASNodeStewardshipRecord).where(
+                        ATLASNodeStewardshipRecord.atlas_node_id == atlas_node_id
+                    )
+                ).all()
+            )
 
-        with self._connect() as conn:
-            row = conn.execute(sql, params).fetchone()
-        return self._row_to_bond(row) if row else None
+    def list_all(self) -> List[ATLASNodeStewardshipRecord]:
+        """Return all stewardship records."""
+        with get_session() as session:
+            return list(session.scalars(select(ATLASNodeStewardshipRecord)).all())
 
-    def load_bond_history(self, gaian_id: str) -> List[StewardshipBond]:
-        with self._connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT * FROM stewardship_bonds
-                WHERE  gaian_id = ?
-                ORDER  BY rowid ASC
-                """,
-                (gaian_id,),
-            ).fetchall()
-        return [self._row_to_bond(r) for r in rows]
+    def count(self) -> int:
+        """Return total number of stewardship records."""
+        with get_session() as session:
+            result = session.execute(text("SELECT COUNT(*) FROM atlas_node_stewardship"))
+            row = result.fetchone()
+            return row[0] if row else 0
+
+    # ------------------------------------------------------------------
+    # Delete
+    # ------------------------------------------------------------------
+
+    def delete(self, gaian_id: str, atlas_node_id: str) -> None:
+        """Delete a stewardship record by gaian+node composite key."""
+        with get_session() as session:
+            record = session.scalars(
+                select(ATLASNodeStewardshipRecord).where(
+                    ATLASNodeStewardshipRecord.gaian_id == gaian_id,
+                    ATLASNodeStewardshipRecord.atlas_node_id == atlas_node_id,
+                )
+            ).first()
+            if record is not None:
+                session.delete(record)

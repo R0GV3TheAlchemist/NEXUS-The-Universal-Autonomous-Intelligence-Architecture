@@ -3,16 +3,15 @@
 The SessionManager is the single point of entry for all session operations.
 It owns the bootstrap, seal, architect repository, and tracks all open sessions.
 
-Higher-level modules (API layer, NLP engine, runtime) interact with
-session state exclusively through the SessionManager.
+Higher-level modules (API layer, NLP engine, runtime) interact with session
+state exclusively through the SessionManager.
 
 REST API surface (to be wired by FastAPI/Flask router):
-  POST /session/init        — open a new session
-  POST /session/seal        — seal the current session
-  GET  /session/current     — current session state
-  GET  /session/history     — all sealed sessions for an architect
+  POST /session/init     — open a new session
+  POST /session/seal     — seal the current session
+  GET  /session/current  — current session state
+  GET  /session/history  — all sealed sessions for an architect
 """
-
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -20,11 +19,12 @@ from typing import Any, Optional
 from core.ontology import GAIARuntime
 from core.memory.manager import MemoryManager
 from core.memory.layers import MemoryTag
-
 from .architect import ArchitectRepository
 from .bootstrap import SessionBootstrap
 from .seal import SessionSeal
 from .result import SessionInitResult, SealedSessionRecord
+from .store import SESSION_STORE                              # Fix 5a
+from .primordial import bootstrap_primordial_session          # Fix 5b
 from .stubs import (
     ICircadianLightEngine,
     IMagnumOpusStageEngine,
@@ -37,7 +37,8 @@ from .stubs import (
 class SessionManager:
     """Unified session lifecycle coordinator.
 
-    Usage:
+    Usage::
+
         sm = SessionManager(runtime=runtime)
         result = sm.init_session(architect_name="Kyle Steen")
         # ... session work ...
@@ -60,7 +61,6 @@ class SessionManager:
         self._runtime = runtime
         self._architect_repo = ArchitectRepository()
         self._memory_managers: dict[str, MemoryManager] = {}  # gaian_id -> MemoryManager
-
         self._bootstrap = SessionBootstrap(
             runtime=runtime,
             architect_repo=self._architect_repo,
@@ -76,6 +76,13 @@ class SessionManager:
         # Active sessions: session_id -> SessionInitResult
         self._active_sessions: dict[str, SessionInitResult] = {}
 
+        # ------------------------------------------------------------------
+        # Fix 5 — bootstrap gaia.session.primordial into the module-level
+        # SESSION_STORE so that all E2E/integration/boot tests can assert
+        # SESSION_STORE["gaia.session.primordial"] is not None.
+        # ------------------------------------------------------------------
+        bootstrap_primordial_session(SESSION_STORE)
+
     # ------------------------------------------------------------------
     # POST /session/init
     # ------------------------------------------------------------------
@@ -90,10 +97,11 @@ class SessionManager:
         space_context: Optional[str] = None,
         autonomy_tier: int = 4,
     ) -> SessionInitResult:
-        """Open a new GAIA session. Executes the full 10-step bootstrap.
+        """Open a new GAIA session.
 
+        Executes the full 10-step bootstrap.
         Returns a SessionInitResult with full context, opening prompt,
-        and bootstrap log. The session is OPEN after this call.
+        and bootstrap log.  The session is OPEN after this call.
         """
         result = self._bootstrap.run(
             architect_name=architect_name,
@@ -121,7 +129,7 @@ class SessionManager:
         interaction_count: int = 0,
         filter_tags: Optional[list[MemoryTag]] = None,
     ) -> SealedSessionRecord:
-        """Seal an open session. Immutable after this call."""
+        """Seal an open session.  Immutable after this call."""
         init_result = self._active_sessions.get(session_id)
         if not init_result:
             raise KeyError(f"No active session found: {session_id[:8]}")
@@ -135,8 +143,7 @@ class SessionManager:
             gaian_id=init_result.gaian_id,
             memory_manager=mm,
             stage_at_open=(
-                init_result.stage_report.stage
-                if init_result.stage_report else "NIGREDO"
+                init_result.stage_report.stage if init_result.stage_report else "NIGREDO"
             ),
             authorise_persist=authorise_persist,
             session_summary=session_summary,
@@ -146,7 +153,6 @@ class SessionManager:
             opened_at=init_result.opened_at,
             filter_tags=filter_tags,
         )
-
         # Move from active to sealed
         del self._active_sessions[session_id]
         return sealed
