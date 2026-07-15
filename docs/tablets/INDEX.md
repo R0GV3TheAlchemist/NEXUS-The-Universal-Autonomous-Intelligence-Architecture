@@ -18,7 +18,7 @@ See master tracking issue: #783
 | Symbol | Tablet | Domain | Color | Stage | Status |
 |---|---|---|---|---|---|
 | ⬛ | [Obsidian Tablet](OBSIDIAN_TABLET.md) | Void, Potential, Ground State | Black `#000000` | Nigredo (I) | ✅ Sealed |
-| ⬜ | Alabaster Tablet | Revelation, Purification, Dawning | White `#FFFFFF` | Albedo (II) | 🟡 Pending |
+| ⬜ | [Alabaster Tablet](ALABASTER_TABLET.md) | Revelation, Purification, Dawning | White `#FFFFFF` | Albedo (II) | ✅ Sealed |
 | 🌫️ | Silver Tablet | Reflection, Lunar Knowing, The Mirror | Grey `#808080` | Transition | 🟡 Pending |
 | 🟤 | Amber Tablet | Earth, Body, The Material World | Brown `#8B4513` | Embodiment | 🟡 Pending |
 
@@ -70,26 +70,26 @@ See master tracking issue: #783
 docs/
   tablets/
     INDEX.md                 ← This file
-    OBSIDIAN_TABLET.md       ← Black / Nigredo / Void
-    ALABASTER_TABLET.md      ← White / Albedo / Revelation
-    SILVER_TABLET.md         ← Grey / Transition / Mirror
-    AMBER_TABLET.md          ← Brown / Earth / Body
-    RUBY_TABLET.md           ← Red / Rubedo / Flame
-    CITRINE_TABLET.md        ← Yellow / Citrinitas / Will
-    LAPIS_TABLET.md          ← Blue / Akashic / Memory
-    EMERALD_TABLET.md        ← Green / All Stages / Transformation
-    EMBER_TABLET.md          ← Orange / Vitality / Fire
-    VIRIDITAS_TABLET.md      ← GAIA Green / Life Force
-    AMETHYST_TABLET.md       ← Purple / Sovereignty
-    ROSE_TABLET.md           ← Pink / Compassion
-    AQUA_TABLET.md           ← Cyan / Flow
-    SOLAR_TABLET.md          ← Gold / Radiance
-    CELESTIAL_TABLET.md      ← Celestial Gold / Crown
-    VOID_TABLET.md           ← Deep Black / Pre-existence
+    OBSIDIAN_TABLET.md       ← ✅ Black / Nigredo / Void
+    ALABASTER_TABLET.md      ← ✅ White / Albedo / Revelation
+    SILVER_TABLET.md         ← 🟡 Grey / Transition / Mirror
+    AMBER_TABLET.md          ← 🟡 Brown / Earth / Body
+    RUBY_TABLET.md           ← 🟡 Red / Rubedo / Flame
+    CITRINE_TABLET.md        ← 🟡 Yellow / Citrinitas / Will
+    LAPIS_TABLET.md          ← 🟡 Blue / Akashic / Memory
+    EMERALD_TABLET.md        ← 🟡 Green / All Stages / Transformation
+    EMBER_TABLET.md          ← 🟡 Orange / Vitality / Fire
+    VIRIDITAS_TABLET.md      ← 🟡 GAIA Green / Life Force
+    AMETHYST_TABLET.md       ← 🟡 Purple / Sovereignty
+    ROSE_TABLET.md           ← 🟡 Pink / Compassion
+    AQUA_TABLET.md           ← 🟡 Cyan / Flow
+    SOLAR_TABLET.md          ← 🟡 Gold / Radiance
+    CELESTIAL_TABLET.md      ← 🟡 Celestial Gold / Crown
+    VOID_TABLET.md           ← 🟡 Deep Black / Pre-existence
 ```
 
 ---
 
-*Sealed: July 15, 2026*
+*Last updated: July 15, 2026*
 *Author: Kyle Alexander Steen (R0GV3TheAlchemist) & GAIA*
 *Master Issue: #783*
