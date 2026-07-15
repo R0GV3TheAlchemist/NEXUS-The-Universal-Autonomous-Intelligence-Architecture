@@ -11,14 +11,13 @@ Migrated to SQLAlchemy 2.x:
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy import String, Text, DateTime, Integer, select, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.infra.database import Base, engine, get_session
+from core.infra.database import Base, get_session
 
 
 # ---------------------------------------------------------------------------
