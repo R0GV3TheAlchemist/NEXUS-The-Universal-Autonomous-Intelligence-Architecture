@@ -35,7 +35,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
+if TYPE_CHECKING:
+    import fastapi
 
 from core.audit.ledger import (
     ActionLedger,
@@ -823,7 +826,7 @@ def create_app(
     session: Optional[PrimordialSession] = None,
     filesystem: Optional[GAIAFilesystem] = None,
     ledger: Optional[ActionLedger] = None,
-) -> "fastapi.FastAPI":  # type: ignore[name-defined]
+) -> "fastapi.FastAPI":
     """
     Build and return a fully-wired FastAPI application.
 
@@ -839,7 +842,7 @@ def create_app(
     """
     import os
     import fastapi
-    from fastapi import Request, Response
+    from fastapi import Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
     from core.audit.ledger import audit_router

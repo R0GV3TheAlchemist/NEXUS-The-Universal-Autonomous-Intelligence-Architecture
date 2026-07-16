@@ -17,16 +17,13 @@ Usage:
 import hashlib
 import hmac
 import json
-import os
-import re
-import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 
-# ── Constants ────────────────────────────────────────────────────────────────
+# ── Constants ────────────────────────────────────────────────────────────────────────────
 
 GAIA_OWNER      = "R0GV3TheAlchemist"
 GAIA_REPO       = "GAIA-The-Global-Autonomous-Intelligence-Architecture"
@@ -41,7 +38,7 @@ ZERO_WIDTH_CHARS = [
 ]
 
 
-# ── Core: Fingerprint Generation ─────────────────────────────────────────────
+# ── Core: Fingerprint Generation ─────────────────────────────────────────────────
 
 def generate_fingerprint(content: str, secret_key: Optional[str] = None) -> dict:
     """
@@ -74,7 +71,7 @@ def generate_fingerprint(content: str, secret_key: Optional[str] = None) -> dict
     }
 
 
-# ── Visible Watermark ────────────────────────────────────────────────────────
+# ── Visible Watermark ───────────────────────────────────────────────────────────────────
 
 def embed_visible_watermark(content: str, fp: dict, file_ext: str = ".py") -> str:
     """Prepends a visible provenance block appropriate for the file type."""
@@ -114,7 +111,7 @@ def embed_visible_watermark(content: str, fp: dict, file_ext: str = ".py") -> st
     return block + content
 
 
-# ── Invisible Watermark (Zero-Width Steganography) ───────────────────────────
+# ── Invisible Watermark (Zero-Width Steganography) ───────────────────────────────────────
 
 def _bits_to_zwc(bits: str) -> str:
     """Encode a bitstring as zero-width characters."""
@@ -161,7 +158,7 @@ def extract_invisible_watermark(content: str) -> Optional[str]:
         return None
 
 
-# ── Manifest Registry ────────────────────────────────────────────────────────
+# ── Manifest Registry ──────────────────────────────────────────────────────────────────────
 
 MANIFEST_FILE = Path(".gaia_manifest.json")
 
@@ -191,7 +188,7 @@ def register_document(fp: dict, filepath: str) -> None:
     _save_manifest(manifest)
 
 
-# ── Main API ─────────────────────────────────────────────────────────────────
+# ── Main API ───────────────────────────────────────────────────────────────────────────
 
 def protect_file(filepath: str, secret_key: Optional[str] = None) -> str:
     """
@@ -238,15 +235,15 @@ def verify_file(filepath: str) -> bool:
     manifest_ok  = any(v["file"] == filepath for v in manifest["documents"].values())
 
     print(f"\n[GAIA] Verification report: {filepath}")
-    print(f"       Visible watermark  : {'✓ PASS' if visible_ok   else '✗ FAIL'}")
-    print(f"       Invisible watermark: {'✓ PASS' if invisible_ok  else '✗ FAIL (may be stripped)'}")
-    print(f"       Manifest registry  : {'✓ REGISTERED' if manifest_ok else '✗ NOT IN MANIFEST'}")
+    print(f"       Visible watermark  : {'\u2713 PASS' if visible_ok   else '\u2717 FAIL'}")
+    print(f"       Invisible watermark: {'\u2713 PASS' if invisible_ok  else '\u2717 FAIL (may be stripped)'}")
+    print(f"       Manifest registry  : {'\u2713 REGISTERED' if manifest_ok else '\u2717 NOT IN MANIFEST'}")
     authentic = visible_ok or invisible_ok or manifest_ok
-    print(f"       Result             : {'✓ AUTHENTIC GAIA DOCUMENT' if authentic else '✗ CANNOT VERIFY ORIGIN'}\n")
+    print(f"       Result             : {'\u2713 AUTHENTIC GAIA DOCUMENT' if authentic else '\u2717 CANNOT VERIFY ORIGIN'}\n")
     return authentic
 
 
-# ── CLI ───────────────────────────────────────────────────────────────────────
+# ── CLI ────────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import sys

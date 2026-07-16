@@ -16,12 +16,11 @@ All demotion methods are safe to call concurrently.
 
 from __future__ import annotations
 
-import time
 from typing import Any, Dict, List, Optional
 
-from .hot_tier import HotTier, HotEntry
-from .warm_tier import WarmTier, WarmEntry
-from .cold_tier import ColdTier, ColdEntry
+from .hot_tier import HotTier
+from .warm_tier import WarmTier
+from .cold_tier import ColdTier
 
 
 class MemoryTierRouter:

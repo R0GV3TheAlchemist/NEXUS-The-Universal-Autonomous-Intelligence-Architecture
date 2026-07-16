@@ -14,7 +14,8 @@ class TestDetectViriditasState:
 
 class TestEmitSentinelAlert:
     def test_interrupt_always_false(self):
-        for lvl in (1, 2, 3): assert emit_sentinel_alert(lvl)["interrupt_flag"] is False
+        for lvl in (1, 2, 3):
+            assert emit_sentinel_alert(lvl)["interrupt_flag"] is False
 
 
 class TestClassifyUrgency:
