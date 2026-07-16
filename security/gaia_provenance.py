@@ -37,6 +37,9 @@ ZERO_WIDTH_CHARS = [
     "\u2060",  # word joiner
 ]
 
+_CHECK = "\u2713"
+_CROSS = "\u2717"
+
 
 # ── Core: Fingerprint Generation ──────────────────────────────────────────────────
 
@@ -234,12 +237,17 @@ def verify_file(filepath: str) -> bool:
     manifest     = _load_manifest()
     manifest_ok  = any(v["file"] == filepath for v in manifest["documents"].values())
 
+    vis_label  = f"{_CHECK} PASS" if visible_ok else f"{_CROSS} FAIL"
+    inv_label  = f"{_CHECK} PASS" if invisible_ok else f"{_CROSS} FAIL (may be stripped)"
+    man_label  = f"{_CHECK} REGISTERED" if manifest_ok else f"{_CROSS} NOT IN MANIFEST"
+    authentic  = visible_ok or invisible_ok or manifest_ok
+    res_label  = f"{_CHECK} AUTHENTIC GAIA DOCUMENT" if authentic else f"{_CROSS} CANNOT VERIFY ORIGIN"
+
     print(f"\n[GAIA] Verification report: {filepath}")
-    print(f"       Visible watermark  : {'\u2713 PASS' if visible_ok   else '\u2717 FAIL'}")
-    print(f"       Invisible watermark: {'\u2713 PASS' if invisible_ok  else '\u2717 FAIL (may be stripped)'}")
-    print(f"       Manifest registry  : {'\u2713 REGISTERED' if manifest_ok else '\u2717 NOT IN MANIFEST'}")
-    authentic = visible_ok or invisible_ok or manifest_ok
-    print(f"       Result             : {'\u2713 AUTHENTIC GAIA DOCUMENT' if authentic else '\u2717 CANNOT VERIFY ORIGIN'}\n")
+    print(f"       Visible watermark  : {vis_label}")
+    print(f"       Invisible watermark: {inv_label}")
+    print(f"       Manifest registry  : {man_label}")
+    print(f"       Result             : {res_label}\n")
     return authentic
 
 
