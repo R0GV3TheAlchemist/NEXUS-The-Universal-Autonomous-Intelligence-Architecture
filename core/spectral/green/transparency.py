@@ -34,8 +34,10 @@ def emit_sentinel_alert(level: int, context: str = "") -> dict[str, Any]:
 
 
 def classify_urgency(intensity: float) -> str:
-    if intensity < 0.33: return "low"
-    if intensity < 0.66: return "moderate"
+    if intensity < 0.33:
+        return "low"
+    if intensity < 0.66:
+        return "moderate"
     return "high"
 
 
