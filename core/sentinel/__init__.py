@@ -1,33 +1,58 @@
 """
-GAIA OS Sentinel — the safety and integrity layer.
+core/sentinel/__init__.py
+=========================
+Public API for the SENTINEL enforcement engine.
 
-The Sentinel sits between every inbound action and the OS core.
-It does not replace autonomy enforcement in the API — it augments it
-with pattern detection, rate limiting, cognitive protection, and a
-full immutable audit log.
+SENTINEL is the central alert authority for GAIA. Every spectral
+module emits alerts here. SENTINEL evaluates, classifies, logs,
+and — where thresholds are exceeded — interrupts execution or
+escalates to the Constitutional Layer.
 
-Modules:
-  threat.py      — ThreatLevel enum and ThreatEvent dataclass
-  rules.py       — SentinelRule base class + all built-in rules
-  audit.py       — SentinelAuditLog: append-only, persisted
-  sentinel.py    — Sentinel: evaluates rules, emits audit events,
-                   returns verdicts
-  middleware.py  — SentinelMiddleware: wraps GAIAOSApi.dispatch()
-
-Design principles:
-  1. ADDITIVE: The Sentinel never modifies core/ code.
-     It wraps GAIAOSApi.dispatch() as a decorator/middleware.
-  2. TRANSPARENT: Every block, warn, or escalation is recorded
-     in the audit log with full context. Nothing is silent.
-  3. GRADUATED: Threats are SAFE / WATCH / WARN / BLOCK / CRITICAL.
-     Only BLOCK and CRITICAL halt the request. WATCH and WARN
-     proceed but are recorded and may trigger escalation.
-  4. COGNITIVE PROTECTION: The Sentinel tracks each GAIAN\'s
-     fatigue, turn rate, and session length. When thresholds
-     are approached it warns; when exceeded it gently ends
-     the session to protect the GAIAN\'s integrity.
-  5. PHYSICS-GROUNDED: All thresholds derive from the same
-     edge-of-chaos criticality model that governs the runtime.
-     A GAIAN near cognitive saturation is not "rate-limited" —
-     they are given rest, with explanation.
+© 2024-2026 R0GV3 The Alchemist — GAIA Project. All rights reserved.
+AGPL-3.0 Licensed. Unauthorised derivative works are prohibited.
 """
+
+from core.sentinel.constants import (
+    AlertLevel,
+    ALERT_LEVEL_LABEL,
+    ALERT_LEVEL_HEX,
+    INTERRUPT_THRESHOLD,
+    CONSTITUTIONAL_ESCALATION_THRESHOLD,
+    SENTINEL_VERSION,
+)
+from core.sentinel.engine import (
+    SentinelEngine,
+    evaluate_alert,
+    emit,
+    interrupt_check,
+    escalate_to_constitutional,
+    get_active_alerts,
+    clear_resolved,
+)
+from core.sentinel.registry import (
+    AlertRegistry,
+    AlertRecord,
+    get_registry,
+)
+
+__all__ = [
+    # constants
+    "AlertLevel",
+    "ALERT_LEVEL_LABEL",
+    "ALERT_LEVEL_HEX",
+    "INTERRUPT_THRESHOLD",
+    "CONSTITUTIONAL_ESCALATION_THRESHOLD",
+    "SENTINEL_VERSION",
+    # engine
+    "SentinelEngine",
+    "evaluate_alert",
+    "emit",
+    "interrupt_check",
+    "escalate_to_constitutional",
+    "get_active_alerts",
+    "clear_resolved",
+    # registry
+    "AlertRegistry",
+    "AlertRecord",
+    "get_registry",
+]
