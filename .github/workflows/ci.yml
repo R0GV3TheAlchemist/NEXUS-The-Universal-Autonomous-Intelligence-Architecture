@@ -11,7 +11,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+  # cancel-in-progress is DISABLED. Previously set to true, which caused
+  # autofix bot commits to cancel in-flight CI runs, making status invisible.
 
 jobs:
 
@@ -72,7 +74,6 @@ jobs:
             --cov-report=term-missing:skip-covered \
             --cov-report=xml:coverage.xml \
             --cov-fail-under=80
-      # Upload is best-effort: storage quota must never block a CI result.
       - name: Upload coverage XML
         if: matrix.python-version == '3.13'
         continue-on-error: true

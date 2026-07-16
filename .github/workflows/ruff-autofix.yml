@@ -1,4 +1,7 @@
 name: Ruff Autofix
+# NOTE: This workflow checks and reports lint status — it does NOT push fixes.
+# Autofix commits directly to main caused CI cancellation loops and prevented
+# status from ever resolving. Developers fix locally; CI reports green or red.
 
 on:
   push:
@@ -12,15 +15,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  fix:
+  lint-check:
+    name: Ruff Lint Check
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,13 +29,8 @@ jobs:
       - name: Install ruff
         run: pip install ruff
 
-      - name: Run ruff autofix
-        run: ruff check --fix . || true
-
-      - name: Commit fixes (skip if nothing changed)
-        run: |
-          git config user.name "gaia-autofix[bot]"
-          git config user.email "gaia-autofix[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "chore: ruff --fix autofix"
-          git push
+      - name: Run ruff check (report only — no push)
+        run: ruff check .
+        # This step FAILS the job if there are lint errors.
+        # That failure is visible as a red status check on the commit.
+        # Fix lint issues locally with: ruff check --fix .
