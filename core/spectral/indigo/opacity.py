@@ -20,7 +20,7 @@ def block_alert(signal: dict) -> dict:
 
 def psychic_overload_detection(signal: dict) -> dict:
     load_history = signal.get("load_history", [])
-    spike_count = sum(1 for l in load_history if l > 0.7)
+    spike_count = sum(1 for load in load_history if load > 0.7)
     overload_detected = spike_count >= 3
     entry = {"type": "psychic_overload", "overload_detected": overload_detected,
              "spike_count": spike_count, "interrupt_flag": False}
