@@ -19,8 +19,6 @@ map_solar_archetype              — Map a signal to a solar archetype label.
 from __future__ import annotations
 from typing import Any
 
-from .constants import ORANGE_HEX, ALCHEMICAL_PHASE
-
 # Solar archetypes expressed in ORANGE frequency
 _SOLAR_ARCHETYPES = {
     "creator":    "The Creator — generative, originative force",
