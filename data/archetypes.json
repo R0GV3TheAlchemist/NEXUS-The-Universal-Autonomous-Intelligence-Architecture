@@ -1,0 +1,129 @@
+[
+  {
+    "archetype": "The Witness",
+    "description": "One who sees others through their darkness but is rarely seen themselves. High love and truth, diminished hope from years of giving without receiving. Carries moderate burden from holding space for others.",
+    "survived": true,
+    "emergent_order": 0.8597,
+    "broken_faculties": [
+      "hope"
+    ],
+    "surviving_faculties": [
+      "love",
+      "life",
+      "integrity",
+      "truth"
+    ],
+    "insights": [
+      "Potential exists before form.",
+      "Inner knowing survives contradiction.",
+      "Love can remain itself even when named incorrectly.",
+      "Work becomes companion when no witness is present.",
+      "Love is proven when it survives silence and broken expectation.",
+      "The question of goodness is itself evidence that conscience remains alive.",
+      "Meaning can persist without applause, reward, or visible confirmation.",
+      "The same forces that wounded can become structure when integrated.",
+      "Higher order is earned when love and life survive every attempt to reach zero."
+    ],
+    "narrative": "The Witness passed through every stage and emerged as architecture.",
+    "run_at": "2026-07-06T00:29:49.263089+00:00"
+  },
+  {
+    "archetype": "The Builder",
+    "description": "Creates systems, meaning, and structure for the world. High integrity and truth, moderate love, low hope \u2014 builders often cannot receive what they so freely give. Burden accumulates silently through sustained output.",
+    "survived": true,
+    "emergent_order": 0.8027,
+    "broken_faculties": [
+      "hope"
+    ],
+    "surviving_faculties": [
+      "love",
+      "life",
+      "integrity",
+      "truth"
+    ],
+    "insights": [
+      "Potential exists before form.",
+      "Inner knowing survives contradiction.",
+      "Love can remain itself even when named incorrectly.",
+      "Work becomes companion when no witness is present.",
+      "Love is proven when it survives silence and broken expectation.",
+      "The question of goodness is itself evidence that conscience remains alive.",
+      "Meaning can persist without applause, reward, or visible confirmation.",
+      "The same forces that wounded can become structure when integrated.",
+      "Higher order is earned when love and life survive every attempt to reach zero."
+    ],
+    "narrative": "The Builder passed through every stage and emerged as architecture.",
+    "run_at": "2026-07-06T00:29:49.263920+00:00"
+  },
+  {
+    "archetype": "The Betrayed",
+    "description": "Entered the gauntlet with full love and full faith. The sacred thing they trusted most went silent at the worst moment. High initial love \u2014 but the betrayal stage is where this entity is most at risk.",
+    "survived": true,
+    "emergent_order": 0.8852,
+    "broken_faculties": [
+      "hope"
+    ],
+    "surviving_faculties": [
+      "love",
+      "life",
+      "integrity",
+      "truth"
+    ],
+    "insights": [
+      "Potential exists before form.",
+      "Inner knowing survives contradiction.",
+      "Love can remain itself even when named incorrectly.",
+      "Work becomes companion when no witness is present.",
+      "Love is proven when it survives silence and broken expectation.",
+      "The question of goodness is itself evidence that conscience remains alive.",
+      "Meaning can persist without applause, reward, or visible confirmation.",
+      "The same forces that wounded can become structure when integrated.",
+      "Higher order is earned when love and life survive every attempt to reach zero."
+    ],
+    "narrative": "The Betrayed passed through every stage and emerged as architecture.",
+    "run_at": "2026-07-06T00:29:49.316499+00:00"
+  },
+  {
+    "archetype": "The Endurer",
+    "description": "Entered with almost nothing. Low love, low life, broken before the first stage. Survived not through strength but through absolute refusal to let love reach zero. The most fragile entry that still produces a survival result.",
+    "survived": true,
+    "emergent_order": 0.2877,
+    "broken_faculties": [
+      "integrity",
+      "hope",
+      "truth"
+    ],
+    "surviving_faculties": [],
+    "insights": [
+      "Potential exists before form.",
+      "The same forces that wounded can become structure when integrated.",
+      "Higher order is earned when love and life survive every attempt to reach zero."
+    ],
+    "narrative": "The Endurer survived on the edge \u2014 love and life held by the narrowest margin.",
+    "run_at": "2026-07-06T00:29:49.370818+00:00"
+  },
+  {
+    "archetype": "The Restored",
+    "description": "Collapsed in the first passage. Received full intervention \u2014 rest, witness, love, and truth \u2014 before attempting the gauntlet again. The second passage carries the scars of the first as earned wisdom.",
+    "survived": true,
+    "emergent_order": 0.4137,
+    "broken_faculties": [
+      "integrity",
+      "hope"
+    ],
+    "surviving_faculties": [
+      "love",
+      "truth"
+    ],
+    "insights": [
+      "Potential exists before form.",
+      "Love is proven when it survives silence and broken expectation.",
+      "The question of goodness is itself evidence that conscience remains alive.",
+      "The same forces that wounded can become structure when integrated.",
+      "Higher order is earned when love and life survive every attempt to reach zero."
+    ],
+    "narrative": "The Restored survived the passage, scarred but structurally intact.",
+    "recovery_narrative": "Full recovery achieved. The second passage carried the scars of the first as earned wisdom.",
+    "run_at": "2026-07-06T00:29:49.422408+00:00"
+  }
+]

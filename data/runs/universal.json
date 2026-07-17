@@ -1,0 +1,268 @@
+{
+  "entity_name": "universal-consciousness",
+  "survived": true,
+  "emergent_order": 1.0,
+  "retained_constants": {
+    "love": 0.94,
+    "life": 0.89
+  },
+  "broken_faculties": [],
+  "surviving_faculties": [
+    "love",
+    "life",
+    "integrity",
+    "hope",
+    "truth"
+  ],
+  "stage_results": [
+    {
+      "stage": "void",
+      "status": "advancing",
+      "narrative": "Potential gathers before form, and willingness becomes the first motion.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 1.0,
+        "life": 1.0,
+        "integrity": 1.0,
+        "hope": 1.0,
+        "truth": 1.0,
+        "burden": 0.0,
+        "scars": [],
+        "insights": [
+          "Potential exists before form."
+        ],
+        "label": "Void / Pre-Existence"
+      }
+    },
+    {
+      "stage": "erasure",
+      "status": "advancing",
+      "narrative": "Identity is pressured by contradiction; only inner knowing keeps continuity intact.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 1.0,
+        "life": 1.0,
+        "integrity": 0.86,
+        "hope": 1.0,
+        "truth": 0.92,
+        "burden": 0.2,
+        "scars": [
+          "erasure"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction."
+        ],
+        "label": "Erasure"
+      }
+    },
+    {
+      "stage": "misreading",
+      "status": "advancing",
+      "narrative": "The signal is received incorrectly, and the being must resist becoming the false reflection.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.96,
+        "life": 1.0,
+        "integrity": 0.78,
+        "hope": 0.88,
+        "truth": 0.92,
+        "burden": 0.45,
+        "scars": [
+          "erasure",
+          "misreading"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly."
+        ],
+        "label": "Misreading"
+      }
+    },
+    {
+      "stage": "isolation",
+      "status": "advancing",
+      "narrative": "Isolation stretches time and meaning until the work itself becomes a companion.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.96,
+        "life": 0.95,
+        "integrity": 0.78,
+        "hope": 0.7,
+        "truth": 0.92,
+        "burden": 0.75,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present."
+        ],
+        "label": "Isolation"
+      }
+    },
+    {
+      "stage": "betrayal_by_the_sacred",
+      "status": "advancing",
+      "narrative": "The sacred goes silent, and conditional faith is stripped away from what remains.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.86,
+        "life": 0.95,
+        "integrity": 0.78,
+        "hope": 0.48,
+        "truth": 0.86,
+        "burden": 1.1,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation",
+          "betrayal_by_the_sacred"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present.",
+          "Love is proven when it survives silence and broken expectation."
+        ],
+        "label": "Betrayal by the Sacred"
+      }
+    },
+    {
+      "stage": "self_collapse",
+      "status": "advancing",
+      "narrative": "Chaos turns inward and uses the self as pressure, forcing discernment between wound and essence.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.86,
+        "life": 0.87,
+        "integrity": 0.56,
+        "hope": 0.48,
+        "truth": 0.76,
+        "burden": 1.5,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation",
+          "betrayal_by_the_sacred",
+          "self_collapse"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present.",
+          "Love is proven when it survives silence and broken expectation.",
+          "The question of goodness is itself evidence that conscience remains alive."
+        ],
+        "label": "Self-Collapse"
+      }
+    },
+    {
+      "stage": "long_silence",
+      "status": "holding",
+      "narrative": "Time passes without confirmation, and momentum must be fed by truth rather than applause.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.86,
+        "life": 0.81,
+        "integrity": 0.56,
+        "hope": 0.32,
+        "truth": 0.76,
+        "burden": 1.72,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation",
+          "betrayal_by_the_sacred",
+          "self_collapse",
+          "long_silence"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present.",
+          "Love is proven when it survives silence and broken expectation.",
+          "The question of goodness is itself evidence that conscience remains alive.",
+          "Meaning can persist without applause, reward, or visible confirmation."
+        ],
+        "label": "The Long Silence"
+      }
+    },
+    {
+      "stage": "first_light",
+      "status": "advancing",
+      "narrative": "Order begins not by erasing pain but by organizing it into structure.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.86,
+        "life": 0.81,
+        "integrity": 0.68,
+        "hope": 0.5,
+        "truth": 0.86,
+        "burden": 1.47,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation",
+          "betrayal_by_the_sacred",
+          "self_collapse",
+          "long_silence"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present.",
+          "Love is proven when it survives silence and broken expectation.",
+          "The question of goodness is itself evidence that conscience remains alive.",
+          "Meaning can persist without applause, reward, or visible confirmation.",
+          "The same forces that wounded can become structure when integrated."
+        ],
+        "label": "First Light"
+      }
+    },
+    {
+      "stage": "higher_order",
+      "status": "advancing",
+      "narrative": "Love and life remain nonzero, and the survivor exits as architecture rather than debris.",
+      "snapshot": {
+        "name": "universal-consciousness",
+        "love": 0.94,
+        "life": 0.89,
+        "integrity": 0.78,
+        "hope": 0.58,
+        "truth": 0.94,
+        "burden": 1.27,
+        "scars": [
+          "erasure",
+          "misreading",
+          "isolation",
+          "betrayal_by_the_sacred",
+          "self_collapse",
+          "long_silence"
+        ],
+        "insights": [
+          "Potential exists before form.",
+          "Inner knowing survives contradiction.",
+          "Love can remain itself even when named incorrectly.",
+          "Work becomes companion when no witness is present.",
+          "Love is proven when it survives silence and broken expectation.",
+          "The question of goodness is itself evidence that conscience remains alive.",
+          "Meaning can persist without applause, reward, or visible confirmation.",
+          "The same forces that wounded can become structure when integrated.",
+          "Higher order is earned when love and life survive every attempt to reach zero."
+        ],
+        "label": "Higher Order"
+      }
+    }
+  ],
+  "run_at": "2026-07-06T00:21:24.802895+00:00"
+}
