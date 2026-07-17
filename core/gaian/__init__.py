@@ -8,7 +8,9 @@ personality seed and then diverges from it through lived interaction.
 
 Base Forms are fixed archetypes. GAIANs are living individuals.
 
-Canon Ref: C17 (Persistent Memory and Identity Architecture Spec)
+Canon Ref:
+  C17  — Persistent Memory and Identity Architecture Spec
+  C30  — No silent failures; all errors must be observable
 """
 
 import json
@@ -18,9 +20,25 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from core.error_boundary import BoundarySeverity, ErrorBoundary, GAIABoundaryError, degraded, fatal, recoverable
 from core.gaian.base_forms import BaseForm, get_base_form, get_default_base_form
 
 GAIAN_DIR = Path("gaians")
+
+
+# ------------------------------------------------------------------ #
+#  Domain Exceptions                                                   #
+# ------------------------------------------------------------------ #
+
+class GaianLoadError(GAIABoundaryError):
+    """Raised (wrapped) when a GAIAN memory file cannot be loaded."""
+
+
+class GaianSaveError(GAIABoundaryError):
+    """Raised (wrapped) when a GAIAN memory file cannot be saved.
+
+    Save failures are FATAL — data loss is never acceptable (C30).
+    """
 
 
 # ------------------------------------------------------------------ #
@@ -58,26 +76,38 @@ class GaianMemory:
 # ------------------------------------------------------------------ #
 
 def list_gaians() -> list[dict]:
+    """Return a summary list of all persisted GAIANs.
+
+    A corrupt or unreadable individual file is logged at DEGRADED severity
+    and skipped — the scan continues.  This keeps the registry available
+    even when one file is damaged (C30: observable, never silently dropped).
+    """
     if not GAIAN_DIR.exists():
         return []
     gaians = []
     for path in sorted(GAIAN_DIR.glob("*/memory.json")):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            gaians.append({
-                "id": data["id"],
-                "name": data["name"],
-                "slug": data["slug"],
-                "base_form_id": data.get("base_form_id", "gaia"),
-                "avatar_color": data.get("avatar_color", "#4ade80"),
-                "avatar_style": data.get("avatar_style", "digital_earth"),
-                "personality": data["personality"],
-                "relationship_depth": data.get("relationship_depth", 0),
-                "total_exchanges": data.get("total_exchanges", 0),
-                "last_active": data.get("last_active", 0),
-                "created_at": data.get("created_at", 0),
-            })
-        except Exception:  # S112 — malformed file: skip and continue scanning
+            with degraded(
+                "core.gaian",
+                f"list_gaians.parse:{path}",
+                context={"path": str(path)},
+            ):
+                data = json.loads(path.read_text(encoding="utf-8"))
+                gaians.append({
+                    "id": data["id"],
+                    "name": data["name"],
+                    "slug": data["slug"],
+                    "base_form_id": data.get("base_form_id", "gaia"),
+                    "avatar_color": data.get("avatar_color", "#4ade80"),
+                    "avatar_style": data.get("avatar_style", "digital_earth"),
+                    "personality": data["personality"],
+                    "relationship_depth": data.get("relationship_depth", 0),
+                    "total_exchanges": data.get("total_exchanges", 0),
+                    "last_active": data.get("last_active", 0),
+                    "created_at": data.get("created_at", 0),
+                })
+        except GAIABoundaryError:
+            # DEGRADED boundary already logged; skip this file and continue
             continue
     return gaians
 
@@ -93,6 +123,8 @@ def create_gaian(
     """
     Create a new GAIAN. If base_form is provided, personality, avatar_color,
     and avatar_style are inherited from the Base Form unless explicitly overridden.
+
+    Raises GaianSaveError (FATAL) if the initial save fails.
     """
     form: Optional[BaseForm] = None
     if base_form:
@@ -112,37 +144,61 @@ def create_gaian(
         created_at=time.time(),
         user_name=user_name,
     )
-    _save_gaian(gaian)
+    _save_gaian(gaian)  # raises GaianSaveError on failure
     return gaian
 
 
 def load_gaian(slug: str) -> Optional["GaianMemory"]:
+    """Load a GAIAN from disk.
+
+    Returns None if the file does not exist (normal — no-op for callers).
+    Returns None and logs at DEGRADED if the file is corrupt (C30: observable).
+    Raises GAIABoundaryError on unexpected I/O errors (RECOVERABLE).
+    """
     path = GAIAN_DIR / slug / "memory.json"
     if not path.exists():
         return None
+
+    # Corrupt JSON → DEGRADED (log + return None, caller handles absence)
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        data["conversation_history"] = [
-            ConversationTurn(**t) if isinstance(t, dict) else t
-            for t in data.get("conversation_history", [])
-        ]
-        # Backfill fields added after initial creation
-        data.setdefault("base_form_id", "gaia")
-        data.setdefault("avatar_style", "digital_earth")
-        valid_fields = GaianMemory.__dataclass_fields__.keys()
-        return GaianMemory(**{k: v for k, v in data.items() if k in valid_fields})
-    except Exception:  # S112 — corrupt memory.json: return None, caller handles absence
+        with degraded(
+            "core.gaian",
+            f"load_gaian:{slug}",
+            context={"slug": slug, "path": str(path)},
+        ):
+            raw = path.read_text(encoding="utf-8")
+            data = json.loads(raw)
+            data["conversation_history"] = [
+                ConversationTurn(**t) if isinstance(t, dict) else t
+                for t in data.get("conversation_history", [])
+            ]
+            data.setdefault("base_form_id", "gaia")
+            data.setdefault("avatar_style", "digital_earth")
+            valid_fields = GaianMemory.__dataclass_fields__.keys()
+            return GaianMemory(**{k: v for k, v in data.items() if k in valid_fields})
+    except GAIABoundaryError:
         return None
 
 
 def _save_gaian(gaian: "GaianMemory") -> None:
-    path = GAIAN_DIR / gaian.slug
-    path.mkdir(parents=True, exist_ok=True)
-    data = asdict(gaian)
-    (path / "memory.json").write_text(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        encoding="utf-8"
-    )
+    """Persist a GAIAN to disk.
+
+    Failure is FATAL — a save failure means the GAIAN's memory would be
+    silently lost, which violates C17 and C30.  The caller must handle
+    GaianSaveError explicitly.
+    """
+    with fatal(
+        "core.gaian",
+        f"save_gaian:{gaian.slug}",
+        context={"slug": gaian.slug},
+    ):
+        path = GAIAN_DIR / gaian.slug
+        path.mkdir(parents=True, exist_ok=True)
+        data = asdict(gaian)
+        (path / "memory.json").write_text(
+            json.dumps(data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
 
 # ------------------------------------------------------------------ #
@@ -154,6 +210,10 @@ MAX_CONTEXT_TURNS = 10
 
 
 def add_exchange(gaian: "GaianMemory", user_msg: str, gaian_reply: str) -> None:
+    """Record a conversation turn and persist immediately.
+
+    Save failure is FATAL (C17/C30) — we never silently drop a memory.
+    """
     gaian.conversation_history.append(ConversationTurn(role="user", content=user_msg))
     gaian.conversation_history.append(ConversationTurn(role="gaian", content=gaian_reply))
     if len(gaian.conversation_history) > MAX_ROLLING_TURNS * 2:
@@ -162,7 +222,7 @@ def add_exchange(gaian: "GaianMemory", user_msg: str, gaian_reply: str) -> None:
     if gaian.total_exchanges % 5 == 0 and gaian.relationship_depth < 100:
         gaian.relationship_depth += 1
     gaian.last_active = time.time()
-    _save_gaian(gaian)
+    _save_gaian(gaian)  # FATAL on failure — caller must handle GaianSaveError
 
 
 def get_conversation_context(gaian: "GaianMemory") -> list[dict]:
@@ -197,7 +257,6 @@ def build_gaian_system_prompt(gaian: "GaianMemory") -> str:
         memories_text = "\n".join(f"- {m}" for m in gaian.long_term_memories[-10:])
         long_term = f"\n\nThings you remember about this person:\n{memories_text}"
 
-    # Surface the base form's voice notes if available
     voice_guidance = ""
     form = get_base_form(gaian.base_form_id)
     if form:
