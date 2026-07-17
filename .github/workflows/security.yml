@@ -1,14 +1,11 @@
 name: Security Scan
+# Runs on Pull Requests only to preserve free-plan Actions minutes.
+# Also runs on a weekly schedule for ongoing dependency monitoring.
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
     branches:
       - main
-      - develop
   schedule:
     - cron: '17 4 * * 1'
   workflow_dispatch:
@@ -20,7 +17,7 @@ permissions:
 
 jobs:
   codeql:
-    name: CodeQL
+    name: CodeQL (python)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

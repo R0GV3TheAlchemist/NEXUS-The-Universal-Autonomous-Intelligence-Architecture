@@ -1,13 +1,8 @@
 name: Ruff Autofix
-# NOTE: This workflow checks and reports lint status — it does NOT push fixes.
-# Autofix commits directly to main caused CI cancellation loops and prevented
-# status from ever resolving. Developers fix locally; CI reports green or red.
+# Runs on Pull Requests only to preserve free-plan Actions minutes.
+# Fix locally with: ruff check --fix .
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '**.py'
   pull_request:
     branches: [main]
     paths:
@@ -31,6 +26,3 @@ jobs:
 
       - name: Run ruff check (report only — no push)
         run: ruff check .
-        # This step FAILS the job if there are lint errors.
-        # That failure is visible as a red status check on the commit.
-        # Fix lint issues locally with: ruff check --fix .

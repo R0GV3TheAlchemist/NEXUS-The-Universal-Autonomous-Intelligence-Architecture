@@ -1,19 +1,17 @@
 # =============================================================================
 # GAIA OS — Continuous Integration
+# Runs on Pull Requests only to preserve free-plan Actions minutes.
 # =============================================================================
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-  # cancel-in-progress is DISABLED. Previously set to true, which caused
-  # autofix bot commits to cancel in-flight CI runs, making status invisible.
 
 jobs:
 

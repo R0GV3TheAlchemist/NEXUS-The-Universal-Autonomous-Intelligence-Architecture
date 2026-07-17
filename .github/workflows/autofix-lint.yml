@@ -1,13 +1,9 @@
 name: Autofix Lint
-# NOTE: This workflow checks and reports lint status — it does NOT push fixes.
-# Autofix commits directly to main caused CI cancellation loops and prevented
-# status from ever resolving. Developers fix locally; CI reports green or red.
+# Runs on Pull Requests only to preserve free-plan Actions minutes.
+# Developers fix locally; CI reports green or red on PRs.
+# Fix locally with: ruff check --fix . && black . && isort .
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '**.py'
   pull_request:
     branches: [main]
     paths:
@@ -37,5 +33,3 @@ jobs:
 
       - name: isort check
         run: isort --check-only .
-        # All three steps report failures directly as CI status.
-        # Fix locally with: ruff check --fix . && black . && isort .
