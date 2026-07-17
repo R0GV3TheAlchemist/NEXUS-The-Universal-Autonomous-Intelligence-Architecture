@@ -28,10 +28,11 @@ jobs:
         run: pip install ruff
 
       - name: Run ruff check (changed files only)
+        shell: bash
         run: |
           CHANGED=$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')
           if [ -z "$CHANGED" ]; then
-            echo "No Python files changed in this PR — ruff skipped."
+            echo "No Python files changed in this PR -- ruff skipped."
             exit 0
           fi
           echo "Checking: $CHANGED"

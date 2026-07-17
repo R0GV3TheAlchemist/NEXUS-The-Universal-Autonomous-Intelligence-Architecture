@@ -39,11 +39,11 @@ jobs:
       - run: pip install --quiet ruff
 
       - name: Lint changed Python files only
+        shell: bash
         run: |
-          # Scope to files changed in this PR to avoid pre-existing repo debt
           CHANGED=$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')
           if [ -z "$CHANGED" ]; then
-            echo "No Python files changed in this PR — lint skipped."
+            echo "No Python files changed in this PR -- lint skipped."
             exit 0
           fi
           echo "Linting: $CHANGED"
