@@ -1,258 +1,446 @@
-# Copyright (c) 2026 R0GV3 The Alchemist
-# GAIA — The Global Autonomous Intelligence Architecture
-# Licensed under the GAIA Sovereign License (see LICENSE.md)
 """
 tests/core/test_error_boundary.py
 
-Unit tests for core/error_boundary.py — ErrorBoundary, GAIABoundaryError,
-BoundarySeverity, and shorthand helpers.
+Test suite for core/error_boundary.py
 
-Canon Ref: C01, C30, Issue #811
+Covers:
+  - BoundarySeverity enum values and C30 SILENT guard
+  - GAIABoundaryError dataclass: fields, _summary, to_dict
+  - RecoveryResult dataclass
+  - ErrorBoundary sync context manager:
+      FATAL re-raises as GAIABoundaryError
+      DEGRADED swallows when recovery succeeds
+      RECOVERABLE re-raises even when recovery succeeds
+      recovery callback receives the GAIABoundaryError
+      recovery callback failure still re-raises
+      catch filter passes non-matching exceptions through unchanged
+      no-exception path returns cleanly
+  - ErrorBoundary async context manager: mirrors sync + async recovery support
+  - ErrorBoundary.wrap() sync decorator
+  - ErrorBoundary.wrap_async() async decorator
+  - Shorthand factories: boundary(), fatal(), recoverable(), degraded()
+  - Constructor guards: SILENT rejected, bad reraise combos rejected
+
+Canon refs: C01, C30
 """
 from __future__ import annotations
 
 import asyncio
 import pytest
 
-from core.error_boundary import (
-    BoundarySeverity,
-    ErrorBoundary,
-    GAIABoundaryError,
-    RecoveryResult,
-    boundary,
-    degraded,
-    fatal,
-    recoverable,
-)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _imports():
+    from core.error_boundary import (
+        ErrorBoundary,
+        GAIABoundaryError,
+        BoundarySeverity,
+        RecoveryResult,
+        boundary,
+        fatal,
+        recoverable,
+        degraded,
+    )
+    return (
+        ErrorBoundary, GAIABoundaryError, BoundarySeverity,
+        RecoveryResult, boundary, fatal, recoverable, degraded,
+    )
 
 
-# ------------------------------------------------------------------ #
-#  GAIABoundaryError                                                  #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# BoundarySeverity
+# ---------------------------------------------------------------------------
+
+class TestBoundarySeverity:
+    def test_enum_values(self):
+        from core.error_boundary import BoundarySeverity
+        assert BoundarySeverity.FATAL.value       == "fatal"
+        assert BoundarySeverity.RECOVERABLE.value == "recoverable"
+        assert BoundarySeverity.DEGRADED.value    == "degraded"
+        assert BoundarySeverity.SILENT.value      == "silent"
+
+    def test_silent_forbidden_in_constructor(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        with pytest.raises(ValueError, match="SILENT"):
+            ErrorBoundary("comp", "op", severity=BoundarySeverity.SILENT)
+
+    def test_reraise_false_requires_degraded(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        with pytest.raises(ValueError, match="DEGRADED"):
+            ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.FATAL,
+                recovery=lambda e: None,
+                reraise=False,
+            )
+
+    def test_reraise_false_requires_recovery(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        with pytest.raises(ValueError, match="recovery callback"):
+            ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.DEGRADED,
+                recovery=None,
+                reraise=False,
+            )
+
+
+# ---------------------------------------------------------------------------
+# GAIABoundaryError
+# ---------------------------------------------------------------------------
 
 class TestGAIABoundaryError:
-    def test_to_dict_shape(self):
-        err = GAIABoundaryError(
+    def _make(self, **kw):
+        from core.error_boundary import GAIABoundaryError, BoundarySeverity
+        defaults = dict(
             component="gaia.test",
             operation="test_op",
             original=ValueError("boom"),
+            severity=BoundarySeverity.FATAL,
         )
-        d = err.to_dict()
-        assert d["component"] == "gaia.test"
-        assert d["operation"] == "test_op"
-        assert d["original_type"] == "ValueError"
-        assert d["original_message"] == "boom"
-        assert d["severity"] == "fatal"
-        assert "occurred_at" in d
+        defaults.update(kw)
+        return GAIABoundaryError(**defaults)
 
-    def test_summary_in_args(self):
-        err = GAIABoundaryError(
-            component="c", operation="op", original=RuntimeError("x")
-        )
-        assert "c:op" in str(err)
-        assert "RuntimeError" in str(err)
+    def test_is_exception(self):
+        err = self._make()
+        assert isinstance(err, Exception)
 
+    def test_summary_contains_component_and_operation(self):
+        err = self._make()
+        s = str(err)
+        assert "gaia.test" in s
+        assert "test_op" in s
 
-# ------------------------------------------------------------------ #
-#  BoundarySeverity guards                                            #
-# ------------------------------------------------------------------ #
+    def test_summary_contains_original_type(self):
+        err = self._make()
+        assert "ValueError" in str(err)
 
-class TestBoundarySeverityGuards:
-    def test_silent_forbidden(self):
-        with pytest.raises(ValueError, match="SILENT is forbidden"):
-            ErrorBoundary("c", "op", severity=BoundarySeverity.SILENT)
+    def test_summary_contains_severity(self):
+        err = self._make()
+        assert "fatal" in str(err)
 
-    def test_no_reraise_without_degraded_raises(self):
-        with pytest.raises(ValueError, match="reraise=False"):
-            ErrorBoundary(
-                "c", "op",
-                severity=BoundarySeverity.FATAL,
-                reraise=False,
-                recovery=lambda e: None,
-            )
+    def test_to_dict_keys(self):
+        d = self._make().to_dict()
+        expected = {
+            "component", "operation", "original_type", "original_message",
+            "severity", "recovery_attempted", "recovery_succeeded",
+            "correlation_id", "occurred_at", "context",
+        }
+        assert expected.issubset(d.keys())
 
-    def test_no_reraise_without_recovery_raises(self):
-        with pytest.raises(ValueError, match="requires a recovery callback"):
-            ErrorBoundary(
-                "c", "op",
-                severity=BoundarySeverity.DEGRADED,
-                reraise=False,
-                recovery=None,
-            )
+    def test_to_dict_original_type(self):
+        d = self._make(original=RuntimeError("x")).to_dict()
+        assert d["original_type"] == "RuntimeError"
+
+    def test_recovery_flags_default_false(self):
+        err = self._make()
+        assert err.recovery_attempted is False
+        assert err.recovery_succeeded is False
 
 
-# ------------------------------------------------------------------ #
-#  Sync context manager                                               #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# RecoveryResult
+# ---------------------------------------------------------------------------
+
+class TestRecoveryResult:
+    def test_succeeded_true(self):
+        from core.error_boundary import RecoveryResult
+        r = RecoveryResult(succeeded=True, value=42)
+        assert r.succeeded is True
+        assert r.value == 42
+
+    def test_succeeded_false(self):
+        from core.error_boundary import RecoveryResult
+        r = RecoveryResult(succeeded=False)
+        assert r.succeeded is False
+        assert r.value is None
+
+
+# ---------------------------------------------------------------------------
+# Sync context manager
+# ---------------------------------------------------------------------------
 
 class TestSyncContextManager:
-    def test_no_exception_passes_through(self):
-        with ErrorBoundary("c", "op"):
-            result = 1 + 1
-        assert result == 2
-
-    def test_exception_raises_boundary_error(self):
+    def test_fatal_reraises_as_boundary_error(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
         with pytest.raises(GAIABoundaryError) as exc_info:
-            with ErrorBoundary("gaia.test", "sync_op"):
-                raise ValueError("test error")
-        be = exc_info.value
-        assert be.component == "gaia.test"
-        assert be.operation == "sync_op"
-        assert isinstance(be.original, ValueError)
-        assert be.severity is BoundarySeverity.FATAL
-
-    def test_recovery_callback_called(self):
-        recovered = []
-
-        def recovery(be: GAIABoundaryError):
-            recovered.append(be.original)
-
-        with pytest.raises(GAIABoundaryError):
-            with ErrorBoundary(
-                "gaia.test", "sync_op",
-                severity=BoundarySeverity.RECOVERABLE,
-                recovery=recovery,
-            ):
-                raise RuntimeError("failure")
-
-        assert len(recovered) == 1
-        assert isinstance(recovered[0], RuntimeError)
-
-    def test_degraded_swallows_on_recovery_success(self):
-        def recovery(be):
-            return "fallback"
-
-        with ErrorBoundary(
-            "gaia.test", "degraded_op",
-            severity=BoundarySeverity.DEGRADED,
-            recovery=recovery,
-            reraise=False,
-        ) as eb:
-            raise ConnectionError("cache miss")
-
-        assert eb.recovery_result is not None
-        assert eb.recovery_result.succeeded is True
-        assert eb.recovery_result.value == "fallback"
-
-    def test_boundary_error_set_on_self(self):
-        eb = ErrorBoundary("c", "op")
-        with pytest.raises(GAIABoundaryError):
-            with eb:
-                raise KeyError("missing")
-        assert eb.boundary_error is not None
-        assert isinstance(eb.boundary_error.original, KeyError)
-
-    def test_only_catches_specified_types(self):
-        """An exception not in catch tuple propagates unchanged."""
-        with pytest.raises(TypeError):
-            with ErrorBoundary("c", "op", catch=(ValueError,)):
-                raise TypeError("wrong type")
-
-
-# ------------------------------------------------------------------ #
-#  Async context manager                                              #
-# ------------------------------------------------------------------ #
-
-class TestAsyncContextManager:
-    def test_async_no_exception(self):
-        async def run():
-            async with ErrorBoundary("c", "op"):
-                return 42
-        assert asyncio.run(run()) == 42
-
-    def test_async_exception_raises_boundary_error(self):
-        async def run():
-            async with ErrorBoundary("gaia.test", "async_op"):
-                raise ValueError("async boom")
-
-        with pytest.raises(GAIABoundaryError) as exc_info:
-            asyncio.run(run())
+            with ErrorBoundary("comp", "op", BoundarySeverity.FATAL):
+                raise ValueError("original")
         assert isinstance(exc_info.value.original, ValueError)
 
-    def test_async_recovery_async_callable(self):
-        recovered = []
+    def test_fatal_boundary_error_has_correct_component(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        with pytest.raises(GAIABoundaryError) as exc_info:
+            with ErrorBoundary("gaia.memory", "persist", BoundarySeverity.FATAL):
+                raise RuntimeError("db down")
+        assert exc_info.value.component == "gaia.memory"
+        assert exc_info.value.operation == "persist"
 
-        async def async_recovery(be: GAIABoundaryError):
-            recovered.append(be.component)
+    def test_no_exception_passes_through(self):
+        from core.error_boundary import ErrorBoundary
+        result = []
+        with ErrorBoundary("comp", "op"):
+            result.append(42)
+        assert result == [42]
 
-        async def run():
-            with pytest.raises(GAIABoundaryError):
-                async with ErrorBoundary(
-                    "gaia.test", "async_rec",
-                    severity=BoundarySeverity.RECOVERABLE,
-                    recovery=async_recovery,
-                ):
-                    raise IOError("io fail")
+    def test_degraded_swallows_when_recovery_succeeds(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        called = []
+        def recover(be):
+            called.append(be)
+        # Should NOT raise
+        with ErrorBoundary(
+            "comp", "op",
+            severity=BoundarySeverity.DEGRADED,
+            recovery=recover,
+            reraise=False,
+        ):
+            raise ValueError("non-critical")
+        assert len(called) == 1
 
-        asyncio.run(run())
-        assert recovered == ["gaia.test"]
-
-    def test_async_degraded_swallows(self):
-        async def recovery(be):
-            return "async_fallback"
-
-        async def run():
-            async with ErrorBoundary(
-                "c", "op",
+    def test_degraded_still_raises_if_recovery_fails(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        def bad_recover(be):
+            raise RuntimeError("recovery also broken")
+        with pytest.raises(GAIABoundaryError):
+            with ErrorBoundary(
+                "comp", "op",
                 severity=BoundarySeverity.DEGRADED,
-                recovery=recovery,
+                recovery=bad_recover,
                 reraise=False,
-            ) as eb:
-                raise TimeoutError("slow")
-            return eb.recovery_result
+            ):
+                raise ValueError("original")
 
-        result = asyncio.run(run())
-        assert result.succeeded is True
-        assert result.value == "async_fallback"
+    def test_recoverable_reraises_even_when_recovery_succeeds(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        def recover(be): pass
+        with pytest.raises(GAIABoundaryError):
+            with ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.RECOVERABLE,
+                recovery=recover,
+                reraise=True,
+            ):
+                raise ValueError("will propagate")
+
+    def test_recovery_callback_receives_boundary_error(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        received = []
+        def recover(be):
+            received.append(be)
+        try:
+            with ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.DEGRADED,
+                recovery=recover,
+                reraise=False,
+            ):
+                raise ValueError("check")
+        except GAIABoundaryError:
+            pass
+        assert len(received) == 1
+        assert isinstance(received[0], GAIABoundaryError)
+
+    def test_catch_filter_passes_non_matching_exception_through(self):
+        from core.error_boundary import ErrorBoundary
+        # Only catch TypeError; raise ValueError — should pass through raw
+        with pytest.raises(ValueError):
+            with ErrorBoundary("comp", "op", catch=(TypeError,)):
+                raise ValueError("not caught")
+
+    def test_boundary_error_stored_on_instance(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        eb = ErrorBoundary("comp", "op", BoundarySeverity.FATAL)
+        with pytest.raises(GAIABoundaryError):
+            with eb:
+                raise RuntimeError("stored")
+        assert eb.boundary_error is not None
+        assert isinstance(eb.boundary_error.original, RuntimeError)
+
+    def test_context_metadata_attached(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        ctx = {"task_id": "abc123"}
+        with pytest.raises(GAIABoundaryError) as exc_info:
+            with ErrorBoundary("comp", "op", context=ctx):
+                raise ValueError("ctx test")
+        assert exc_info.value.context["task_id"] == "abc123"
 
 
-# ------------------------------------------------------------------ #
-#  Decorators                                                         #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# Async context manager
+# ---------------------------------------------------------------------------
 
-class TestDecorators:
-    def test_wrap_sync(self):
-        @ErrorBoundary.wrap("gaia.test", "wrapped_fn")
-        def flaky():
-            raise ValueError("wrapped fail")
+class TestAsyncContextManager:
+    def _run(self, coro):
+        return asyncio.get_event_loop().run_until_complete(coro)
+
+    def test_async_fatal_reraises(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+        async def _inner():
+            with pytest.raises(GAIABoundaryError):
+                async with ErrorBoundary("comp", "op", BoundarySeverity.FATAL):
+                    raise ValueError("async boom")
+        self._run(_inner())
+
+    def test_async_no_exception_passes_through(self):
+        from core.error_boundary import ErrorBoundary
+        result = []
+        async def _inner():
+            async with ErrorBoundary("comp", "op"):
+                result.append(99)
+        self._run(_inner())
+        assert result == [99]
+
+    def test_async_degraded_swallows_when_recovery_succeeds(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        called = []
+        def recover(be):
+            called.append(True)
+        async def _inner():
+            async with ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.DEGRADED,
+                recovery=recover,
+                reraise=False,
+            ):
+                raise RuntimeError("async non-critical")
+        self._run(_inner())
+        assert called == [True]
+
+    def test_async_recovery_callback_can_be_async(self):
+        from core.error_boundary import ErrorBoundary, BoundarySeverity
+        called = []
+        async def async_recover(be):
+            called.append(True)
+        async def _inner():
+            async with ErrorBoundary(
+                "comp", "op",
+                severity=BoundarySeverity.DEGRADED,
+                recovery=async_recover,
+                reraise=False,
+            ):
+                raise RuntimeError("async recovery test")
+        self._run(_inner())
+        assert called == [True]
+
+    def test_async_catch_filter(self):
+        from core.error_boundary import ErrorBoundary
+        async def _inner():
+            with pytest.raises(ValueError):
+                async with ErrorBoundary("comp", "op", catch=(TypeError,)):
+                    raise ValueError("not caught async")
+        self._run(_inner())
+
+
+# ---------------------------------------------------------------------------
+# wrap() sync decorator
+# ---------------------------------------------------------------------------
+
+class TestWrapDecorator:
+    def test_wrap_reraises_as_boundary_error(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
+
+        @ErrorBoundary.wrap("comp", "op", BoundarySeverity.FATAL)
+        def broken():
+            raise ValueError("wrapped")
 
         with pytest.raises(GAIABoundaryError):
-            flaky()
+            broken()
 
-    def test_wrap_async(self):
-        @ErrorBoundary.wrap_async("gaia.test", "wrapped_async")
-        async def flaky_async():
-            raise RuntimeError("async fail")
+    def test_wrap_passes_return_value(self):
+        from core.error_boundary import ErrorBoundary
 
-        with pytest.raises(GAIABoundaryError):
-            asyncio.run(flaky_async())
+        @ErrorBoundary.wrap("comp", "op")
+        def ok():
+            return 123
 
-    def test_wrap_preserves_return_value(self):
-        @ErrorBoundary.wrap("c", "op")
-        def add(a, b):
-            return a + b
+        assert ok() == 123
 
-        assert add(2, 3) == 5
+    def test_wrap_preserves_function_name(self):
+        from core.error_boundary import ErrorBoundary
+
+        @ErrorBoundary.wrap("comp", "op")
+        def my_func():
+            pass
+
+        assert my_func.__name__ == "my_func"
 
 
-# ------------------------------------------------------------------ #
-#  Shorthand helpers                                                  #
-# ------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------
+# wrap_async() decorator
+# ---------------------------------------------------------------------------
 
-class TestShorthands:
-    def test_fatal_reraises(self):
-        with pytest.raises(GAIABoundaryError):
-            with fatal("c", "op"):
-                raise ValueError()
+class TestWrapAsyncDecorator:
+    def _run(self, coro):
+        return asyncio.get_event_loop().run_until_complete(coro)
 
-    def test_recoverable_calls_recovery(self):
-        log = []
-        with pytest.raises(GAIABoundaryError):
-            with recoverable("c", "op", recovery=lambda be: log.append(1)):
-                raise ValueError()
-        assert log == [1]
+    def test_wrap_async_reraises_as_boundary_error(self):
+        from core.error_boundary import ErrorBoundary, GAIABoundaryError, BoundarySeverity
 
-    def test_degraded_swallows(self):
-        with degraded("c", "op", recovery=lambda be: "ok") as eb:
-            raise ValueError("not critical")
-        assert eb.recovery_result.succeeded
+        @ErrorBoundary.wrap_async("comp", "op", BoundarySeverity.FATAL)
+        async def broken():
+            raise ValueError("async wrapped")
+
+        async def _inner():
+            with pytest.raises(GAIABoundaryError):
+                await broken()
+
+        self._run(_inner())
+
+    def test_wrap_async_passes_return_value(self):
+        from core.error_boundary import ErrorBoundary
+
+        @ErrorBoundary.wrap_async("comp", "op")
+        async def ok():
+            return 456
+
+        assert self._run(ok()) == 456
+
+    def test_wrap_async_preserves_function_name(self):
+        from core.error_boundary import ErrorBoundary
+
+        @ErrorBoundary.wrap_async("comp", "op")
+        async def my_async_func():
+            pass
+
+        assert my_async_func.__name__ == "my_async_func"
+
+
+# ---------------------------------------------------------------------------
+# Shorthand factories
+# ---------------------------------------------------------------------------
+
+class TestShorthandFactories:
+    def test_boundary_returns_error_boundary(self):
+        from core.error_boundary import boundary, ErrorBoundary
+        assert isinstance(boundary("comp", "op"), ErrorBoundary)
+
+    def test_fatal_returns_fatal_severity(self):
+        from core.error_boundary import fatal, BoundarySeverity
+        eb = fatal("comp", "op")
+        assert eb.severity == BoundarySeverity.FATAL
+        assert eb.reraise is True
+
+    def test_recoverable_sets_recovery(self):
+        from core.error_boundary import recoverable, BoundarySeverity
+        fn = lambda e: None
+        eb = recoverable("comp", "op", recovery=fn)
+        assert eb.severity == BoundarySeverity.RECOVERABLE
+        assert eb.recovery is fn
+
+    def test_degraded_sets_reraise_false(self):
+        from core.error_boundary import degraded, BoundarySeverity
+        fn = lambda e: None
+        eb = degraded("comp", "op", recovery=fn)
+        assert eb.severity == BoundarySeverity.DEGRADED
+        assert eb.reraise is False
+
+    def test_degraded_swallows_in_practice(self):
+        from core.error_boundary import degraded
+        calls = []
+        with degraded("comp", "op", recovery=lambda e: calls.append(1)):
+            raise ValueError("swallowed")
+        assert calls == [1]
