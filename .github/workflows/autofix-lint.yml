@@ -1,6 +1,6 @@
 name: Autofix Lint
 # Runs on Pull Requests only to preserve free-plan Actions minutes.
-# Developers fix locally; CI reports green or red on PRs.
+# Scoped to PR-changed .py files to avoid pre-existing repo-wide debt.
 # Fix locally with: ruff check --fix . && black . && isort .
 
 on:
@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,11 +27,29 @@ jobs:
       - name: Install lint tools
         run: pip install ruff black isort
 
-      - name: ruff check
-        run: ruff check .
+      - name: Detect changed Python files
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          if [ -z "$CHANGED" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: black check (format validation only)
-        run: black --check --target-version py313 .
+      - name: ruff check (changed files only)
+        if: steps.changed.outputs.skip == 'false'
+        run: ruff check ${{ steps.changed.outputs.files }}
 
-      - name: isort check
-        run: isort --check-only .
+      - name: black check (changed files only)
+        if: steps.changed.outputs.skip == 'false'
+        run: black --check --target-version py313 ${{ steps.changed.outputs.files }}
+
+      - name: isort check (changed files only)
+        if: steps.changed.outputs.skip == 'false'
+        run: isort --check-only ${{ steps.changed.outputs.files }}
+
+      - name: No Python changes
+        if: steps.changed.outputs.skip == 'true'
+        run: echo "No Python files changed in this PR — lint skipped."
