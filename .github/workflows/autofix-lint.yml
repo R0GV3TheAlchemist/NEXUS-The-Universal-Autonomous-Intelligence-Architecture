@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install lint tools
         run: pip install ruff black isort
@@ -33,7 +33,7 @@ jobs:
         run: ruff check .
 
       - name: black check (format validation only)
-        run: black --check .
+        run: black --check --target-version py313 .
 
       - name: isort check
         run: isort --check-only .
