@@ -1,0 +1,225 @@
+# .github/workflows/error-correction-scan.yml
+# GAIA — The Global Autonomous Intelligence Architecture
+# Copyright (c) 2026 R0GV3 The Alchemist
+#
+# Runs the GAIA Error Correction Detection Engine (Phase 1) on every
+# pull request targeting main or release branches.
+#
+# What it does:
+#   1. Runs ErrorDetector (Ruff JSON mode — no auto-fix)
+#   2. Writes error_report.md + error_report.json via ErrorReporter
+#   3. Uploads both as a workflow artifact (retained 30 days)
+#   4. Posts a concise summary table as a PR comment (updates on re-run)
+#   5. Fails the job ONLY if CRITICAL or HIGH severity findings exist
+#
+# Canon Ref: C01 (Sovereignty), C30 (No silent failures), Issue #755
+
+name: "🔍 Error Correction Scan"
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+  workflow_dispatch:
+
+jobs:
+  error-correction-scan:
+    name: "Error Correction — Phase 1 Detection"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      # ----------------------------------------------------------------
+      # 1. Checkout
+      # ----------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ----------------------------------------------------------------
+      # 2. Set up Python
+      # ----------------------------------------------------------------
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # ----------------------------------------------------------------
+      # 3. Install dependencies
+      # ----------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+          # Install GAIA package in editable mode so core.* imports resolve
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e . --no-deps 2>/dev/null || true
+
+      # ----------------------------------------------------------------
+      # 4. Run GAIA Error Correction Detection Engine
+      # ----------------------------------------------------------------
+      - name: Run Error Correction Detector
+        id: detector
+        run: |
+          python - <<'EOF'
+          import json
+          import sys
+          from pathlib import Path
+          from core.error_correction import ErrorDetector, ErrorReporter
+
+          repo_root = Path(".")
+          output_dir = Path("reports/error-correction")
+
+          print("Running GAIA Error Correction Detection Engine (Phase 1)...")
+          detector = ErrorDetector(repo_root=repo_root)
+          findings = detector.run()
+
+          reporter = ErrorReporter(output_dir=output_dir, repo_name="GAIA")
+          paths = reporter.write(findings)
+
+          blocking = [f for f in findings if f.is_blocking()]
+          total    = len(findings)
+          files    = len({f.file_path for f in findings})
+
+          print(f"Total findings : {total}")
+          print(f"Blocking        : {len(blocking)}")
+          print(f"Files affected  : {files}")
+          print(f"Markdown report : {paths['markdown']}")
+          print(f"JSON artifact   : {paths['json']}")
+
+          # Write summary env vars for downstream steps
+          with open("reports/error-correction/run_summary.json", "w") as fh:
+              json.dump({
+                  "total":    total,
+                  "blocking": len(blocking),
+                  "files":    files,
+              }, fh)
+
+          # Exit 1 only when blocking findings exist
+          if blocking:
+              print(f"\n❌ {len(blocking)} BLOCKING finding(s) detected (CRITICAL or HIGH severity).")
+              print("   Fix these before this PR can be merged.")
+              sys.exit(1)
+          else:
+              print(f"\n✅ No blocking findings. {total} low-severity finding(s) noted in report.")
+          EOF
+        continue-on-error: true
+
+      # ----------------------------------------------------------------
+      # 5. Upload reports as artifacts
+      # ----------------------------------------------------------------
+      - name: Upload Error Correction Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-correction-reports
+          path: reports/error-correction/
+          retention-days: 30
+
+      # ----------------------------------------------------------------
+      # 6. Post PR comment with summary
+      # ----------------------------------------------------------------
+      - name: Post PR summary comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read run summary
+            let total = '?', blocking = '?', files = '?';
+            const summaryPath = 'reports/error-correction/run_summary.json';
+            if (fs.existsSync(summaryPath)) {
+              const s = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+              total    = s.total;
+              blocking = s.blocking;
+              files    = s.files;
+            }
+
+            const status  = blocking === 0 ? '✅ PASSED' : `❌ BLOCKED (${blocking} critical/high)`;
+            const mdPath  = 'reports/error-correction/error_report.md';
+            let topFindings = '';
+
+            // Read JSON report for top blocking findings
+            const jsonPath = 'reports/error-correction/error_report.json';
+            if (fs.existsSync(jsonPath)) {
+              const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              const blockers = data.findings.filter(
+                f => f.severity === 'critical' || f.severity === 'high'
+              ).slice(0, 10);
+
+              if (blockers.length > 0) {
+                topFindings = `\n### ❌ Blocking Findings (fix before merge)\n\n`;
+                topFindings += `| Severity | Rule | Location | Message |\n`;
+                topFindings += `|----------|------|----------|---------|\n`;
+                for (const f of blockers) {
+                  const sev = f.severity === 'critical' ? '🔴 critical' : '🟠 high';
+                  topFindings += `| ${sev} | \`${f.rule_id}\` | \`${f.location}\` | ${f.message} |\n`;
+                }
+                if (blocking > 10) {
+                  topFindings += `\n> … and ${blocking - 10} more blocking finding(s). See full artifact report.\n`;
+                }
+              }
+            }
+
+            const body = [
+              `## 🔍 GAIA Error Correction Scan — ${status}`,
+              ``,
+              `| Metric | Value |`,
+              `|--------|-------|`,
+              `| Total findings | ${total} |`,
+              `| 🔴🟠 Blocking (CRITICAL + HIGH) | ${blocking} |`,
+              `| Files affected | ${files} |`,
+              topFindings,
+              ``,
+              `> Full reports available in the **error-correction-reports** workflow artifact.`,
+              `> _Canon Ref: C01, C30, Issue #755 Phase 1_`,
+            ].join('\n');
+
+            // Find existing bot comment and update rather than spam
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('Error Correction Scan')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      # ----------------------------------------------------------------
+      # 7. Enforce — fail job if blocking findings were found
+      # ----------------------------------------------------------------
+      - name: Enforce — fail on blocking findings
+        if: steps.detector.outcome == 'failure'
+        run: |
+          echo ""
+          echo "❌ Error Correction Scan FAILED."
+          echo "   CRITICAL or HIGH severity findings were detected."
+          echo "   See the 'error-correction-reports' artifact for the full report."
+          echo "   Fix all blocking findings before merging this PR."
+          echo ""
+          exit 1
