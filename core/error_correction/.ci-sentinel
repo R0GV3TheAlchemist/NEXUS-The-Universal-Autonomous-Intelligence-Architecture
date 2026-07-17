@@ -1,0 +1,4 @@
+# CI sentinel — safe to delete after first green run.
+# Created by: ci/trigger-error-correction-scan branch
+# Purpose: provide a diff so the draft PR fires the workflow matrix
+# against all error_correction/ changes landed on main (73f32892).
