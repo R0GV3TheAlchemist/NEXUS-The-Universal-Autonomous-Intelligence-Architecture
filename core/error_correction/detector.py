@@ -13,6 +13,9 @@ Runs all configured detectors:
 Every finding is normalized into a GAIAErrorFinding and sorted by severity.
 No files are ever modified here — detection only.
 
+run() results are cached on the instance. Call invalidate_cache() before
+re-running (e.g. after Phase 2 auto-repair applies a fix).
+
 Canon Ref: C01, C30, Issue #755 Phase 1b
 """
 from __future__ import annotations
@@ -42,6 +45,14 @@ class ErrorDetector:
     -----
     detector = ErrorDetector(repo_root=Path("."))
     findings = list(detector.run())
+
+    # Chained convenience calls reuse the cached run() result:
+    blocking = detector.blocking_findings()
+    by_file  = detector.findings_by_file()
+
+    # Force a fresh scan (e.g. after auto-repair):
+    detector.invalidate_cache()
+    findings = detector.run()
     """
 
     def __init__(
@@ -61,13 +72,22 @@ class ErrorDetector:
         self.repo_root  = repo_root or Path(".")
         self.files      = list(files) if files else None
         self.skip_canon = skip_canon
+        self._cached_findings: Optional[list[GAIAErrorFinding]] = None
 
     # ---------------------------------------------------------------- #
     #  Public API                                                       #
     # ---------------------------------------------------------------- #
 
     def run(self) -> list[GAIAErrorFinding]:
-        """Run all detectors and return a sorted list of findings."""
+        """Run all detectors and return a sorted list of findings.
+
+        Results are cached after the first call. Subsequent calls return
+        the cached list without re-invoking Ruff or CanonChecker.
+        Call invalidate_cache() to force a fresh scan.
+        """
+        if self._cached_findings is not None:
+            return self._cached_findings
+
         findings: list[GAIAErrorFinding] = []
 
         # 1. Ruff
@@ -99,10 +119,20 @@ class ErrorDetector:
             f"{len({f.file_path for f in findings})} file(s) | "
             f"blocking={sum(1 for f in findings if f.is_blocking())}"
         )
-        return findings
+
+        self._cached_findings = findings
+        return self._cached_findings
+
+    def invalidate_cache(self) -> None:
+        """Clear the cached run() result so the next call performs a fresh scan."""
+        self._cached_findings = None
 
     def iter(self) -> Iterator[GAIAErrorFinding]:
-        """Streaming variant — yields findings as each detector completes."""
+        """Streaming variant — yields findings as each detector completes.
+
+        Note: does NOT use the cache — always performs a live scan.
+        Use run() when you need cached/repeatable results.
+        """
         yield from self._run_ruff()
         if not self.skip_canon:
             yield from self._run_canon_checker()
@@ -173,7 +203,7 @@ class ErrorDetector:
         return checker.run()
 
     # ---------------------------------------------------------------- #
-    #  Convenience methods                                              #
+    #  Convenience methods (all use cached run())                      #
     # ---------------------------------------------------------------- #
 
     def blocking_findings(self) -> list[GAIAErrorFinding]:

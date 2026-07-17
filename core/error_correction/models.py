@@ -4,7 +4,7 @@
 """
 core/error_correction/models.py
 
-Normalized error record for GAIA’s Error Correction Detection Layer.
+Normalized error record for GAIA's Error Correction Detection Layer.
 
 Every error source — Ruff, Black, isort, custom Canon rules, future
 SAST tools — is normalized into a single GAIAErrorFinding so the
@@ -72,6 +72,8 @@ class GAIAErrorFinding:
     fix_available : True when the source tool can auto-apply a fix.
     fix_diff      : Unified diff of the proposed fix (None if unavailable).
     confidence    : Float 0.0–1.0 expressing certainty of the finding.
+                    Ruff findings with fix_available=True → 1.0;
+                    fix_available=False → 0.9 (prefer human review in Phase 2).
     provenance    : Free-form dict for Provenance Layer metadata (Issue #753).
     detected_at   : UTC timestamp of detection.
     """
@@ -155,6 +157,10 @@ class GAIAErrorFinding:
           "end_location": {"row": 10, "column": 92},
           "fix":      {"edits": [...]}   # present when auto-fixable
         }
+
+        confidence is set to 1.0 when a machine fix is available, and 0.9
+        otherwise — signalling to the Phase 2 repair layer that human review
+        is preferred for findings without an automatic fix.
         """
         code      = diag.get("code") or "RUFF"
         has_fix   = bool(diag.get("fix"))
@@ -173,6 +179,7 @@ class GAIAErrorFinding:
             end_line=end_loc.get("row"),
             end_col=end_loc.get("column"),
             fix_available=has_fix,
+            confidence=1.0 if has_fix else 0.9,
             provenance={"tool": "ruff", "rule": code},
         )
 
@@ -182,9 +189,26 @@ class GAIAErrorFinding:
 # ------------------------------------------------------------------ #
 
 def _ruff_category(code: str) -> GAIAErrorCategory:
-    """Map a Ruff rule code prefix to a GAIAErrorCategory."""
+    """
+    Map a Ruff rule code prefix to a GAIAErrorCategory.
+
+    Two-character prefixes are checked first to handle multi-char Ruff
+    rule families (RUF, PL, PT, UP, ANN) before falling back to the
+    single-character map.
+    """
+    two_char = code[:2].upper()
+    two_char_mapping: dict[str, GAIAErrorCategory] = {
+        "RU": GAIAErrorCategory.LINT,        # RUF — Ruff-native rules
+        "PL": GAIAErrorCategory.LINT,        # PL  — Pylint
+        "PT": GAIAErrorCategory.LINT,        # PT  — pytest style
+        "UP": GAIAErrorCategory.LINT,        # UP  — pyupgrade
+        "AN": GAIAErrorCategory.TYPE,        # ANN — annotations / type hints
+    }
+    if two_char in two_char_mapping:
+        return two_char_mapping[two_char]
+
     prefix = code[:1].upper()
-    mapping = {
+    one_char_mapping: dict[str, GAIAErrorCategory] = {
         "E": GAIAErrorCategory.LINT,
         "W": GAIAErrorCategory.LINT,
         "F": GAIAErrorCategory.LINT,
@@ -200,18 +224,25 @@ def _ruff_category(code: str) -> GAIAErrorCategory:
         "A": GAIAErrorCategory.LINT,
         "G": GAIAErrorCategory.LINT,
     }
-    return mapping.get(prefix, GAIAErrorCategory.UNKNOWN)
+    return one_char_mapping.get(prefix, GAIAErrorCategory.UNKNOWN)
 
 
 def _ruff_severity(code: str) -> GAIASeverity:
-    """Map a Ruff rule code to a GAIASeverity."""
-    # Syntax errors are always critical
+    """
+    Map a Ruff rule code to a GAIASeverity.
+
+    Order matters — more specific prefixes are checked first.
+    """
+    # Syntax / parse errors — always critical
     if code.startswith(("E9", "F8", "F7")):
         return GAIASeverity.CRITICAL
-    # Security rules are high
+    # Undefined name / redefined name — runtime risk, block merge
+    if code in ("F821", "F811"):
+        return GAIASeverity.HIGH
+    # Security rules — block merge
     if code.startswith("S"):
         return GAIASeverity.HIGH
-    # Style / formatting are low
+    # Style / formatting / import order — low priority
     if code.startswith(("E1", "E2", "E3", "E4", "E5", "W", "Q", "I")):
         return GAIASeverity.LOW
     return GAIASeverity.MEDIUM

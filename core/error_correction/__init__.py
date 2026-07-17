@@ -25,6 +25,8 @@ from core.error_correction.canon_checker import CanonChecker
 from core.error_correction.detector import ErrorDetector
 from core.error_correction.reporter import ErrorReporter
 
+__version__ = "1.0.0"
+
 __all__ = [
     "GAIAErrorFinding",
     "GAIASeverity",
@@ -32,4 +34,5 @@ __all__ = [
     "CanonChecker",
     "ErrorDetector",
     "ErrorReporter",
+    "__version__",
 ]
