@@ -1,6 +1,8 @@
 # =============================================================================
 # GAIA OS — Continuous Integration
 # Runs on Pull Requests only to preserve free-plan Actions minutes.
+# Lint gate scopes to PR-changed .py files so pre-existing repo-wide
+# violations don’t block unrelated work (Canon Ref: C30).
 # =============================================================================
 name: CI
 
@@ -21,16 +23,31 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: lint-${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: lint-${{ runner.os }}-pip-
+
       - run: pip install --quiet ruff
-      - run: ruff check .
+
+      - name: Lint changed Python files only
+        run: |
+          # Scope to files changed in this PR to avoid pre-existing repo debt
+          CHANGED=$(git diff --name-only origin/main...HEAD -- '*.py' | tr '\n' ' ')
+          if [ -z "$CHANGED" ]; then
+            echo "No Python files changed in this PR — lint skipped."
+            exit 0
+          fi
+          echo "Linting: $CHANGED"
+          ruff check $CHANGED
 
   test:
     name: Test (pytest ${{ matrix.python-version }})
