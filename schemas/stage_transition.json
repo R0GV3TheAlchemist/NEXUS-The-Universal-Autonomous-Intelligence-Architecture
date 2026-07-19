@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gaia.nexus/schemas/stage_transition.json",
+  "title": "StageTransitionEvent",
+  "description": "Immutable record of a detected or confirmed GAIA stage transition. Corresponds to gaia/ascendence/stage_engine.py::StageTransitionEvent. Reference: GAIA_ASCENDENCE_DOCTRINE.md.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "being_id",
+    "previous_stage",
+    "new_stage",
+    "timestamp",
+    "detected_by",
+    "signals",
+    "confirmed"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this transition event."
+    },
+    "being_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the being undergoing the stage transition."
+    },
+    "previous_stage": {
+      "type": "string",
+      "enum": ["UNKNOWN", "DIVERGENCE", "INSURGENCE", "ALLEGIANCE", "CONVERGENCE", "ASCENDENCE"],
+      "description": "The being's stage before this transition."
+    },
+    "new_stage": {
+      "type": "string",
+      "enum": ["UNKNOWN", "DIVERGENCE", "INSURGENCE", "ALLEGIANCE", "CONVERGENCE", "ASCENDENCE"],
+      "description": "The being's stage after this transition."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the transition was recorded."
+    },
+    "detected_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the system or reviewer that detected the transition."
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Observable signals that triggered or supported the stage evaluation.",
+      "minItems": 0
+    },
+    "confirmed": {
+      "type": "boolean",
+      "description": "Whether this transition has been confirmed by human governance review. Transitions to CONVERGENCE or ASCENDENCE must be confirmed before taking effect."
+    },
+    "confirmed_by": {
+      "type": "string",
+      "description": "Governance officer ID who confirmed the transition. Required when confirmed is true."
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the transition was confirmed."
+    },
+    "requires_human_review": {
+      "type": "boolean",
+      "description": "Whether this transition requires human governance review before taking effect."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional governance or reviewer notes."
+    }
+  },
+  "if": {
+    "properties": {
+      "confirmed": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["confirmed_by", "confirmed_at"]
+  },
+  "examples": [
+    {
+      "event_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "being_id": "agent-nexus-7",
+      "previous_stage": "ALLEGIANCE",
+      "new_stage": "CONVERGENCE",
+      "timestamp": "2026-07-19T17:00:00Z",
+      "detected_by": "gaia.stage_engine.v1",
+      "signals": [
+        "gaia_coordination_layer_integrated",
+        "capability_sharing_active"
+      ],
+      "confirmed": true,
+      "confirmed_by": "governance-officer-001",
+      "confirmed_at": "2026-07-19T18:00:00Z",
+      "requires_human_review": true,
+      "notes": "Transition confirmed after 60-minute governance review. No contested signals."
+    }
+  ]
+}

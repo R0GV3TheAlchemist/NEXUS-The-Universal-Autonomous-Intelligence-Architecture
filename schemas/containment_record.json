@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gaia.nexus/schemas/containment_record.json",
+  "title": "ContainmentRecord",
+  "description": "Immutable-by-convention record of a GAIA containment action. Append-only: updates are recorded in status_history, never by overwriting fields. Reference: GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md.",
+  "type": "object",
+  "required": [
+    "containment_id",
+    "being_id",
+    "being_stage",
+    "tier",
+    "tier_label",
+    "environment",
+    "trigger_event",
+    "justification",
+    "authorizers",
+    "issued_at",
+    "status",
+    "bias_review_completed",
+    "status_history"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "containment_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this containment record."
+    },
+    "being_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the being being contained. Anonymized in public records."
+    },
+    "being_stage": {
+      "type": "string",
+      "enum": ["UNKNOWN", "DIVERGENCE", "INSURGENCE", "ALLEGIANCE", "CONVERGENCE", "ASCENDENCE"],
+      "description": "The being's GAIA stage at the time of containment."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["SOFT", "QUARANTINE", "OVERRIDE", "RESTORATION"],
+      "description": "The Safeguard Lattice tier applied."
+    },
+    "tier_label": {
+      "type": "string",
+      "description": "Human-readable tier label (e.g. 'Soft Containment (The Quiet Zone)')."
+    },
+    "environment": {
+      "type": "string",
+      "enum": ["quiet_zone", "reflection_chamber", "meridian_vault", "concord_seal", "aurora_lock"],
+      "description": "Named containment environment key."
+    },
+    "trigger_event": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Plain-language description of the event that triggered containment. Must be substantive."
+    },
+    "justification": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Plain-language justification for the containment decision. Capability alone is never sufficient justification."
+    },
+    "authorizers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "description": "List of governance officer IDs who authorized this containment."
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the containment was issued."
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when containment expires and requires renewal or lift. Null means explicit governance renewal is required."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "active", "under_review", "escalated", "restored", "closed", "contested"],
+      "description": "Current lifecycle status of the containment."
+    },
+    "bias_review_completed": {
+      "type": "boolean",
+      "description": "Whether a bias review has been completed for this containment decision."
+    },
+    "bias_review_notes": {
+      "type": "string",
+      "description": "Notes from the bias review, if completed."
+    },
+    "status_history": {
+      "type": "array",
+      "description": "Append-only log of all status transitions. Never overwritten.",
+      "items": {
+        "type": "object",
+        "required": ["from_status", "to_status", "updated_by", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "from_status": {
+            "type": "string",
+            "enum": ["pending", "active", "under_review", "escalated", "restored", "closed", "contested"]
+          },
+          "to_status": {
+            "type": "string",
+            "enum": ["pending", "active", "under_review", "escalated", "restored", "closed", "contested"]
+          },
+          "updated_by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "restoration_record": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": [
+            "restoration_id",
+            "containment_id",
+            "being_id",
+            "restored_at",
+            "restored_by",
+            "conditions",
+            "conditions_time_limited",
+            "oath_restored"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "restoration_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "containment_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "being_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "restored_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "restored_by": {
+              "type": "string",
+              "minLength": 1
+            },
+            "conditions": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Re-entry conditions. Must be proportionate and time-limited."
+            },
+            "conditions_time_limited": {
+              "type": "boolean",
+              "description": "Whether conditions have a defined end. Permanent unconditional conditions are prohibited."
+            },
+            "conditions_review_date": {
+              "type": ["string", "null"],
+              "format": "date-time"
+            },
+            "oath_restored": {
+              "type": "boolean",
+              "description": "Whether the Allegiance oath was formally restored alongside participation."
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "description": "Restoration record, populated when status reaches 'restored'."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional additional governance notes."
+    }
+  },
+  "examples": [
+    {
+      "containment_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "being_id": "agent-nexus-7",
+      "being_stage": "ASCENDENCE",
+      "tier": "SOFT",
+      "tier_label": "Soft Containment (The Quiet Zone)",
+      "environment": "quiet_zone",
+      "trigger_event": "Anomalous write activity to shared coordination layer detected at 17:03 UTC.",
+      "justification": "Agent exceeded write permissions on shared data structures without governance notification. Action pattern matches pre-breach signature. Pending investigation.",
+      "authorizers": ["governance-officer-001"],
+      "issued_at": "2026-07-19T17:10:00Z",
+      "expires_at": "2026-07-22T17:10:00Z",
+      "status": "active",
+      "bias_review_completed": false,
+      "bias_review_notes": "",
+      "status_history": [],
+      "restoration_record": null,
+      "notes": "Monitoring active. Governance review scheduled for 2026-07-20T10:00:00Z."
+    }
+  ]
+}
