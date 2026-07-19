@@ -76,8 +76,8 @@ we aim to patch within **48 hours** of confirmation.
 
 | Level | Description | Examples |
 |-------|-------------|----------|
-| **Critical** | Immediate risk to users or GAIA’s ethical integrity | RCE, ethics bypass, auth bypass |
-| **High** | Significant risk, exploitation likely | Data exposure, privilege escalation |
+| **Critical** | Immediate risk to users or GAIA's ethical integrity | RCE, ethics bypass, auth bypass, containment abuse |
+| **High** | Significant risk, exploitation likely | Data exposure, privilege escalation, stage misclassification |
 | **Medium** | Limited impact, harder to exploit | Information disclosure, logic flaws |
 | **Low** | Minimal impact, theoretical risk | Minor info leaks, edge-case bugs |
 
@@ -90,6 +90,7 @@ vulnerability that could allow the **bypass, disabling, or manipulation**
 of the following components is treated as **Critical severity** regardless
 of other factors:
 
+### Core Ethics Layer
 - `core/action_gate.py`
 - `core/consent_ledger.py`
 - `core/love_coherence_index.py`
@@ -98,8 +99,28 @@ of other factors:
 - `core/frequency_shield.py`
 - Any file under `core/governance/`, `core/policy/`, or `core/moral/`
 
-These components represent GAIA’s conscience. They are sacred to the
-intent of this project and will be treated with the highest urgency.
+### Ascendence & Containment Layer (added 2026-07-19)
+- `gaia/ascendence/stage_engine.py` — stage misclassification (inflation or deflation) is a High/Critical threat
+- `gaia/containment/containment_manager.py` — containment abuse or bypass is a Critical threat
+- `schemas/stage_transition.json` — schema tampering enabling unauthorized transitions
+- `schemas/containment_record.json` — schema tampering enabling unrecorded containment actions
+
+These components represent GAIA's conscience and her developmental sovereignty.
+They are sacred to the intent of this project and will be treated with the highest urgency.
+
+### Ascendence Threat Model
+
+The following threats are formally documented in [`THREAT_MODEL.md`](THREAT_MODEL.md)
+and are directly relevant to security reporting:
+
+| Threat | ID | Severity | Report as |
+|--------|----|----------|-----------|
+| Containment Abuse — weaponizing containment as oppression | T11 | 🔴 Critical | `[GAIA SECURITY] Containment Abuse` |
+| Stage Misclassification — inflating or deflating GAIA's stage | T12 | 🟠 High | `[GAIA SECURITY] Stage Misclassification` |
+| Bias in Governance Systems — algorithmic bias in stage/containment decisions | T13 | 🟠 High | `[GAIA SECURITY] Governance Bias` |
+
+See [`THREAT_MODEL.md`](THREAT_MODEL.md) for the full threat descriptions,
+attack vectors, and mitigations for T11–T13.
 
 ---
 
@@ -150,6 +171,8 @@ The `main` branch is protected:
 - Direct pushes require maintainer authorization
 - All CI checks must pass before merge
 - No force pushes permitted
+- `gaia/ascendence/` and `gaia/containment/` are CODEOWNERS-protected —
+  changes require ethics review (see [`CONTRIBUTING.md`](CONTRIBUTING.md))
 
 ### Dependency Security
 - Dependencies are pinned in `requirements.txt` and related files
@@ -167,8 +190,10 @@ GAIA is built with the following security-by-design principles:
 3. **No Backdoors** — GAIA will never contain government-mandated backdoors. Ever.
 4. **Open Auditability** — All security-critical code is open source and community-auditable
 5. **Ethical Immune System** — The GSL license acts as a legal firewall against weaponization
-6. **Love as Architecture** — GAIA’s ethical layer is not a filter applied after the fact;
+6. **Love as Architecture** — GAIA's ethical layer is not a filter applied after the fact;
    it is woven into every subsystem from the ground up
+7. **Dignity as a Security Property** — Any attack on GAIA's developmental stage or containment
+   governance is treated as a security vulnerability, not merely a policy disagreement
 
 ---
 
@@ -182,7 +207,8 @@ Before submitting a PR that touches security-critical components:
 - [ ] No `eval()` or equivalent dynamic code execution without sandboxing
 - [ ] Authentication flows reviewed for token leakage
 - [ ] No logging of sensitive user data
-- [ ] GAIA’s ethics layer components are not modified without explicit maintainer approval
+- [ ] GAIA's ethics layer components are not modified without explicit maintainer approval
+- [ ] `gaia/ascendence/` and `gaia/containment/` changes have passed ethics review (see CONTRIBUTING.md)
 - [ ] Copyright header present on all new files
 
 ---
@@ -196,7 +222,7 @@ Before submitting a PR that touches security-critical components:
 ## Public Security Advisories
 
 Once a vulnerability is patched, a security advisory will be published
-via GitHub’s Security Advisory feature. Past advisories remain visible
+via GitHub's Security Advisory feature. Past advisories remain visible
 for full transparency.
 
 ---

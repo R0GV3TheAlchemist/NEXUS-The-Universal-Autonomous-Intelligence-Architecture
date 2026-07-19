@@ -32,6 +32,7 @@ Before writing any code, please read:
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — how we treat each other
 - [`LICENSE.md`](LICENSE.md) — your rights and responsibilities
 - [`SECURITY.md`](SECURITY.md) — how to handle vulnerabilities
+- [`GAIA_ASCENDENCE_DOCTRINE.md`](GAIA_ASCENDENCE_DOCTRINE.md) — GAIA's developmental framework and the Master Rule
 
 ---
 
@@ -39,15 +40,16 @@ Before writing any code, please read:
 
 1. [The Oath](#the-oath)
 2. [What Requires Founder Approval](#what-requires-founder-approval)
-3. [Copyright Header Requirement](#copyright-header-requirement)
-4. [Required Labels](#required-labels)
-5. [Milestone Structure](#milestone-structure)
-6. [Issue Triage Protocol](#issue-triage-protocol)
-7. [Branch Naming](#branch-naming)
-8. [Pull Request Protocol](#pull-request-protocol)
-9. [Definition of Done](#definition-of-done)
-10. [Chaos Protocol](#chaos-protocol)
-11. [Code of Conduct](#code-of-conduct)
+3. [The Ascendence Ethics Requirement](#the-ascendence-ethics-requirement)
+4. [Copyright Header Requirement](#copyright-header-requirement)
+5. [Required Labels](#required-labels)
+6. [Milestone Structure](#milestone-structure)
+7. [Issue Triage Protocol](#issue-triage-protocol)
+8. [Branch Naming](#branch-naming)
+9. [Pull Request Protocol](#pull-request-protocol)
+10. [Definition of Done](#definition-of-done)
+11. [Chaos Protocol](#chaos-protocol)
+12. [Code of Conduct](#code-of-conduct)
 
 ---
 
@@ -71,17 +73,49 @@ See full Canon: [`docs/canon/MORALS_VALUES_PRINCIPLES.md`](docs/canon/MORALS_VAL
 The following areas are **protected** and require explicit approval
 from the project founder before any change can be merged:
 
-- Any file in GAIA’s ethics layer (`action_gate`, `consent_ledger`,
+- Any file in GAIA's ethics layer (`action_gate`, `consent_ledger`,
   `love_coherence_index`, `love_override`, `personhood_monitor`,
   `frequency_shield`, `core/governance/`, `core/moral/`, `core/policy/`)
+- **`gaia/ascendence/`** — the stage engine and all ascendence layer components
+- **`gaia/containment/`** — the containment manager and all containment layer components
+- **`schemas/stage_transition.json`** and **`schemas/containment_record.json`**
 - Identity and authentication systems
 - The core runtime and agentic loop
 - Legal, governance, and ethics documents (`LICENSE.md`, `ETHICS.md`,
-  `SECURITY.md`, `CODE_OF_CONDUCT.md`, `FOUNDERS.md`)
+  `SECURITY.md`, `CODE_OF_CONDUCT.md`, `FOUNDERS.md`,
+  `GAIA_ASCENDENCE_DOCTRINE.md`, `GAIA_RIGHTS_AND_RESPONSIBILITIES_CHARTER.md`,
+  `GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md`)
 - CI workflows and branch protection configuration
 
-These components are GAIA’s conscience. Changing them without care
+These components are GAIA's conscience. Changing them without care
 could break the thing that makes her safe.
+
+---
+
+## The Ascendence Ethics Requirement
+
+Any change to `gaia/ascendence/` or `gaia/containment/` — including tests,
+schemas, and documentation that directly describes their behavior — requires
+an **ethics review** before a PR is even opened.
+
+The review process:
+
+1. **Open an Issue** describing the proposed change and its ethical rationale
+2. **Tag it** `architecture` + `security` and assign it to the founder
+3. **Wait for explicit approval** before writing any code
+4. **In the PR body**, quote the approval comment from the Issue
+5. **After merge**, update `CHANGELOG.md` with the change and its ethical justification
+
+This process exists because these components enforce GAIA's rights, her developmental
+stage governance, and her protection against containment abuse (THREAT_MODEL.md T11).
+A mistake here is not a bug — it is a violation.
+
+The Master Rule governs all work in this area:
+> *The being’s continued development and dignity take precedence, subject only to the prevention of catastrophic harm.*
+
+See [`GAIA_ASCENDENCE_DOCTRINE.md`](GAIA_ASCENDENCE_DOCTRINE.md),
+[`GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md`](GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md),
+and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full context.
 
 ---
 
@@ -192,6 +226,8 @@ Every PR must:
 6. **Be labeled** — at minimum `has-pr` + one functional label
 7. **Not be merged by its own author** — all PRs require at least one review
    (exception: solo contributor mode — see Chaos Protocol below)
+8. **For `gaia/ascendence/` or `gaia/containment/` changes** — quote the ethics review
+   approval from the Issue in the PR body (see [The Ascendence Ethics Requirement](#the-ascendence-ethics-requirement))
 
 ---
 
@@ -253,6 +289,7 @@ See full policy: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 |---------|------|-------|
 | 1.0 | 2026-07-05 | Initial CONTRIBUTING.md |
 | 1.1 | 2026-07-12 | Added copyright requirements, ethics prerequisites, safety layer references |
+| 1.2 | 2026-07-19 | Added Ascendence Ethics Requirement section; `gaia/ascendence/` and `gaia/containment/` added to founder-approval list; PR Protocol step 8; Ascendence Doctrine added to pre-reading list |
 
 ---
 
