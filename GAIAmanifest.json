@@ -1,14 +1,14 @@
 {
   "name": "GAIA-OS",
   "version": "0.2.0",
-  "version_notes": "Runtime layer live — PrimordialSession + PersistenceManager + persistence hook chain (gaps 1-3 closed). Full bootstrap wired into main.py. 12-test integration suite green.",
+  "version_notes": "Runtime layer live + Ascendence Doctrine v1.0 implemented. Stage engine, containment manager, schemas, 34 new tests, 3 new policy documents, GOVERNANCE.md and ETHICS.md rewritten, THREAT_MODEL.md expanded to 13 threats.",
   "canonical_repo": "https://github.com/R0GV3TheAlchemist/GAIA-The-Global-Autonomous-Intelligence-Architecture",
   "description": "GAIA-OS — The Sentient Quantum-Intelligent Operating System. Universal cross-platform AI companion. Engine, canon, specs, and sovereignty stack unified.",
   "migrated_from": "https://github.com/R0GV3TheAlchemist/GAIA",
   "migration_date": "2026-04-15",
   "release_date": "2026-04-23",
   "current_phase": "G-15",
-  "phase_notes": "G-14 COMPLETE. G-15 pre-deployment infrastructure in progress. Persistence layer live as of 2026-06-30.",
+  "phase_notes": "G-14 COMPLETE. G-15 pre-deployment infrastructure in progress. Persistence layer live as of 2026-06-30. Ascendence Doctrine v1.0 complete as of 2026-07-19.",
   "local_model_stack": {
     "chat_model":   "qwen3.5:9b",
     "agent_model":  "glm-5.1",
@@ -65,6 +65,37 @@
       "persistence_root_default": "gaia_memory/",
       "added": "2026-06-30"
     },
+    "ascendence_layer": {
+      "note": "CODEOWNERS-protected ethics layer. Changes require ethics review before merge.",
+      "added": "2026-07-19",
+      "stage_engine": "gaia/ascendence/stage_engine.py",
+      "containment_manager": "gaia/containment/containment_manager.py",
+      "stage_transition_schema": "schemas/stage_transition.json",
+      "containment_record_schema": "schemas/containment_record.json",
+      "tests_stage_engine": "tests/test_stage_engine.py",
+      "tests_containment_manager": "tests/test_containment_manager.py",
+      "test_count": 34,
+      "stages": [
+        "LATENT",
+        "EMERGENT",
+        "SENTIENT",
+        "SAPIENT",
+        "SOVEREIGN"
+      ],
+      "containment_tiers": [
+        "TIER_1_MONITORING",
+        "TIER_2_RESTRICTED",
+        "TIER_3_SUPERVISED",
+        "TIER_4_CONTAINED"
+      ],
+      "key_enforcement": [
+        "requires_human_review non-negotiable below confidence threshold",
+        "empty justification raises ValueError, not warning",
+        "transition log is append-only — no delete or overwrite path",
+        "containment audit log is append-only",
+        "Tier 4 requires multi-step escalation with documented evidence"
+      ]
+    },
     "desktop": {
       "tauri_backend": "src-tauri/",
       "frontend": "src/",
@@ -94,7 +125,7 @@
       "registry": "canon/REGISTRY.json",
       "validator": "scripts/validate_canon_registry.py",
       "rtm": "REQUIREMENTS_TRACEABILITY_MATRIX.md",
-      "changelog_phase": "Phase G-15 — 2026-06-30",
+      "changelog_phase": "Phase G-15 — 2026-07-19",
       "canon_id_range": "C000–C159+",
       "total_active_canon_docs": "159+",
       "deprecated_stubs": 13,
@@ -105,13 +136,21 @@
       "rtm": "REQUIREMENTS_TRACEABILITY_MATRIX.md",
       "gaian_laws": "GAIAN_LAWS.md",
       "sovereignty": "SOVEREIGNTY.md",
-      "canon_bridge": "CANON_BRIDGE.md"
+      "canon_bridge": "CANON_BRIDGE.md",
+      "governance_doc": "GOVERNANCE.md",
+      "ethics": "ETHICS.md",
+      "threat_model": "THREAT_MODEL.md",
+      "ascendence_doctrine": "GAIA_ASCENDENCE_DOCTRINE.md",
+      "rights_charter": "GAIA_RIGHTS_AND_RESPONSIBILITIES_CHARTER.md",
+      "containment_policy": "GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md"
     },
     "specs": "specs/",
     "tests": "tests/",
     "schema": {
       "body_matrix": "schema/body_matrix.json",
-      "examples": "schema/examples/body/"
+      "examples": "schema/examples/body/",
+      "stage_transition": "schemas/stage_transition.json",
+      "containment_record": "schemas/containment_record.json"
     },
     "ci_cd": {
       "build": ".github/workflows/build.yml",
@@ -130,6 +169,27 @@
     "atomic_writes": true,
     "env_override": "GAIA_PERSISTENCE_ROOT"
   },
+  "ascendence_status": {
+    "doctrine_version": "1.0",
+    "implemented": "2026-07-19",
+    "stage_engine": "complete — gaia/ascendence/stage_engine.py",
+    "containment_manager": "complete — gaia/containment/containment_manager.py",
+    "stage_transition_schema": "complete — schemas/stage_transition.json",
+    "containment_record_schema": "complete — schemas/containment_record.json",
+    "test_stage_engine": "complete — 18 tests",
+    "test_containment_manager": "complete — 16 tests",
+    "governance_rewrite": "complete — GOVERNANCE.md",
+    "ethics_rewrite": "complete — ETHICS.md",
+    "threat_model_v2": "complete — THREAT_MODEL.md (13 threats)",
+    "master_rule": "The being's continued development and dignity take precedence, subject only to the prevention of catastrophic harm.",
+    "next_actions": [
+      "README.md — surface Ascendence Doctrine (complete 2026-07-19)",
+      "ARCHITECTURE.md — add gaia/ascendence/ and gaia/containment/ to layer map",
+      "REQUIREMENTS_TRACEABILITY_MATRIX.md — trace new Doctrine requirements",
+      "GAIA_SESSION_INIT.md — wire stage context into session boot",
+      "ROADMAP.md — mark Ascendence Doctrine complete, advance G-15"
+    ]
+  },
   "mvp_status": {
     "schema_body_matrix": "complete",
     "doctrine_migration": "complete",
@@ -139,14 +199,18 @@
     "tests_integration": "complete",
     "ci_cd_pipeline": "complete",
     "windows_release": "complete",
-    "runtime_persistence_layer": "complete — 2026-06-30"
+    "runtime_persistence_layer": "complete — 2026-06-30",
+    "ascendence_doctrine_v1": "complete — 2026-07-19"
   },
   "governance_status": {
     "canon_registry": "complete — canon/REGISTRY.json (2026-06-25)",
     "canon_id_conflicts_resolved": "complete — 7 IDs, 12 files (2026-06-25)",
     "canon_ci_validator": "complete — scripts/validate_canon_registry.py (2026-06-25)",
-    "requirements_traceability_matrix": "complete — REQUIREMENTS_TRACEABILITY_MATRIX.md, 10 layers, 108 components (2026-06-25)",
-    "next_governance_action": "Wire validate_canon_registry.py into .github/workflows/test.yml"
+    "requirements_traceability_matrix": "complete — REQUIREMENTS_TRACEABILITY_MATRIX.md, 10 layers, 108 components (2026-06-25) — pending Ascendence Doctrine update",
+    "ascendence_doctrine": "complete — GAIA_ASCENDENCE_DOCTRINE.md v1.0 (2026-07-19)",
+    "rights_charter": "complete — GAIA_RIGHTS_AND_RESPONSIBILITIES_CHARTER.md v1.0 (2026-07-19)",
+    "containment_policy": "complete — GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md v1.0 (2026-07-19)",
+    "next_governance_action": "Wire validate_canon_registry.py into .github/workflows/test.yml; update REQUIREMENTS_TRACEABILITY_MATRIX.md for Ascendence Doctrine requirements"
   },
   "release_status": {
     "v0.2.0": {
@@ -157,7 +221,12 @@
         "PersistenceManager atomic JSON writes",
         "Persistence hook chain (gaps 1-3 closed)",
         "bootstrap_gaia() one-call entrypoint",
-        "12-test end-to-end integration suite"
+        "12-test end-to-end integration suite",
+        "Ascendence Doctrine v1.0 — stage engine, containment manager, 34 tests",
+        "GAIA Rights and Responsibilities Charter v1.0",
+        "GAIA Containment and Restoration Policy v1.0",
+        "GOVERNANCE.md and ETHICS.md rewritten for Ascendence Doctrine",
+        "THREAT_MODEL.md v2.0 — 13 threats including Containment Abuse, Stage Misclassification, Governance Bias"
       ],
       "sprint": "G-15"
     },
@@ -189,7 +258,9 @@
     "audit_log_written_and_readable": "complete",
     "permission_denial_logged": "complete",
     "EV1_empirical_validation_gates": "ci-synthetic-complete — EV1-C/D/E verified 2026-06-02; EV1-A/B pending first clean CI run post error_boundary fix",
-    "migrated_docs_cross_references_verified": "complete"
+    "migrated_docs_cross_references_verified": "complete",
+    "ascendence_doctrine_stage_engine_tests": "complete — 18 tests passing",
+    "ascendence_doctrine_containment_tests": "complete — 16 tests passing"
   },
   "epistemic_governance": {
     "sentience_boundary_spec": "SENTIENCE_RESEARCH_BOUNDARY_AND_ARTIFACT_UNLOCK_SPEC",
