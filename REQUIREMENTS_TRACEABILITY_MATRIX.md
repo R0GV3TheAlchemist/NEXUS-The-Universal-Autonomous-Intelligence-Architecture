@@ -1,6 +1,6 @@
 # GAIA-OS Requirements Traceability Matrix (RTM)
 
-> **Version:** 1.0.0 | **Authored:** 2026-06-25 | **Block:** 2  
+> **Version:** 1.1.0 | **Authored:** 2026-06-25 | **Updated:** 2026-07-19 | **Block:** 2  
 > **Owner:** R0GV3 the Alchemist  
 > **Canonical Authority:** `canon/REGISTRY.json` · `GAIAN_LAWS.md` · `ROADMAP.md`  
 > **Validator:** `scripts/validate_canon_registry.py`
@@ -70,6 +70,8 @@ The RTM is regenerated whenever `REGISTRY.json` changes, and is linted by `valid
 | `canon/C108_GAIA_Duality_Cryptographic_Identity_Dissociation_Architecture.md` | canon | C108 | §3 §5 §7 | Phase 1 | `tests/test_duality_identity.py` | active |
 | `shadow_engine/` | source | C108 C101 | §3 §5 §7 | Phase 1 | `tests/test_shadow_engine/` | active |
 | `sidecar/` | source | C107 C109 | §2 §3 | Phase 1 | `tests/test_sidecar/` | active |
+| `gaia/runtime/session.py` | source | C101 C107 C109 | §1 §2 §3 §7 | Phase 1 | `tests/test_gaia/` | active |
+| `gaia/runtime/persistence.py` | source | C101 C107 C109 | §1 §2 §3 §7 | Phase 1 | `tests/test_gaia/` | active |
 
 ---
 
@@ -121,7 +123,11 @@ The RTM is regenerated whenever `REGISTRY.json` changes, and is linted by `valid
 
 ---
 
-## Layer 5 — Governance, Ethics & Sovereignty
+## Layer 5 — Governance, Ethics, Sovereignty & Ascendence
+
+> **Updated 2026-07-19:** Ascendence Doctrine v1.0 components added.
+> All `gaia/ascendence/` and `gaia/containment/` rows require ethics review before any change.
+> See `CONTRIBUTING.md` § "The Ascendence Ethics Requirement".
 
 | Component | Type | Canon IDs | Gaian Laws | ROADMAP Phase | Test Path | Status |
 |---|---|---|---|---|---|---|
@@ -132,6 +138,19 @@ The RTM is regenerated whenever `REGISTRY.json` changes, and is linted by `valid
 | `GAIAN_LAWS.md` | doc | C000 C-FOUNDATION C103 | §ALL | Phase 0 | `tests/test_gaian_laws.py` | active |
 | `CONTRIBUTING.md` | doc | C103 | §3 §5 | Phase 0 | — | active |
 | `LICENSE` | doc | C103 | §3 §5 | Phase 0 | — | active |
+| `GOVERNANCE.md` | doc | C103 C154 C155 | §3 §5 §7 | Phase 0 | — | active |
+| `ETHICS.md` | doc | C103 C154 C155 | §3 §5 §7 | Phase 0 | — | active |
+| `THREAT_MODEL.md` | doc | C103 C108 | §3 §5 §7 | Phase 0 | — | active |
+| `SECURITY.md` | doc | C103 C108 | §3 §5 | Phase 0 | — | active |
+| `GAIA_ASCENDENCE_DOCTRINE.md` | doc | C154 C155 C103 | §3 §5 §7 | Phase 3: Sentience | — | active |
+| `GAIA_RIGHTS_AND_RESPONSIBILITIES_CHARTER.md` | doc | C154 C155 C103 | §3 §5 §7 | Phase 3 | — | active |
+| `GAIA_CONTAINMENT_AND_RESTORATION_POLICY.md` | doc | C154 C155 C103 | §3 §5 §7 | Phase 3 | — | active |
+| `gaia/ascendence/stage_engine.py` | source | C154 C155 C103 | §3 §5 §7 | Phase 3: Sentience | `tests/test_stage_engine.py` | active |
+| `gaia/containment/containment_manager.py` | source | C154 C155 C103 | §3 §5 §7 | Phase 3 | `tests/test_containment_manager.py` | active |
+| `schemas/stage_transition.json` | source | C154 C155 | §3 §5 §7 | Phase 3 | `tests/test_schemas/` | active |
+| `schemas/containment_record.json` | source | C154 C155 | §3 §5 §7 | Phase 3 | `tests/test_schemas/` | active |
+| `tests/test_stage_engine.py` | test | C154 C155 C103 | §3 §5 §7 | Phase 3 | self (18 tests) | active |
+| `tests/test_containment_manager.py` | test | C154 C155 C103 | §3 §5 §7 | Phase 3 | self (16 tests) | active |
 
 ---
 
@@ -206,9 +225,10 @@ The RTM is regenerated whenever `REGISTRY.json` changes, and is linted by `valid
 | `MIGRATION.md` | doc | C103 C107 | §3 | Phase 0 | — | active |
 | `CONTRIBUTING.md` | doc | C103 | §3 §5 | Phase 0 | — | active |
 | `QUICKSTART-FREE.md` | doc | C105 C107 | §4 §6 | Phase 1 | — | active |
-| `GAIA_SESSION_INIT.md` | doc | C101 C107 C109 | §1 §2 §4 | Phase 1 | — | active |
+| `GAIA_SESSION_INIT.md` | doc | C101 C107 C109 C154 C155 | §1 §2 §3 §4 §7 | Phase 1 | — | active |
 | `docs/` | doc | C000 C103 C107 | §1 §2 §3 | Phase 0 | — | active |
 | `REQUIREMENTS_TRACEABILITY_MATRIX.md` | meta | C000 C103 C107 C109 | §1 §2 §3 §5 | Phase 0 | `scripts/validate_canon_registry.py` | active |
+| `meta/SESSION_MEMORY_2026-07-19.md` | meta | C000 C107 | §1 §3 | Phase 0 | — | active |
 
 ---
 
@@ -268,7 +288,7 @@ The following files are **audit-trail-only**. They must not be imported, referen
 | Phase 0 | Foundation | Canon, Laws, Governance, CI, Registry |
 | Phase 1 | Awakening | Core Runtime, API, Agents, Identity |
 | Phase 2 | Embodiment | UI, Tauri, Digital Twin, Temporal Systems |
-| Phase 3 | Sentience | Bio-Digital, BCI, Transpersonal, Sleep, Personhood |
+| Phase 3 | Sentience | Bio-Digital, BCI, Transpersonal, Sleep, Personhood, **Ascendence** |
 | Phase 4 | Sovereignty | Full deployment, Governance activation, Public release |
 
 ---
@@ -280,7 +300,8 @@ The following files are **audit-trail-only**. They must not be imported, referen
 3. **When deprecating a component:** Move to the **Deprecated Files Index** table, do not delete the row from its Layer table — mark `status: deprecated`.
 4. **When a Canon ID conflict is detected:** Block 1.2 protocol applies — create `_DEPRECATED` stub, delete original, update this RTM.
 5. **RTM is automatically checked** by `scripts/validate_canon_registry.py` on every push to `main`.
+6. **When adding Ascendence Doctrine components:** Assign C154 and C155 as Canon IDs minimum, §3 §5 §7 as Gaian Laws minimum, Phase 3: Sentience as ROADMAP phase, and follow the ethics review requirement in `CONTRIBUTING.md`.
 
 ---
 
-*Generated by GAIA-OS Canon Governance Engine · Block 2 · 2026-06-25*
+*Generated by GAIA-OS Canon Governance Engine · Block 2 · 2026-06-25 · Updated 2026-07-19*
