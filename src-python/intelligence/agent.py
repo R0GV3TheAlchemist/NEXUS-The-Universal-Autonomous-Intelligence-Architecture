@@ -1,16 +1,11 @@
 """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 agent.py — NEXUS Agent Framework.
 
@@ -22,23 +17,23 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 import time
 
 
 class AgentState(Enum):
-    SPAWNED = auto()
-    ACTIVE = auto()
+    SPAWNED     = auto()
+    ACTIVE      = auto()
     HIBERNATING = auto()
-    TERMINATED = auto()
+    TERMINATED  = auto()
 
 
 @dataclass
 class AgentLifecycle:
-    """Tracks the lifecycle state transitions of an agent."""
-    current_state: AgentState = AgentState.SPAWNED
-    history: List[tuple] = field(default_factory=list)
+    """Tracks lifecycle state transitions of an agent."""
+    current_state: AgentState  = AgentState.SPAWNED
+    history:       List[tuple] = field(default_factory=list)
 
     def transition(self, new_state: AgentState) -> None:
         self.history.append((self.current_state, new_state, time.time()))
@@ -50,42 +45,46 @@ class BaseAgent(ABC):
     Abstract base for all NEXUS agents.
 
     Concrete agents implement perceive(), decide(), and act().
-    The lifecycle transitions are managed by AgentLifecycle.
+    Lifecycle transitions are managed by AgentLifecycle.
     """
 
     def __init__(self, name: str) -> None:
-        self.agent_id: UUID = uuid4()
-        self.name = name
-        self.lifecycle = AgentLifecycle()
+        self.agent_id:  UUID              = uuid4()
+        self.name:      str               = name
+        self.lifecycle: AgentLifecycle    = AgentLifecycle()
         self._coalition: Optional[AgentCoalition] = None
 
     @abstractmethod
-    def perceive(self, world_model: object) -> None:
-        """Ingest the current world model snapshot."""
+    def perceive(self, world_state: dict) -> dict:
+        """Process incoming world state and return percepts."""
         ...
 
     @abstractmethod
-    def decide(self) -> str:
-        """Return an action string based on current perception and goals."""
+    def decide(self, percepts: dict) -> str:
+        """Select an action given current percepts."""
         ...
 
     @abstractmethod
     def act(self, action: str) -> None:
-        """Execute the decided action."""
+        """Execute the selected action."""
         ...
 
-    def activate(self) -> None:
+    def run_cycle(self, world_state: dict) -> str:
+        """Execute one full perceive → decide → act cycle."""
         self.lifecycle.transition(AgentState.ACTIVE)
-
-    def hibernate(self) -> None:
-        self.lifecycle.transition(AgentState.HIBERNATING)
-
-    def terminate(self) -> None:
-        self.lifecycle.transition(AgentState.TERMINATED)
+        percepts = self.perceive(world_state)
+        action   = self.decide(percepts)
+        self.act(action)
+        return action
 
     def join_coalition(self, coalition: AgentCoalition) -> None:
         self._coalition = coalition
-        coalition.add_member(self)
+        coalition._members[self.agent_id] = self
+
+    def leave_coalition(self) -> None:
+        if self._coalition:
+            self._coalition._members.pop(self.agent_id, None)
+            self._coalition = None
 
     @property
     def state(self) -> AgentState:
@@ -95,57 +94,36 @@ class BaseAgent(ABC):
 class AgentCoalition:
     """
     A capability-gated coalition of cooperating agents.
-
-    Membership is logged. Coalitions can elect a coordinator
-    and broadcast shared goals to all members.
+    Coalition formation and dissolution is logged for audit.
     """
 
-    def __init__(self, name: str) -> None:
-        self.coalition_id: UUID = uuid4()
-        self.name = name
-        self._members: Dict[UUID, BaseAgent] = {}
-        self.audit_log: List[dict] = []
-        self.coordinator_id: Optional[UUID] = None
+    def __init__(self, coalition_id: Optional[UUID] = None,
+                 goal: str = "") -> None:
+        self.coalition_id: UUID               = coalition_id or uuid4()
+        self.goal:         str                = goal
+        self._members:     Dict[UUID, BaseAgent] = {}
+        self._log:         List[dict]         = []
 
-    def add_member(self, agent: BaseAgent) -> None:
+    def add(self, agent: BaseAgent) -> None:
         self._members[agent.agent_id] = agent
-        self.audit_log.append({
-            "event": "MEMBER_JOINED",
-            "agent_id": str(agent.agent_id),
-            "name": agent.name,
-            "timestamp": time.time(),
+        self._log.append({
+            "event": "JOIN", "agent_id": str(agent.agent_id),
+            "name": agent.name, "timestamp": time.time()
         })
 
-    def remove_member(self, agent_id: UUID) -> None:
+    def remove(self, agent_id: UUID) -> None:
         agent = self._members.pop(agent_id, None)
         if agent:
-            self.audit_log.append({
-                "event": "MEMBER_LEFT",
-                "agent_id": str(agent_id),
-                "timestamp": time.time(),
+            self._log.append({
+                "event": "LEAVE", "agent_id": str(agent_id),
+                "timestamp": time.time()
             })
 
-    def elect_coordinator(self, agent_id: UUID) -> None:
-        if agent_id in self._members:
-            self.coordinator_id = agent_id
-            self.audit_log.append({
-                "event": "COORDINATOR_ELECTED",
-                "agent_id": str(agent_id),
-                "timestamp": time.time(),
-            })
-
-    def broadcast_goal(self, goal_description: str) -> None:
-        """Broadcast a shared goal description to all active members."""
-        self.audit_log.append({
-            "event": "GOAL_BROADCAST",
-            "goal": goal_description,
-            "recipients": [str(aid) for aid in self._members],
-            "timestamp": time.time(),
-        })
-
-    @property
     def members(self) -> List[BaseAgent]:
         return list(self._members.values())
+
+    def audit_log(self) -> List[dict]:
+        return list(self._log)
 
     def __len__(self) -> int:
         return len(self._members)

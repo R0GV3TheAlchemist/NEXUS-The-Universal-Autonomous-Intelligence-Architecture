@@ -1,16 +1,11 @@
 """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 perception.py — NEXUS Perception System.
 
@@ -20,119 +15,90 @@ UncertaintyQuantifier attaches Bayesian confidence intervals to all percepts.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 import time
 
 
-class SensorClass(Enum):
-    VISUAL = auto()
-    AUDITORY = auto()
-    ENVIRONMENTAL = auto()
-    DIGITAL = auto()
-    BCI = auto()
-    PROPRIOCEPTIVE = auto()
-
-
 @dataclass
 class Percept:
-    """A single observation from one sensor at one point in time."""
-    percept_id: UUID = field(default_factory=uuid4)
-    sensor_class: SensorClass = SensorClass.DIGITAL
-    sensor_id: str = ""
-    value: Any = None
-    timestamp: float = field(default_factory=time.time)
-    confidence: float = 1.0  # 0.0–1.0
-    uncertainty_lower: float = 0.0
-    uncertainty_upper: float = 0.0
+    """A single fused sensor reading."""
+    percept_id: UUID  = field(default_factory=uuid4)
+    sensor_id:  str   = ""
+    modality:   str   = ""   # e.g. "vision", "audio", "tactile", "telemetry"
+    value:      Any   = None
+    timestamp:  float = field(default_factory=time.time)
+    confidence: float = 1.0  # 0.0–1.0 Bayesian confidence
 
 
 @dataclass
 class WorldModel:
     """
-    A unified snapshot of the agent's current environmental understanding.
-
-    Built by SensorFusion from multiple Percept streams. Each slot
-    holds the most recent fused percept and its uncertainty envelope.
+    Unified representation of the perceived world state.
+    Updated each perception cycle by SensorFusion.
     """
-    model_id: UUID = field(default_factory=uuid4)
-    timestamp: float = field(default_factory=time.time)
-    slots: Dict[str, Percept] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    model_id:   UUID           = field(default_factory=uuid4)
+    timestamp:  float          = field(default_factory=time.time)
+    entities:   Dict[str, Any] = field(default_factory=dict)
+    confidence: float          = 1.0
+    percepts:   List[Percept]  = field(default_factory=list)
 
-    def update_slot(self, key: str, percept: Percept) -> None:
-        self.slots[key] = percept
+    def update_entity(self, name: str, state: Any) -> None:
+        self.entities[name] = state
         self.timestamp = time.time()
-
-    def get_slot(self, key: str) -> Optional[Percept]:
-        return self.slots.get(key)
-
-    def confidence_summary(self) -> Dict[str, float]:
-        return {k: v.confidence for k, v in self.slots.items()}
 
 
 class UncertaintyQuantifier:
     """
     Attaches Bayesian confidence intervals to percepts.
-
-    In production, this integrates a Bayesian filter (Kalman, particle, etc.).
-    Stub implementation uses a simple Gaussian approximation.
+    Uses weighted-average fusion. Replace with Kalman/Bayesian network in production.
     """
 
-    def quantify(self, percept: Percept,
-                 prior_confidence: float = 1.0,
-                 noise_sigma: float = 0.05) -> Percept:
-        """
-        Compute uncertainty bounds for a percept and return updated percept.
-        """
-        adjusted = prior_confidence * percept.confidence
-        percept.confidence = max(0.0, min(1.0, adjusted))
-        percept.uncertainty_lower = max(0.0, percept.confidence - noise_sigma)
-        percept.uncertainty_upper = min(1.0, percept.confidence + noise_sigma)
-        return percept
+    def quantify(self, percepts: List[Percept]) -> float:
+        """Compute overall model confidence from individual percept confidences."""
+        if not percepts:
+            return 0.0
+        return sum(p.confidence for p in percepts) / len(percepts)
+
+    def calibrate(self, percept: Percept,
+                  prior: float = 0.5,
+                  likelihood: float = 0.9) -> float:
+        """Apply Bayesian update and store result in percept.confidence."""
+        evidence  = likelihood * prior + (1 - likelihood) * (1 - prior)
+        posterior = (likelihood * prior) / evidence if evidence > 0 else prior
+        percept.confidence = min(max(posterior, 0.0), 1.0)
+        return percept.confidence
 
 
 class SensorFusion:
     """
     Fuses heterogeneous sensor streams into a unified WorldModel.
 
-    Each sensor stream is registered with a key and a SensorClass.
-    On each fusion tick, all registered streams are polled, quantified,
-    and merged into the active WorldModel.
+    Each registered sensor pushes Percept objects. SensorFusion
+    reconciles conflicts, runs UncertaintyQuantifier, and updates
+    the live WorldModel.
     """
 
     def __init__(self) -> None:
-        self._streams: Dict[str, Tuple[SensorClass, Any]] = {}
-        self._quantifier = UncertaintyQuantifier()
-        self.world_model = WorldModel()
+        self._sensors:    Dict[str, Any]        = {}
+        self._uq:         UncertaintyQuantifier = UncertaintyQuantifier()
+        self.world_model: WorldModel            = WorldModel()
 
-    def register_stream(self, key: str, sensor_class: SensorClass,
-                        source: Any = None) -> None:
-        """Register a named sensor stream."""
-        self._streams[key] = (sensor_class, source)
+    def register_sensor(self, sensor_id: str, modality: str) -> None:
+        self._sensors[sensor_id] = {"modality": modality, "active": True}
 
-    def ingest(self, key: str, value: Any,
-               sensor_id: str = "",
-               raw_confidence: float = 1.0) -> Percept:
-        """
-        Ingest a raw sensor reading, quantify uncertainty, and
-        update the WorldModel slot.
-        """
-        sensor_class = self._streams.get(key, (SensorClass.DIGITAL, None))[0]
-        percept = Percept(
-            sensor_class=sensor_class,
-            sensor_id=sensor_id,
-            value=value,
-            confidence=raw_confidence,
-        )
-        percept = self._quantifier.quantify(percept)
-        self.world_model.update_slot(key, percept)
-        return percept
+    def ingest(self, percept: Percept) -> None:
+        """Accept a raw percept and integrate it into the world model."""
+        self._uq.calibrate(percept)
+        self.world_model.percepts.append(percept)
+        self.world_model.update_entity(percept.sensor_id, percept.value)
 
     def fuse(self) -> WorldModel:
-        """Return the current fused WorldModel snapshot."""
+        """Run a full fusion cycle and return the updated WorldModel snapshot."""
+        self.world_model.confidence = self._uq.quantify(self.world_model.percepts)
+        self.world_model.timestamp  = time.time()
         return self.world_model
 
-    def registered_streams(self) -> List[str]:
-        return list(self._streams.keys())
+    def reset(self) -> None:
+        """Clear the percept buffer for the next cycle."""
+        self.world_model.percepts.clear()

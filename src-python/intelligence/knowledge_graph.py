@@ -1,70 +1,59 @@
 """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 knowledge_graph.py — NEXUS Knowledge Graph.
 
-Three memory subsystems mirroring cognitive science:
-  - EpisodicMemory  : event sequences with timestamps
-  - SemanticMemory  : typed concept graph (RDF-compatible)
-  - ProceduralMemory: executable skill routines
+Three memory types:
+  - EpisodicMemory   — timestamped event sequences
+  - SemanticMemory   — typed RDF-compatible concept triples
+  - ProceduralMemory — executable skill routines
 """
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID, uuid4
 import time
 
 
-# ─── Episodic Memory ─────────────────────────────────────────────────────────
+# ─── Episodic Memory ──────────────────────────────────────────────────────────
 
 @dataclass
 class Episode:
     """A single timestamped event in episodic memory."""
-    episode_id: UUID = field(default_factory=uuid4)
-    timestamp: float = field(default_factory=time.time)
-    description: str = ""
-    entities: List[str] = field(default_factory=list)
-    payload: Any = None
-    tags: List[str] = field(default_factory=list)
+    episode_id:  UUID           = field(default_factory=uuid4)
+    timestamp:   float          = field(default_factory=time.time)
+    description: str            = ""
+    context:     Dict[str, Any] = field(default_factory=dict)
+    tags:        List[str]      = field(default_factory=list)
 
 
 class EpisodicMemory:
-    """
-    Ordered log of episodic events. Supports temporal range queries
-    and tag-based filtering.
-    """
+    """Append-only log of agent experiences, queryable by time and tags."""
 
     def __init__(self) -> None:
         self._episodes: List[Episode] = []
 
-    def record(self, description: str, entities: List[str] = None,
-               payload: Any = None, tags: List[str] = None) -> Episode:
-        ep = Episode(
-            description=description,
-            entities=entities or [],
-            payload=payload,
-            tags=tags or [],
-        )
+    def record(self, description: str,
+               context: Optional[Dict[str, Any]] = None,
+               tags: Optional[List[str]] = None) -> Episode:
+        ep = Episode(description=description,
+                     context=context or {},
+                     tags=tags or [])
         self._episodes.append(ep)
         return ep
 
     def query_by_tag(self, tag: str) -> List[Episode]:
         return [e for e in self._episodes if tag in e.tags]
 
-    def query_by_time_range(self, start: float, end: float) -> List[Episode]:
-        return [e for e in self._episodes if start <= e.timestamp <= end]
+    def query_by_time(self, since: float, until: float) -> List[Episode]:
+        return [e for e in self._episodes if since <= e.timestamp <= until]
 
     def recent(self, n: int = 10) -> List[Episode]:
         return self._episodes[-n:]
@@ -76,91 +65,73 @@ class EpisodicMemory:
 # ─── Semantic Memory ──────────────────────────────────────────────────────────
 
 @dataclass
-class Concept:
-    """A node in the semantic concept graph."""
-    concept_id: UUID = field(default_factory=uuid4)
-    label: str = ""
-    concept_type: str = "Entity"
-    attributes: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class Relation:
-    """A typed directed edge between two Concepts."""
-    relation_id: UUID = field(default_factory=uuid4)
-    subject_id: UUID = field(default_factory=uuid4)
-    predicate: str = ""
-    object_id: UUID = field(default_factory=uuid4)
-    weight: float = 1.0
+class Triple:
+    """An RDF-compatible semantic triple: subject → predicate → object."""
+    triple_id:  UUID  = field(default_factory=uuid4)
+    subject:    str   = ""
+    predicate:  str   = ""
+    obj:        str   = ""
+    confidence: float = 1.0
+    source:     str   = ""
 
 
 class SemanticMemory:
     """
-    RDF-compatible typed concept graph.
-
-    Nodes are Concepts; edges are typed Relations.
-    Supports SPARQL-style triple queries: (subject, predicate, object).
+    Typed concept graph stored as RDF-compatible triples.
+    Supports subject/predicate/object queries.
     """
 
     def __init__(self) -> None:
-        self._concepts: Dict[UUID, Concept] = {}
-        self._relations: List[Relation] = []
+        self._triples: List[Triple] = []
 
-    def add_concept(self, label: str, concept_type: str = "Entity",
-                    attributes: Dict[str, Any] = None) -> Concept:
-        c = Concept(label=label, concept_type=concept_type,
-                    attributes=attributes or {})
-        self._concepts[c.concept_id] = c
-        return c
+    def assert_triple(self, subject: str, predicate: str, obj: str,
+                      confidence: float = 1.0, source: str = "") -> Triple:
+        t = Triple(subject=subject, predicate=predicate, obj=obj,
+                   confidence=confidence, source=source)
+        self._triples.append(t)
+        return t
 
-    def add_relation(self, subject: Concept, predicate: str,
-                     obj: Concept, weight: float = 1.0) -> Relation:
-        r = Relation(subject_id=subject.concept_id, predicate=predicate,
-                     object_id=obj.concept_id, weight=weight)
-        self._relations.append(r)
-        return r
-
-    def query(self, subject_id: Optional[UUID] = None,
+    def query(self, subject: Optional[str] = None,
               predicate: Optional[str] = None,
-              object_id: Optional[UUID] = None) -> List[Relation]:
-        results = self._relations
-        if subject_id:
-            results = [r for r in results if r.subject_id == subject_id]
+              obj: Optional[str] = None) -> List[Triple]:
+        results = self._triples
+        if subject:
+            results = [t for t in results if t.subject == subject]
         if predicate:
-            results = [r for r in results if r.predicate == predicate]
-        if object_id:
-            results = [r for r in results if r.object_id == object_id]
+            results = [t for t in results if t.predicate == predicate]
+        if obj:
+            results = [t for t in results if t.obj == obj]
         return results
 
-    def get_concept(self, concept_id: UUID) -> Optional[Concept]:
-        return self._concepts.get(concept_id)
+    def retract(self, triple_id: UUID) -> None:
+        self._triples = [t for t in self._triples if t.triple_id != triple_id]
+
+    def __len__(self) -> int:
+        return len(self._triples)
 
 
-# ─── Procedural Memory ───────────────────────────────────────────────────────
+# ─── Procedural Memory ────────────────────────────────────────────────────────
 
 @dataclass
 class Skill:
-    """An executable procedural skill routine."""
-    skill_id: UUID = field(default_factory=uuid4)
-    name: str = ""
-    description: str = ""
-    routine: Optional[Callable] = None
-    preconditions: List[str] = field(default_factory=list)
-    postconditions: List[str] = field(default_factory=list)
+    """An executable skill routine with pre/post conditions."""
+    skill_id:       UUID               = field(default_factory=uuid4)
+    name:           str                = ""
+    description:    str                = ""
+    preconditions:  List[str]          = field(default_factory=list)
+    postconditions: List[str]          = field(default_factory=list)
+    routine:        Optional[Callable] = None
 
-    def execute(self, *args, **kwargs) -> Any:
+    def execute(self, **kwargs) -> Any:
+        """Execute the skill routine. Raises if not implemented."""
         if self.routine is None:
-            raise NotImplementedError(f"Skill '{self.name}' has no routine attached.")
-        return self.routine(*args, **kwargs)
+            raise NotImplementedError(
+                f"Skill '{self.name}' has no executable routine.")
+        return self.routine(**kwargs)
 
 
 class ProceduralMemory:
-    """
-    Registry of executable skill routines.
-
-    Skills are indexed by name for fast lookup. Each skill carries
-    pre/postcondition contracts for runtime verification.
-    """
+    """Registry of executable skills keyed by name."""
 
     def __init__(self) -> None:
         self._skills: Dict[str, Skill] = {}
@@ -171,11 +142,14 @@ class ProceduralMemory:
     def get(self, name: str) -> Optional[Skill]:
         return self._skills.get(name)
 
-    def execute(self, name: str, *args, **kwargs) -> Any:
+    def execute(self, name: str, **kwargs) -> Any:
         skill = self.get(name)
         if skill is None:
-            raise KeyError(f"No skill named '{name}' in procedural memory.")
-        return skill.execute(*args, **kwargs)
+            raise KeyError(f"No skill registered with name '{name}'")
+        return skill.execute(**kwargs)
 
     def list_skills(self) -> List[str]:
         return list(self._skills.keys())
+
+    def __len__(self) -> int:
+        return len(self._skills)

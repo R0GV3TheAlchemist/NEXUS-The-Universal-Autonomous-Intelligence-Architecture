@@ -1,21 +1,16 @@
 """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 cognitive_kernel.py — NEXUS Cognitive Kernel.
 
 Manages a goal stack, drives the reasoning engine tick loop,
-and maintains a cryptographically chained audit log.
+and maintains a cryptographically hash-chained audit log.
 """
 
 from __future__ import annotations
@@ -27,42 +22,42 @@ import hashlib, json, time
 
 
 class GoalStatus(Enum):
-    PENDING = auto()
-    ACTIVE = auto()
+    PENDING   = auto()
+    ACTIVE    = auto()
     SUCCEEDED = auto()
-    FAILED = auto()
-    DEFERRED = auto()
+    FAILED    = auto()
+    DEFERRED  = auto()
 
 
 @dataclass
 class Goal:
     """A single goal on the cognitive stack."""
-    goal_id: UUID = field(default_factory=uuid4)
-    description: str = ""
-    priority: int = 0
-    status: GoalStatus = GoalStatus.PENDING
-    context: Dict[str, Any] = field(default_factory=dict)
-    created_at: float = field(default_factory=time.time)
+    goal_id:     UUID           = field(default_factory=uuid4)
+    description: str            = ""
+    priority:    int            = 0
+    status:      GoalStatus     = GoalStatus.PENDING
+    context:     Dict[str, Any] = field(default_factory=dict)
+    created_at:  float          = field(default_factory=time.time)
 
 
 @dataclass
 class AuditEntry:
     """One entry in the cryptographic audit log."""
-    entry_id: UUID = field(default_factory=uuid4)
-    timestamp: float = field(default_factory=time.time)
-    goal_id: UUID = field(default_factory=uuid4)
-    action: str = ""
-    result: str = ""
-    previous_hash: str = ""
-    hash: str = ""
+    entry_id:      UUID  = field(default_factory=uuid4)
+    timestamp:     float = field(default_factory=time.time)
+    goal_id:       UUID  = field(default_factory=uuid4)
+    action:        str   = ""
+    result:        str   = ""
+    previous_hash: str   = ""
+    hash:          str   = ""
 
     def compute_hash(self) -> str:
         payload = json.dumps({
-            "entry_id": str(self.entry_id),
-            "timestamp": self.timestamp,
-            "goal_id": str(self.goal_id),
-            "action": self.action,
-            "result": self.result,
+            "entry_id":      str(self.entry_id),
+            "timestamp":     self.timestamp,
+            "goal_id":       str(self.goal_id),
+            "action":        self.action,
+            "result":        self.result,
             "previous_hash": self.previous_hash,
         }, sort_keys=True)
         return hashlib.sha256(payload.encode()).hexdigest()
@@ -89,15 +84,17 @@ class GoalStack:
 
 
 class AuditLog:
-    """Append-only, hash-chained audit log for all cognitive decisions."""
+    """Append-only, SHA-256 hash-chained audit log for all cognitive decisions."""
 
     def __init__(self) -> None:
         self._entries: List[AuditEntry] = []
 
     def append(self, goal_id: UUID, action: str, result: str) -> AuditEntry:
         prev_hash = self._entries[-1].hash if self._entries else ""
-        entry = AuditEntry(goal_id=goal_id, action=action,
-                           result=result, previous_hash=prev_hash)
+        entry = AuditEntry(
+            goal_id=goal_id, action=action,
+            result=result, previous_hash=prev_hash
+        )
         entry.hash = entry.compute_hash()
         self._entries.append(entry)
         return entry
@@ -111,6 +108,9 @@ class AuditLog:
                 return False
         return True
 
+    def entries(self) -> List[AuditEntry]:
+        return list(self._entries)
+
     def __len__(self) -> int:
         return len(self._entries)
 
@@ -122,10 +122,7 @@ class ReasoningEngine:
     """
 
     def reason(self, goal: Goal) -> str:
-        """
-        Process a goal and return an action string.
-        Override this in concrete implementations.
-        """
+        """Process a goal and return an action string. Override in subclasses."""
         raise NotImplementedError("ReasoningEngine.reason() must be implemented")
 
 
@@ -138,8 +135,8 @@ class CognitiveKernel:
 
     def __init__(self, reasoning_engine: ReasoningEngine) -> None:
         self.goal_stack = GoalStack()
-        self.audit_log = AuditLog()
-        self._engine = reasoning_engine
+        self.audit_log  = AuditLog()
+        self._engine    = reasoning_engine
 
     def push_goal(self, goal: Goal) -> None:
         goal.status = GoalStatus.PENDING
@@ -158,3 +155,6 @@ class CognitiveKernel:
         except Exception as exc:
             goal.status = GoalStatus.FAILED
             return self.audit_log.append(goal.goal_id, "FAILED", str(exc))
+
+    def is_audit_intact(self) -> bool:
+        return self.audit_log.verify()
