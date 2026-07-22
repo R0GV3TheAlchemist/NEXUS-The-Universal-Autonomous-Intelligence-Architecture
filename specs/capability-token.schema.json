@@ -1,98 +1,75 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://nexus.gaia/schemas/capability-token.schema.json",
+  "$id": "https://nexus.gaian/schemas/capability-token.schema.json",
   "title": "CapabilityToken",
-  "description": "An immutable, unforgeable capability token for the NEXUS microkernel. A CapabilityToken simultaneously names a kernel object and encodes the permitted operations on it. Tokens are minted only by NexusKernel and can never be constructed by callers. Modelled after seL4 capability derivation (seL4 Reference Manual v15.0.0).",
+  "description": "Schema for a NEXUS capability token. Tokens are unforgeable, immutable grants that simultaneously name a kernel object and encode permitted operations (seL4 capability model).",
   "type": "object",
-  "required": ["token_id", "object_id", "permitted_ops", "issuer", "issued_at", "schema_version"],
+  "required": ["token_id", "object_id", "permitted_ops", "issuer", "issued_at"],
   "additionalProperties": false,
   "properties": {
     "token_id": {
       "type": "string",
       "format": "uuid",
-      "description": "UUID4 unique identifier for this capability token instance."
+      "description": "Unique UUID4 for this capability token."
     },
     "object_id": {
       "type": "string",
       "format": "uuid",
-      "description": "UUID4 identifier of the kernel object this token grants access to (process, channel, memory region, device, etc.)."
-    },
-    "object_type": {
-      "type": "string",
-      "enum": [
-        "PROCESS",
-        "CHANNEL",
-        "MEMORY_REGION",
-        "HAL_DEVICE",
-        "SCHEDULER_SLOT",
-        "IPC_ENDPOINT",
-        "CAPABILITY_NODE"
-      ],
-      "description": "Type of kernel object referenced by object_id. Aligned with seL4 kernel object types."
+      "description": "UUID of the kernel object (module, resource, or service) this token grants access to."
     },
     "permitted_ops": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "string",
-        "minLength": 1
+        "enum": [
+          "read",
+          "write",
+          "execute",
+          "mint",
+          "revoke",
+          "delegate",
+          "audit",
+          "sync",
+          "restart",
+          "shutdown"
+        ]
       },
-      "uniqueItems": true,
-      "minItems": 1,
-      "description": "Exhaustive list of operations this token permits on the named object (e.g., ['read', 'write'], ['invoke'], ['grant', 'revoke']). A token NEVER grants operations beyond this list."
+      "description": "Set of operations permitted by this token (seL4-style capability permissions)."
     },
     "issuer": {
       "type": "string",
-      "description": "Identifier of the NexusKernel instance that minted this token. Only NexusKernel may issue tokens."
-    },
-    "holder": {
-      "type": "string",
-      "description": "Optional identifier of the process or agent currently holding this token."
+      "description": "Identity of the entity that minted this token (node_id or sovereign_identity)."
     },
     "issued_at": {
       "type": "string",
       "format": "date-time",
-      "description": "ISO 8601 UTC timestamp of token creation."
+      "description": "UTC ISO 8601 timestamp when this token was minted."
     },
-    "expires_at": {
+    "expiry": {
       "type": ["string", "null"],
       "format": "date-time",
-      "description": "ISO 8601 UTC expiry timestamp. Null means the token does not expire (persistent capability)."
+      "description": "UTC ISO 8601 expiry timestamp, or null for non-expiring tokens."
     },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "description": "Semantic version of this schema."
-    },
-    "parent_token_id": {
+    "delegated_from": {
       "type": "string",
       "format": "uuid",
-      "description": "Optional UUID4 of the parent token from which this token was derived. Supports seL4-style capability derivation trees. A derived token can only have a subset of the parent's permitted_ops."
+      "description": "Optional: UUID of the parent token this was derived from (capability derivation chain)."
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Optional operational constraints (e.g., rate limits, allowed IP ranges, time windows).",
+      "additionalProperties": true
     },
     "revoked": {
       "type": "boolean",
       "default": false,
-      "description": "True if this token has been explicitly revoked by NexusKernel. Revoked tokens MUST be rejected by all kernel object handlers."
+      "description": "True if this token has been explicitly revoked."
     },
-    "audit_tags": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "Optional audit tags for governance tracking and security review."
+    "meta": {
+      "type": "object",
+      "description": "Arbitrary metadata for extensibility.",
+      "additionalProperties": true
     }
-  },
-  "examples": [
-    {
-      "token_id": "880e8400-e29b-41d4-a716-446655440003",
-      "object_id": "990e8400-e29b-41d4-a716-446655440004",
-      "object_type": "IPC_ENDPOINT",
-      "permitted_ops": ["send", "receive"],
-      "issuer": "nexusos.kernel:node-alpha",
-      "holder": "nexusos.process:affectengine",
-      "issued_at": "2026-07-22T21:00:00Z",
-      "expires_at": null,
-      "schema_version": "1.0.0",
-      "parent_token_id": null,
-      "revoked": false,
-      "audit_tags": ["ipc", "affectengine", "phase-a"]
-    }
-  ]
+  }
 }

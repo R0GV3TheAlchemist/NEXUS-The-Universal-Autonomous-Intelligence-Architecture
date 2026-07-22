@@ -1,86 +1,105 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://nexus.gaia/schemas/nexus-universal-os.schema.json",
-  "title": "NEXUSUniversalOSEvent",
-  "description": "Top-level event envelope for all NEXUS Universal OS system events. Every event emitted by a NEXUS module MUST conform to this schema.",
+  "$id": "https://nexus.gaian/schemas/nexus-universal-os.schema.json",
+  "title": "NEXUSUniversalOS",
+  "description": "Root schema for a NEXUS Universal OS node configuration and identity manifest.",
   "type": "object",
-  "required": ["event_id", "event_type", "source_module", "timestamp_utc", "schema_version", "payload"],
+  "required": ["node_id", "version", "profile", "capabilities", "governance"],
   "additionalProperties": false,
   "properties": {
-    "event_id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "UUID4 unique identifier for this event instance."
-    },
-    "event_type": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Dot-separated event type string (e.g., 'nexusos.kernel.boot', 'affectengine.affect_transition')."
-    },
-    "source_module": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Name of the NEXUS module emitting the event (e.g., 'affectengine', 'schumann')."
-    },
     "node_id": {
       "type": "string",
-      "description": "Optional GAIA node identifier (EID, hostname, or UUID). Identifies which GAIA node emitted this event."
+      "format": "uuid",
+      "description": "Unique UUID4 identifier for this NEXUS node."
     },
-    "timestamp_utc": {
-      "type": "string",
-      "format": "date-time",
-      "description": "ISO 8601 UTC timestamp of event emission (e.g., '2026-07-22T21:00:00Z')."
-    },
-    "schema_version": {
+    "version": {
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "description": "Semantic version of this schema (e.g., '1.0.0')."
+      "description": "Semantic version of this node manifest (e.g., '1.0.0')."
     },
-    "trace_id": {
-      "type": "string",
-      "description": "Optional distributed trace ID for OpenTelemetry / cross-module correlation."
-    },
-    "correlation_id": {
-      "type": "string",
-      "description": "Optional ID linking this event to a preceding event or request."
-    },
-    "severity": {
-      "type": "string",
-      "enum": ["INFO", "WARN", "CRITICAL"],
-      "description": "Event severity level, aligned with HealthSeverity in EmrysEngine."
-    },
-    "tags": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "Optional free-form tags for routing, filtering, and indexing."
-    },
-    "payload": {
+    "profile": {
       "type": "object",
-      "description": "Module-specific event payload. Structure varies by event_type. Must be a valid JSON object."
+      "required": ["name", "tier", "sovereign_identity"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of this NEXUS node (e.g., 'GAIA-Node-Alpha')."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["personal", "community", "planetary", "interplanetary"],
+          "description": "Operating tier for this node."
+        },
+        "sovereign_identity": {
+          "type": "string",
+          "description": "GAIAN sovereign identity string (DID or node-specific URI)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of this node's purpose."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC ISO 8601 creation timestamp."
+        }
+      }
     },
-    "provenance_hash": {
-      "type": "string",
-      "pattern": "^sha256:[a-f0-9]{64}$",
-      "description": "Optional SHA-256 hash linking this event to its provenance record in SovereignMemory."
+    "capabilities": {
+      "type": "array",
+      "description": "List of capability tokens granted to this node.",
+      "items": {
+        "$ref": "capability-token.schema.json"
+      }
+    },
+    "modules": {
+      "type": "object",
+      "description": "Active module configuration per module name.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "version": { "type": "string" },
+          "config": { "type": "object" }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": ["policy_refs", "risk_level"],
+      "additionalProperties": false,
+      "properties": {
+        "policy_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to active governance policy IDs (UUIDs)."
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": ["minimal", "limited", "high", "unacceptable"],
+          "description": "EU AI Act risk classification for this node."
+        },
+        "compliance_frameworks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Declared compliance frameworks (e.g., 'EU AI Act', 'NIST AI RMF', 'IEEE EAD')."
+        }
+      }
+    },
+    "schumann_sync": {
+      "type": "object",
+      "description": "Schumann resonance synchronisation state.",
+      "properties": {
+        "confirmed": { "type": "boolean" },
+        "frequency_hz": { "type": "number" },
+        "last_sync": { "type": "string", "format": "date-time" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "Arbitrary metadata for extensibility.",
+      "additionalProperties": true
     }
-  },
-  "examples": [
-    {
-      "event_id": "550e8400-e29b-41d4-a716-446655440000",
-      "event_type": "affectengine.affect_transition",
-      "source_module": "affectengine",
-      "node_id": "dtn://gaia/node-alpha/",
-      "timestamp_utc": "2026-07-22T21:00:00Z",
-      "schema_version": "1.0.0",
-      "severity": "INFO",
-      "tags": ["affect", "state-change"],
-      "payload": {
-        "valence": 0.7,
-        "arousal": 0.4,
-        "dominance": 0.6,
-        "trigger_event": "schumann.sync_pulse"
-      },
-      "provenance_hash": "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
-    }
-  ]
+  }
 }
