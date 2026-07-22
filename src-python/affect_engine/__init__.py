@@ -1,22 +1,15 @@
-"""GAIA-OS Affect Inference Engine
-
-Issue #65 | Local-first emotional tone detection
-
-Design goals:
-- Fully local inference path by default.
-- Hybrid output: coarse 7-class emotion + dimensional PAD state.
-- Neutrality-first routing to reduce false positives.
-- Persistence into SovereignMemory biometric history.
-- Simple, swappable model backends (rule-based now, transformer/LLM later).
 """
+affect_engine — Affect (Emotion) Engine Module
 
-from .engine import AffectEngine
-from .types import AffectSnapshot, AffectAnalysisResult, EmotionLabel, PadVector
+Models agent affective state using the PAD (Pleasure-Arousal-Dominance)
+dimensional model and the OCC (Ortony-Clore-Collins) appraisal framework.
 
-__all__ = [
-    "AffectEngine",
-    "AffectSnapshot",
-    "AffectAnalysisResult",
-    "EmotionLabel",
-    "PadVector",
-]
+Architecture reference: NEXUS_UNIVERSAL_OS.md Domain 2.7
+Ethics reference:       ETHICS.md Commitment 8 — Affective Transparency
+"""
+from __future__ import annotations
+
+from affect_engine.engine import AffectEngine, AffectState
+from affect_engine.router import affect_router, init_affect_engine
+
+__all__ = ["AffectEngine", "AffectState", "affect_router", "init_affect_engine"]

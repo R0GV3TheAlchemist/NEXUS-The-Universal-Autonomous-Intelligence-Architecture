@@ -1,133 +1,50 @@
 """
-Persona Stability FastAPI router — mounted at /persona.
+persona_stability.router — FastAPI Router for Persona Stability Endpoints
 
-Endpoints
----------
-POST /persona/session/begin     — start a new session for an archetype
-POST /persona/session/end       — close session, write PersonaTrace
-POST /persona/turn              — evaluate a turn, get injection decision
-GET  /persona/anchor/{archetype} — retrieve anchor text for an archetype
-GET  /persona/status            — current engine state
+v0.1.0 endpoints:
+  GET /persona/health   — engine health probe
+  GET /persona/profile  — current persona stability profile
 
-Issue: #115
+Reference: NEXUS_UNIVERSAL_OS.md Domain 2.5
 """
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
+from persona_stability.engine import PersonaStabilityEngine
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+logger = logging.getLogger("persona_stability.router")
+persona_router = APIRouter(prefix="/persona", tags=["persona"],
+                           responses={404: {"description": "Persona endpoint not found"}})
 
-from .engine import PersonaStabilityEngine
-
-logger = logging.getLogger("gaia.persona.router")
-
-router = APIRouter(prefix="/persona", tags=["persona"])
-
-# Module-level engine singleton — injected by init_persona_engine()
-_engine: Optional[PersonaStabilityEngine] = None
-
-
-def init_persona_engine(engine: PersonaStabilityEngine) -> None:
-    """Inject the PersonaStabilityEngine singleton (called from main.py lifespan)."""
-    global _engine
-    _engine = engine
-    logger.info("PersonaStabilityEngine injected into router ✓")
+_persona_engine: PersonaStabilityEngine | None = None
 
 
 def _get_engine() -> PersonaStabilityEngine:
-    if _engine is None:
-        raise HTTPException(status_code=503, detail="PersonaStabilityEngine not initialised")
-    return _engine
+    if _persona_engine is None:
+        raise RuntimeError("PersonaStabilityEngine not initialised.")
+    return _persona_engine
 
 
-# ── Request / Response models ─────────────────────────────────────────────────
-
-class BeginSessionRequest(BaseModel):
-    archetype_id: str = Field(..., description="Gaian archetype ID (e.g. 'sage', 'alchemist')")
-    voice_baseline: Optional[list[float]] = Field(None, description="Pre-computed voice baseline embedding")
-
-
-class EndSessionRequest(BaseModel):
-    notes: str = Field("", description="Optional session notes")
+def init_persona_engine(engine: PersonaStabilityEngine) -> None:
+    global _persona_engine
+    _persona_engine = engine
+    logger.info("PersonaStabilityEngine router initialised.")
 
 
-class TurnRequest(BaseModel):
-    response_embedding: Optional[list[float]] = Field(None, description="LLM response embedding vector")
-    affect_emotion: Optional[str] = Field(None, description="Top emotion from AffectEngine")
-    affect_confidence: float = Field(0.0, ge=0.0, le=1.0, description="Affect confidence score")
+@persona_router.get("/health")
+async def persona_health(engine: PersonaStabilityEngine = Depends(_get_engine)) -> JSONResponse:
+    return JSONResponse(content={"engine": "persona-stability", "status": "online"})
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
-
-@router.post("/session/begin")
-async def begin_session(req: BeginSessionRequest):
-    """Start a new persona stability session for the given archetype."""
-    engine = _get_engine()
-    engine.begin_session(
-        archetype_id=req.archetype_id,
-        voice_baseline=req.voice_baseline,
-    )
-    return {
-        "ok": True,
-        "session_id": engine.session_id,
-        "archetype_id": engine.archetype_id,
-    }
-
-
-@router.post("/session/end")
-async def end_session(req: EndSessionRequest):
-    """Close the current session and write a PersonaTrace to SovereignMemory."""
-    engine = _get_engine()
-    trace = engine.end_session(notes=req.notes)
-    if trace is None:
-        raise HTTPException(status_code=400, detail="No active session to end")
-    return {
-        "ok": True,
-        "session_id": trace.session_id,
-        "archetype_id": trace.archetype_id,
-        "total_turns": trace.total_turns,
-        "drift_count": trace.drift_count,
-        "avg_similarity": trace.avg_similarity,
-        "duration_minutes": round(trace.duration_minutes, 2),
-    }
-
-
-@router.post("/turn")
-async def on_turn(req: TurnRequest):
-    """Evaluate a turn and return an anchor injection decision."""
-    engine = _get_engine()
-    result = engine.on_turn(
-        response_embedding=req.response_embedding,
-        affect_emotion=req.affect_emotion,
-        affect_confidence=req.affect_confidence,
-    )
-    return {
-        "should_inject": result.should_inject,
-        "reason": result.reason,
-        "anchor_text": result.anchor_text,
-        "turn_index": result.turn_index,
-    }
-
-
-@router.get("/anchor/{archetype_id}")
-async def get_anchor(archetype_id: str):
-    """Retrieve the compressed anchor text for any archetype."""
-    from .anchors import get_anchor as _get_anchor
-    anchor = _get_anchor(archetype_id)
-    return {
-        "archetype_id": anchor.archetype_id,
-        "essence": anchor.essence,
-    }
-
-
-@router.get("/status")
-async def status():
-    """Current engine state."""
-    engine = _get_engine()
-    return {
-        "session_id": engine.session_id,
-        "archetype_id": engine.archetype_id,
-        "turn_index": engine.turn_index,
-    }
+@persona_router.get("/profile")
+async def persona_profile(engine: PersonaStabilityEngine = Depends(_get_engine)) -> JSONResponse:
+    p = engine.profile
+    return JSONResponse(content={
+        "engine": "persona-stability",
+        "stability_score": p.stability_score,
+        "coherence_index": p.coherence_index,
+        "drift_velocity": p.drift_velocity,
+        "dominant_persona": p.dominant_persona,
+    })

@@ -1,34 +1,16 @@
 """
-shadow_engine — public surface
+shadow_engine — Shadow Integration Engine
 
-Exports:
-    ShadowRecord, ShadowTransition, ArchetypeScore
-    ShadowEngine
-    get_shadow_state(principal_id) -> ShadowRecord | None
+Models and processes the Jungian 'shadow' — the repository of unintegrated
+cognitive material, suppressed drives, and unresolved contradictions within
+the NEXUS agent's psyche.
+
+Architecture reference: NEXUS_UNIVERSAL_OS.md Domain 2.9
+Ethics reference:       ETHICS.md Commitment 9 — Shadow Transparency
 """
+from __future__ import annotations
 
-from .types   import ShadowRecord, ShadowTransition, ArchetypeScore
-from .engine  import ShadowEngine
+from shadow_engine.engine import ShadowEngine, ShadowState
+from shadow_engine.router import shadow_router, init_shadow_router
 
-_engine: ShadowEngine | None = None
-
-
-def _get_engine() -> ShadowEngine:
-    global _engine
-    if _engine is None:
-        _engine = ShadowEngine()
-    return _engine
-
-
-async def get_shadow_state(principal_id: str) -> ShadowRecord | None:
-    """Return the current ShadowRecord for *principal_id*, or None if not found."""
-    return await _get_engine().get_current(principal_id)
-
-
-__all__ = [
-    "ShadowRecord",
-    "ShadowTransition",
-    "ArchetypeScore",
-    "ShadowEngine",
-    "get_shadow_state",
-]
+__all__ = ["ShadowEngine", "ShadowState", "shadow_router", "init_shadow_router"]

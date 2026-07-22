@@ -1,106 +1,87 @@
-"""GAIA-OS Affect Engine — main pipeline"""
+"""
+affect_engine.engine — Affective State Engine
 
+Models agent affective state using the PAD dimensional space:
+  - Pleasure  (valence)  : −1.0 (very negative) → +1.0 (very positive)
+  - Arousal   (intensity): 0.0 (calm) → 1.0 (highly activated)
+  - Dominance (control)  : 0.0 (submissive) → 1.0 (dominant)
+
+Appraisal events (OCC model) update the PAD state. An EmotionalRegulator
+applies dampening to prevent runaway arousal.
+
+Reference: Mehrabian & Russell 1974 (PAD); Ortony, Clore & Collins 1988 (OCC)
+           NEXUS_UNIVERSAL_OS.md Domain 2.7
+"""
 from __future__ import annotations
 
-import time
-import uuid
-from statistics import pstdev
+import logging
+from dataclasses import dataclass
+from typing import Optional
 
-from affect_engine.heuristics import analyze_text_heuristic
-from affect_engine.types import AffectSnapshot
-from sovereign_memory import SovereignMemory
-from sovereign_memory.types import AffectSnapshot as MemoryAffectSnapshot
+logger = logging.getLogger("affect_engine.engine")
+
+
+@dataclass
+class AffectState:
+    """Current PAD affective state of the agent."""
+    pleasure:   float = 0.0   # -1.0 → +1.0
+    arousal:    float = 0.0   #  0.0 →  1.0
+    dominance:  float = 0.5   #  0.0 →  1.0
+
+    def clamp(self) -> None:
+        """Clamp all values to their valid ranges."""
+        self.pleasure  = max(-1.0, min(1.0, self.pleasure))
+        self.arousal   = max(0.0,  min(1.0, self.arousal))
+        self.dominance = max(0.0,  min(1.0, self.dominance))
 
 
 class AffectEngine:
-    """
-    Local-first affect pipeline.
+    """Maintains and updates the agent's PAD affective state.
 
-    Current backend:
-      - neutrality-first heuristic routing
-      - coarse 7-class lexical classifier
-      - PAD anchor mapping
-      - entropy calculation
-      - rolling arc stability from recent valence history
-
-    Planned swap-in backends:
-      - sentence-transformers + classifier heads
-      - local llama.cpp prompt-based emotion analysis
+    Appraisal events are fed in via appraise(). The state is updated
+    using weighted delta rules. EmotionalRegulator dampening is applied
+    each cycle to prevent runaway values.
+    Reference: NEXUS_UNIVERSAL_OS.md Domain 2.7; PAD model.
     """
 
-    def __init__(self, memory: SovereignMemory) -> None:
-        self.memory = memory
+    def __init__(self, initial_state: Optional[AffectState] = None) -> None:
+        self._state = initial_state or AffectState()
+        logger.info("AffectEngine initialised with state %s", self._state)
 
-    def analyze_text(
-        self,
-        principal_id: str,
-        text: str,
-        source: str,
-        timestamp: int | None = None,
-        persist: bool = True,
-    ) -> AffectSnapshot:
-        ts = timestamp or int(time.time() * 1000)
-        result = analyze_text_heuristic(text)
-        arc_stability = self._compute_arc_stability(principal_id, result.pad.pleasure)
-
-        snapshot = AffectSnapshot(
-            id=str(uuid.uuid4()),
-            principal_id=principal_id,
-            timestamp=ts,
-            source=source,
-            emotion=result.label,
-            confidence=result.confidence,
-            valence=result.pad.pleasure,
-            arousal=result.pad.arousal,
-            dominance=result.pad.dominance,
-            entropy=result.entropy,
-            arc_stability=arc_stability,
-            is_neutral_primary=result.is_neutral_primary,
-            explanation=result.explanation,
+    @property
+    def state(self) -> AffectState:
+        """Return the current affective state (read-only snapshot)."""
+        return AffectState(
+            pleasure=self._state.pleasure,
+            arousal=self._state.arousal,
+            dominance=self._state.dominance,
         )
 
-        if persist:
-            self.memory.store_affect_snapshot(
-                MemoryAffectSnapshot(
-                    id=snapshot.id,
-                    principal_id=snapshot.principal_id,
-                    timestamp=snapshot.timestamp,
-                    source=snapshot.source,
-                    emotion=snapshot.emotion,
-                    confidence=snapshot.confidence,
-                    valence=snapshot.valence,
-                    arousal=snapshot.arousal,
-                    dominance=snapshot.dominance,
-                    entropy=snapshot.entropy,
-                    arc_stability=snapshot.arc_stability,
-                    is_neutral_primary=snapshot.is_neutral_primary,
-                )
-            )
-        return snapshot
+    def appraise(self, event_type: str, intensity: float = 0.5) -> AffectState:
+        """Apply an OCC appraisal event and update the PAD state.
 
-    def get_affect_history(self, principal_id: str, days: int = 30):
-        return {
-            "valence": self.memory.get_biometric_history(principal_id, "affect_valence", days),
-            "arousal": self.memory.get_biometric_history(principal_id, "affect_arousal", days),
-            "dominance": self.memory.get_biometric_history(principal_id, "affect_dominance", days),
-            "entropy": self.memory.get_biometric_history(principal_id, "affect_entropy", days),
-            "arc_stability": self.memory.get_biometric_history(principal_id, "arc_stability", days),
-        }
+        Args:
+            event_type: OCC event category string (e.g. 'joy', 'distress', 'hope').
+            intensity:  Event intensity multiplier [0.0, 1.0].
+        Returns:
+            Updated AffectState.
+        Raises:
+            NotImplementedError: Always (stub).
+        Reference: OCC model; NEXUS_UNIVERSAL_OS.md Domain 2.7.
+        """
+        raise NotImplementedError(
+            "AffectEngine.appraise — not yet implemented. "
+            "Expected: map event_type to PAD deltas via OCC appraisal rules, "
+            "update self._state, apply EmotionalRegulator dampening, clamp, return state."
+        )
 
-    def _compute_arc_stability(self, principal_id: str, current_valence: float) -> float:
-        history = self.memory.get_biometric_history(principal_id, "affect_valence", 30)
-        values = [s.value for s in history][-29:]
-        values.append(current_valence)
+    def regulate(self) -> None:
+        """Apply homeostatic dampening toward neutral state each cycle.
 
-        if len(values) <= 1:
-            return 0.50
-
-        sigma = pstdev(values)
-        zero_crossings = 0
-        for a, b in zip(values, values[1:]):
-            if (a < 0 <= b) or (a >= 0 > b):
-                zero_crossings += 1
-        zcr = zero_crossings / max(1, len(values) - 1)
-
-        stability = max(0.0, min(1.0, (1.0 - min(1.0, sigma)) * (1.0 - 0.8 * zcr)))
-        return stability
+        Raises:
+            NotImplementedError: Always (stub).
+        """
+        raise NotImplementedError(
+            "AffectEngine.regulate — not yet implemented. "
+            "Expected: apply exponential decay toward (0.0, 0.0, 0.5) baseline."
+        )

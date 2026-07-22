@@ -1,132 +1,51 @@
 """
-crystal/router.py
-FastAPI router for the Crystal Core.
+crystal.router — FastAPI Router for Crystal Engine Endpoints
 
-Mounts at: /crystal
+v0.1.0 endpoints:
+  GET /crystal/health   — engine health probe
+  GET /crystal/lattice  — current lattice node count & parameters
 
-Endpoints
----------
-GET  /crystal/health          — liveness probe
-GET  /crystal/state           — current CrystalState as JSON
-GET  /crystal/history?days=N  — last N days of tick history (flat list)
-POST /crystal/tick            — force an immediate re-tick
+Reference: NEXUS_UNIVERSAL_OS.md Domain 3.1
 """
-
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing   import Optional
-
-from fastapi           import APIRouter
+import logging
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from crystal.engine import CrystalCore
 
-from .engine import CrystalCore
-from .types  import CrystalState, OrbParams
+logger = logging.getLogger("crystal.router")
+crystal_router = APIRouter(prefix="/crystal", tags=["crystal"],
+                           responses={404: {"description": "Crystal endpoint not found"}})
 
-router = APIRouter(prefix="/crystal", tags=["crystal"])
-
-# Module-level singleton injected by init_crystal() (production)
-# or directly by tests via:  import crystal.router as m; m._crystal_core = mock_core
-_crystal_core: Optional[CrystalCore] = None
+_crystal_core: CrystalCore | None = None
 
 
-# ---------------------------------------------------------------------------
-# Lifecycle helper — called from main.py lifespan
-# ---------------------------------------------------------------------------
+def _get_engine() -> CrystalCore:
+    if _crystal_core is None:
+        raise RuntimeError("CrystalCore not initialised.")
+    return _crystal_core
 
-def init_crystal(principal_id: str = "default") -> None:
-    """Initialise the global CrystalCore singleton."""
+
+def init_crystal_core(engine: CrystalCore) -> None:
     global _crystal_core
-    _crystal_core = CrystalCore(principal_id=principal_id)
+    _crystal_core = engine
+    logger.info("CrystalCore router initialised.")
 
 
-async def get_crystal_state() -> Optional[CrystalState]:
-    """Return the latest cached CrystalState without triggering a tick."""
-    if _crystal_core is None:
-        return None
-    return _crystal_core.latest
+@crystal_router.get("/health")
+async def crystal_health(engine: CrystalCore = Depends(_get_engine)) -> JSONResponse:
+    return JSONResponse(content={"engine": "crystal", "status": "online"})
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
-
-@router.get("/health")
-async def health() -> JSONResponse:
-    """Liveness probe — always returns {"ok": true, ...}."""
-    return JSONResponse({
-        "ok":        True,
-        "status":    "ok",
-        "service":   "crystal_core",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "has_state": _crystal_core is not None and _crystal_core.latest is not None,
+@crystal_router.get("/lattice")
+async def crystal_lattice(engine: CrystalCore = Depends(_get_engine)) -> JSONResponse:
+    lat = engine.lattice
+    return JSONResponse(content={
+        "engine": "crystal",
+        "node_count": len(lat.nodes),
+        "lattice_a": lat.lattice_a,
+        "lattice_b": lat.lattice_b,
+        "lattice_c": lat.lattice_c,
+        "space_group": lat.space_group,
     })
-
-
-@router.get("/state")
-async def get_state(user_id: Optional[str] = None) -> JSONResponse:
-    if _crystal_core is None:
-        return JSONResponse(status_code=503, content={"error": "crystal core not initialised"})
-    state = _crystal_core.latest
-    if state is None:
-        state = await _crystal_core.tick(user_id=user_id)
-    return JSONResponse(_serialise(state))
-
-
-@router.get("/history")
-async def get_history(days: int = 7, user_id: Optional[str] = None) -> JSONResponse:
-    """
-    Return a flat JSON array of serialised CrystalState ticks.
-    Tests assert isinstance(resp.json(), list).
-    """
-    if _crystal_core is None:
-        return JSONResponse(status_code=503, content={"error": "crystal core not initialised"})
-    ticks = _crystal_core.history(days=days)
-    return JSONResponse([_serialise(t) for t in ticks])
-
-
-@router.post("/tick")
-async def force_tick(user_id: Optional[str] = None) -> JSONResponse:
-    if _crystal_core is None:
-        return JSONResponse(status_code=503, content={"error": "crystal core not initialised"})
-    state = await _crystal_core.tick(user_id=user_id)
-    return JSONResponse(_serialise(state))
-
-
-# ---------------------------------------------------------------------------
-# Serialisation
-# ---------------------------------------------------------------------------
-
-def _serialise_orb(orb: OrbParams) -> dict:
-    return {
-        "glow_color":       orb.glow_color,
-        "glow_intensity":   round(orb.glow_intensity,   4),
-        "pulse_frequency":  round(orb.pulse_frequency,  4),
-        "pulse_amplitude":  round(orb.pulse_amplitude,  4),
-        "cloud_opacity":    round(orb.cloud_opacity,    4),
-        "aurora_intensity": round(orb.aurora_intensity, 4),
-        "rotation_speed":   round(orb.rotation_speed,   4),
-        "coherence_ring":   round(orb.coherence_ring,   4),
-    }
-
-
-def _serialise(state: CrystalState) -> dict:
-    return {
-        "timestamp":            state.timestamp.isoformat(),
-        "affect_coherence":     round(state.affect_coherence,   4),
-        "stage_coherence":      round(state.stage_coherence,    4),
-        "shadow_integration":   round(state.shadow_integration, 4),
-        "schumann_alignment":   round(state.schumann_alignment, 4),
-        "coherence":            round(state.coherence,          4),
-        "coherence_band":       state.coherence_band.value,
-        "dominant_emotion":     state.dominant_emotion,
-        "active_stage":         state.active_stage,
-        "active_archetype":     state.active_archetype,
-        "schumann_disturbance": state.schumann_disturbance,
-        "inner_narrative":      state.inner_narrative,
-        "persona_tone":         state.persona_tone.value,
-        "orb_params":           _serialise_orb(state.orb_params),
-        "home_label":           state.coherence_band.value.replace(
-                                    "_", " "
-                                ).capitalize(),
-    }

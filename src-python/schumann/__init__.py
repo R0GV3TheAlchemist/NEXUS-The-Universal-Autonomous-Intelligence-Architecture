@@ -1,30 +1,16 @@
 """
-Schumann Alignment Layer — Issue #64
+schumann — Schumann Resonance Engine
 
-Public surface:
-  SchumannEngine        — main service, call .tick() to get SchumannState
-  SchumannState         — typed output snapshot consumed by Stage Engine
-  PlanetarySignalSample — typed raw input sample produced by sources
-  DisturbanceLevel      — enum: stable | elevated | disturbed | unavailable
+Monitors and processes Schumann resonance signals (Earth's ELF electromagnetic
+resonances, primary frequency ~7.83 Hz) to provide planetary entrainment
+inputs to the NEXUS affect and stage engines.
 
-Quick start::
-
-    from schumann import SchumannEngine, EngineConfig
-    engine = SchumannEngine(EngineConfig(source="dev"))
-    state  = await engine.tick()
+Architecture reference: NEXUS_UNIVERSAL_OS.md Domain 1.6
+HAL dependency:         DeviceCapability.ELF_SENSOR
 """
+from __future__ import annotations
 
-from .models import (
-    DisturbanceLevel,
-    PlanetarySignalSample,
-    SchumannState,
-)
-from .engine import SchumannEngine, EngineConfig
+from schumann.engine import SchumannEngine, SchumannReading
+from schumann.router import schumann_router, init_schumann_engine
 
-__all__ = [
-    "DisturbanceLevel",
-    "PlanetarySignalSample",
-    "SchumannState",
-    "SchumannEngine",
-    "EngineConfig",
-]
+__all__ = ["SchumannEngine", "SchumannReading", "schumann_router", "init_schumann_engine"]

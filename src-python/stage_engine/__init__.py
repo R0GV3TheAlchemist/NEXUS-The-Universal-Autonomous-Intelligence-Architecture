@@ -1,39 +1,15 @@
-"""GAIA-OS Stage Engine
-
-Issue #63 | Pillar I: Magnum Opus
-
-Tracks each user's position along the five-stage developmental arc:
-  Stage 1 — Divergence
-  Stage 2 — Awakening
-  Stage 3 — Crucible
-  Stage 4 — Convergence
-  Stage 5 — Ascendence
-
-Consumes:
-  - SovereignMemory (biometric_history, stage_records, stage_transitions)
-  - AffectEngine (arc_stability signal)
-
-Emits:
-  - StageRecord (current state)
-  - StageTransition events (forward + regression)
 """
+stage_engine — Stage / Developmental Stage Engine
 
-from .engine import StageEngine
-from .markers import MarkerScorer
-from .types import (
-    StageName,
-    MarkerScores,
-    StageRecord,
-    StageTransition,
-    TransitionResult,
-)
+Tracks the agent's current developmental or cognitive stage, managing
+stage transitions and maintaining a sliding-window history.
 
-__all__ = [
-    "StageEngine",
-    "MarkerScorer",
-    "StageName",
-    "MarkerScores",
-    "StageRecord",
-    "StageTransition",
-    "TransitionResult",
-]
+Architecture reference: NEXUS_UNIVERSAL_OS.md Domain 2.8
+"""
+from __future__ import annotations
+
+from stage_engine.engine       import StageEngine, StageState
+from stage_engine.window_tracker import WindowTracker
+from stage_engine.router       import stage_router, init_stage_engine
+
+__all__ = ["StageEngine", "StageState", "WindowTracker", "stage_router", "init_stage_engine"]

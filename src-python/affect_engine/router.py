@@ -1,109 +1,47 @@
 """
-FastAPI router for the Affect Engine  (Issue #65)
+affect_engine.router — FastAPI Router for Affect Engine Endpoints
 
-Mount in main.py::
+v0.1.0 endpoints:
+  GET /affect/health   — engine health probe
+  GET /affect/state    — current PAD affective state
 
-    from affect_engine.router import affect_router, init_affect_engine
-    app.include_router(affect_router, prefix="/affect")
-
-Endpoints
----------
-GET  /affect/health              — liveness probe
-POST /affect/analyze             — run affect inference on a text block
-GET  /affect/history/{principal} — last N days of AffectSnapshots
-GET  /affect/trend/{principal}   — ArcTrend for last 30 days
+Reference: NEXUS_UNIVERSAL_OS.md Domain 2.7
 """
-
 from __future__ import annotations
 
 import logging
-from typing import Optional
-
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from affect_engine.engine import AffectEngine
 
-from .nlp_backend import build_backend, AffectBackend
-from .arc_trend import compute_arc_trend
+logger = logging.getLogger("affect_engine.router")
+affect_router = APIRouter(prefix="/affect", tags=["affect"],
+                          responses={404: {"description": "Affect endpoint not found"}})
 
-logger = logging.getLogger(__name__)
-
-affect_router = APIRouter(tags=["affect_engine"])
-
-_engine  = None   # AffectEngine singleton
-_backend: AffectBackend | None = None
+_affect_engine: AffectEngine | None = None
 
 
-def init_affect_engine(engine, backend_name: str = "heuristic") -> None:
-    """Call from app lifespan with fully initialised instances."""
-    global _engine, _backend
-    _engine  = engine
-    _backend = build_backend(backend_name)
-    logger.info("AffectEngine router initialised (backend=%s)", _backend.name)
+def _get_engine() -> AffectEngine:
+    if _affect_engine is None:
+        raise RuntimeError("AffectEngine not initialised.")
+    return _affect_engine
 
 
-class AnalyzeRequest(BaseModel):
-    principal_id : str
-    text         : str
-    source       : str = "gaia_chat"   # journal | gaia_chat | system
-    persist      : bool = True
-    backend      : Optional[str] = None  # override per-request
+def init_affect_engine(engine: AffectEngine) -> None:
+    global _affect_engine
+    _affect_engine = engine
+    logger.info("AffectEngine router initialised.")
 
 
 @affect_router.get("/health")
-async def health() -> JSONResponse:
-    ok = _engine is not None
-    return JSONResponse(status_code=200 if ok else 503, content={"ok": ok})
+async def affect_health(engine: AffectEngine = Depends(_get_engine)) -> JSONResponse:
+    return JSONResponse(content={"engine": "affect", "status": "online"})
 
 
-@affect_router.post("/analyze")
-async def analyze(req: AnalyzeRequest) -> JSONResponse:
-    """Run affect inference and optionally persist the snapshot."""
-    if _engine is None:
-        raise HTTPException(503, "Affect engine not initialised")
-    backend = build_backend(req.backend) if req.backend else _backend
-    # Override the engine’s internal heuristic call with the chosen backend
-    result = backend.analyze(req.text)
-    snapshot = _engine.analyze_text(
-        principal_id=req.principal_id,
-        text=req.text,
-        source=req.source,
-        persist=req.persist,
-    )
-    payload = snapshot.to_dict()
-    payload["backend"] = backend.name
-    payload["nlp_result"] = result.to_dict()
-    return JSONResponse(content=payload)
-
-
-@affect_router.get("/history/{principal_id}")
-async def get_history(principal_id: str, days: int = 30) -> JSONResponse:
-    """Return raw AffectSnapshot history from SovereignMemory."""
-    if _engine is None:
-        raise HTTPException(503, "Affect engine not initialised")
-    history = _engine.get_affect_history(principal_id, days)
+@affect_router.get("/state")
+async def affect_state(engine: AffectEngine = Depends(_get_engine)) -> JSONResponse:
+    s = engine.state
     return JSONResponse(content={
-        k: [s.value if hasattr(s, "value") else s for s in v]
-        for k, v in history.items()
+        "engine": "affect",
+        "pleasure": s.pleasure, "arousal": s.arousal, "dominance": s.dominance
     })
-
-
-@affect_router.get("/trend/{principal_id}")
-async def get_trend(principal_id: str, days: int = 30) -> JSONResponse:
-    """Return ArcTrend (valence trend, momentum, volatility, etc.)."""
-    if _engine is None:
-        raise HTTPException(503, "Affect engine not initialised")
-    history = _engine.get_affect_history(principal_id, days)
-
-    def _vals(key: str) -> list[float]:
-        return [s.value if hasattr(s, "value") else float(s) for s in history.get(key, [])]
-
-    # Emotion labels aren’t stored in biometric history — use neutral as placeholder
-    # until SovereignMemory exposes a labelled snapshot query.
-    valence   = _vals("valence")
-    arousal   = _vals("arousal")
-    n_labels  = len(valence)
-    labels    = ["neutral"] * n_labels  # TODO: fetch real labels from snapshot table
-
-    trend = compute_arc_trend(valence, arousal, labels)
-    return JSONResponse(content=trend.to_dict())

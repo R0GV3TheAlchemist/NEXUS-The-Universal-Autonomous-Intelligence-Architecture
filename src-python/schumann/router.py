@@ -1,130 +1,54 @@
 """
-FastAPI router — exposes SchumannEngine state via HTTP + WebSocket.
+schumann.router — FastAPI Router for Schumann Engine Endpoints
 
-Mount this router in main.py::
+v0.1.0 endpoints:
+  GET /schumann/health  — engine health probe
+  GET /schumann/latest  — most recent Schumann reading
 
-    from schumann.router import schumann_router
-    app.include_router(schumann_router, prefix="/schumann")
-
-Endpoints
----------
-GET  /schumann/state          — current SchumannState as JSON
-GET  /schumann/health         — liveness probe
-WS   /schumann/stream         — WebSocket; emits JSON state every N seconds
+Reference: NEXUS_UNIVERSAL_OS.md Domain 1.6
 """
-
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Optional
-
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from schumann.engine import SchumannEngine
 
-from .engine import EngineConfig, SchumannEngine
-from .models import SchumannState
+logger = logging.getLogger("schumann.router")
+schumann_router = APIRouter(prefix="/schumann", tags=["schumann"],
+                            responses={404: {"description": "Schumann endpoint not found"}})
 
-logger = logging.getLogger(__name__)
-
-schumann_router = APIRouter(tags=["schumann"])
-
-# Module-level singleton; call init_engine() from app lifespan.
-_engine: Optional[SchumannEngine] = None
+_schumann_engine: SchumannEngine | None = None
 
 
-# ---------------------------------------------------------------------------
-# Lifecycle helpers  (called from app startup / shutdown)
-# ---------------------------------------------------------------------------
-
-async def init_engine(config: Optional[EngineConfig] = None) -> None:
-    """Initialise and start the global SchumannEngine."""
-    global _engine
-    cfg     = config or EngineConfig()
-    _engine = SchumannEngine(cfg)
-    await _engine.start()
-    logger.info("SchumannEngine initialised via router.")
+def _get_engine() -> SchumannEngine:
+    if _schumann_engine is None:
+        raise RuntimeError("SchumannEngine not initialised.")
+    return _schumann_engine
 
 
-async def shutdown_engine() -> None:
-    global _engine
-    if _engine:
-        await _engine.stop()
-        _engine = None
-
-
-# ---------------------------------------------------------------------------
-# REST endpoints
-# ---------------------------------------------------------------------------
-
-@schumann_router.get("/state")
-async def get_state() -> JSONResponse:
-    """
-    Return the latest SchumannState snapshot.
-
-    Returns 503 if the engine has no state yet (still warming up).
-    """
-    if _engine is None:
-        return JSONResponse(status_code=503, content={"error": "engine not started"})
-    state = await _engine.tick()
-    return JSONResponse(content=_state_to_dict(state))
+def init_schumann_engine(engine: SchumannEngine) -> None:
+    global _schumann_engine
+    _schumann_engine = engine
+    logger.info("SchumannEngine router initialised.")
 
 
 @schumann_router.get("/health")
-async def health() -> JSONResponse:
-    ok = _engine is not None
-    return JSONResponse(
-        status_code=200 if ok else 503,
-        content={"ok": ok, "source": _engine.config.source if ok else None},
-    )
+async def schumann_health(engine: SchumannEngine = Depends(_get_engine)) -> JSONResponse:
+    return JSONResponse(content={"engine": "schumann", "status": "online"})
 
 
-# ---------------------------------------------------------------------------
-# WebSocket stream
-# ---------------------------------------------------------------------------
-
-@schumann_router.websocket("/stream")
-async def ws_stream(websocket: WebSocket) -> None:
-    """
-    WebSocket endpoint — pushes SchumannState JSON every 5 seconds.
-
-    Clients can simply connect and read; no messages need to be sent.
-    The connection is closed gracefully if the engine shuts down.
-    """
-    await websocket.accept()
-    logger.info("WebSocket client connected to /schumann/stream")
-    try:
-        while True:
-            if _engine is None:
-                await websocket.send_json({"error": "engine not running"})
-                await asyncio.sleep(5)
-                continue
-            state = await _engine.tick()
-            await websocket.send_json(_state_to_dict(state))
-            await asyncio.sleep(5)
-    except WebSocketDisconnect:
-        logger.info("WebSocket client disconnected from /schumann/stream")
-    except Exception:
-        logger.exception("WebSocket /schumann/stream error")
-
-
-# ---------------------------------------------------------------------------
-# Serialisation helper
-# ---------------------------------------------------------------------------
-
-def _state_to_dict(state: SchumannState) -> dict:
-    return {
-        "timestamp"            : state.timestamp.isoformat(),
-        "fundamental_hz"       : round(state.fundamental_hz, 4),
-        "harmonic_power"       : {k: round(v, 4) for k, v in state.harmonic_power.items()},
-        "geomagnetic_activity" : round(state.geomagnetic_activity, 4),
-        "signal_quality"       : round(state.signal_quality, 4),
-        "disturbance_level"    : state.disturbance_level.value,
-        "alignment_score"      : round(state.alignment_score, 4),
-        "confidence"           : round(state.confidence, 4),
-        "is_trusted"           : state.is_trusted,
-        "source_ids"           : state.source_ids,
-        "baseline_hz"          : round(state.baseline_hz, 4),
-        "deviation_sigma"      : round(state.deviation_sigma, 4),
-        "experimental_flags"   : state.experimental_flags,
-    }
+@schumann_router.get("/latest")
+async def schumann_latest(engine: SchumannEngine = Depends(_get_engine)) -> JSONResponse:
+    reading = engine.latest
+    if reading is None:
+        return JSONResponse(content={"engine": "schumann", "reading": None,
+                                      "note": "No reading available yet."})
+    return JSONResponse(content={
+        "engine": "schumann",
+        "frequency_hz": reading.frequency_hz,
+        "amplitude_pT": reading.amplitude_pT,
+        "coherence": reading.coherence,
+        "anomaly": reading.anomaly,
+        "timestamp": reading.timestamp.isoformat(),
+    })
