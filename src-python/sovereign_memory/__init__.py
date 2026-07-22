@@ -1,20 +1,22 @@
-"""
-sovereign_memory
-================
-Root package for the NEXUS Sovereign Memory layer.
+# Copyright (c) 2026 Kyle Alexander Steen (R0GV3 The Alchemist). All Rights Reserved.
+# NEXUS Sovereign Memory — Phase E: operational
 
-Provides persistent episodic, semantic, and biometric memory for GAIA-OS.
-All memory operations are sovereign — no data leaves the local node without
-explicit capability-token authorisation.
+from .consent import ConsentDenied, ConsentGate, ConsentScope, ConsentDecision, ConsentRecord
+from .engine import (
+    SovereignMemory,
+    EpisodicRecord,
+    SemanticFact,
+    BiometricSnapshot,
+)
 
-Architecture reference : NEXUS_UNIVERSAL_OS.md  Domain 2.1
-GAIAN law              : GAIAN_LAWS.md          Law II  Memory Sovereignty
-Ethics reference       : ETHICS.md              Commitment 2  Data Sovereignty
-"""
-from __future__ import annotations
-
-__version__ = "0.1.0"
-
-from sovereign_memory.engine import SovereignMemory
-
-__all__ = ["SovereignMemory"]
+__all__ = [
+    "ConsentGate",
+    "ConsentScope",
+    "ConsentDecision",
+    "ConsentRecord",
+    "ConsentDenied",
+    "SovereignMemory",
+    "EpisodicRecord",
+    "SemanticFact",
+    "BiometricSnapshot",
+]
