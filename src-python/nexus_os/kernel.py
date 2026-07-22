@@ -1,133 +1,186 @@
 """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  NEXUS — The Universal Autonomous Intelligence Architecture
-  Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist
-  Email    : xxkylesteenxx@outlook.com
-  License  : All Rights Reserved © 2026 Kyle Steen
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+nexus_os.kernel — NEXUS Microkernel
+=====================================
 
-kernel.py — NEXUS Microkernel.
+The NexusKernel is the minimal, formally-inspired microkernel at the root
+of all NEXUS OS instances. Its sole responsibilities are:
 
-Implements the capability-enforced syscall dispatch loop, process table,
-and CapabilityToken issuance/validation.
+  1. Capability minting and revocation
+  2. Process lifecycle (spawn, terminate, reap)
+  3. Delegation to RTScheduler and MemoryBroker
+  4. Kernel-level audit logging of all privileged operations
+
+No policy is encoded here. Policy lives in userspace servers and in the
+governance layer (GOVERNANCE.md). The kernel provides mechanisms only.
+
+Design references:
+  - seL4 microkernel: capability-based access control, formal verification
+  - MINIX 3: reincarnation server pattern for process recovery
+  - NEXUS_UNIVERSAL_OS.md § Domain 1.1 — Kernel Design Principles
+
+Ethics reference:  ETHICS.md § Prohibition 6 — No Unaudited Privilege Escalation
+GAIAN law:         GAIAN_LAWS.md § Law III — No Silent Override
 """
 
 from __future__ import annotations
+
+import logging
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum, auto
-from typing import Callable, Dict, List, Optional, Set
-from uuid import UUID, uuid4
-import time
+from typing import FrozenSet, Optional
+
+logger = logging.getLogger("nexus_os.kernel")
 
 
-class SyscallType(Enum):
-    SPAWN = auto()
-    KILL = auto()
-    IPC_SEND = auto()
-    IPC_RECV = auto()
-    MEM_ALLOC = auto()
-    MEM_FREE = auto()
-    HAL_ACCESS = auto()
-    SCHED_YIELD = auto()
-
+# ── CapabilityToken ───────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
 class CapabilityToken:
     """
-    Unforgeable capability token issued by the kernel.
-    Grants a specific syscall right to a specific process.
+    An unforgeable, immutable token representing the right to perform a
+    specific set of operations on a specific kernel object.
+
+    CapabilityTokens are never constructed directly by callers. They are
+    minted exclusively by NexusKernel.mint_capability() and are bound to
+    a single object_id. Possession of a token IS the permission — no
+    separate ACL lookup is required.
+
+    Immutability is enforced by frozen=True. Tokens can be passed between
+    processes only via explicit kernel-mediated delegation.
+
+    Reference: seL4 capability derivation; NEXUS_UNIVERSAL_OS.md § 1.1
     """
-    token_id: UUID
-    process_id: UUID
-    allowed_syscalls: frozenset
-    expires_at: float
+    token_id:      str
+    object_id:     str
+    permitted_ops: FrozenSet[str]
+    issuer:        str
+    issued_at:     datetime
+    expiry:        Optional[datetime] = None
 
-    def is_valid(self) -> bool:
-        if self.expires_at == 0.0:
-            return True
-        return time.time() < self.expires_at
+    def allows(self, operation: str) -> bool:
+        """Return True if this token permits the named operation."""
+        return operation in self.permitted_ops
 
-    def allows(self, syscall: SyscallType) -> bool:
-        return syscall in self.allowed_syscalls and self.is_valid()
+    def is_expired(self) -> bool:
+        """Return True if this token has passed its expiry time."""
+        if self.expiry is None:
+            return False
+        return datetime.now(timezone.utc) > self.expiry
+
+    def __str__(self) -> str:
+        return (
+            f"CapabilityToken(object={self.object_id}, "
+            f"ops={sorted(self.permitted_ops)}, "
+            f"issuer={self.issuer})"
+        )
+
+
+# ── ProcessDescriptor ─────────────────────────────────────────────────────────
+
+class ProcessState(Enum):
+    """Lifecycle states for a NEXUS OS process."""
+    NASCENT    = auto()
+    RUNNING    = auto()
+    SUSPENDED  = auto()
+    TERMINATED = auto()
+    ZOMBIE     = auto()
 
 
 @dataclass
 class ProcessDescriptor:
-    """Descriptor for a process managed by the NEXUS kernel."""
-    process_id: UUID = field(default_factory=uuid4)
-    name: str = "unnamed"
-    priority: int = 0
-    tokens: List[CapabilityToken] = field(default_factory=list)
-    state: str = "READY"  # READY | RUNNING | BLOCKED | ZOMBIE
+    """
+    Kernel-side descriptor for a running NEXUS OS process.
 
-    def has_capability(self, syscall: SyscallType) -> bool:
-        return any(t.allows(syscall) for t in self.tokens)
+    Each process is identified by a unique pid (UUID4 string). The kernel
+    maintains a registry of all ProcessDescriptors. No process can acquire
+    capabilities without a valid ProcessDescriptor in the kernel registry.
 
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 1.1 — Process Model
+    """
+    pid:        str              = field(default_factory=lambda: str(uuid.uuid4()))
+    name:       str              = "unnamed-process"
+    state:      ProcessState     = ProcessState.NASCENT
+    owner_id:   str              = "nexus-kernel"
+    created_at: datetime         = field(default_factory=lambda: datetime.now(timezone.utc))
+    tokens:     list[CapabilityToken] = field(default_factory=list)
+
+    def has_capability(self, object_id: str, operation: str) -> bool:
+        """Check whether this process holds a valid, non-expired capability token."""
+        for token in self.tokens:
+            if (
+                token.object_id == object_id
+                and token.allows(operation)
+                and not token.is_expired()
+            ):
+                return True
+        return False
+
+
+# ── NexusKernel ──────────────────────────────────────────────────────────────
 
 class NexusKernel:
     """
-    NEXUS Microkernel — capability-enforced syscall dispatcher.
+    The NEXUS Universal Operating System microkernel.
 
-    The kernel maintains a process table and dispatches syscalls only
-    when the calling process holds a valid CapabilityToken for that call.
+    Provides minimal privileged services:
+      - Capability minting and revocation
+      - Process spawn, suspend, terminate, and reap
+      - Audit logging of all privileged operations
+
+    The kernel does NOT implement scheduling, memory allocation, or IPC
+    directly. These are delegated to RTScheduler, MemoryBroker, and the
+    Channel/Message IPC system respectively.
+
+    Reference: seL4 design philosophy; NEXUS_UNIVERSAL_OS.md § Domain 1
     """
 
     def __init__(self) -> None:
-        self._processes: Dict[UUID, ProcessDescriptor] = {}
-        self._handlers: Dict[SyscallType, Callable] = {}
-        self._running = False
-
-    def spawn(self, name: str, allowed_syscalls: Set[SyscallType],
-              priority: int = 0) -> ProcessDescriptor:
-        """Spawn a new process and issue its initial CapabilityToken."""
-        proc = ProcessDescriptor(name=name, priority=priority)
-        token = CapabilityToken(
-            token_id=uuid4(),
-            process_id=proc.process_id,
-            allowed_syscalls=frozenset(allowed_syscalls),
-            expires_at=0.0,
-        )
-        proc.tokens.append(token)
-        self._processes[proc.process_id] = proc
-        return proc
-
-    def kill(self, process_id: UUID) -> None:
-        proc = self._processes.get(process_id)
-        if proc:
-            proc.state = "ZOMBIE"
-            self._processes.pop(process_id)
-
-    def register_handler(self, syscall: SyscallType, handler: Callable) -> None:
-        self._handlers[syscall] = handler
-
-    def dispatch(self, process_id: UUID, syscall: SyscallType,
-                 **kwargs) -> Optional[object]:
-        """
-        Validate CapabilityToken then invoke the registered handler.
-        Raises PermissionError on capability violation.
-        """
-        proc = self._processes.get(process_id)
-        if proc is None:
-            raise LookupError(f"Unknown process: {process_id}")
-        if not proc.has_capability(syscall):
-            raise PermissionError(
-                f"Process '{proc.name}' lacks capability for {syscall.name}")
-        handler = self._handlers.get(syscall)
-        if handler is None:
-            raise NotImplementedError(f"No handler for {syscall.name}")
-        return handler(process_id=process_id, **kwargs)
+        self._processes: dict[str, ProcessDescriptor] = {}
+        self._booted: bool = False
+        logger.info("NexusKernel instance created (not yet booted).")
 
     def boot(self) -> None:
-        self._running = True
+        """
+        Execute the NEXUS kernel boot sequence.
 
-    def halt(self) -> None:
-        self._running = False
-        self._processes.clear()
+        Raises:
+            RuntimeError: If boot() is called more than once.
 
-    @property
-    def running(self) -> bool:
-        return self._running
+        Reference: NEXUS_UNIVERSAL_OS.md § Domain 1 — Boot Sequence
+        """
+        raise NotImplementedError(
+            "NexusKernel.boot() — kernel boot sequence not yet implemented. "
+            "Reference: NEXUS_UNIVERSAL_OS.md § Domain 1 — Boot Sequence. "
+            "Expected: initialize process registry, register PID-0 (kernel process), "
+            "confirm HALRegistry populated, and set self._booted = True."
+        )
 
-    def list_processes(self) -> List[ProcessDescriptor]:
-        return list(self._processes.values())
+    def mint_capability(
+        self,
+        object_id: str,
+        permitted_ops: FrozenSet[str],
+        issuer_pid: str,
+        expiry: Optional[datetime] = None,
+    ) -> CapabilityToken:
+        """
+        Mint a new CapabilityToken for the given object and operations.
+
+        Reference: seL4 CNode.Mint; NEXUS_UNIVERSAL_OS.md § 1.1
+        """
+        raise NotImplementedError(
+            "NexusKernel.mint_capability() — capability minting not yet implemented. "
+            "Expected: validate issuer_pid is in process registry, construct "
+            "CapabilityToken(token_id=uuid4(), ...), log audit event, return token."
+        )
+
+    def spawn(self, name: str, owner_id: str) -> ProcessDescriptor:
+        """
+        Spawn a new NEXUS OS process and register it with the kernel.
+
+        Reference: NEXUS_UNIVERSAL_OS.md § Domain 1.1 — Process Lifecycle
+        """
+        raise NotImplementedError(
+            "NexusKernel.spawn() — process spawning not yet implemented. "
+            "Expected: cre
