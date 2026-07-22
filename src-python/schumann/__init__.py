@@ -1,21 +1,22 @@
-"""schumann
+# Copyright (c) 2026 Kyle Alexander Steen (R0GV3 The Alchemist). All Rights Reserved.
+# NEXUS Schumann Sync Engine — Phase E: operational
 
-NEXUS Schumann Resonance Monitor
+from .sync_pulse import (
+    SyncPulse,
+    SyncReading,
+    SyncState,
+    SimulatedSchumannSensor,
+    SCHUMANN_FUNDAMENTAL_HZ,
+    SCHUMANN_HARMONICS_HZ,
+    ALIGNMENT_TOLERANCE_HZ,
+)
 
-Monitors Earth's ELF (Extremely Low Frequency) Schumann resonances,
-primarily 7.83 Hz, and emits SyncPulse events that synchronise GAIA's
-rhythmic processes with the planetary electromagnetic field.
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 4.1 - Schumann Monitor
-Research reference:
-    Schumann 1952              - original ELF cavity resonance theory
-    NickolasRage/schumann-experiment (GitHub) - Python SDR reference impl
-    mhoststetter/sdr (PyPI)    - Python SDR toolkit
-"""
-from __future__ import annotations
-
-from schumann.engine import SchumannEngine, SyncPulse, EarthFieldReading
-from schumann.router import schumann_router, init_schumann_engine
-
-__all__ = ["SchumannEngine", "SyncPulse", "EarthFieldReading", "schumann_router", "init_schumann_engine"]
+__all__ = [
+    "SyncPulse",
+    "SyncReading",
+    "SyncState",
+    "SimulatedSchumannSensor",
+    "SCHUMANN_FUNDAMENTAL_HZ",
+    "SCHUMANN_HARMONICS_HZ",
+    "ALIGNMENT_TOLERANCE_HZ",
+]
