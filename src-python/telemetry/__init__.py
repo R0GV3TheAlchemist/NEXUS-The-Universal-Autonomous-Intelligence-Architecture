@@ -1,13 +1,20 @@
-"""telemetry — local src-python mirror of sidecar.telemetry
+"""telemetry
 
-Provides a thin re-export so modules inside src-python can use::
+NEXUS Telemetry Collector
 
-    from telemetry import TelemetryCollector
+Provides the TelemetryCollector class used by src-python/main.py
+via the sidecar telemetry integration. This module acts as the
+local telemetry wrapper for NEXUS, forwarding structured events
+to the configured backend (Prometheus, OpenTelemetry, or logging).
 
-without needing a fully qualified ``sidecar.*`` path. Delegates all
-implementation to ``sidecar.telemetry.telemetry_collector``.
+Architecture reference:
+    NEXUS_UNIVERSAL_OS.md  Domain 1.7 - Telemetry
+Integration:
+    main.py imports: from sidecar.telemetry import TelemetryCollector
+    This module provides the local stub until sidecar is wired.
 """
 from __future__ import annotations
-from sidecar.telemetry.telemetry_collector import TelemetryCollector, TelemetryEvent, TelemetryConfig
 
-__all__ = ["TelemetryCollector", "TelemetryEvent", "TelemetryConfig"]
+from telemetry.collector import TelemetryCollector
+
+__all__ = ["TelemetryCollector"]

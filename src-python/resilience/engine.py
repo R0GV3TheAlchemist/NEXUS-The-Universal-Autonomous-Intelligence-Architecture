@@ -1,234 +1,169 @@
-"""resilience.engine — Health monitoring and auto-restart stubs
+"""resilience.engine
 
-Design intent
--------------
-The resilience module is the operational recovery layer for NEXUS.
-It watches health signals from all running modules and applies
-configured policies (grace periods, restart budgets, escalation
-to CrisisEngine) when a module degrades or fails.
+NEXUS Resilience Engine
 
-This mirrors the MINIX 3 reincarnation server pattern:
-  - A watchdog process monitors all services.
-  - On failure, it kills and restarts the offending service.
-  - After N restarts within a window, it escalates to a supervisor.
+Provides watchdog monitoring and auto-restart for NEXUS modules,
+modelled after the MINIX 3 reincarnation server. Works alongside
+EmrysEngine for intervention coordination.
 
-For NEXUS, the equivalent chain is::
+Phase C: stubs only.
+Phase D: implement watchdog timer loop and restart orchestration.
 
-    HealthMonitor -> AutoRestart -> CrisisEngine (escalation)
-
-Phase B scope
--------------
-- HealthMonitor.watch(), report(), status() are stubbed.
-- AutoRestart.attempt_restart() is stubbed.
-- Integration with EmrysEngine and CrisisEngine deferred to Phase C.
-
-References
-----------
-- MINIX 3 reincarnation server (Herder et al., 2006).
-- emrysengine: the higher-level resilience orchestrator.
-- core.obs.audit_store: every restart attempt should be audited.
+Reference:
+    MINIX 3 reincarnation server - driver auto-restart
+    EmrysEngine                  - health signal ingestion
+    NEXUS_UNIVERSAL_OS.md Domain 2.11
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, auto
-from typing import Any, Callable, Mapping, Sequence
+from typing import Callable, Mapping, Optional, Sequence
 
+logger = logging.getLogger("resilience.engine")
 
-# ---------------------------------------------------------------------------
-# Public types
-# ---------------------------------------------------------------------------
 
 class ModuleStatus(Enum):
     """Operational status of a monitored module."""
-    HEALTHY = auto()
-    DEGRADED = auto()
-    FAILED = auto()
-    RESTARTING = auto()
-    UNKNOWN = auto()
+    HEALTHY = auto()    # Responding within deadline
+    DEGRADED = auto()   # Slow or partial responses
+    FAILED = auto()     # No response / exception raised
+    RESTARTING = auto() # Restart in progress
 
 
 @dataclass
-class HealthSignal:
-    """Health event emitted by a monitored module.
+class ModuleHealth:
+    """Health record for a monitored module.
 
-    Parameters
-    ----------
-    source:
-        Module identifier (e.g. ``"schumann"``, ``"mesh"``).
-    status:
-        Current ``ModuleStatus``.
-    message:
-        Human-readable description of the health event.
-    metrics:
-        Optional structured metrics (CPU %, latency ms, error count, etc.).
-    timestamp:
-        UTC timestamp of the signal.
+    Fields:
+        module_id:       Identifier of the module.
+        status:          Current ModuleStatus.
+        last_heartbeat:  UTC time of last successful heartbeat.
+        restart_count:   Number of restarts since process start.
+        error_message:   Last error message (if any).
     """
-    source: str
-    status: ModuleStatus
-    message: str = ""
-    metrics: Mapping[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
+    module_id: str
+    status: ModuleStatus = ModuleStatus.HEALTHY
+    last_heartbeat: Optional[datetime] = None
+    restart_count: int = 0
+    error_message: Optional[str] = None
 
 
 @dataclass
-class ResilienceConfig:
-    """Configuration for HealthMonitor and AutoRestart.
+class RestartPolicy:
+    """Policy governing automatic module restarts.
 
-    Parameters
-    ----------
-    watch_interval_s:
-        How often (seconds) to poll registered health callbacks.
-    max_restart_attempts:
-        Number of restart attempts before escalating to CrisisEngine.
-    restart_window_s:
-        Rolling time window (seconds) over which restart attempts
-        are counted.
-    critical_modules:
-        Module identifiers whose FAILED status immediately triggers
-        escalation without waiting for restart budget exhaustion.
+    Fields:
+        module_id:        Target module.
+        max_restarts:     Maximum restarts before giving up (escalate to EmrysEngine).
+        backoff_sec:      Wait time between restart attempts.
+        escalate_after:   Number of restarts after which CrisisEngine is notified.
     """
-    watch_interval_s: float = 10.0
-    max_restart_attempts: int = 3
-    restart_window_s: float = 60.0
-    critical_modules: list[str] = field(default_factory=list)
+    module_id: str
+    max_restarts: int = 3
+    backoff_sec: float = 5.0
+    escalate_after: int = 2
 
-
-# ---------------------------------------------------------------------------
-# HealthMonitor
-# ---------------------------------------------------------------------------
 
 class HealthMonitor:
-    """Monitors registered modules and dispatches recovery actions.
+    """Watchdog health monitor for a single NEXUS module.
 
-    Usage
-    -----
-    .. code-block:: python
-
-        from resilience import HealthMonitor, ResilienceConfig
-
-        monitor = HealthMonitor(config=ResilienceConfig())
-        monitor.watch("schumann", probe=schumann_engine.health_check)
-        monitor.report(HealthSignal(source="mesh", status=ModuleStatus.DEGRADED))
+    Tracks heartbeats and declares FAILED if deadline is missed.
+    Modelled after MINIX 3 reincarnation server watchdog timers.
     """
 
-    def __init__(self, config: ResilienceConfig | None = None) -> None:
-        self._config = config or ResilienceConfig()
-        self._probes: dict[str, Callable[[], ModuleStatus]] = {}
-        self._status: dict[str, ModuleStatus] = {}
+    def __init__(self, module_id: str, deadline_sec: float = 30.0) -> None:
+        self.module_id = module_id
+        self.deadline_sec = deadline_sec
+        self._health = ModuleHealth(module_id=module_id)
+        logger.debug("HealthMonitor: watching module '%s' (deadline=%.1fs).",
+                     module_id, deadline_sec)
 
-    def watch(
+    def heartbeat(self) -> None:
+        """Record a successful heartbeat from the monitored module."""
+        self._health.last_heartbeat = datetime.now(timezone.utc)
+        if self._health.status != ModuleStatus.HEALTHY:
+            self._health.status = ModuleStatus.HEALTHY
+            logger.info("HealthMonitor: module '%s' recovered.", self.module_id)
+
+    def check(self) -> ModuleHealth:
+        """Check module health against deadline.
+
+        Returns:
+            Current ModuleHealth.
+
+        Raises:
+            NotImplementedError: Full deadline check not yet implemented.
+                Expected: compare now() - last_heartbeat against deadline_sec;
+                set status FAILED if exceeded.
+        """
+        raise NotImplementedError(
+            "HealthMonitor.check() not implemented. "
+            "Expected: compare now() - last_heartbeat to deadline_sec; "
+            "set ModuleStatus.FAILED if deadline exceeded."
+        )
+
+
+class ResilienceEngine:
+    """Coordinates health monitoring and restarts across NEXUS modules.
+
+    Manages a registry of HealthMonitors and RestartPolicies.
+    Triggers restarts via registered restart_fn callables.
+    Escalates to EmrysEngine/CrisisEngine when max_restarts is exceeded.
+
+    Reference:
+        MINIX 3 reincarnation server.
+        NEXUS_UNIVERSAL_OS.md Domain 2.11.
+    """
+
+    def __init__(self) -> None:
+        self._monitors: dict[str, HealthMonitor] = {}
+        self._policies: dict[str, RestartPolicy] = {}
+        self._restart_fns: dict[str, Callable[[], None]] = {}
+        logger.info("ResilienceEngine initialised.")
+
+    def register(
         self,
         module_id: str,
-        probe: Callable[[], ModuleStatus] | None = None,
-    ) -> None:
+        deadline_sec: float = 30.0,
+        policy: Optional[RestartPolicy] = None,
+        restart_fn: Optional[Callable[[], None]] = None,
+    ) -> HealthMonitor:
         """Register a module for health monitoring.
 
         Args:
-            module_id: Unique identifier for the module.
-            probe:     Optional callable that returns the module's current
-                       ``ModuleStatus``. If omitted, the module must push
-                       signals via ``report()``.
-
-        Raises:
-            NotImplementedError: Always in Phase B (polling loop not running).
-        """
-        self._probes[module_id] = probe or (lambda: ModuleStatus.UNKNOWN)
-        self._status[module_id] = ModuleStatus.UNKNOWN
-        raise NotImplementedError(
-            "HealthMonitor.watch is not yet implemented. "
-            "Expected: register probe and start polling loop for "
-            f"{module_id!r} at interval {self._config.watch_interval_s}s."
-        )
-
-    def report(self, signal: HealthSignal) -> None:
-        """Accept a pushed health signal from a module.
-
-        Intended implementation
-        -----------------------
-        - Update ``self._status[signal.source]``.
-        - If status is FAILED and source is in
-          ``config.critical_modules``, immediately escalate.
-        - Otherwise, pass to ``AutoRestart`` if status is not HEALTHY.
-
-        Args:
-            signal: ``HealthSignal`` from the monitored module.
-
-        Raises:
-            NotImplementedError: Always in Phase B.
-        """
-        raise NotImplementedError(
-            "HealthMonitor.report is not yet implemented. "
-            "Expected: update status, trigger AutoRestart or escalation "
-            f"based on signal.status={signal.status!r}."
-        )
-
-    def status(self, module_id: str) -> ModuleStatus:
-        """Return the last known status of a monitored module.
-
-        Args:
-            module_id: Module identifier.
+            module_id:    Module identifier.
+            deadline_sec: Heartbeat deadline in seconds.
+            policy:       Optional RestartPolicy.
+            restart_fn:   Optional callable to restart the module.
 
         Returns:
-            ``ModuleStatus.UNKNOWN`` if the module is not registered.
+            The created HealthMonitor.
         """
-        return self._status.get(module_id, ModuleStatus.UNKNOWN)
+        monitor = HealthMonitor(module_id=module_id, deadline_sec=deadline_sec)
+        self._monitors[module_id] = monitor
+        if policy:
+            self._policies[module_id] = policy
+        if restart_fn:
+            self._restart_fns[module_id] = restart_fn
+        return monitor
 
-
-# ---------------------------------------------------------------------------
-# AutoRestart
-# ---------------------------------------------------------------------------
-
-class AutoRestart:
-    """Restart policy engine for failed NEXUS modules.
-
-    Applies a configurable restart budget within a rolling time window.
-    When the budget is exhausted, escalates to CrisisEngine.
-
-    Phase B — ``attempt_restart()`` is stubbed.
-    """
-
-    def __init__(self, config: ResilienceConfig | None = None) -> None:
-        self._config = config or ResilienceConfig()
-        self._restart_log: dict[str, list[datetime]] = {}
-
-    def attempt_restart(
-        self,
-        module_id: str,
-        restart_fn: Callable[[], None],
-    ) -> bool:
-        """Attempt to restart a failed module within the restart budget.
-
-        Intended implementation
-        -----------------------
-        1. Count restart attempts for ``module_id`` within
-           ``config.restart_window_s``.
-        2. If count < ``config.max_restart_attempts``:
-           a. Call ``restart_fn()``.
-           b. Log attempt timestamp.
-           c. Return ``True``.
-        3. If budget exhausted:
-           a. Log to ``core.obs.audit_store``.
-           b. Escalate to CrisisEngine.
-           c. Return ``False``.
-
-        Args:
-            module_id:  Module to restart.
-            restart_fn: Zero-argument callable that performs the restart.
+    def run_cycle(self) -> Sequence[ModuleHealth]:
+        """Run one health-check cycle across all registered modules.
 
         Returns:
-            ``True`` if restart was attempted, ``False`` if budget
-            exhausted and escalation triggered.
+            List of ModuleHealth for all monitored modules.
 
         Raises:
-            NotImplementedError: Always in Phase B.
+            NotImplementedError: Always in Phase C.
+                Expected: call monitor.check() for each registered module;
+                trigger restart_fn if FAILED and RestartPolicy allows;
+                escalate to EmrysEngine after max_restarts.
         """
         raise NotImplementedError(
-            "AutoRestart.attempt_restart is not yet implemented. "
-            f"Expected: check restart budget for {module_id!r}, call "
-            "restart_fn() if within budget, else escalate to CrisisEngine."
+            "ResilienceEngine.run_cycle() not implemented. "
+            "Expected: check all monitors, trigger restarts per RestartPolicy, "
+            "escalate to EmrysEngine/CrisisEngine when max_restarts exceeded."
         )

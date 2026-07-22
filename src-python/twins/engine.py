@@ -1,254 +1,167 @@
-"""twins.engine — Digital twin and consent gate stubs
+"""twins.engine
 
-Design intent
--------------
-Every physical node, agent, or sensor in the NEXUS planetary mesh can
-have a corresponding ``DigitalTwin`` — a live, queryable representation
-of its state, capabilities, and history.
+Digital Twin Coordination Engine
 
-ConsentGate enforces that no twin's data is shared without an explicit
-consent decision, aligning with GAIAN Coexistence Laws and the
-Sovereignty doctrine.
+Provides typed stubs for GAIA's digital twin layer: twin descriptors,
+synchronisation plans, consent gates, and the orchestrator that manages
+twin lifecycles and state synchronisation.
 
-Phase C scope
--------------
-- ``DigitalTwin`` property read/write and sync are stubbed.
-- ``ConsentGate.check()`` always raises ``NotImplementedError``.
-- ``TwinRegistry.register()`` / ``lookup()`` are stubbed.
+Phase C: all methods raise NotImplementedError.
+Phase D: implement against DIGITALTWINS.md specification.
 
-Future integration
-------------------
-- Eclipse Ditto REST API for twin lifecycle management.
-- W3C Thing Description for semantic capability advertisement.
-- ``core.obs.audit_store.AuditStore``: every consent decision audited.
+Research reference:
+    Azure Digital Twins   - twin graph models
+    Eclipse Ditto         - state channels and sync
+    W3C Web of Things     - consent and provenance
+    GAIAN_LAWS.md Law II  - Right to Forget (consent-driven deletion)
 """
 from __future__ import annotations
 
+import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, auto
-from typing import Any, Mapping
-import uuid
+from typing import Any, Mapping, Optional, Sequence
+
+logger = logging.getLogger("twins.engine")
 
 
-# ---------------------------------------------------------------------------
-# Public types
-# ---------------------------------------------------------------------------
-
-class ConsentDecision(Enum):
-    """Result of a consent gate evaluation."""
-    GRANTED = auto()
-    DENIED = auto()
-    PENDING = auto()
+class TwinStatus(Enum):
+    """Lifecycle status of a digital twin."""
+    PENDING = auto()    # Registered but not yet synchronised
+    ACTIVE = auto()     # Live and synchronised
+    DEGRADED = auto()   # Sync lagging or partial
+    ARCHIVED = auto()   # Retired, read-only
 
 
 @dataclass
-class TwinConfig:
-    """Configuration for a DigitalTwin instance.
+class TwinSpec:
+    """Descriptor for a NEXUS digital twin.
 
-    Parameters
-    ----------
-    twin_id:
-        Unique identifier for this twin. Auto-generated if omitted.
-    entity_type:
-        Semantic type of the represented entity
-        (e.g. ``"agent"``, ``"sensor"``, ``"node"``, ``"human"``).
-    owner:
-        Identity of the entity that owns / controls this twin.
-    consent_required:
-        Whether ConsentGate must be checked before any data read.
+    Fields:
+        twin_id:      UUID4 identifier.
+        name:         Human-readable name (e.g., 'GAIA-Node-Alpha').
+        model_id:     Reference to the DTDL or WoT model definition.
+        owner:        Owning entity identifier.
+        properties:   Initial twin property values.
+        created_at:   UTC creation timestamp.
     """
+    name: str
+    model_id: str
+    owner: str
     twin_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    entity_type: str = "agent"
-    owner: str = "unknown"
-    consent_required: bool = True
+    properties: Mapping[str, Any] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
 class TwinState:
-    """Point-in-time snapshot of a DigitalTwin's properties.
+    """Current state snapshot of a digital twin.
 
-    Parameters
-    ----------
-    properties:
-        Key-value map of twin properties (JSON-serialisable).
-    updated_at:
-        UTC timestamp of the last state update.
-    version:
-        Monotonically increasing version counter.
+    Fields:
+        twin_id:       Reference to the TwinSpec.
+        properties:    Current property values.
+        status:        TwinStatus lifecycle state.
+        last_sync:     UTC timestamp of last successful sync.
     """
+    twin_id: str
     properties: Mapping[str, Any] = field(default_factory=dict)
-    updated_at: datetime = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
-    version: int = 0
+    status: TwinStatus = TwinStatus.PENDING
+    last_sync: Optional[datetime] = None
 
 
-# ---------------------------------------------------------------------------
-# DigitalTwin
-# ---------------------------------------------------------------------------
+@dataclass
+class SyncPlan:
+    """Plan for synchronising a digital twin with its physical counterpart.
 
-class DigitalTwin:
-    """Digital twin of a NEXUS entity.
-
-    Maintains a local property map and supports sync with a remote
-    twin service (Eclipse Ditto or equivalent).
-
-    Phase C — all sync/remote methods are stubbed.
+    Fields:
+        twin_id:         Target twin.
+        strategy:        Sync strategy name ('push', 'pull', 'bidirectional').
+        interval_sec:    Sync interval in seconds (0 = event-driven).
+        conflict_policy: What to do on state conflict ('physical-wins', 'twin-wins', 'merge').
     """
-
-    def __init__(self, config: TwinConfig | None = None) -> None:
-        self._config = config or TwinConfig()
-        self._state = TwinState()
-
-    @property
-    def twin_id(self) -> str:
-        return self._config.twin_id
-
-    def get_property(self, key: str) -> Any:
-        """Read a property from the local twin state.
-
-        Args:
-            key: Property name.
-
-        Returns:
-            Property value, or ``None`` if not set.
-        """
-        return self._state.properties.get(key)
-
-    def set_property(self, key: str, value: Any) -> None:
-        """Write a property to the local twin state.
-
-        Args:
-            key:   Property name.
-            value: JSON-serialisable value.
-
-        Note:
-            Increments ``state.version`` and updates ``state.updated_at``.
-        """
-        props = dict(self._state.properties)
-        props[key] = value
-        self._state = TwinState(
-            properties=props,
-            version=self._state.version + 1,
-        )
-
-    def sync(self) -> None:
-        """Synchronise local state with the remote twin service.
-
-        Intended implementation
-        -----------------------
-        - PUT /api/2/things/{twin_id} on Eclipse Ditto REST API.
-        - On conflict, apply last-writer-wins or CRDT merge.
-
-        Raises:
-            NotImplementedError: Always in Phase C.
-        """
-        raise NotImplementedError(
-            f"DigitalTwin.sync is not yet implemented for twin_id={self.twin_id!r}. "
-            "Expected: PUT /api/2/things/{twin_id} on Eclipse Ditto REST API."
-        )
-
-    def snapshot(self) -> TwinState:
-        """Return a copy of the current local twin state."""
-        return TwinState(
-            properties=dict(self._state.properties),
-            updated_at=self._state.updated_at,
-            version=self._state.version,
-        )
+    twin_id: str
+    strategy: str = "bidirectional"
+    interval_sec: float = 60.0
+    conflict_policy: str = "physical-wins"
 
 
-# ---------------------------------------------------------------------------
-# ConsentGate
-# ---------------------------------------------------------------------------
+@dataclass
+class TwinConsent:
+    """Consent record for twin data access and synchronisation.
 
-class ConsentGate:
-    """Enforces consent policies before twin data access.
+    Implements GAIAN_LAWS.md Law II (Right to Forget) and W3C WoT
+    consent model.
 
-    Every data read or share from a DigitalTwin with
-    ``config.consent_required=True`` must pass through ConsentGate.check()
-    before the data is released.
-
-    Phase C — check() is stubbed. Implementation will integrate with
-    SovereignMemory's ConsentStore and audit AuditStore.
+    Fields:
+        twin_id:         Twin this consent governs.
+        granted_to:      Entity receiving access.
+        permissions:     Set of permitted operations ('read', 'write', 'sync', 'delete').
+        expires_at:      UTC expiry (None = indefinite).
+        revoked:         True if consent has been explicitly revoked.
     """
-
-    def check(
-        self,
-        twin: DigitalTwin,
-        requestor: str,
-        operation: str = "read",
-    ) -> ConsentDecision:
-        """Evaluate a consent request for a twin data operation.
-
-        Intended implementation
-        -----------------------
-        1. Look up the twin's owner consent policy in SovereignMemory.
-        2. Evaluate against the requestor identity and operation type.
-        3. Log the decision to ``core.obs.audit_store`` (event type:
-           ``"consent.granted"`` or ``"consent.denied"``).
-        4. Return ``ConsentDecision.GRANTED`` or ``ConsentDecision.DENIED``.
-
-        Args:
-            twin:       The ``DigitalTwin`` being accessed.
-            requestor:  Identity of the requesting agent or module.
-            operation:  Operation type (``"read"``, ``"write"``,
-                        ``"share"``, ``"delete"``).
-
-        Returns:
-            ``ConsentDecision`` enum value.
-
-        Raises:
-            NotImplementedError: Always in Phase C.
-        """
-        raise NotImplementedError(
-            f"ConsentGate.check is not yet implemented for "
-            f"twin={twin.twin_id!r}, requestor={requestor!r}, "
-            f"operation={operation!r}. "
-            "Expected: evaluate consent policy from SovereignMemory and "
-            "audit the decision in AuditStore."
-        )
+    twin_id: str
+    granted_to: str
+    permissions: Sequence[str] = field(default_factory=list)
+    expires_at: Optional[datetime] = None
+    revoked: bool = False
 
 
-# ---------------------------------------------------------------------------
-# TwinRegistry
-# ---------------------------------------------------------------------------
+class TwinOrchestrator:
+    """Orchestrates digital twin registration, sync, and consent.
 
-class TwinRegistry:
-    """Registry of all active DigitalTwin instances.
+    Phase C: stubs only.
+    Phase D: implement against DIGITALTWINS.md.
 
-    Phase C — register() and lookup() are stubbed.
+    Reference:
+        Azure Digital Twins, Eclipse Ditto, W3C WoT.
+        GAIAN_LAWS.md Law II - Right to Forget.
     """
 
     def __init__(self) -> None:
-        self._twins: dict[str, DigitalTwin] = {}
+        self._twins: dict[str, TwinSpec] = {}
+        self._states: dict[str, TwinState] = {}
+        self._consents: list[TwinConsent] = []
+        logger.info("TwinOrchestrator initialised.")
 
-    def register(self, twin: DigitalTwin) -> None:
-        """Register a twin in the registry.
+    def register(self, spec: TwinSpec) -> str:
+        """Register a new digital twin."""
+        self._twins[spec.twin_id] = spec
+        self._states[spec.twin_id] = TwinState(twin_id=spec.twin_id)
+        logger.debug("TwinOrchestrator: registered twin '%s' (%s).", spec.name, spec.twin_id)
+        return spec.twin_id
 
-        Args:
-            twin: ``DigitalTwin`` to register.
+    def sync(self, twin_id: str, plan: SyncPlan) -> TwinState:
+        """Synchronise a twin against its physical counterpart.
 
         Raises:
             NotImplementedError: Always in Phase C.
+                Expected: apply SyncPlan strategy, resolve conflicts,
+                update TwinState, emit telemetry event.
         """
         raise NotImplementedError(
-            f"TwinRegistry.register is not yet implemented for "
-            f"twin_id={twin.twin_id!r}. "
-            "Expected: store twin, broadcast registration event on mesh."
+            "TwinOrchestrator.sync() not implemented. "
+            "Expected: apply SyncPlan, resolve conflicts per conflict_policy, "
+            "update TwinState.last_sync and properties."
         )
 
-    def lookup(self, twin_id: str) -> DigitalTwin | None:
-        """Retrieve a twin by ID.
+    def grant_consent(self, consent: TwinConsent) -> None:
+        """Grant data access/sync consent for a twin."""
+        self._consents.append(consent)
+        logger.debug("TwinOrchestrator: consent granted for twin '%s' to '%s'.",
+                     consent.twin_id, consent.granted_to)
 
-        Args:
-            twin_id: Twin identifier.
+    def revoke_consent(self, twin_id: str, granted_to: str) -> bool:
+        """Revoke consent for a twin and entity pair.
 
         Returns:
-            ``DigitalTwin`` if found, ``None`` otherwise.
+            True if a consent record was found and revoked.
         """
-        return self._twins.get(twin_id)
-
-    def all_twins(self) -> list[DigitalTwin]:
-        """Return all registered twins."""
-        return list(self._twins.values())
+        for c in self._consents:
+            if c.twin_id == twin_id and c.granted_to == granted_to and not c.revoked:
+                c.revoked = True
+                logger.info("TwinOrchestrator: consent revoked for twin '%s' / '%s'.",
+                            twin_id, granted_to)
+                return True
+        return False

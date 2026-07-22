@@ -1,20 +1,27 @@
-"""twins — Digital twin abstraction and consent model
+"""twins
 
-Provides:
-  - DigitalTwin: represents a digital twin of a physical or agent entity.
-  - ConsentGate: enforces consent policies before twin data is shared.
-  - TwinRegistry: registry of all active digital twins in the NEXUS mesh.
+NEXUS Digital Twin Coordination Layer
 
-Phase C — all methods are stubbed.
+Manages GAIA's digital twin descriptors, synchronisation plans,
+and consent gates. Provides the foundation for the DIGITALTWINS.md
+documentation and consent-provenance architecture.
 
-References
-----------
-- Azure Digital Twins / Eclipse Ditto: twin identity and property models.
-- W3C Web of Things: semantic description of twin capabilities.
-- Portable Agent Memory (arXiv 2605.11032): capability-based access
-  control for memory segments maps directly to ConsentGate.
+Architecture reference:
+    NEXUS_UNIVERSAL_OS.md  Domain 6.1 - Digital Twins
+    DIGITALTWINS.md        (to be authored in Phase D)
+Research reference:
+    Azure Digital Twins    - twin graph and model specs
+    Eclipse Ditto          - state/sync model
+    W3C Web of Things      - consent and provenance framework
 """
 from __future__ import annotations
-from twins.engine import DigitalTwin, ConsentGate, TwinRegistry, TwinConfig
 
-__all__ = ["DigitalTwin", "ConsentGate", "TwinRegistry", "TwinConfig"]
+from twins.engine import (
+    TwinSpec,
+    TwinState,
+    SyncPlan,
+    TwinConsent,
+    TwinOrchestrator,
+)
+
+__all__ = ["TwinSpec", "TwinState", "SyncPlan", "TwinConsent", "TwinOrchestrator"]

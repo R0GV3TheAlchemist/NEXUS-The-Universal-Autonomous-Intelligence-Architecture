@@ -1,21 +1,22 @@
-"""governance — Governance engine and policy evaluator
+"""governance
 
-Provides:
-  - GovernanceEngine: the central policy enforcement point for NEXUS.
-  - PolicyEvaluator: evaluates actions against governance rules.
-  - GovernanceConfig: configuration for policy sources and enforcement mode.
+NEXUS Governance Engine
 
-Phase C — all methods are stubbed.
+Enforces AI governance policies aligned with EU AI Act, NIST AI RMF,
+and IEEE Ethically Aligned Design. Evaluates GAIA actions against
+declared policies and emits PolicyViolation events.
 
-Design references
------------------
-- NEXUS GOVERNANCE.md + GOVERNANCESPEC.md: policy taxonomy.
-- EU AI Act (2024): transparency, human oversight, risk classification.
-- NIST AI RMF: Govern, Map, Measure, Manage lifecycle.
-- IEEE Ethically Aligned Design: value-sensitive policy encoding.
-- GAIAN Coexistence Laws: no silent override, consent-first principles.
+Architecture reference:
+    NEXUS_UNIVERSAL_OS.md  Domain 7 - Governance
+    GOVERNANCE.md          - Policy definitions
+    GOVERNANCESPEC.md      - Formal governance spec
+Research reference:
+    EU AI Act              - risk-based AI compliance framework
+    NIST AI RMF            - AI Risk Management Framework
+    IEEE EAD               - Ethically Aligned Design
 """
 from __future__ import annotations
-from governance.engine import GovernanceEngine, PolicyEvaluator, GovernanceConfig, PolicyDecision
 
-__all__ = ["GovernanceEngine", "PolicyEvaluator", "GovernanceConfig", "PolicyDecision"]
+from governance.engine import GovernanceEngine, GovernancePolicy, PolicyViolation, RiskLevel
+
+__all__ = ["GovernanceEngine", "GovernancePolicy", "PolicyViolation", "RiskLevel"]

@@ -1,21 +1,20 @@
-"""timeservice — Time synchronisation and scheduling service
+"""timeservice
 
-Provides:
-  - TimeSync: synchronises NEXUS node clocks against NTP / GPS / mesh
-    consensus time sources.
-  - ScheduleService: cron-style and deadline-aware task scheduler.
-  - TimeServiceConfig: configuration for sync sources and schedule policy.
+NEXUS Time Synchronisation Service
 
-Phase C — all methods are stubbed.
+Provides accurate, consistent time across distributed GAIAN nodes
+using NTP/PTP synchronisation. Emits TimeSync events consumed by
+the Schumann engine, StageEngine, and SovereignMemory.
 
-References
-----------
-- NTP RFC 5905 for clock synchronisation.
-- asyncio event loop + heapq for EDF scheduling (from nexusos.scheduler).
-- Delay-Tolerant Networking (RFC 9171): time handling for
-  interplanetary nodes where NTP is unavailable.
+Architecture reference:
+    NEXUS_UNIVERSAL_OS.md  Domain 1.6 - Time Service
+Research reference:
+    NTP RFC 5905       - Network Time Protocol v4
+    PTP IEEE 1588      - Precision Time Protocol
+    ntplib (PyPI)      - Python NTP client
 """
 from __future__ import annotations
-from timeservice.service import TimeSync, ScheduleService, TimeServiceConfig
 
-__all__ = ["TimeSync", "ScheduleService", "TimeServiceConfig"]
+from timeservice.engine import TimeService, TimeSyncConfig, TimeSyncEvent, TimeProvider
+
+__all__ = ["TimeService", "TimeSyncConfig", "TimeSyncEvent", "TimeProvider"]
