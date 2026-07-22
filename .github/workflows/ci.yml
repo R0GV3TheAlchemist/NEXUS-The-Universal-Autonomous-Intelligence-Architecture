@@ -1,12 +1,15 @@
 # =============================================================================
 # GAIA OS — Continuous Integration
-# Runs on Pull Requests only to preserve free-plan Actions minutes.
+# Runs on push to main AND pull requests so the badge reflects live state.
 # Lint gate scopes to PR-changed .py files so pre-existing repo-wide
-# violations don’t block unrelated work (Canon Ref: C30).
+# violations don't block unrelated work (Canon Ref: C30).
+# Phase D: test-nexus job added 2026-07-22 — covers src-python/tests/ (30 scaffolds)
 # =============================================================================
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -97,3 +100,63 @@ jobs:
           name: coverage-xml
           path: coverage.xml
           retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # NEXUS Phase D — src-python/tests/ scaffold suite (30 tests)
+  # Badge: ![NEXUS Tests](https://github.com/R0GV3TheAlchemist/NEXUS-The-Universal-Autonomous-Intelligence-Architecture/actions/workflows/ci.yml/badge.svg)
+  # ---------------------------------------------------------------------------
+  test-nexus:
+    name: NEXUS Tests (src-python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: nexus-${{ runner.os }}-py${{ matrix.python-version }}-pip-${{ hashFiles('src-python/requirements.txt', 'requirements.txt') }}
+          restore-keys: nexus-${{ runner.os }}-py${{ matrix.python-version }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install root requirements if present
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Install src-python specific requirements if present
+          if [ -f src-python/requirements.txt ]; then pip install -r src-python/requirements.txt; fi
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run NEXUS test scaffolds
+        env:
+          GAIA_ROOT: /tmp/nexus-ci
+          GAIA_REQUIRE_AUTH: "false"
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: ${{ github.workspace }}/src-python
+        run: |
+          pytest src-python/tests/ \
+            --tb=short \
+            --strict-markers \
+            -q \
+            --cov=src-python \
+            --cov-branch \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml:nexus-coverage.xml
+
+      - name: Upload NEXUS coverage XML
+        if: matrix.python-version == '3.13'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-coverage-xml
+          path: nexus-coverage.xml
+          retention-days: 7
