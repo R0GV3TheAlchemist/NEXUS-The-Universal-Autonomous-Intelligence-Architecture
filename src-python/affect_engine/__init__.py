@@ -1,19 +1,22 @@
-"""
-affect_engine
-=============
-Root package for the NEXUS Affect Engine.
+# Copyright (c) 2026 Kyle Alexander Steen (R0GV3 The Alchemist). All Rights Reserved.
+# NEXUS Affect Engine — Phase E: operational
 
-Models the emotional-affective state of the GAIA-OS user using a
-PAD (Pleasure-Arousal-Dominance) / OCC-aligned signal space.
+from .pad import AffectState, classify_pad, PAD_LABELS  if False else None
+from .pad import AffectState, classify_pad
+from .engine import AffectEngine
+from .signal_parsers import (
+    PADDelta,
+    TextSentimentParser,
+    BiometricParser,
+    SchumannSyncParser,
+)
 
-Architecture reference : NEXUS_UNIVERSAL_OS.md  Domain 2.2
-GAIAN law              : GAIAN_LAWS.md          Law V   Emotional Sovereignty
-Ethics reference       : ETHICS.md              Commitment 4  Affective Transparency
-"""
-from __future__ import annotations
-
-__version__ = "0.1.0"
-
-from affect_engine.engine import AffectEngine
-
-__all__ = ["AffectEngine"]
+__all__ = [
+    "AffectState",
+    "AffectEngine",
+    "classify_pad",
+    "PADDelta",
+    "TextSentimentParser",
+    "BiometricParser",
+    "SchumannSyncParser",
+]
