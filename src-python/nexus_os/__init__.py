@@ -20,8 +20,6 @@ for the NEXUS planetary-scale operating substrate.
 
 __version__ = "1.0.0"
 __author__ = "Kyle Steen"
-__license__ = "All Rights Reserved © 2026 Kyle Steen"
-
 __all__ = [
     "NexusKernel",
     "HALRegistry",

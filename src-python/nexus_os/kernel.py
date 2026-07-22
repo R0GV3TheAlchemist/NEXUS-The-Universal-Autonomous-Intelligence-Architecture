@@ -1,15 +1,10 @@
 """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 kernel.py — NEXUS Microkernel.
@@ -46,7 +41,7 @@ class CapabilityToken:
     token_id: UUID
     process_id: UUID
     allowed_syscalls: frozenset
-    expires_at: float  # Unix timestamp; 0.0 = never expires
+    expires_at: float
 
     def is_valid(self) -> bool:
         if self.expires_at == 0.0:
@@ -106,7 +101,8 @@ class NexusKernel:
     def register_handler(self, syscall: SyscallType, handler: Callable) -> None:
         self._handlers[syscall] = handler
 
-    def dispatch(self, process_id: UUID, syscall: SyscallType, **kwargs) -> Optional[object]:
+    def dispatch(self, process_id: UUID, syscall: SyscallType,
+                 **kwargs) -> Optional[object]:
         """
         Validate CapabilityToken then invoke the registered handler.
         Raises PermissionError on capability violation.

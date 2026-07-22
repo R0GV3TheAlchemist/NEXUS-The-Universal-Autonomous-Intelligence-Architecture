@@ -1,15 +1,10 @@
 """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 hal.py — Hardware Abstraction Layer for NEXUS OS.
@@ -42,7 +37,7 @@ class EnergyProfile:
     """Power draw envelope for a device."""
     idle_watts: float = 0.0
     peak_watts: float = 0.0
-    renewable_fraction: float = 0.0  # 0.0–1.0
+    renewable_fraction: float = 0.0
     carbon_intensity_gco2_kwh: float = 0.0
 
 

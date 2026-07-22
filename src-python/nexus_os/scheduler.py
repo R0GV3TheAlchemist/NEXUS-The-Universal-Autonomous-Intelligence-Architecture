@@ -1,15 +1,10 @@
 """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NEXUS — The Universal Autonomous Intelligence Architecture
-  GAIA  — The Global Autonomous Intelligence Architecture
-
   Author   : Kyle Steen
-  GitHub   : R0GV3TheAlchemist (https://github.com/R0GV3TheAlchemist)
+  GitHub   : R0GV3TheAlchemist
   Email    : xxkylesteenxx@outlook.com
-  Project  : NEXUS / GAIA
   License  : All Rights Reserved © 2026 Kyle Steen
-             Unauthorized use, reproduction, or distribution
-             of this file or its contents is strictly prohibited.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 scheduler.py — NEXUS Real-Time Mixed Scheduler.
@@ -32,7 +27,7 @@ from nexus_os.hal import EnergyProfile
 class TaskPriority(Enum):
     HRT = 0   # Hard Real-Time — highest priority
     SRT = 1   # Soft Real-Time
-    BE = 2    # Best-Effort — lowest priority
+    BE  = 2   # Best-Effort — lowest priority
 
 
 @dataclass
@@ -55,12 +50,12 @@ class SchedulerStats:
 
 class RTScheduler:
     """
-    NEXUS real-time mixed scheduler.
+    NEXUS real-time mixed scheduler with carbon-aware placement.
 
     HRT tasks preempt all others. SRT tasks preempt only BE.
     BE tasks use work-stealing across idle lanes.
     Carbon migration moves BE/SRT tasks to low-carbon nodes
-    when carbon_intensity exceeds `carbon_threshold_gco2_kwh`.
+    when carbon_intensity exceeds carbon_threshold_gco2_kwh.
     """
 
     def __init__(self, carbon_threshold_gco2_kwh: float = 200.0) -> None:
@@ -68,7 +63,7 @@ class RTScheduler:
         self._queues: Dict[TaskPriority, Deque[TaskDescriptor]] = {
             TaskPriority.HRT: deque(),
             TaskPriority.SRT: deque(),
-            TaskPriority.BE: deque(),
+            TaskPriority.BE:  deque(),
         }
         self.stats = SchedulerStats()
 

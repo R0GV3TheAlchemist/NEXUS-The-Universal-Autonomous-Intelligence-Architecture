@@ -7,19 +7,22 @@ project: NEXUS / GAIA — Universal Autonomous Intelligence Architecture
 license: All Rights Reserved © 2026 Kyle Steen. Unauthorized use, reproduction, or distribution is strictly prohibited.
 created: 2026-07-21
 status: DRAFT
-version: 1.0.0
 ---
 
 # NEXUS OS Kernel & HAL Specification
-**Domain 1 — Core OS Substrate**  
-Version: 1.0.0 | Status: DRAFT | Date: 2026-07-21  
-Author: Kyle Steen | © 2026 All Rights Reserved
+**Domain 1 — Core OS Substrate**
+Version: 1.0.0 | Status: DRAFT | Date: 2026-07-21
 
 ## 1. Overview
-The NEXUS OS Kernel is a capability-enforcing microkernel designed to run across heterogeneous hardware — from embedded edge nodes to planetary-scale compute clusters. It enforces least-privilege via unforgeable CapabilityTokens and exposes hardware via a layered Hardware Abstraction Layer (HAL).
+The NEXUS OS Kernel is a capability-enforcing microkernel designed to run across
+heterogeneous hardware — from embedded edge nodes to planetary-scale compute clusters.
+It enforces least-privilege via unforgeable CapabilityTokens and exposes hardware via
+a layered Hardware Abstraction Layer (HAL).
 
 ## 2. HAL — Hardware Abstraction Layer
-The HAL provides device-type-agnostic descriptors. Every physical or virtual device registers a `DeviceCapability` and a `HALDriver` into the `HALRegistry`. The kernel queries capabilities before allowing any driver-level syscall.
+The HAL provides device-type-agnostic descriptors. Every physical or virtual device
+registers a `DeviceCapability` and a `HALDriver` into the `HALRegistry`. The kernel
+queries capabilities before allowing any driver-level syscall.
 
 ### 2.1 DeviceCapability Schema
 | Field | Type | Description |
@@ -43,7 +46,8 @@ Three scheduling classes:
 - **SRT** (Soft Real-Time): Rate-monotonic, can be preempted only by HRT
 - **BE** (Best-Effort): Work-stealing across idle cores
 
-Energy awareness: scheduler reads `EnergyProfile` per task and shifts load to renewable-sourced nodes when carbon intensity exceeds configured threshold.
+Energy awareness: scheduler reads `EnergyProfile` per task and shifts load to
+renewable-sourced nodes when carbon intensity exceeds configured threshold.
 
 ## 5. IPC — Inter-Process Communication
 Channels are typed, capability-gated, and support three delivery semantics:
@@ -52,7 +56,8 @@ Channels are typed, capability-gated, and support three delivery semantics:
 - `EXACTLY_ONCE` — transactional critical payloads
 
 ## 6. Capability-Based Memory Manager
-`MemoryBroker` issues `MemoryRegion` grants tied to `CapabilityToken`. No process can access memory outside its granted regions. The broker tracks:
+`MemoryBroker` issues `MemoryRegion` grants tied to `CapabilityToken`. No process
+can access memory outside its granted regions. The broker tracks:
 - Physical/virtual address ranges
 - Read/Write/Execute permission bits
 - Region owner and delegation chain
