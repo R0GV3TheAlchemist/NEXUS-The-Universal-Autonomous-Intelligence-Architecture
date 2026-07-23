@@ -11,6 +11,13 @@ The filesystem abstraction provides:
   3. GAIAFSManifest     — the tamper-evident directory manifest
   4. GAIAFilesystem     — the top-level filesystem manager
 
+The tools layer (tools.py) provides:
+  5. FSToolPriority     — CRITICAL / HIGH / NORMAL / LOW priority enum
+  6. FSToolResult       — uniform result envelope (never raises into agentic loop)
+  7. FSTool             — named, prioritized, async-ready tool wrapper
+  8. FSToolRegistry     — registers and dispatches tools by priority
+  9. FSPermissionError  — raised (then captured) on permission violations
+
 Directory structure:
   <gaia_root>/
     .gaia/                     — GAIA's own sovereign data
@@ -42,6 +49,9 @@ Design principles:
   - SOVEREIGN: A GAIAN's home is theirs. The filesystem layer
     enforces that no GAIAN can read another's home without
     explicit, logged consent.
+  - PRIORITY-DISPATCHED: The agentic loop consumes tools via
+    FSToolRegistry, which executes CRITICAL tools first, captures
+    all errors as FSToolResult, and supports concurrent batching.
 """
 from core.fs.filesystem import (
     GAIAPath,
@@ -50,11 +60,25 @@ from core.fs.filesystem import (
     GAIAFilesystem,
     FSPermission,
 )
+from core.fs.tools import (
+    FSToolPriority,
+    FSToolResult,
+    FSTool,
+    FSToolRegistry,
+    FSPermissionError,
+)
 
 __all__ = [
+    # filesystem.py
     "GAIAPath",
     "GAIANHome",
     "GAIAFSManifest",
     "GAIAFilesystem",
     "FSPermission",
+    # tools.py
+    "FSToolPriority",
+    "FSToolResult",
+    "FSTool",
+    "FSToolRegistry",
+    "FSPermissionError",
 ]
