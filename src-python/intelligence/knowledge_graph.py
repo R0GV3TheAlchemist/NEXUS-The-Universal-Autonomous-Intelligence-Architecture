@@ -1,155 +1,157 @@
-"""intelligence.knowledge_graph
-
-NEXUS Knowledge Graph
-
-Provides a three-tier memory model (Episodic / Semantic / Procedural)
-backed by a graph store. Designed to be compatible with Zep/Graphiti's
-bi-temporal model and neo4j-agent-memory as the production backing store.
-
-Memory taxonomy (cognitive science + Zep mapping):
-    Episodic   → specific past events with temporal context (Zep episodic subgraph)
-    Semantic   → general facts, concepts, entity relationships (Zep semantic subgraph)
-    Procedural → skills, how-to patterns, learned routines
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 2.4 - Knowledge Graph
-Research reference:
-    Zep/Graphiti arXiv:2501.13956   - bi-temporal graph memory (18.5× accuracy)
-    neo4j-agent-memory PyPI         - graph-native agent memory backing store
-    Portable Agent Memory arXiv:2605.11032 - Merkle-DAG provenance
-    MemGPT arXiv:2310.08560         - tiered episodic/semantic paging
-    Zylos AI May 2026               - 36-46% accuracy gains with KG world models
 """
+intelligence.knowledge_graph — GAIAN Memory Architecture
+=========================================================
+Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Knowledge Layer
+Cross-reference: AkashicEngine (src/gaian/)
+
+Implements three complementary memory stores:
+- EpisodicMemory: time-indexed experiential records
+- SemanticMemory: factual knowledge and ontological relationships
+- ProceduralMemory: learned action sequences and skill programs
+
+Sovereign memory regions are encrypted and consent-gated per
+SOVEREIGNTY.md and GAIAN_LAWS.md § Memory Sovereignty.
+
+© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
+SPDX-License-Identifier: AGPL-3.0-only
+"""
+
 from __future__ import annotations
 
-import logging
+import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum, auto
-from typing import Any, Optional
-
-logger = logging.getLogger("intelligence.knowledge_graph")
-
-
-class MemoryType(Enum):
-    """Three-tier memory taxonomy."""
-    EPISODIC = auto()
-    SEMANTIC = auto()
-    PROCEDURAL = auto()
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
-class GraphNode:
-    """A node in the NEXUS knowledge graph.
+class Episode:
+    """A single experiential record in EpisodicMemory."""
 
-    Fields:
-        node_id:     Unique UUID4 identifier.
-        memory_type: MemoryType classification.
-        label:       Short human-readable label.
-        data:        Node payload (fact, event summary, skill descriptor).
-        created_at:  UTC creation timestamp.
-        valid_from:  Bi-temporal 'fact time' — when this fact became true in the world.
-        valid_to:    Bi-temporal end of fact validity (None = still valid).
+    episode_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp_ns: int = field(default_factory=time.monotonic_ns)
+    context: Dict[str, Any] = field(default_factory=dict)
+    outcome: Optional[str] = None
+    emotional_valence: float = 0.0   # -1.0 (negative) to +1.0 (positive)
+    lci_snapshot: Optional[float] = None  # Life Coherence Index at time of episode
+
+
+class EpisodicMemory:
     """
-    label: str
-    memory_type: MemoryType
-    data: Any = None
-    node_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
+    Time-indexed store of experiential records for a GAIAN entity.
 
+    Provides temporal retrieval, recency weighting, and decay.
+    Sovereign episodes are stored encrypted per SOVEREIGNTY.md.
 
-@dataclass
-class GraphEdge:
-    """A directed relationship between two GraphNodes.
-
-    Fields:
-        edge_id:     Unique UUID4.
-        source_id:   node_id of the source node.
-        target_id:   node_id of the target node.
-        relation:    Relationship type label (e.g. 'causes', 'related_to').
-        weight:      Optional edge weight for graph algorithms.
-        created_at:  UTC creation timestamp.
-    """
-    source_id: str
-    target_id: str
-    relation: str
-    edge_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    weight: float = 1.0
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class KnowledgeGraph:
-    """Three-tier in-process knowledge graph for NEXUS intelligence.
-
-    Phase A: in-memory dict-based implementation.
-    Phase B: swap backing store to neo4j-agent-memory or Zep/Graphiti.
-
-    Reference:
-        Zep bi-temporal model — every edge carries two timestamps.
-        Portable Agent Memory — provenance chain for tamper-evidence.
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Knowledge Layer
     """
 
     def __init__(self) -> None:
-        self._nodes: dict[str, GraphNode] = {}
-        self._edges: list[GraphEdge] = []
-        logger.info("KnowledgeGraph initialised (in-memory).")
+        self._episodes: List[Episode] = []
 
-    def add_node(self, node: GraphNode) -> None:
-        """Add a GraphNode to the knowledge graph."""
-        self._nodes[node.node_id] = node
-        logger.debug("KnowledgeGraph: added node '%s' (%s).", node.label, node.memory_type)
+    def record(self, episode: Episode) -> None:
+        """Record a new episode.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("EpisodicMemory.record: stub")
 
-    def add_edge(self, edge: GraphEdge) -> None:
-        """Add a directed GraphEdge to the knowledge graph.
+    def recall(self, since_ns: Optional[int] = None, limit: int = 100) -> List[Episode]:
+        """
+        Return episodes in reverse chronological order.
 
         Raises:
-            KeyError: If source_id or target_id do not exist as nodes.
+            NotImplementedError: Stub — full implementation pending.
         """
-        if edge.source_id not in self._nodes:
-            raise KeyError(f"Source node not found: {edge.source_id}")
-        if edge.target_id not in self._nodes:
-            raise KeyError(f"Target node not found: {edge.target_id}")
-        self._edges.append(edge)
-        logger.debug(
-            "KnowledgeGraph: edge %s --[%s]--> %s.",
-            edge.source_id, edge.relation, edge.target_id,
-        )
+        raise NotImplementedError("EpisodicMemory.recall: stub")
 
-    def query(self, memory_type: Optional[MemoryType] = None, label_contains: str = "") -> list[GraphNode]:
-        """Query nodes by memory type and/or label substring.
+    def forget_before(self, cutoff_ns: int) -> int:
+        """Forget all episodes before cutoff_ns. Return count removed. Stub."""
+        raise NotImplementedError("EpisodicMemory.forget_before: stub")
 
-        Args:
-            memory_type:    Filter by MemoryType (None = all types).
-            label_contains: Case-insensitive substring filter on node.label.
 
-        Returns:
-            List of matching GraphNode instances.
+@dataclass
+class Fact:
+    """A single factual assertion in SemanticMemory."""
+
+    fact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str = ""
+    predicate: str = ""
+    obj: str = ""              # 'object' is a Python builtin — using 'obj'
+    confidence: float = 1.0
+    source: Optional[str] = None
+    asserted_at_ns: int = field(default_factory=time.monotonic_ns)
+
+
+class SemanticMemory:
+    """
+    Factual knowledge store structured as subject-predicate-object triples.
+
+    Supports confidence-weighted retrieval and provenance tracking.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Knowledge Layer
+    """
+
+    def __init__(self) -> None:
+        self._facts: Dict[str, Fact] = {}
+
+    def assert_fact(self, fact: Fact) -> None:
+        """Add or update a fact.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("SemanticMemory.assert_fact: stub")
+
+    def query(self, subject: Optional[str] = None, predicate: Optional[str] = None, obj: Optional[str] = None) -> List[Fact]:
         """
-        results = list(self._nodes.values())
-        if memory_type is not None:
-            results = [n for n in results if n.memory_type == memory_type]
-        if label_contains:
-            lc = label_contains.lower()
-            results = [n for n in results if lc in n.label.lower()]
-        return results
-
-    def neighbors(self, node_id: str) -> list[GraphNode]:
-        """Return all direct neighbour nodes of the given node.
-
-        Args:
-            node_id: UUID4 of the source node.
-
-        Returns:
-            List of GraphNode instances reachable via outbound edges.
+        Return facts matching all non-None fields.
 
         Raises:
-            NotImplementedError: Graph traversal not yet optimised.
-                Expected: in Phase B use neo4j MATCH (n)-[:*]->(m) pattern.
+            NotImplementedError: Stub — full implementation pending.
         """
-        raise NotImplementedError(
-            "KnowledgeGraph.neighbors() not yet implemented. "
-            "Expected: filter self._edges by source_id, resolve target nodes."
-        )
+        raise NotImplementedError("SemanticMemory.query: stub")
+
+    def retract(self, fact_id: str) -> None:
+        """Remove a fact by ID.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("SemanticMemory.retract: stub")
+
+
+@dataclass
+class Procedure:
+    """A learned action sequence stored in ProceduralMemory."""
+
+    procedure_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    steps: List[Dict[str, Any]] = field(default_factory=list)
+    preconditions: List[str] = field(default_factory=list)
+    postconditions: List[str] = field(default_factory=list)
+    success_rate: float = 0.0
+    execution_count: int = 0
+
+
+class ProceduralMemory:
+    """
+    Store of learned action sequences and skill programs.
+
+    Procedures are indexed by name and retrieved by precondition matching.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Knowledge Layer
+    """
+
+    def __init__(self) -> None:
+        self._procedures: Dict[str, Procedure] = {}
+
+    def store(self, procedure: Procedure) -> None:
+        """Store a procedure.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("ProceduralMemory.store: stub")
+
+    def retrieve_by_name(self, name: str) -> Optional[Procedure]:
+        """Return procedure by name, or None.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("ProceduralMemory.retrieve_by_name: stub")
+
+    def retrieve_by_precondition(self, preconditions: List[str]) -> List[Procedure]:
+        """
+        Return procedures whose preconditions are a subset of the given list.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("ProceduralMemory.retrieve_by_precondition: stub")
+
+    def update_success_rate(self, procedure_id: str, success: bool) -> None:
+        """Update rolling success rate after an execution.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("ProceduralMemory.update_success_rate: stub")

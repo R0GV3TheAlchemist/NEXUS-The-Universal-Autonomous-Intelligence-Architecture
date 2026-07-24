@@ -1,98 +1,206 @@
-"""intelligence.cognitive_kernel
-
-NEXUS Cognitive Kernel
-
-The CognitiveKernel orchestrates the full intelligence cycle:
-    Percept → Appraisal → Decision → Action → Memory update
-
-It coordinates PerceptionEngine, KnowledgeGraph, AffectEngine, and
-Governance to produce traceable, auditable cognitive decisions.
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 2.1 - Cognitive Kernel
-Research reference:
-    OCC appraisal theory       - event-driven emotion and goal appraisal
-    Constitutional AI           - decision guardrails
-    ETHICS.md Commitment 1-10  - NEXUS ethical commitments
 """
+intelligence.cognitive_kernel — NEXUS Cognitive Kernel
+=======================================================
+Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Cognitive Kernel
+
+The cognitive kernel is the decision-making core of a GAIAN entity.
+It maintains a goal stack, drives the reasoning cycle, and records
+every decision to an append-only AuditLog for full explainability.
+
+AuditLog is deliberately dependency-free (stdlib only) so that
+nexus_os.kernel may import it without a circular dependency.
+
+All reasoning is constrained by GAIAN_LAWS.md and ETHICS.md.
+© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
+SPDX-License-Identifier: AGPL-3.0-only
+"""
+
 from __future__ import annotations
 
-import logging
+import time
+import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum, auto
-from typing import Any, Optional
-
-logger = logging.getLogger("intelligence.cognitive_kernel")
+from typing import Any, Dict, List, Optional
 
 
-class CognitivePhase(Enum):
-    """Phases of the cognitive processing cycle."""
-    IDLE = auto()
-    PERCEIVING = auto()
-    APPRAISING = auto()
-    DECIDING = auto()
-    ACTING = auto()
-    CONSOLIDATING = auto()
+class GoalStatus(Enum):
+    """Lifecycle status of a goal on the GoalStack."""
+
+    PENDING = auto()
+    ACTIVE = auto()
+    SUSPENDED = auto()
+    ACHIEVED = auto()
+    FAILED = auto()
+    ABANDONED = auto()
 
 
 @dataclass
-class CognitiveState:
-    """Snapshot of the current cognitive kernel state.
+class Goal:
+    """A single goal entry on the GoalStack."""
 
-    Fields:
-        phase:          Current CognitivePhase.
-        cycle_count:    Total number of full perception→action cycles completed.
-        last_percept:   Optional reference to the last processed Percept ID.
-        last_decision:  Optional summary of the last decision taken.
-        evaluated_at:   UTC timestamp of this snapshot.
+    goal_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    description: str = ""
+    priority: int = 50          # 0 (lowest) – 100 (highest)
+    status: GoalStatus = GoalStatus.PENDING
+    created_at_ns: int = field(default_factory=time.monotonic_ns)
+    context: Dict[str, Any] = field(default_factory=dict)
+    parent_goal_id: Optional[str] = None
+
+
+class GoalStack:
     """
-    phase: CognitivePhase = CognitivePhase.IDLE
-    cycle_count: int = 0
-    last_percept: Optional[str] = None
-    last_decision: Optional[str] = None
-    evaluated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    Priority-ordered stack of goals for a GAIAN cognitive kernel.
 
+    Goals are ordered by priority; the ACTIVE goal is always the
+    highest-priority PENDING goal.  Sub-goals may be pushed with a
+    parent_goal_id to form a goal tree.
 
-class CognitiveKernel:
-    """NEXUS cognitive processing kernel.
-
-    Orchestrates one full cognitive cycle per `process()` call:
-        1. Receive Percept from PerceptionEngine.
-        2. Appraise against goals and ethical constraints (OCC model).
-        3. Query KnowledgeGraph for relevant context.
-        4. Produce a Decision (governance-checked).
-        5. Emit Action and consolidate memory.
-
-    Reference:
-        OCC model — appraisal of events relative to goals.
-        ETHICS.md  — all decisions must be auditable and reversible.
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Cognitive Kernel
     """
 
     def __init__(self) -> None:
-        self._state = CognitiveState()
-        logger.info("CognitiveKernel initialised.")
+        self._goals: Dict[str, Goal] = {}
 
-    def process(self, percept: Any) -> Any:
-        """Execute one full cognitive cycle for the given percept.
-
-        Args:
-            percept: A Percept object from PerceptionEngine.
-
-        Returns:
-            A Decision or action descriptor (structure TBD in Phase B).
+    def push(self, goal: Goal) -> None:
+        """
+        Add a goal to the stack.
 
         Raises:
-            NotImplementedError: Full cycle not yet implemented.
-                Expected: appraise percept, query KnowledgeGraph,
-                check governance policy, produce Decision, update state.
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("GoalStack.push: stub")
+
+    def pop(self) -> Optional[Goal]:
+        """
+        Remove and return the highest-priority PENDING goal, or None.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("GoalStack.pop: stub")
+
+    def peek(self) -> Optional[Goal]:
+        """
+        Return the highest-priority PENDING goal without removing it.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("GoalStack.peek: stub")
+
+    def update_status(self, goal_id: str, status: GoalStatus) -> None:
+        """
+        Update the status of a goal by ID.
+
+        Raises:
+            KeyError: If no goal with goal_id exists.
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("GoalStack.update_status: stub")
+
+    def active_goals(self) -> List[Goal]:
+        """
+        Return all goals with status ACTIVE.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("GoalStack.active_goals: stub")
+
+
+@dataclass
+class AuditEntry:
+    """A single immutable entry in the AuditLog."""
+
+    entry_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp_ns: int = field(default_factory=time.monotonic_ns)
+    event_type: str = ""
+    actor_pid: str = ""
+    details: Dict[str, Any] = field(default_factory=dict)
+    previous_hash: str = ""    # SHA-256 of previous entry for tamper-evidence
+    entry_hash: str = ""       # SHA-256 of this entry — computed on creation
+
+
+class AuditLog:
+    """
+    Append-only, tamper-evident audit log.
+
+    Each entry is SHA-256 hashed and chained to the previous entry,
+    forming a verifiable sequence.  This class has zero non-stdlib
+    dependencies so it can be imported safely by nexus_os.kernel.
+
+    Per GAIAN_LAWS.md § Transparency and C27, every significant
+    system action must produce an AuditLog entry.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Cognitive Kernel
+    """
+
+    def __init__(self) -> None:
+        self._entries: List[AuditEntry] = []
+
+    def append(self, event_type: str, actor_pid: str, details: Dict[str, Any]) -> AuditEntry:
+        """
+        Append a new entry to the log.
+
+        Computes the hash chain automatically.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("AuditLog.append: stub")
+
+    def verify(self) -> bool:
+        """
+        Verify the integrity of the entire hash chain.
+
+        Returns True if all hashes are consistent; False if tampering is detected.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("AuditLog.verify: stub")
+
+    def entries(self) -> List[AuditEntry]:
+        """Return a read-only view of all log entries."""
+        return list(self._entries)
+
+
+class ReasoningEngine:
+    """
+    Drives the cognitive reasoning cycle for a GAIAN entity.
+
+    Each cycle: perceive → update world model → select goal → plan → act → audit.
+    All decisions are recorded in the AuditLog before execution.
+
+    Ethical constraints from GAIAN_LAWS.md and ETHICS.md are applied
+    at the plan selection step — no action may violate them.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Cognitive Kernel
+    """
+
+    def __init__(self, goal_stack: GoalStack, audit_log: AuditLog) -> None:
+        self.goal_stack = goal_stack
+        self.audit_log = audit_log
+
+    def cycle(self) -> None:
+        """
+        Execute one full reasoning cycle.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
         """
         raise NotImplementedError(
-            "CognitiveKernel.process() not yet implemented. "
-            "Expected: appraise → knowledge lookup → governance check → decision → memory write."
+            "ReasoningEngine.cycle: stub — implementation pending (NEXUS_UNIVERSAL_OS.md § Domain 2)"
         )
 
-    @property
-    def state(self) -> CognitiveState:
-        """Return the current cognitive state snapshot."""
-        return self._state
+    def evaluate_ethics(self, action: Dict[str, Any]) -> bool:
+        """
+        Return True if the proposed action is ethically permissible.
+
+        Applies GAIAN_LAWS.md and ETHICS.md constraints.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("ReasoningEngine.evaluate_ethics: stub")

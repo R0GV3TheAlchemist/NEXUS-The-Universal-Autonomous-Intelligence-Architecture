@@ -1,106 +1,129 @@
-"""intelligence.explainability
-
-NEXUS Explainability Engine
-
-Generates human-readable explanations for CognitiveKernel decisions.
-Supports post-hoc feature attribution (SHAP/LIME style), counterfactual
-explanations, and decision-trace narratives.
-
-All NEXUS decisions must be explainable — see ETHICS.md Commitment 3
-(Transparency) and GAIAN_LAWS.md Law III (No Silent Override).
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 2.9 - Explainability
-    ETHICS.md              Commitment 3 - Transparency
-Research reference:
-    SHAP (Lundberg & Lee, 2017)       - SHapley Additive exPlanations
-    LIME (Ribeiro et al., 2016)       - Local Interpretable Model-agnostic Explanations
-    Counterfactual XAI literature     - 'What would need to change?'
 """
+intelligence.explainability — Decision Tracing & Explanation
+=============================================================
+Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Explainability Layer
+
+Every decision made by a GAIAN entity must be traceable and explainable.
+DecisionTrace records the full reasoning chain; ExplanationSummary
+produces human-readable output at configurable detail levels.
+
+This is a constitutional requirement per GAIAN_LAWS.md § Transparency
+and ETHICS.md § Explainability.
+
+© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
+SPDX-License-Identifier: AGPL-3.0-only
+"""
+
 from __future__ import annotations
 
-import logging
+import time
+import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum, auto
-from typing import Any, Optional
-
-logger = logging.getLogger("intelligence.explainability")
+from typing import Any, Dict, List, Optional
 
 
-class ExplanationMethod(Enum):
-    """Available explanation generation methods."""
-    SHAP = auto()             # Feature importance via Shapley values
-    LIME = auto()             # Local surrogate model
-    COUNTERFACTUAL = auto()   # Minimal change to flip decision
-    DECISION_TRACE = auto()   # Step-by-step cognitive cycle narrative
+class ExplanationLevel(Enum):
+    """Detail level for an ExplanationSummary."""
+
+    BRIEF = auto()      # One sentence
+    STANDARD = auto()   # Paragraph — suitable for most users
+    TECHNICAL = auto()  # Full reasoning chain with confidence values
+    AUDIT = auto()      # Machine-readable, includes all metadata
 
 
 @dataclass
-class Explanation:
-    """A structured explanation for a CognitiveKernel decision.
+class TraceStep:
+    """A single step in a DecisionTrace."""
 
-    Fields:
-        decision_id:    Reference to the Decision this explanation covers.
-        method:         ExplanationMethod used to generate it.
-        summary:        Short natural-language summary.
-        feature_scores: Dict mapping feature names to importance scores (SHAP/LIME).
-        counterfactual: Optional description of the minimal change that would alter the decision.
-        trace:          Optional ordered list of reasoning steps (DECISION_TRACE).
-        generated_at:   UTC timestamp.
+    step_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    description: str = ""
+    inputs: Dict[str, Any] = field(default_factory=dict)
+    outputs: Dict[str, Any] = field(default_factory=dict)
+    confidence: float = 1.0
+    rule_applied: Optional[str] = None    # Name of the rule or heuristic applied
+    ethical_check_passed: bool = True
+    timestamp_ns: int = field(default_factory=time.monotonic_ns)
+
+
+class DecisionTrace:
     """
-    decision_id: str
-    method: ExplanationMethod
-    summary: str
-    feature_scores: dict[str, float] = field(default_factory=dict)
-    counterfactual: Optional[str] = None
-    trace: Optional[list[str]] = None
-    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    Immutable record of the full reasoning chain for a single decision.
 
+    Traces are created by ReasoningEngine and stored in the AuditLog.
+    They are the primary mechanism for post-hoc explainability audits.
 
-class ExplainabilityEngine:
-    """Generates explanations for NEXUS cognitive decisions.
-
-    Phase A: typed stubs only.
-    Phase B: wire SHAP/LIME against the intelligence model outputs.
-
-    All explanation methods must be non-invasive — they observe the
-    decision record but do not modify the knowledge graph or memory.
-
-    Reference:
-        SHAP — game-theoretic feature attribution.
-        LIME — local approximation via perturbed inputs.
-        ETHICS.md Commitment 3 — transparency is non-negotiable.
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Explainability Layer
     """
 
-    def __init__(self) -> None:
-        logger.info("ExplainabilityEngine initialised.")
+    def __init__(self, decision_id: Optional[str] = None) -> None:
+        self.trace_id: str = str(uuid.uuid4())
+        self.decision_id: str = decision_id or str(uuid.uuid4())
+        self._steps: List[TraceStep] = []
+        self.final_action: Optional[Dict[str, Any]] = None
+        self.overall_confidence: float = 1.0
+        self.created_at_ns: int = time.monotonic_ns()
 
-    def explain(
-        self,
-        decision_id: str,
-        decision_data: Any,
-        method: ExplanationMethod = ExplanationMethod.DECISION_TRACE,
-    ) -> Explanation:
-        """Generate an explanation for a CognitiveKernel decision.
-
-        Args:
-            decision_id:    ID of the decision to explain.
-            decision_data:  Raw decision record from CognitiveKernel.
-            method:         ExplanationMethod to use.
-
-        Returns:
-            An Explanation object.
+    def record_step(self, step: TraceStep) -> None:
+        """
+        Append a step to the trace.
 
         Raises:
-            NotImplementedError: All methods are stubs in Phase A.
-                Expected:
-                    SHAP       → compute Shapley values over input features.
-                    LIME       → fit local linear surrogate on perturbed inputs.
-                    COUNTERFACTUAL → find minimal feature delta to flip decision.
-                    DECISION_TRACE → serialise CognitiveKernel._state cycle log.
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("DecisionTrace.record_step: stub")
+
+    def steps(self) -> List[TraceStep]:
+        """Return all recorded steps in order."""
+        return list(self._steps)
+
+    def finalise(self, action: Dict[str, Any], confidence: float) -> None:
+        """
+        Seal the trace with the final action and overall confidence.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("DecisionTrace.finalise: stub")
+
+
+class ExplanationSummary:
+    """
+    Generates human-readable explanations from a DecisionTrace.
+
+    Output detail is controlled by ExplanationLevel.  The BRIEF level
+    is safe for end-user display; AUDIT level is for system operators.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Explainability Layer
+    """
+
+    def generate(
+        self,
+        trace: DecisionTrace,
+        level: ExplanationLevel = ExplanationLevel.STANDARD,
+    ) -> str:
+        """
+        Generate an explanation string at the requested detail level.
+
+        Args:
+            trace: The DecisionTrace to explain.
+            level: The desired ExplanationLevel.
+
+        Returns:
+            A string explanation suitable for the given level.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
         """
         raise NotImplementedError(
-            f"ExplainabilityEngine.explain() method={method.name} not yet implemented. "
-            "Expected: wire SHAP/LIME in Phase B."
+            "ExplanationSummary.generate: stub — implementation pending (NEXUS_UNIVERSAL_OS.md § Domain 2)"
         )
+
+    def to_dict(self, trace: DecisionTrace) -> Dict[str, Any]:
+        """
+        Return a machine-readable dict representation of the trace.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("ExplanationSummary.to_dict: stub")

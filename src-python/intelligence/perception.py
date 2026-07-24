@@ -1,107 +1,134 @@
-"""intelligence.perception
-
-NEXUS Perception Engine
-
-Transforms raw sensor data, text, and multi-modal inputs into typed
-Percept objects suitable for CognitiveKernel processing. Supports
-unimodal (text) and multi-modal (text + sensor + image) input streams.
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 2.3 - Perception
-Research reference:
-    OCC model           - percept as event triggering appraisal
-    Affective computing - multimodal perception (text + physiological)
-    Nature 2026 (s44387-025-00061-3) - foundation model perceptual representations
 """
+intelligence.perception — Sensor Fusion & World Model
+======================================================
+Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Perception Layer
+
+Fuses heterogeneous sensor streams into a coherent, probabilistic
+world model.  The UncertaintyQuantifier tracks confidence bounds
+for every belief in the world model, ensuring the system never
+presents false certainty — per GAIAN_LAWS.md § Epistemic Integrity.
+
+© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
+SPDX-License-Identifier: AGPL-3.0-only
+"""
+
 from __future__ import annotations
 
-import logging
+import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum, auto
-from typing import Any, Optional
-
-logger = logging.getLogger("intelligence.perception")
-
-
-class PerceptModality(Enum):
-    """Input modalities supported by the PerceptionEngine."""
-    TEXT = auto()
-    SENSOR = auto()
-    IMAGE = auto()
-    AUDIO = auto()
-    STRUCTURED = auto()   # JSON / structured event
-    COMPOSITE = auto()    # Multi-modal fusion
+from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclass
-class Percept:
-    """A typed, timestamped perception event.
+class SensorReading:
+    """A single raw reading from a sensor."""
 
-    Fields:
-        percept_id:  Unique UUID4 identifier.
-        modality:    PerceptModality of this percept.
-        raw:         Raw input payload (str, bytes, dict, etc.).
-        source:      Identifier of the originating sensor/module.
-        features:    Optional extracted feature dict (populated by PerceptionEngine.extract).
-        timestamp:   UTC timestamp of perception.
+    reading_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    sensor_id: str = ""
+    sensor_type: str = ""
+    value: Any = None
+    unit: str = ""
+    timestamp_ns: int = field(default_factory=time.monotonic_ns)
+    confidence: float = 1.0    # 0.0 – 1.0
+
+
+@dataclass
+class Belief:
+    """A single belief held in the WorldModel, with uncertainty bounds."""
+
+    belief_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    key: str = ""              # Canonical belief key (e.g. "environment.temperature_c")
+    value: Any = None
+    confidence: float = 1.0
+    lower_bound: Optional[float] = None
+    upper_bound: Optional[float] = None
+    source_reading_ids: List[str] = field(default_factory=list)
+    last_updated_ns: int = field(default_factory=time.monotonic_ns)
+
+
+class SensorFusion:
     """
-    modality: PerceptModality
-    raw: Any
-    source: str
-    percept_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    features: Optional[dict] = None
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    Fuses multiple sensor readings into unified beliefs.
+
+    Implements Bayesian fusion by default; subclasses may override
+    fuse() for domain-specific strategies.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Perception Layer
+    """
+
+    def fuse(self, readings: List[SensorReading]) -> List[Belief]:
+        """
+        Fuse a batch of sensor readings into a list of updated beliefs.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError(
+            "SensorFusion.fuse: stub — implementation pending (NEXUS_UNIVERSAL_OS.md § Domain 2)"
+        )
 
 
-class PerceptionEngine:
-    """Transforms raw inputs into typed Percept objects.
+class WorldModel:
+    """
+    Probabilistic model of the agent's environment.
 
-    In Phase A this is a stub. Phase B will wire:
-        - Text encoding via transformer embeddings.
-        - Sensor normalisation (Schumann ELF, accelerometer, etc.).
-        - Multi-modal fusion (late fusion of modality embeddings).
+    Beliefs are keyed by canonical string paths (e.g.
+    'environment.temperature_c', 'system.cpu_load_pct').
+    All beliefs carry confidence bounds tracked by UncertaintyQuantifier.
 
-    Reference:
-        Nature 2026 — foundation models as universal perceptual encoders.
-        NEXUS_UNIVERSAL_OS.md Domain 2.3.
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Perception Layer
     """
 
     def __init__(self) -> None:
-        logger.info("PerceptionEngine initialised.")
+        self._beliefs: Dict[str, Belief] = {}
 
-    def ingest(self, raw: Any, modality: PerceptModality, source: str) -> Percept:
-        """Ingest raw input and produce a bare Percept (no feature extraction).
+    def update(self, belief: Belief) -> None:
+        """Update or insert a belief.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("WorldModel.update: stub")
 
-        Args:
-            raw:      Raw input payload.
-            modality: PerceptModality classification.
-            source:   Identifier of the data source.
+    def get(self, key: str) -> Optional[Belief]:
+        """Return the current belief for key, or None.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("WorldModel.get: stub")
 
-        Returns:
-            A Percept with raw data and auto-generated metadata.
+    def all_beliefs(self) -> List[Belief]:
+        """Return all current beliefs.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("WorldModel.all_beliefs: stub")
+
+    def prune_stale(self, max_age_ns: int) -> int:
         """
-        percept = Percept(modality=modality, raw=raw, source=source)
-        logger.debug("PerceptionEngine: ingested percept %s (%s).", percept.percept_id, modality)
-        return percept
-
-    def extract(self, percept: Percept) -> Percept:
-        """Extract features from a raw Percept.
-
-        Args:
-            percept: A bare Percept produced by ingest().
-
-        Returns:
-            The same Percept with `features` dict populated.
+        Remove beliefs older than max_age_ns.  Return count removed.
 
         Raises:
-            NotImplementedError: Feature extraction not yet implemented.
-                Expected: dispatch to modality-specific encoder
-                (transformer for TEXT, FFT for SENSOR, CNN for IMAGE),
-                populate percept.features, return percept.
+            NotImplementedError: Stub — full implementation pending.
         """
-        raise NotImplementedError(
-            "PerceptionEngine.extract() not yet implemented. "
-            "Expected: modality-specific feature extraction pipeline."
-        )
+        raise NotImplementedError("WorldModel.prune_stale: stub")
+
+
+class UncertaintyQuantifier:
+    """
+    Tracks and reports uncertainty bounds across the WorldModel.
+
+    Ensures GAIAN_LAWS.md § Epistemic Integrity is enforced:
+    no output from the system claims certainty it does not have.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Perception Layer
+    """
+
+    def quantify(self, readings: List[SensorReading]) -> Tuple[float, float, float]:
+        """
+        Return (mean_confidence, lower_bound, upper_bound) for a set of readings.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("UncertaintyQuantifier.quantify: stub")
+
+    def is_confident(self, belief: Belief, threshold: float = 0.8) -> bool:
+        """
+        Return True if belief.confidence >= threshold.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("UncertaintyQuantifier.is_confident: stub")

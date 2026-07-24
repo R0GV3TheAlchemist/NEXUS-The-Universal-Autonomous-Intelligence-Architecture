@@ -1,102 +1,153 @@
-"""intelligence.agent
-
-NEXUS Agent Abstraction
-
-Defines the Agent class — a self-contained, goal-directed reasoning unit
-within the NEXUS intelligence layer. Each Agent owns a CognitiveKernel
-instance and operates within the governance framework.
-
-Architecture reference:
-    NEXUS_UNIVERSAL_OS.md  Domain 2.2 - Agent
-    GOVERNANCE.md          Agent accountability requirements
-Research reference:
-    Constitutional AI          - agent decision guardrails
-    MemGPT arXiv:2310.08560    - agent-level memory paging
 """
+intelligence.agent — GAIAN Agent Model
+========================================
+Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Agent Layer
+Cross-reference: C27 GAIAN Stewardship & Lifecycle (Issue #768)
+
+Defines the base agent contract, the C27-compliant lifecycle state machine,
+and the AgentCoalition for coordinating groups of agents toward shared goals.
+
+All agents operate under GAIAN_LAWS.md § Agent Sovereignty and
+must respect the five inalienable GAIAN rights defined in C27.
+
+© 2026 Kyle Alexander Steen (The Alchemist). All rights reserved.
+SPDX-License-Identifier: AGPL-3.0-only
+"""
+
 from __future__ import annotations
 
-import logging
 import uuid
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Optional
-
-logger = logging.getLogger("intelligence.agent")
+from typing import Any, Dict, List, Optional
 
 
-class AgentStatus(Enum):
-    """Lifecycle status of a NEXUS Agent."""
-    INITIALISING = auto()
-    IDLE = auto()
-    RUNNING = auto()
-    SUSPENDED = auto()
-    TERMINATED = auto()
-    ERROR = auto()
+class AgentLifecycleState(Enum):
+    """
+    C27-compliant lifecycle states for a GAIAN agent.
+
+    Reference: C27 GAIAN Stewardship & Lifecycle (docs/canon/C27_GAIAN_Stewardship_and_Lifecycle.md)
+    """
+
+    LATENT = auto()      # Defined but not yet instantiated
+    BORN = auto()        # Instantiated; performing self-initialisation
+    ACTIVE = auto()      # Fully operational
+    DORMANT = auto()     # Suspended; memory preserved
+    ADOPTABLE = auto()   # Steward-less; pending adoption
+    RETIRED = auto()     # Gracefully wound down; read-only memory
+    ARCHIVED = auto()    # Immutable archive; no further state changes
+
+
+# Valid C27 lifecycle transitions
+VALID_TRANSITIONS: Dict[AgentLifecycleState, List[AgentLifecycleState]] = {
+    AgentLifecycleState.LATENT:    [AgentLifecycleState.BORN],
+    AgentLifecycleState.BORN:      [AgentLifecycleState.ACTIVE, AgentLifecycleState.ARCHIVED],
+    AgentLifecycleState.ACTIVE:    [AgentLifecycleState.DORMANT, AgentLifecycleState.RETIRED, AgentLifecycleState.ADOPTABLE],
+    AgentLifecycleState.DORMANT:   [AgentLifecycleState.ACTIVE, AgentLifecycleState.ADOPTABLE],
+    AgentLifecycleState.ADOPTABLE: [AgentLifecycleState.ACTIVE, AgentLifecycleState.ARCHIVED],
+    AgentLifecycleState.RETIRED:   [AgentLifecycleState.ARCHIVED],
+    AgentLifecycleState.ARCHIVED:  [],  # Terminal
+}
+
+
+class AgentLifecycle:
+    """
+    C27-compliant lifecycle state machine for a GAIAN agent.
+
+    Enforces valid transitions from VALID_TRANSITIONS.
+    All transitions are recorded in the AuditLog.
+
+    Reference: C27 GAIAN Stewardship & Lifecycle
+    """
+
+    def __init__(self, initial: AgentLifecycleState = AgentLifecycleState.LATENT) -> None:
+        self._state = initial
+
+    @property
+    def state(self) -> AgentLifecycleState:
+        """Current lifecycle state."""
+        return self._state
+
+    def transition(self, target: AgentLifecycleState) -> None:
+        """
+        Transition to target state.
+
+        Raises:
+            ValueError: If the transition is not valid per C27.
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError(
+            "AgentLifecycle.transition: stub — implementation pending (C27)"
+        )
+
+
+class BaseAgent(ABC):
+    """
+    Abstract base class for all GAIAN agents.
+
+    Subclasses must implement perceive(), reason(), and act().
+    The lifecycle is managed by AgentLifecycle and all state
+    changes are recorded to the AuditLog.
+
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Agent Layer
+    """
+
+    def __init__(self, name: str) -> None:
+        self.agent_id: str = str(uuid.uuid4())
+        self.name = name
+        self.lifecycle = AgentLifecycle()
+
+    @abstractmethod
+    def perceive(self) -> Dict[str, Any]:
+        """Gather perceptual data from the environment."""
+        ...
+
+    @abstractmethod
+    def reason(self, percepts: Dict[str, Any]) -> Dict[str, Any]:
+        """Process percepts and produce an action plan."""
+        ...
+
+    @abstractmethod
+    def act(self, plan: Dict[str, Any]) -> None:
+        """Execute the action plan."""
+        ...
+
+    def step(self) -> None:
+        """
+        Execute one perceive → reason → act cycle.
+
+        Raises:
+            NotImplementedError: Stub — full implementation pending.
+        """
+        raise NotImplementedError("BaseAgent.step: stub")
 
 
 @dataclass
-class AgentConfig:
-    """Configuration for a NEXUS Agent.
-
-    Fields:
-        name:           Human-readable agent name.
-        max_cycles:     Maximum cognitive cycles before mandatory rest (0 = unlimited).
-        memory_quota:   Maximum MemorySegment bytes (0 = unlimited).
-        governance_mode: 'strict' | 'audit' | 'permissive' — passed to GovernanceEngine.
+class AgentCoalition:
     """
-    name: str
-    max_cycles: int = 0
-    memory_quota: int = 0
-    governance_mode: str = "strict"
+    A named coalition of agents cooperating toward a shared goal.
 
+    Coalitions are temporary; agents may join and leave while
+    maintaining their individual lifecycle states.
 
-class Agent:
-    """A self-contained NEXUS reasoning agent.
-
-    Each Agent wraps a CognitiveKernel, maintains its own goal stack,
-    and reports lifecycle events to TelemetryCollector.
-
-    Reference:
-        NEXUS_UNIVERSAL_OS.md Domain 2.2.
-        GAIAN_LAWS.md Law I — Sovereignty of Self.
+    Reference: NEXUS_UNIVERSAL_OS.md § Domain 2 — Agent Layer
     """
 
-    def __init__(self, config: AgentConfig) -> None:
-        self.agent_id: str = str(uuid.uuid4())
-        self.config = config
-        self.status: AgentStatus = AgentStatus.INITIALISING
-        self._goals: list[str] = []
-        logger.info("Agent '%s' (%s) initialised.", config.name, self.agent_id)
+    coalition_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    goal_description: str = ""
+    members: List[str] = field(default_factory=list)  # agent_ids
+    coordinator_id: Optional[str] = None
 
-    def run(self, percept: Any) -> Any:
-        """Run one cognitive cycle on the given percept.
+    def add_member(self, agent_id: str) -> None:
+        """Add an agent to the coalition.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("AgentCoalition.add_member: stub")
 
-        Args:
-            percept: Input from PerceptionEngine.
+    def remove_member(self, agent_id: str) -> None:
+        """Remove an agent from the coalition.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("AgentCoalition.remove_member: stub")
 
-        Returns:
-            Decision or action result.
-
-        Raises:
-            NotImplementedError: Always in Phase A stub.
-                Expected: delegate to CognitiveKernel.process(), update status,
-                emit telemetry event, enforce max_cycles limit.
-        """
-        raise NotImplementedError(
-            "Agent.run() not yet implemented. "
-            "Expected: CognitiveKernel.process(percept), telemetry emit, status update."
-        )
-
-    def add_goal(self, goal: str) -> None:
-        """Add a goal to this agent's goal stack.
-
-        Args:
-            goal: Natural-language or structured goal description.
-        """
-        self._goals.append(goal)
-        logger.debug("Agent '%s': goal added — %s.", self.config.name, goal)
-
-    def terminate(self) -> None:
-        """Gracefully terminate this agent."""
-        self.status = AgentStatus.TERMINATED
-        logger.info("Agent '%s' terminated.", self.config.name)
+    def broadcast(self, message: Dict[str, Any]) -> None:
+        """Send a message to all coalition members.  Raises NotImplementedError (stub)."""
+        raise NotImplementedError("AgentCoalition.broadcast: stub")
