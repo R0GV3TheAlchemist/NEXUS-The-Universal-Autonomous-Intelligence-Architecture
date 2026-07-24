@@ -1,38 +1,24 @@
-# Copyright (c) 2026 R0GV3 The Alchemist
-# GAIA — The Global Autonomous Intelligence Architecture
-# Licensed under the GAIA Sovereign License (see LICENSE.md)
+# Copyright © 2025–2026 Kyle Alexander Steen. All rights reserved. AGPL-3.0.
 """
-core/error_correction/__init__.py
+core.error_correction — GAIA Automatic Error Correction & Documentation Engine
 
-GAIA Error Correction — Phase 1b: Detection Layer (Ruff + Canon Rules)
+Three-layer architecture per Issue #755:
+    detection   — GAIAErrorFinding, linting, static analysis, architectural rules
+    repair      — rule-based, template-based, AI-assisted patch candidates
+    reporting   — structured run reports, knowledge promotion hooks
 
-Public surface:
-    GAIAErrorFinding     — normalized error record
-    GAIASeverity         — severity enum
-    GAIAErrorCategory    — error category enum
-    ErrorDetector        — runs Ruff + CanonChecker, yields GAIAErrorFinding
-    CanonChecker         — GAIA architectural Canon rule checker
-    ErrorReporter        — writes Markdown + JSON artifact reports
-
-Canon Ref: C01, C30, Issue #755
+Related: Issue #755
 """
-from core.error_correction.models import (
-    GAIAErrorCategory,
-    GAIAErrorFinding,
-    GAIASeverity,
-)
-from core.error_correction.canon_checker import CanonChecker
-from core.error_correction.detector import ErrorDetector
-from core.error_correction.reporter import ErrorReporter
-
-__version__ = "1.0.0"
+from core.error_correction.detection import GAIAErrorFinding, ErrorSeverity, DetectionLayer
+from core.error_correction.repair import RepairLayer, PatchCandidate
+from core.error_correction.reporting import ErrorCorrectionReport, ReportingLayer
 
 __all__ = [
     "GAIAErrorFinding",
-    "GAIASeverity",
-    "GAIAErrorCategory",
-    "CanonChecker",
-    "ErrorDetector",
-    "ErrorReporter",
-    "__version__",
+    "ErrorSeverity",
+    "DetectionLayer",
+    "RepairLayer",
+    "PatchCandidate",
+    "ErrorCorrectionReport",
+    "ReportingLayer",
 ]
