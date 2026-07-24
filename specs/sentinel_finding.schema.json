@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gaia.nexus/schemas/sentinel_finding.schema.json",
+  "title": "SentinelFinding",
+  "description": "A persistent SENTINEL check finding, cross-referenced to the C23 Shadow Registry. Authority: C27 §7. Related: Issue #768.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "schema_version",
+    "check_id",
+    "gaian_id",
+    "severity",
+    "description",
+    "detail",
+    "detected_at"
+  ],
+  "properties": {
+    "finding_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID v4 for this finding. Immutable — findings never expire."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "check_id": {
+      "$ref": "#/$defs/SentinelCheckId",
+      "description": "Which of the 7 C27 SENTINEL checks produced this finding."
+    },
+    "gaian_id": {
+      "type": "string",
+      "description": "The GAIAN this finding concerns."
+    },
+    "severity": {
+      "$ref": "#/$defs/SentinelSeverity",
+      "description": "Severity level determining escalation path."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the finding."
+    },
+    "detail": {
+      "type": "object",
+      "description": "Structured machine-readable detail. Schema varies by check_id."
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO 8601 timestamp when the finding was detected."
+    },
+    "sentinel_case_id": {
+      "type": ["string", "null"],
+      "description": "C23 Shadow Registry case ID. Set when the finding is linked to an open case."
+    },
+    "escalation": {
+      "$ref": "#/$defs/EscalationRecord",
+      "description": "Escalation history and current status."
+    },
+    "resolved_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "UTC ISO 8601 timestamp when the finding was resolved. null if unresolved."
+    },
+    "resolution_notes": {
+      "type": ["string", "null"],
+      "description": "Human-readable notes on how the finding was resolved."
+    },
+    "audit_entry_id": {
+      "type": ["string", "null"],
+      "description": "AuditLogEntry.entry_id that recorded this finding being raised."
+    }
+  },
+  "$defs": {
+    "SentinelCheckId": {
+      "type": "string",
+      "enum": [
+        "C27-CHK-001",
+        "C27-CHK-002",
+        "C27-CHK-003",
+        "C27-CHK-004",
+        "C27-CHK-005",
+        "C27-CHK-006",
+        "C27-CHK-007"
+      ],
+      "description": "7 SENTINEL check IDs per C27 §7. CHK-001: valid state transition | CHK-002: steward bond presence | CHK-003: audit log integrity | CHK-004: adoption queue timeout | CHK-005: steward obligation | CHK-006: cross-GAIAN authorization | CHK-007: rights preservation."
+    },
+    "SentinelSeverity": {
+      "type": "string",
+      "enum": ["INFO", "WARNING", "VIOLATION", "CRITICAL"],
+      "description": "4 severity levels per C27 §7. INFO=log only | WARNING=steward notify 7-day | VIOLATION=48hr mandatory response | CRITICAL=24hr GAIA Root escalation."
+    },
+    "EscalationRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "escalated_at"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "NOTIFIED", "CASE_OPEN", "GAIA_ROOT_ESCALATED", "RESOLVED"],
+          "description": "Current escalation status."
+        },
+        "escalated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When escalation was first triggered."
+        },
+        "response_deadline": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Mandatory response deadline. 48h for VIOLATION, 24h for CRITICAL."
+        },
+        "notified_principals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of principals (steward IDs, GAIA Root) who have been notified."
+        },
+        "gaia_root_case_id": {
+          "type": ["string", "null"],
+          "description": "GAIA Root escalation case ID. Only set for CRITICAL findings."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "finding_id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "schema_version": "1.0.0",
+      "check_id": "C27-CHK-002",
+      "gaian_id": "gaian-0042",
+      "severity": "WARNING",
+      "description": "ACTIVE GAIAN has no valid steward bond. Bond status: ABANDONED.",
+      "detail": {
+        "bond_status": "ABANDONED",
+        "last_known_steward_id": "steward-007",
+        "bond_dissolved_at": "2026-07-20T12:00:00Z"
+      },
+      "detected_at": "2026-07-23T01:00:00Z",
+      "sentinel_case_id": null,
+      "escalation": {
+        "status": "NOTIFIED",
+        "escalated_at": "2026-07-23T01:00:05Z",
+        "response_deadline": "2026-07-30T01:00:05Z",
+        "notified_principals": ["steward-007", "gaia-registry"],
+        "gaia_root_case_id": null
+      },
+      "resolved_at": null,
+      "resolution_notes": null,
+      "audit_entry_id": "d4e5f6a7-b8c9-0123-def0-234567890123"
+    }
+  ]
+}

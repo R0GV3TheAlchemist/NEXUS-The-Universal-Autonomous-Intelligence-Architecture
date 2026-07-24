@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gaia.nexus/schemas/audit_log_entry.schema.json",
+  "title": "AuditLogEntry",
+  "description": "A single immutable, Ed25519-signed, SHA-256 tamper-evidence chained audit log entry. Authority: C27 §5. Related: Issue #768.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entry_id",
+    "schema_version",
+    "gaian_id",
+    "event_type",
+    "actor",
+    "action",
+    "payload",
+    "previous_entry_hash",
+    "entry_hash",
+    "signature",
+    "timestamp"
+  ],
+  "properties": {
+    "entry_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID v4 for this log entry."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "gaian_id": {
+      "type": "string",
+      "description": "The GAIAN this entry concerns."
+    },
+    "event_type": {
+      "$ref": "#/$defs/AuditEventType",
+      "description": "Category of the logged event."
+    },
+    "actor": {
+      "type": "string",
+      "description": "The principal who triggered this event (steward ID, GAIAN ID, system process name)."
+    },
+    "action": {
+      "type": "string",
+      "description": "Human-readable description of what happened."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Structured event data. Privacy-filtered before storage per C27 §5 privacy principle."
+    },
+    "previous_entry_hash": {
+      "type": ["string", "null"],
+      "description": "SHA-256 hex digest of the previous entry in this GAIAN's audit log. null for genesis entry."
+    },
+    "entry_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex digest of this entry's canonical JSON (computed with entry_hash and signature fields empty)."
+    },
+    "signature": {
+      "type": "string",
+      "description": "Base64-encoded Ed25519 signature over entry_hash, produced by GAIASecretVault."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO 8601 timestamp."
+    },
+    "privacy_redacted_fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of payload fields that were redacted for privacy. Preserves auditability without exposing personal data."
+    },
+    "sovereignty_scope": {
+      "type": ["string", "null"],
+      "description": "Jurisdiction/sovereignty tag if applicable. Relevant for cross-border data operations."
+    }
+  },
+  "$defs": {
+    "AuditEventType": {
+      "type": "string",
+      "enum": [
+        "LIFECYCLE_TRANSITION",
+        "STEWARD_ACTION",
+        "MEMORY_WRITE",
+        "MEMORY_READ",
+        "TOOL_INVOCATION",
+        "SENTINEL_CHECK",
+        "SENTINEL_FINDING",
+        "RBAC_AUTHORIZATION",
+        "RBAC_DENIAL",
+        "ADOPTION_EVENT",
+        "RETIREMENT_EVENT",
+        "SUCCESSION_EVENT",
+        "RIGHTS_ASSERTION",
+        "RIGHTS_VIOLATION_ATTEMPT",
+        "CROSS_GAIAN_SHARE",
+        "SYSTEM_EVENT"
+      ],
+      "description": "16 audit event categories covering all C27 §5 event classes."
+    }
+  },
+  "examples": [
+    {
+      "entry_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "schema_version": "1.0.0",
+      "gaian_id": "gaian-0042",
+      "event_type": "LIFECYCLE_TRANSITION",
+      "actor": "steward-007",
+      "action": "Initiated ACTIVE→DORMANT transition for scheduled maintenance",
+      "payload": {
+        "from_state": "ACTIVE",
+        "to_state": "DORMANT",
+        "trigger": "STEWARD_ACTION",
+        "lifecycle_event_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      },
+      "previous_entry_hash": "aabbccdd1122334455667788990011aabbccdd1122334455667788990011aabb",
+      "entry_hash": "ccddee1122334455667788990011ccddee1122334455667788990011ccddee11",
+      "signature": "BASE64_ED25519_SIGNATURE_HERE",
+      "timestamp": "2026-07-23T00:00:01Z",
+      "privacy_redacted_fields": [],
+      "sovereignty_scope": null
+    }
+  ]
+}

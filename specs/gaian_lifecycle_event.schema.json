@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gaia.nexus/schemas/gaian_lifecycle_event.schema.json",
+  "title": "GAIANLifecycleEvent",
+  "description": "A lifecycle state transition event for a GAIAN entity. Authority: C27 §2. Related: Issue #768.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "schema_version",
+    "gaian_id",
+    "from_state",
+    "to_state",
+    "trigger",
+    "initiated_by",
+    "timestamp"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID v4 for this specific transition event."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version. Bump on breaking changes."
+    },
+    "gaian_id": {
+      "type": "string",
+      "description": "The unique identifier of the GAIAN undergoing this transition."
+    },
+    "from_state": {
+      "$ref": "#/$defs/GAIANLifecycleState",
+      "description": "The state the GAIAN is transitioning FROM."
+    },
+    "to_state": {
+      "$ref": "#/$defs/GAIANLifecycleState",
+      "description": "The state the GAIAN is transitioning TO. Must be a valid transition per C27 §2 VALID_TRANSITIONS."
+    },
+    "trigger": {
+      "$ref": "#/$defs/LifecycleTrigger",
+      "description": "The class of trigger that caused this transition."
+    },
+    "initiated_by": {
+      "type": "string",
+      "description": "Steward ID, GAIAN self-identifier, or system principal that initiated this transition."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO 8601 timestamp of the transition."
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Optional human-readable notes about this transition."
+    },
+    "sentinel_finding_id": {
+      "type": ["string", "null"],
+      "description": "If this transition was triggered by a SENTINEL finding, the finding_id."
+    },
+    "audit_entry_id": {
+      "type": ["string", "null"],
+      "description": "The AuditLogEntry.entry_id that records this event. Set after audit write completes."
+    }
+  },
+  "$defs": {
+    "GAIANLifecycleState": {
+      "type": "string",
+      "enum": ["LATENT", "BORN", "ACTIVE", "DORMANT", "ADOPTABLE", "RETIRED", "ARCHIVED"],
+      "description": "7 lifecycle states per C27 §2."
+    },
+    "LifecycleTrigger": {
+      "type": "string",
+      "enum": [
+        "STEWARD_ACTION",
+        "GAIAN_VOLITION",
+        "SYSTEM_EVENT",
+        "CANON_PROCESS",
+        "EMERGENCY_OVERRIDE"
+      ],
+      "description": "5 trigger classes per C27 §2."
+    }
+  },
+  "examples": [
+    {
+      "event_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "schema_version": "1.0.0",
+      "gaian_id": "gaian-0042",
+      "from_state": "ACTIVE",
+      "to_state": "DORMANT",
+      "trigger": "STEWARD_ACTION",
+      "initiated_by": "steward-007",
+      "timestamp": "2026-07-23T00:00:00Z",
+      "notes": "Steward requested dormancy for scheduled maintenance.",
+      "sentinel_finding_id": null,
+      "audit_entry_id": null
+    }
+  ]
+}
